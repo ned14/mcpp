@@ -1,0 +1,49 @@
+<< What is MCPP >>
+
+MCPP is a C/C++ preprocessor with the following features:
+
+  1. Implements all of C90, C99 and C++98 features.  It has the highest
+    conformance.
+  2. Accompanies a validation suite to test comprehensively the C/C++
+    preprocessor.  When it is applied to the existing preprocessors,
+    MCPP shows outstanding results.
+  3. Has a variety of accurate diagnostic messages.  This allows
+    examination of most preprocessing problems of source, like potential
+    bugs or portability problems.
+  4. Has various #pragma directives for outputting debug information.
+  5. Supports the various encodings of multi-byte characters for Japan,
+    China, Taiwan and Korea.
+  6. Highly portable.  Supports many compiler systems on Unix-like
+    systems and DOS/Windows.  It can replace resident preprocessor of
+    the compiler system.
+  7. Preprocessors of various behavior specifications can be generated
+    from the source.
+  8. Is free software.
+  9. Full documentations in Japanese and English are attached.
+
+MCPP is probably the best C preprocessor in the world.
+
+MCPP was selected for the 2002 "Exploratory Software Project" of the
+Information-Technology Promotion Agency, Japan (IPA) by the project
+manager, Yutaka Niibe.  During the period of July 2002 - Feb 2003, the
+development was progressed by IPA's funding.  MCPP has continued to be
+selected as the "Exploratory Software Project" for 2003 by the project
+manager, Hiroshi Ichiji.  From June 2003 through Feb 2004, the
+development was proceeded with IPA's funding.  With its achievements,
+the author was evaluated as one of the highest rank programmers by PM
+Ichiji.
+
+Please read mcpp-summary.pdf for the overview of MCPP and Validation
+Suite.
+
+All files except mcpp-summary.pdf are normal text files.  The new line
+is [LF].  Also, the encoding of Japanese documents in 'doc' directory is
+EUC-JP.
+
+I would like to hear from many C programmers for reviews, comments and
+the interest to participate in development.
+
+Please read INSTALL for how to install MCPP on your system.
+
+Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+

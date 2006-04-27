@@ -1,0 +1,24 @@
+*** isomac.c	Fri May 11 14:19:38 2001
+--- isomac.c.orig	Mon Sep 20 16:00:47 1999
+***************
+*** 278,285 ****
+        int i, okay = 0;
+        size_t endmac;
+        char *start, *end;
+-       if (strlen (line) < 2 || memcmp (line, "/*", 2) == 0)
+-           continue;                     /* Blank line or comment    */
+        if (strlen (line) < 9 || line[7] != ' ')
+  	{ /* "#define A" */
+  	  printf ("Malformed input, expected '#define MACRO'\ngot '%s'\n",
+--- 278,283 ----
+***************
+*** 368,375 ****
+        int i, okay = 0;
+        size_t endmac;
+        const char **cpp;
+-       if (strlen (line) < 2 || memcmp (line, "/*", 2) == 0)
+-           continue;                     /* Blank line or comment    */
+        if (strlen (line) < 9 || line[7] != ' ')
+  	{ /* "#define A" */
+  	  printf ("Malformed input, expected '#define MACRO'\ngot '%s'\n",
+--- 366,371 ----

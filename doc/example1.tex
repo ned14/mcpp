@@ -1,0 +1,39 @@
+\documentclass{jsarticle}
+\pagestyle{empty}
+\begin{document}
+\setlength{\baselineskip}{10pt}
+
+\begin{verbatim}
+example-1
+    #define _VARIANT_BOOL   /##/
+\end{verbatim}
+
+\begin{verbatim}
+example-2
+    _VARIANT_BOOL bool;
+\end{verbatim}
+
+\vspace{0pt}
+\begin{verbatim}
+example-3
+    #if     MACRO_0 && 10 / MACRO_0
+\end{verbatim}
+
+\begin{verbatim}
+example-4
+    #if     MACRO_0 ? 10 / MACRO_0 : 0
+\end{verbatim}
+
+\begin{verbatim}
+example-5
+    #if     1 / 0
+\end{verbatim}
+
+\vspace{0pt}
+\begin{verbatim}
+example-6
+    #include    <limits.h>
+    #if     LONG_MAX + 1
+\end{verbatim}
+
+\end{document}
