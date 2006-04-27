@@ -1,0 +1,96 @@
+ChangeLog of MCPP and its accompanying Validation Suite
+
+2005/03/19  kmatsui
+        * V.2.5
+        * Revised judgment of GNU C version and include directories in
+        configure script.
+        * Absorbed POST_STANDARD mode into STANDARD as an execution time
+        option, absorbed OLD_PREPROCESSOR mode as an execution time
+        option of PRE_STANDARD.
+        * Renamed most of #pragma __* directives as #pragma MCPP *.
+        * Revised the Standard mode macro expansion routine using GNU C
+        3.2 testsuite and Wave 1.0 testcases.
+        * Added porting to GNU C V.3.3 and 3.4.  Changed some options
+        accordingly (changed -c to -@compat, changed -m to -e, removed -
+        E, added -finput-charset=).
+        * Revised the old-preprocessor mode to follow "Reiser cpp model".
+        * Removed documents on older preprocessors (DJGPP, compiler
+        systems on MS-DOS except Borland C).
+        * Provided man page.
+        * Renamed the documents.
+        * Validation Suite: Moved tests of multi-byte character encoding
+        to quality matters.
+        * Validation Suite: Changed points allocation of the test items.
+        * Validation Suite: Added a few testcases for macro expansion.
+        * Updated Japanese and English documents.
+
+2004/03/20  kmatsui
+        * V.2.4.1
+        * Revised recursive macro expansion, and added -c option.
+        * Revised some testcases in cpp-test/test-t directory.
+
+2004/02/25  kmatsui
+        * V.2.4 release.
+        * Extended multi-byte character handling.  Created mbchar.c.
+        Implemented #pragma __setlocale, -m <encoding> option and
+        enabled environment variable LC_ALL, LC_CTYPE and LANG.
+        * Added porting to Plan 9 / pcc.
+        * Updated Japanese documents.
+        * Updated English documents which were translated by Highwell,
+        inc. ltd. from the Japanese documents.
+
+2003/11/28  kmatsui
+        * V.2.4 prerelease.
+        * Created configure.ac and Makeile.am.  Re-organized header
+        files accordingly.
+        * Diagnostics on macro expansion or macro redefinition were made
+        to show the original macro definition and its location.
+        * Implemented -MF, -MT, -MP, -MQ options for GCC-3-compatibility.
+        * Added porting to Visual C++ .net.
+        * Updated test-reports on LCC-Win32 and ucpp.
+        * Removed the oldest settings on VMS, DEC C, etc.
+        * Updated the Japanese documents. (The English documents are not
+        yet updated.)
+
+2003/03/29  kmatsui
+        * V.2.3 patch 1.
+        * Debugged the modes other than STANDARD.
+
+2003/02/28  kmatsui
+        * V.2.3 release.
+        * Created the edition of Validation Suite for GCC / testsuite.
+        * -j option (GCC-compatible diagnostic format) added for testsuite.
+        * Created the document named mcpp-summary.pdf.
+        * Updated documents.
+        * Released English version of documents which were translated by
+        Highwell, inc. ltd. from the Japanese documents and revised by
+        kmatsui.
+
+2002/12/16  kmatsui
+        * V.2.3 prerelease 2.
+        * Port to GCC 3.2.
+        * Fixed the bug of #include_next.
+        * GCC-compatible options (-I-, etc.) added.
+        * Updated documents.  Renamed the documents.
+
+2002/08/26  kmatsui
+        * V.2.3 prerelease 1.
+        * Updated according to C99 (ISO/IEC 9899:1999).
+        * Implemented many GCC-compatible options.
+        * Port to Linux / GCC 2.95.3, LCC-Win32, Borland C 5.5.
+        * Updated the documents.
+        * Registered to CVS repository at m17n.org by NIIBE Yutaka
+        <gniibe@fsij.org>.
+
+1998/11     kmatsui
+        * V.2.2
+        * Updated according to C++98 (ISO/IEC 14882:1998)
+
+1998/09     kmatsui
+        * V.2.1
+        * Updated according to the C99 1998/08 draft.
+
+1998/08     kmatsui (Kiyoshi Matsui <kmatsui@t3.rim.or.jp>)
+        * V.2.0
+        * First release of MCPP at nifty-serve and vector/software-pack
+

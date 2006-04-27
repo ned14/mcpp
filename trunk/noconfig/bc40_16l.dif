@@ -1,0 +1,77 @@
+*** noconfig.H	2005-01-28 18:51:45.000000000 +0900
+--- noconfig.H.bc4_16l	2005-01-29 22:56:23.000000000 +0900
+***************
+*** 20,29 ****
+   */
+  
+  /* Define target operating-system.  */
+! #define SYSTEM              SYS_FREEBSD
+  
+  /* Define target compiler.          */
+! #define COMPILER            GNUC
+  
+  /* Define host operating-system.    */
+  #define HOST_SYSTEM         SYSTEM
+--- 20,29 ----
+   */
+  
+  /* Define target operating-system.  */
+! #define SYSTEM              SYS_MSDOS
+  
+  /* Define target compiler.          */
+! #define COMPILER            BORLANDC
+  
+  /* Define host operating-system.    */
+  #define HOST_SYSTEM         SYSTEM
+***************
+*** 34,40 ****
+  /* Version message.                 */
+  /* "MCPP V.2.* (200y/mm) $(MODE) mode for " precedes VERSION_MSG    */
+  #define VERSION_MSG     \
+!     "GNU C compiled by GNU C 3.4"
+  #if     0
+      "DJGPP compiled by DJGPP (GNU C 2.7.1)"
+      "LCC-Win32 compiled by LCC-Win32 V.3.2"
+--- 34,40 ----
+  /* Version message.                 */
+  /* "MCPP V.2.* (200y/mm) $(MODE) mode for " precedes VERSION_MSG    */
+  #define VERSION_MSG     \
+!     "Borland C compiled by BCC V.4.0"
+  #if     0
+      "DJGPP compiled by DJGPP (GNU C 2.7.1)"
+      "LCC-Win32 compiled by LCC-Win32 V.3.2"
+***************
+*** 300,315 ****
+  #define ONE_PASS            TRUE
+  #define COMPILER_STD2       "__TURBOC__"
+  #if     __BORLANDC__        /* Borland C    */
+! #define COMPILER_STD2_VAL   "0x0550"
+      /* BC 2.0:"0x0297", BC 3.0:"0x0400", BC 4.0:"0x0452", BC 5.5:"0x0550"   */
+  #define COMPILER_EXT        "__BORLANDC__"
+! #define COMPILER_EXT_VAL    "0x0550"
+      /* BC 2.0:"0x0297", BC 3.0:"0x0400", BC 4.0:"0x0452", BC 5.5:"0x0550"   */
+  #define COMPILER_CPLUS      "__BCPLUSPLUS__"
+! #define COMPILER_CPLUS_VAL  "0x0550"            /* BC++ 2.0: "0x0200,
+          BC++ 3.0: "0x0300", BC++ 4.0: "0x0320", BC++ 5.5: "0x0550   */
+! #define C_INCLUDE_DIR1      "/BCC55/INCLUDE"
+! #define SEARCH_INIT         (CURRENT & SOURCE)
+      /* BC++ 5.*: (CURRENT & SOURCE), BC++ 4.* or former: CURRENT    */
+  #if     __BORLANDC__ >= 0x550
+  #define HAVE_LONG_LONG      TRUE    /* __int64 instead of long long */
+--- 300,315 ----
+  #define ONE_PASS            TRUE
+  #define COMPILER_STD2       "__TURBOC__"
+  #if     __BORLANDC__        /* Borland C    */
+! #define COMPILER_STD2_VAL   "0x0452"
+      /* BC 2.0:"0x0297", BC 3.0:"0x0400", BC 4.0:"0x0452", BC 5.5:"0x0550"   */
+  #define COMPILER_EXT        "__BORLANDC__"
+! #define COMPILER_EXT_VAL    "0x0452"
+      /* BC 2.0:"0x0297", BC 3.0:"0x0400", BC 4.0:"0x0452", BC 5.5:"0x0550"   */
+  #define COMPILER_CPLUS      "__BCPLUSPLUS__"
+! #define COMPILER_CPLUS_VAL  "0x0320"            /* BC++ 2.0: "0x0200,
+          BC++ 3.0: "0x0300", BC++ 4.0: "0x0320", BC++ 5.5: "0x0550   */
+! #define C_INCLUDE_DIR1      "/BC4/INCLUDE"
+! #define SEARCH_INIT         CURRENT
+      /* BC++ 5.*: (CURRENT & SOURCE), BC++ 4.* or former: CURRENT    */
+  #if     __BORLANDC__ >= 0x550
+  #define HAVE_LONG_LONG      TRUE    /* __int64 instead of long long */

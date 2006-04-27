@@ -1,0 +1,113 @@
+*** noconfig.H	2005-01-28 18:51:45.000000000 +0900
+--- noconfig.H.linux_gcc2953	2005-01-28 20:54:17.000000000 +0900
+***************
+*** 20,26 ****
+   */
+  
+  /* Define target operating-system.  */
+! #define SYSTEM              SYS_FREEBSD
+  
+  /* Define target compiler.          */
+  #define COMPILER            GNUC
+--- 20,26 ----
+   */
+  
+  /* Define target operating-system.  */
+! #define SYSTEM              SYS_LINUX
+  
+  /* Define target compiler.          */
+  #define COMPILER            GNUC
+***************
+*** 34,40 ****
+  /* Version message.                 */
+  /* "MCPP V.2.* (200y/mm) $(MODE) mode for " precedes VERSION_MSG    */
+  #define VERSION_MSG     \
+!     "GNU C compiled by GNU C 3.4"
+  #if     0
+      "DJGPP compiled by DJGPP (GNU C 2.7.1)"
+      "LCC-Win32 compiled by LCC-Win32 V.3.2"
+--- 34,40 ----
+  /* Version message.                 */
+  /* "MCPP V.2.* (200y/mm) $(MODE) mode for " precedes VERSION_MSG    */
+  #define VERSION_MSG     \
+!     "GNU C compiled by GNU C 2.95"
+  #if     0
+      "DJGPP compiled by DJGPP (GNU C 2.7.1)"
+      "LCC-Win32 compiled by LCC-Win32 V.3.2"
+***************
+*** 359,369 ****
+  
+  #if     COMPILER_FAMILY == GNUC
+  #define COMPILER_EXT        "__GNUC__"
+! #define COMPILER_EXT_VAL    "3"     /* "2" for V.2.*, "3" for V.3.* */
+  #define COMPILER_EX2        "__GNUC_MINOR__"
+! #define COMPILER_EX2_VAL    "4"     /* "95" for V.2.95, "3" for V.3.3   */
+  #define COMPILER_CPLUS      "__GNUG__"
+! #define COMPILER_CPLUS_VAL  "3"     /* "2" for V.2.*, "3" for V.3.* */
+  #define LINE_PREFIX         "# "
+  #ifndef HAVE_DIGRAPHS
+  #define HAVE_DIGRAPHS       TRUE
+--- 359,369 ----
+  
+  #if     COMPILER_FAMILY == GNUC
+  #define COMPILER_EXT        "__GNUC__"
+! #define COMPILER_EXT_VAL    "2"     /* "2" for V.2.*, "3" for V.3.* */
+  #define COMPILER_EX2        "__GNUC_MINOR__"
+! #define COMPILER_EX2_VAL    "95"     /* "95" for V.2.95, "3" for V.3.3   */
+  #define COMPILER_CPLUS      "__GNUG__"
+! #define COMPILER_CPLUS_VAL  "2"     /* "2" for V.2.*, "3" for V.3.* */
+  #define LINE_PREFIX         "# "
+  #ifndef HAVE_DIGRAPHS
+  #define HAVE_DIGRAPHS       TRUE
+***************
+*** 372,387 ****
+  #ifndef HAVE_LONG_LONG
+  #define HAVE_LONG_LONG      TRUE
+  #endif
+! #define HAVE_INTMAX_T       TRUE    /* FALSE for V.2, TRUE for V.3  */
+  #if     HAVE_INTMAX_T
+  #define HAVE_INTTYPES_H     TRUE
+  #endif
+  #define HAVE_LONG_DOUBLE    TRUE
+! #define STDC_VERSION        0L      /* 199409L for V.2.9, 0L for V.3.*      */
+! #define CPLUS_INCLUDE_DIR1  "/usr/include/c++"  /* "/usr/include/c++/3.3.2" */
+! #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/backward"     /* "/usr/include/c++/3.3.2/i386-vine-linux" */
+! /* #define CPLUS_INCLUDE_DIR3  "/usr/include/c++/3.3.2/backward"    */
+! /* #define C_INCLUDE_DIR1  "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */
+  #ifndef ENV_C_INCLUDE_DIR
+  #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
+  #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"
+--- 372,387 ----
+  #ifndef HAVE_LONG_LONG
+  #define HAVE_LONG_LONG      TRUE
+  #endif
+! #define HAVE_INTMAX_T       FALSE   /* FALSE for V.2, TRUE for V.3  */
+  #if     HAVE_INTMAX_T
+  #define HAVE_INTTYPES_H     TRUE
+  #endif
+  #define HAVE_LONG_DOUBLE    TRUE
+! #define STDC_VERSION        199409L      /* 199409L for V.2.9, 0L for V.3.*      */
+! #define CPLUS_INCLUDE_DIR1  "/usr/include/g++-3" /* "/usr/include/c++/3.2" */
+! /* #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/backward" */   /* "/usr/include/c++/3.2/i686-pc-linux-gnu" */
+! /* #define CPLUS_INCLUDE_DIR3  "/usr/include/c++/3.2/backward" */
+! #define C_INCLUDE_DIR1  "/usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include"
+  #ifndef ENV_C_INCLUDE_DIR
+  #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
+  #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"
+***************
+*** 399,405 ****
+      /* SYS_DJGPP: "long unsigned int", others: "unsigned int"       */
+  #define COMPILER_SP2_VAL    "int"
+      /* SYS_DJGPP: "long int", others: "int"     */
+! #define COMPILER_SP3_VAL    "int"
+      /* SYS_FREEBSD,SYS_DJGPP: "int" , SYS_CYGWIN: "short unsigned int"
+          , others: "long int"    */
+  #endif  /* COMPILER_FAMILY == GNUC   */
+--- 399,405 ----
+      /* SYS_DJGPP: "long unsigned int", others: "unsigned int"       */
+  #define COMPILER_SP2_VAL    "int"
+      /* SYS_DJGPP: "long int", others: "int"     */
+! #define COMPILER_SP3_VAL    "long int"
+      /* SYS_FREEBSD,SYS_DJGPP: "int" , SYS_CYGWIN: "short unsigned int"
+          , others: "long int"    */
+  #endif  /* COMPILER_FAMILY == GNUC   */

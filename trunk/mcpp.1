@@ -1,0 +1,139 @@
+.TH MCPP "1" "March 2005" "alternative CPP" "User Commands"
+.SH NAME
+mcpp \- Matsui CPP, an alternative C preprocessor
+.SH SYNOPSIS
+\fBmcpp\fP [\fIoptions\fP] [\fI<infile>\fP [\fI<outfile>\fP]]
+.SH DESCRIPTION
+Mcpp is a C/C++ preprocessor with the highest conformance which implements C90, C99 and C++98. 
+Mcpp has plentiful diagnostics and many #pragmas. 
+It is useful to check portability of your program, and also useful to debug complicated macro.
+This is a man-page for mcpp ported to GCC.
+
+.SH OPTIONS
+
+mcpp expects two file names as arguments, \fI<infile>\fR and
+\&\fI<outfile>\fR.  If not specified, \fI<infile>\fR defaults to standard input
+and \fI<outfile>\fR defaults to standard output.
+.PP
+It takes the following options.
+.IP \fB\-+\fR
+Process C++ source.
+.IP \fB\-2\fR
+Enable digraphs.
+.IP \fB\-3\fR
+Enable trigraphs.  (Cannot use with -@post option).
+.IP "\fB\-@poststd, -@post\fR"
+\'post-Standard\' mode of preprocessing.
+.IP \fB\-@compat\fR
+Expand recursive macro more than Standard.
+(Cannot use with -@post option).
+.IP \fB\-b\fR
+Output #line lines in C source style.
+.IP \fB\-C\fR
+Output also comments.
+.IP "\fB\-D <macro>[=<value>]\fR"
+Define <macro> as <value> (default:1).
+.IP "\fB\-D <macro(args)>[=<replace>]\fR"
+Define <macro(args)> as <replace>.
+.IP \fB\-digraphs\fR
+Enable digraphs.
+.IP "\fB\-e <encoding>\fR"
+Change the default multi-byte character encoding to one of:
+euc_jp, gb2312, ksc5601, big5, sjis, iso2022_jp, utf8.
+.IP \fB\-finput-charset=<encoding>\fR
+Same as -e <encoding>.  (Do not insert spaces around '=').
+.IP "\fB\-h <n>\fR"
+Re-define the pre-defined macro __STDC_HOSTED__ as <n>.
+.IP "\fB\-I <directory>\fR"
+Add <directory> to the #include search list.
+.IP "\fB\-I-\fR"
+Unset system or site specific include directories.
+.IP "\fB\-include <file>\fR"
+Include the <file> prior to the main input file.
+.IP \fB\-j\fR
+Do not output the source line in diagnostics.
+.IP \fB\-lang-asm\fR
+Same as -x assembler-with-cpp.
+.IP \fB\-lang-c89\fR
+Same as -S1.
+.IP \fB\-lang-c++\fR
+Same as -+.
+.IP "\fB\-M, -MM, -MD, -MMD, -MP, -MQ target, -MT target, -MF file"
+Output source file dependency line for makefile.
+.IP \fB\-N
+Don't predefine any non-standard macros.
+.IP \fB\-nostdinc
+Unset system or site specific include directories.
+.IP "\fB\-o <file>"
+Output to <file>.
+.IP \fB\-P
+Don't output #line lines.
+.IP "\fB\-pedantic, -pedantic-errors"
+Same as -W7.
+.IP \fB\-Q
+Output diagnostics to "mcpp.err" (default:stderr).
+.IP "\fB\-S <n>"
+Redefine __STDC__ to <n>, undefine old style macros.
+.IP \fB\-std=<STANDARD>
+Specify the standard to which the code should conform.
+<STANDARD> may be one of: c90, c99, iso9899:1990, iso14882, etc.
+.br
+iso9899:<n>, iso14882:<n> : Same as -V <n> (long in decimals).
+.IP \fB\-trigraphs
+Enable trigraphs.
+.IP \fB\-U <macro>"
+Undefine <macro>.
+.IP \fB\-undef
+Same as -N.
+.IP "\fB\-V <n>"
+Redefine __STDC_VERSION__ or __cplusplus to <n>.
+.br
+C with -V199901L specifies C99 mode.
+.br
+C++ with -V199901L specifies C99 compatible mode.
+.IP \fB\-v
+Show version of mcpp.
+.IP "\fB\-W <level>"
+Set warning level to <level> (OR of {0,1,2,4,8,16}, default:1).
+.IP \fB\-w
+Same as -W0.
+.IP "\fB\-x assembler-with-cpp"
+Process "assembler" source.
+.IP "\fB\-x c++"
+Same as -+.
+.IP \fB\-z
+Don't output the included file, only defining macros.
+
+.SH PRAGMA
+Mcpp has the following #pragma directives.
+.PP
+#pragma once
+.PP
+#pragma __setlocale
+.PP
+#pragma MCPP put_defines
+.PP
+#pragma MCPP debug <args>
+    <args> should be one or more of:
+    token expand path if expression memory getc
+.PP
+#pragma MCPP end_debug <args>
+    <args> are the same with 'debug'.
+    No argument specifies all arguments.
+.PP
+#pragma MCPP push_macro
+.PP
+#pragma MCPP pop_macro
+.PP
+#pragma MCPP preprocess
+.PP
+#pragma MCPP preprocessed
+.PP
+#pragma MCPP warning
+
+.SH "VERSION"
+MCPP V.2.5 (2005/03) STANDARD mode for GNU C
+.SH "SEE ALSO"
+The full documentation for \fBmcpp\fR are maintained as text files.
+Please see /usr/share/doc/mcpp/*.
+
