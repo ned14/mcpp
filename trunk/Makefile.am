@@ -3,20 +3,32 @@
 AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = src
-if MAINTAINER_MODE
+if REPLACE_CPP
 SUBDIRS += tests .
+man_page = mcpp-gcc
+else
+man_page = mcpp
 endif
 
-EXTRA_DIST = LICENSE INSTALL_* mcpp.1 config/mb_* \
-    src/preproc.c src/noconfig.H src/*set_mcpp.sh tests/*_test.sh \
-    noconfig cpp-test test-t test-c test-l tool doc doc.eng
+EXTRA_DIST = $(top_srcdir)/LICENSE $(top_srcdir)/INSTALL*   \
+  $(top_srcdir)/mcpp.1 $(top_srcdir)/mcpp-gcc.1 $(top_srcdir)/config/mb_*   \
+  $(top_srcdir)/src/preproc.c $(top_srcdir)/src/noconfig.H  \
+  $(top_srcdir)/src/*set_mcpp.sh $(top_srcdir)/tests/*_test.sh  \
+  $(top_srcdir)/noconfig $(top_srcdir)/cpp-test $(top_srcdir)/test-t    \
+  $(top_srcdir)/test-c $(top_srcdir)/test-l $(top_srcdir)/tool  \
+  $(top_srcdir)/doc $(top_srcdir)/doc-jp
 
 install-data:
-	@if test -d "$(prefix)/share/doc"; then :; else mkdir $(prefix)/share/doc; fi
-	@if test -d "$(prefix)/share/doc/mcpp"; then :; else mkdir $(prefix)/share/doc/mcpp; fi
-	cp -Rpf LICENSE cpp-test test-t test-c test-l tool doc doc.eng $(prefix)/share/doc/mcpp
-	gzip -c mcpp.1 > $(prefix)/man/man1/mcpp.1.gz
+	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/share/doc/mcpp"
+	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/man/man1"
+	cp -Rpf $(top_srcdir)/LICENSE $(top_srcdir)/cpp-test \
+            $(top_srcdir)/test-t $(top_srcdir)/test-c $(top_srcdir)/test-l  \
+            $(top_srcdir)/tool $(top_srcdir)/doc $(top_srcdir)/doc-jp   \
+            $(DESTDIR)$(prefix)/share/doc/mcpp
+	gzip -c $(top_srcdir)/$(man_page).1 >   \
+            $(DESTDIR)$(prefix)/man/man1/$(man_page).1.gz
 
 uninstall-data:
-	rm -r -f $(prefix)/share/doc/mcpp $(prefix)/man/man1/mcpp.1.gz
+	rm -r -f $(DESTDIR)$(prefix)/share/doc/mcpp \
+            $(DESTDIR)$(prefix)/man/man1/$(man_page).1.gz
 

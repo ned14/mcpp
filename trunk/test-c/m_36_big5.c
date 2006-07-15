@@ -6,7 +6,7 @@
 
 main( void)
 {
-    fputs( "started\n", stderr);
+    fputs( "started\n", stdout);
 
 /* 36.1:    0x5c in multi-byte character is not an escape character */
 
@@ -14,15 +14,16 @@ main( void)
 #pragma setlocale( "chinese-traditional")   /* For Visual C */
 
 #if     '¦r' == '\xa6\x72' && '¥\' != '\xa5\x5c'
-    fputs( "Bad handling of '\\' in multi-byte character", stderr);
+    fputs( "Bad handling of '\\' in multi-byte character", stdout);
     exit( 1);
 #endif
 
 /* 36.2:    # operater should not insert '\\' before 0x5c in multi-byte
         character   */
     assert( strcmp( str( "¥\ÁZ"), "\"¥\ÁZ\"") == 0);
+    fputs( "¥\ÁZ" "\"¥\ÁZ\"\n", stdout);
 
-    fputs( "success\n", stderr);
+    fputs( "success\n", stdout);
     return  0;
 }
 

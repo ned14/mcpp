@@ -1,19 +1,23 @@
-# makefile to compile MCPP version 2.* for LCC-Win32 / LCC make
-#		2002/08, 2003/11, 2004/02, 2005/03 	kmatsui
-# To compile MCPP do
+# makefile to compile MCPP version 2.6 for LCC-Win32 / LCC make
+#       2006/05 kmatsui
+# You must first edit BINDIR according to your system.
+# To compile MCPP do:
 #		make
-# To re-compile MCPP using compiled MCPP, edit this makefile and do
+# To re-compile MCPP using compiled MCPP, edit this makefile and do:
 #		make
-# To link malloc() package of kmatsui, edit this makefile and do
+# To link malloc() package of kmatsui, edit this makefile and do:
 #		make
 
-NAME = mcpp_std.exe
-CPP = mcpp_std.exe
+NAME = mcpp.exe
 CC = lcc
 CFLAGS = -A
 LINKFLAGS = -s -o $(NAME)
-BINDIR = \LCC\bin
-# Adjust for your system
+#BINDIR = \PUBLIC\COMPILERS\LCC\bin
+    # Adjust for your system
+BINDIR = \PUBLIC\BIN
+
+#CPPOPTS= -DCOMPILER=LCC
+    # LCC-specific-build
 
 # To link kmatsui's malloc()
 #MEMLIB = kmmalloc_debug.lib
@@ -30,23 +34,23 @@ $(NAME) : $(OBJS)
 
 PREPROCESSED = 0
 CMACRO = $(MEM_MACRO)
-$(OBJS) : system.H noconfig.H
+$(OBJS) : noconfig.H
 main.obj control.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
-    internal.H
+        system.H internal.H
 # To make MCPP using MCPP itself, comment out the above 4 lines and
 #		uncomment the next 5 lines.
 #PREPROCESSED = 1
 #CMACRO =
 #mcpp.H : system.H noconfig.H internal.H
-#	$(BINDIR)\$(CPP) $(CPPFLAGS) $(MEM_MACRO) preproc.c mcpp.H
+#	$(BINDIR)\$(NAME) $(CPPOPTS) $(MEM_MACRO) preproc.c mcpp.H
 #$(OBJS) : mcpp.H
 
-CPPFLAGS = -DPREPROCESSED=$(PREPROCESSED) -DMODE=STANDARD
+CPPFLAGS = -DPREPROCESSED=$(PREPROCESSED)
 .c.obj	:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(CMACRO) $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPOPTS) $(CMACRO) $<
 # To make MCPP using MCPP itself, comment out the above line and
 #		uncomment the next 2 lines.
-#	$(CPP) $(CPPFLAGS) $< _$<
+#	$(NAME) $(CPPFLAGS) $< _$<
 #	$(CC) $(CFLAGS) $(CMACRO) _$<
 
 install :

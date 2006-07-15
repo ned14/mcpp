@@ -6,7 +6,7 @@
 
 main( void)
 {
-    fputs( "started\n", stderr);
+    fputs( "started\n", stdout);
 
 /* 36.1:    0x5c in multi-byte character is not an escape character */
 
@@ -14,7 +14,7 @@ main( void)
 #pragma setlocale( "jis")                   /* For MCPP on VC   */
 
 #if     '字' == '\x3b\x7a' && '移' != '\x30\x5c'
-    fputs( "Bad handling of '\\' in multi-byte character", stderr);
+    fputs( "Bad handling of '\\' in multi-byte character", stdout);
     exit( 1);
 #endif
 
@@ -24,7 +24,10 @@ main( void)
     assert( strcmp( str( "陰陽"), "\"陰陽\"") == 0);
     assert( strcmp( str( "宇宙"), "\"宇宙\"") == 0);
 
-    fputs( "success\n", stderr);
+    fputs( "移動" "\"移動\"\n", stdout);
+    fputs( "陰陽" "\"陰陽\"\n", stdout);
+    fputs( "宇宙" "\"宇宙\"\n", stdout);
+    fputs( "success\n", stdout);
     return  0;
 }
 

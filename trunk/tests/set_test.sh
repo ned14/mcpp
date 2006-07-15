@@ -1,6 +1,7 @@
 #! /bin/sh
-# script to set mcpp testsuite corresponding to the version of GCC 2 or 3
-# ./set_test.sh ${CC} ${gcc_path} ${gcc_testsuite_dir} ${gcc_maj_ver} ${LN_S}
+# script to set mcpp testsuite corresponding to the version of GCC 2 or 3, 4
+# ./set_test.sh ${CC} ${gcc_path} ${gcc_testsuite_dir} ${gcc_maj_ver} \
+#       ${LN_S} ${cpp_call}
 
 CC=$1
 gcc_path=`expr $2 : "\(.*\)/${CC}"`
@@ -10,6 +11,8 @@ if test ${gcc_maj_ver} = 4; then
     gcc_maj_ver=3;
 fi
 LN_S=$5
+cpp_name=`echo $6 | sed 's,.*/,,'`
+cpp_path=`echo $6 | sed "s,/${cpp_name},,"`
 cur_dir=`pwd`
 
 echo "  cd ${gcc_testsuite_dir}/gcc.dg/cpp-test/test-t"
@@ -21,7 +24,19 @@ do
     ${LN_S} $i.gcc${gcc_maj_ver} $i
 done
 
+echo "  cd ${cpp_path}"
+cd "${cpp_path}"
+echo "  appending '-23j' options to mcpp invocation"
+for i in mcpp*.sh
+do
+    cat $i | sed 's/mcpp/mcpp -23j/' > tmp
+    mv -f tmp $i
+    chmod a+x $i
+done
+
 if test ${CC} = gcc; then
+#    echo "  cd ${cur_dir}"
+#    cd "${cur_dir}"
     exit 0
 fi
 
@@ -33,6 +48,6 @@ if test -f "gcc"; then
 fi
 echo "  ${LN_S} ${CC} gcc"
 ${LN_S} ${CC} gcc
-echo "  cd ${cur_dir}"
-cd "${cur_dir}"
+#echo "  cd ${cur_dir}"
+#cd "${cur_dir}"
 

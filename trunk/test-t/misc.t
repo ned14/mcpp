@@ -12,7 +12,7 @@
  *      ISO C 6.8.3 "Examples"
  *  Some other examples are excerpted from :
  *      P.J.Plauger "The Standard C Library",
- *      GNU C "cpp.info"
+ *      GCC "cpp.info"
  */
 
 /*

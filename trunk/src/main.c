@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2005 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2006 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -57,7 +57,7 @@
  *      Implemented #error directive.  The error message is output to the
  *          stderr.                                     (control.c)
  *      Implemented #pragma __once directive, -i option and -M* option,
- *          imported from GNU C / cpp.                  (control.c & others)
+ *          imported from GCC.                          (control.c & others)
  *      Implemented #pragma __put_defines, #pragma __debug directives and the
  *          old style directives corresponding to them. (system.c & others)
  *      Made #pragma lines to be output with warning to the stderr for the
@@ -144,9 +144,8 @@
  *          five (OR of 1, 2, 4, 8, 16).
  *      Changed some errors to warnings.
  *      Changed some options on invoking.               (system.c)
- *      Added the options for compatibility to GNU C / cpp.
- *                                                      (system.c, support.c)
- *      Added implementation for Linux, Cygwin / GNU C, LCC-Win32.
+ *      Added the options for compatibility to GCC.     (system.c, support.c)
+ *      Added implementation for Linux, Cygwin / GCC, LCC-Win32.
  *                                          (system.H, control.c, system.c)
  *      Fixed a few bugs.                   (control.c, expand.c, support.c)
  *      Renamed functions and some variables using underscore to separate
@@ -154,7 +153,7 @@
  *
  * CPP Version 2.3 pre-release 2
  * 2002/12      kmatsui
- *      Added implementation for GNU C 3.2.             (system.H, system.c)
+ *      Added implementation for GCC 3.2.               (system.H, system.c)
  *      Fixed a few bugs.                               (system.c, expand.c)
  *
  * CPP Version 2.3 release
@@ -202,7 +201,7 @@
  *
  * MCPP Version 2.4.1
  * 2004/03      kmatsui
- *      Added -c option (compatible mode to GNU C expansion of recursive
+ *      Added -c option (compatible mode to GCC expansion of recursive
  *          macro).                                     (expand.c, system.c)
  */
 
@@ -213,13 +212,30 @@
  *          (POST_STD mode).                            (all the files)
  *      Absorbed OLD_PREPROCESSOR into PRE_STANDARD as an execution time
  *          mode (OLD_PREP mode).                       (all the files)
- *      Revised STD mode macro expansion routine using GNU C 3.2 testsuite
+ *      Revised STD mode macro expansion routine using GCC 3.2 testsuite
  *          and Wave 1.0 testcases.                     (expand.c)
  *      Revised OLD_PREP mode to follow "Reiser cpp model".   (control.c)
  *      Removed FOLD_CASE settings.                     (system.c)
  *      Renamed most of #pragma __* as #pragma MCPP *.  (system.c)
- *      Updated to cope with GNU C V.3.3 and 3.4, and changed some options.
+ *      Updated to cope with GCC V.3.3 and 3.4, and changed some options.
  *                                                      (system.c)
+ */
+
+/*
+ * MCPP Version 2.6
+ * 2006/07      kmatsui
+ *      Integrated STANDARD and PRE_STANDARD modes into one executable,
+ *          differentiating the modes by execution time options.
+ *      Removed settings for pre-C90 compiler (string concatenation by
+ *          preprocessor, '\a' and '\v' handling, no unsigned long #if, no
+ *          Standard library functions, non-prototype declarations,
+ *          no #pragma).                                (all files)
+ *      Removed settings for MS-DOS compiler.   (*.H, system.c, mbchar.c)
+ *      Absorbed DEBUG, DEBUG_EVAL, OK_MAKE into default, OK_DIGRAPHS,
+ *          OK_PRAGMA_OP into default of STD and POST_STD mode, OK_TRIGRAPHS
+ *          into default of STD mode, OK_SIZE into default of KR and OLD_PREP
+ *          modes.                                      (all files)
+ *      Added stand-alone mcpp setting.                 (header files)
  */
 
 /*
@@ -286,6 +302,13 @@
  */
 
 /*
+ * MCPP Version 2.6 / main.c
+ * 2006/07      kmatsui
+ *      Removed pre-C90 compiler settings.
+ *      Removed conv_esc(), is_last_esc(), conv2oct().
+ */
+
+/*
  * The main routine and it's supplementary routines are placed here.
  * The post-preprocessing routines are also placed here.
  */
@@ -297,26 +320,26 @@
 #include    "internal.H"
 #endif
 
-    int     mode = 0;               /* Mode of preprocessing        */
+    /* Function pointer to expand() functions.  */
+    char *   (*expand)( DEFBUF * defp, char * out, char * out_end);
+
+    int     mode = STD;             /* Mode of preprocessing        */
+
     int     cflag = FALSE;          /* -C option (keep comments)    */
     int     zflag = FALSE;      /* -i option (no output of included file)   */
     int     pflag = FALSE;          /* -P option (no #line output)  */
     int     qflag = FALSE;      /* -Q option (diagnostics to "mcpp.err")    */
-#if MODE == STANDARD
-#if OK_TRIGRAPHS
-    int     tflag = TFLAG_INIT;     /* -3 option (trigraphs)        */
-#endif
-#if OK_DIGRAPHS
-    int     digraphs = DIGRAPHS_INIT;       /* -2 option (digraphs) */
-#endif
+    int     trig_flag = TRIGRAPHS_INIT;     /* -3 option (trigraphs)*/
+    int     dig_flag = DIGRAPHS_INIT;       /* -2 option (digraphs) */
     long    cplus = 0L;             /* Value of __cplusplus for C++ */
     long    stdc_ver = 0L;          /* Value of __STDC_VERSION__    */
-    int     stdc_val = STDC;        /* Value of __STDC__            */
+    int     stdc_val = 0;           /* Value of __STDC__            */
     int     stdc2;                  /* cplus || stdc_ver >= 199901L */
     int     stdc3;              /* cplus >= 199901L || stdc_ver >= 199901L.
-        (cplus >= 199901L) specifies compatibility to C99 (extended feature
-        of this cpp)    */
-#endif
+        (cplus >= 199901L) specifies compatible mode to C99 (extended feature
+        of this preprocessor)   */
+    int     standard = TRUE;    /* TRUE, if mode is STD or POST_STD */
+
 /*
  * lang_asm allows the following non-standard features.
  * 1. #non-directive.
@@ -328,7 +351,6 @@
     int     std_line_prefix = STD_LINE_PREFIX;
             /* Output line and file information in C source style   */
 
-#if MODE == STANDARD
 /*
  * Translation limits specified C90, C99 or C++.
  */
@@ -342,7 +364,6 @@
     long    n_macro_min;        /* Least maximum of num of macros   */
 
     long    line_limit;             /* Maximum source line number   */
-#endif
 
 /*
  * Commonly used global variables:
@@ -360,10 +381,10 @@
  * inc_dirp     Directory of #includer with trailing PATH_DELIM.  This points
  *              to one of incdir[] or to the current directory (represented as
  *              "".  This should not be NULL.
- * flbuf        is used for diagnostics on macro call.
  */
     long        line;               /* Current line number          */
     int         wrong_line;         /* Force #line to compiler      */
+    int         newlines;           /* Count of blank lines         */
     int         errors = 0;         /* Cpp error counter            */
     int         warn_level = -1;    /* Level of warning (have to initialize)*/
     FILEINFO *  infile = NULL;      /* Current input file           */
@@ -373,12 +394,10 @@
     const char *    cur_fname;      /* Current source file name     */
                 /* cur_fname is not rewritten by #line directive    */
     char        cur_fullname[ FILENAMEMAX + 1];
-        /* Full name of current source file (i.e. *inc_dirp/cur_fname)      */
+        /* Full path of current source file (i.e. *inc_dirp/cur_fname)      */
     int         no_source_line;     /* Do not output line in diag.  */
     char        identifier[ IDMAX + IDMAX/8];       /* Current identifier   */
-#if DEBUG || DEBUG_EVAL
     int         debug = 0;          /* != 0 if debugging now        */
-#endif
 
 /*
  *   in_directive is set TRUE while a control line is scanned by control().
@@ -387,12 +406,8 @@
  */
     int     in_directive = FALSE;   /* TRUE scanning control line   */
     int     in_define = FALSE;      /* TRUE scanning #define line   */
-#if MODE == STANDARD
     int     in_getarg;              /* TRUE collecting macro arguments      */
-#endif
-#if MODE == PRE_STANDARD
     long    in_asm = 0L;    /* Starting line of #asm - #endasm block*/
-#endif
 
 /*
  *   macro_line is set to the line number of start of a macro call while
@@ -402,14 +417,12 @@
  */
     long    macro_line = 0L;
 
-#if MODE == STANDARD
 /*
  *   compat_mode is set to TRUE, if recursive macro call is expanded more
- * than Standard's specification.  This mode is compatible to GNU C and
+ * than Standard's specification.  This mode is compatible to GCC and
  * some other implementations.
  */
     int     compat_mode = FALSE;
-#endif
 
 /*
  * openum is the return value of scan_op() in support.c.
@@ -425,9 +438,7 @@
  *      MD_FILE     (4) :   Output to the file named *.d instead of fp_out.
  *          Normal output is done to fp_out as usual.
  */
-#if OK_MAKE
     int     mkdep = 0;
-#endif
 
 /*
  *   If zflag is TRUE, no_output is incremented when a file is #included,
@@ -462,8 +473,8 @@
                 /* Note: '+1' is necessary for the initial state.   */
     IFINFO *    ifptr = ifstack;        /* -> current ifstack[]     */
 
-#if MODE == STANDARD
-/* In POST_STD mode, insert_sep is set to INSERT_SEP when :
+/*
+ * In POST_STD mode, insert_sep is set to INSERT_SEP when :
  *  1. the next get() shall insert a token separator.
  *  2. unget() has been called when insert_sep == INSERTED_SEP.
  * set to INSERTED_SEP when :
@@ -472,14 +483,12 @@
  *  get() has been called when insert_sep == INSERTED_SEP.
  */
     int     insert_sep = NO_SEP;
-#endif
 
-#if MODE == STANDARD
-/* has_pragma is set to TRUE so as to execute _Pragma() operator when the
+/*
+ * has_pragma is set to TRUE so as to execute _Pragma() operator when the
  * psuedo macro _Pragma() is found.
  */
     int     has_pragma = FALSE;
-#endif
 
 /* File pointers for input and output.  */
     FILE *  fp_in;                  /* Input stream to preprocess   */
@@ -491,11 +500,9 @@
     int     mbchar = MBCHAR;        /* Encoding of multi-byte char  */
     int     mbmask;                 /* Char type other than mbchar  */
     int     mbstart;                /* 1st byte of mbchar (or shift)*/
-#if BSL_IN_MBCHAR
     int     bsl_in_mbchar;          /* 2nd byte of mbchar has '\\'  */
     int     bsl_need_escape;    /* '\\' in MBCHAR should be escaped */
-#endif
-/* Function pointer to mb_read_*() functions.   */
+    /* Function pointer to mb_read_*() functions.   */
     size_t  (*mb_read)( int c1, char ** in_pp, char ** out_pp);
 
 /*
@@ -515,89 +522,44 @@
 #define MBCHAR_IS_ESCAPE_FREE   (SJIS_IS_ESCAPE_FREE && \
             BIGFIVE_IS_ESCAPE_FREE && ISO2022_JP_IS_ESCAPE_FREE)
 
-#if PROTO
-
 static void     cur_file( void);
+                /* Print source file name           */
 static void     init_defines( void);
+                /* Predefine macros                 */
 static void     mcpp_main( void);
+                /* Main loop to process input lines */
 static void     putout( char * out);
-static void     put_a_line( const char * out);
-#if MODE == STANDARD && OK_PRAGMA_OP
+                /* May concatenate adjacent string  */
+static void     put_a_line( char * out);
+                /* Put out the processed line       */
 static void     do_pragma_op( void);
+                /* Execute the _Pragma() operator   */
 static void     put_seq( char * begin, char * seq);
+                /* Put out the failed sequence      */
 static char *   de_stringize( char * in, char * out);
-#endif
+                /* "De-stringize" for _Pragma() op. */
 #if NWORK < NMACWORK
 static void     devide_line( void);
+                /* Devide long line for compiler    */
 #endif
-#if CONCAT_STRINGS  \
-        || (MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS) \
-        || (BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE) || ! HAVE_C_BACKSLASH_A
+#if ! HAVE_DIGRAPHS || ! MBCHAR_IS_ESCAPE_FREE
 static int      post_preproc( char * out);
-#endif
-#if ! HAVE_C_BACKSLASH_A
-static char *   conv_esc( char * cp);
-#endif
-#if CONCAT_STRINGS
-static int      is_last_esc( char * cp);
-static char *   conv2oct( char * in, char * out);
-#endif
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
+                /* Post-preprocess for older comps  */
+#if ! HAVE_DIGRAPHS
 static char *   conv_a_digraph( char * cp);
+                /* Convert a digraph in place       */
 #endif
-#if BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE
+#if ! MBCHAR_IS_ESCAPE_FREE
 static char *   esc_mbchar( char * str, char * str_end);
+                /* Insert \ before 2nd byte of SJIS */
+#endif
 #endif
 
-#else   /* ! PROTO  */
 
-static void     cur_file();     /* Print source file name           */
-static void     init_defines(); /* Predefine macros                 */
-static void     mcpp_main();    /* Main loop to process input lines */
-static void     putout();       /* May concatenate adjacent string  */
-static void     put_a_line();   /* Put out the processed line       */
-#if MODE == STANDARD && OK_PRAGMA_OP
-static void     do_pragma_op(); /* Exucute the _Pragma() operator   */
-static void     put_seq();      /* Put out the failed sequence      */
-static char *   de_stringize(); /* "De-stringize" for _Pragma() op. */
-#endif
-#if NWORK < NMACWORK
-static void     devide_line();  /* Devide long line for compiler    */
-#endif
-#if CONCAT_STRINGS  \
-        || (MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS) \
-        || (BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE) || ! HAVE_C_BACKSLASH_A
-static int      post_preproc(); /* Post-preprocess for older comps  */
-#else
-#if BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE || ! HAVE_C_BACKSLASH_A
-static int      post_preproc(); /* Post-preprocess for older comps  */
-#endif
-#endif
-#if ! HAVE_C_BACKSLASH_A
-static char *   conv_esc();     /* Convert '\a' and '\v' to octals  */
-#endif
-#if CONCAT_STRINGS
-static int      is_last_esc();  /* String end with a hex or octal ? */
-static char *   conv2oct();     /* Convert hexdigit char to octal   */
-#endif
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
-static char *   conv_a_digraph();   /* Convert a digraph in place   */
-#endif
-#if BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE
-static char *   esc_mbchar();   /* Insert \ before 2nd byte of SJIS */
-#endif
-
-#endif  /* ! PROTO  */
-
-
-int
-#if PROTO
-main( int argc, char ** argv)
-#else
-main( argc, argv)
-    int     argc;
-    char ** argv;
-#endif
+int     main(
+    int argc,
+    char ** argv
+)
 {
     char *  in_file = NULL;
     char *  out_file = NULL;
@@ -643,36 +605,26 @@ main( argc, argv)
     add_file( fp_in, work);         /* "open" main input file       */
     infile->dirp = inc_dirp;
     strcpy( cur_fullname, work);
-#if OK_MAKE
     if (mkdep && str_eq( infile->filename, "<stdin>") == FALSE)
         put_depend( work);          /* Putout target file name      */
-#endif
     at_start();                     /* Do the pre-main commands     */
 
     mcpp_main();                    /* Process main file            */
 
-#if OK_MAKE
     if (mkdep)
         put_depend( NULLST);    /* Append '\n' to dependency line   */
-#endif
 
     at_end();                       /* Do the final commands        */
 
     if (errors > 0 && no_source_line == FALSE) {
         fprintf( fp_err, "%d error%s in preprocessor.\n",
                 errors, (errors == 1) ? "" : "s");
-        exit( IO_ERROR);
+        return  IO_ERROR;
     }
-    exit( IO_SUCCESS);              /* No errors or -E option set   */
-    return  IO_SUCCESS;             /* Never reach here             */
+    return  IO_SUCCESS;             /* No errors or -E option set   */
 }
 
-void
-#if PROTO
-sharp( void)
-#else
-sharp()
-#endif
+void    sharp( void)
 /*
  * Output a line number line.
  */
@@ -691,29 +643,25 @@ sharp_exit:
     wrong_line = FALSE;
 }
 
-static void
-#if PROTO
-cur_file( void)
-#else
-cur_file()
-#endif
+static void cur_file( void)
 /*
  * Output a current source file name.
  */
 {
     static char *   sharp_filename = NULL;
-    register const char *     name = "";
+    FILEINFO *      file = infile;
+    const char *    name = "";
     char *  cp;
 
-    if (infile->fp != NULL) {
-        cp = stpcpy( work, *(infile->dirp));
-        strcpy( cp, infile->filename);
-        name = work;
-        if (sharp_filename == NULL || ! str_eq( name, sharp_filename)) {
-            if (sharp_filename != NULL)
-                free( sharp_filename);
-            sharp_filename = save_string( name);
-        }
+    while (file->fp == NULL)
+        file = file->parent;
+    cp = stpcpy( work, *(file->dirp));
+    strcpy( cp, file->filename);
+    name = work;
+    if (sharp_filename == NULL || ! str_eq( name, sharp_filename)) {
+        if (sharp_filename != NULL)
+            free( sharp_filename);
+        sharp_filename = save_string( name);
     }
     if (! no_output)
         fprintf( fp_out, " \"%s\"", name);
@@ -722,7 +670,7 @@ cur_file()
 /*
  * This is the table used to predefine target machine, operating system and
  * compiler designators.  It may need hacking for specific circumstances.
- * The -N option supresses preset definitions.
+ * The -N option supresses these definitions.
  */
 typedef struct pre_set {
     const char *    name;
@@ -774,8 +722,8 @@ static PRESET   preset[] = {
 #ifdef  SYSTEM_EXT
         { SYSTEM_EXT, SYSTEM_EXT_VAL},
 #endif
-#ifdef  SYSTEM_EX2
-        { SYSTEM_EX2, SYSTEM_EX2_VAL},
+#ifdef  SYSTEM_EXT2
+        { SYSTEM_EXT2, SYSTEM_EXT2_VAL},
 #endif
 #ifdef  SYSTEM_SP_STD
         { SYSTEM_SP_STD, SYSTEM_SP_STD_VAL},
@@ -792,8 +740,8 @@ static PRESET   preset[] = {
 #ifdef  COMPILER_EXT
         { COMPILER_EXT, COMPILER_EXT_VAL},
 #endif
-#ifdef  COMPILER_EX2
-        { COMPILER_EX2, COMPILER_EX2_VAL},
+#ifdef  COMPILER_EXT2
+        { COMPILER_EXT2, COMPILER_EXT2_VAL},
 #endif
 #ifdef  COMPILER_SP_STD
         { COMPILER_SP_STD, COMPILER_SP_STD_VAL},
@@ -807,42 +755,26 @@ static PRESET   preset[] = {
 #ifdef  COMPILER_SP3
         { COMPILER_SP3, COMPILER_SP3_VAL},
 #endif
-#if     MODE == STANDARD
+#ifdef  COMPILER_SP4
+        { COMPILER_SP4, COMPILER_SP4_VAL},
+#endif
 #ifdef  COMPILER_CPLUS
         { COMPILER_CPLUS, COMPILER_CPLUS_VAL},
-#endif
 #endif
         { NULL, NULL},  /* End of macros with value of any integer  */
 };
 
-static void
-#if PROTO
-init_defines( void)
-#else
-init_defines()
-#endif
+static void init_defines( void)
 /*
- * Initialize the built-in #define's.  There are two flavors:
- *      #define __MCPP     2           (static definitions)
- *      #define __FILE__        ??          (dynamic, evaluated by magic)
- * Called only on cpp startup.
+ * Initialize the built-in #define's.
+ * Called only on cpp startup prior to do_options().
  *
- * Note: the built-in static definitions are supressed by the -N option,
- * definitions beginning with alphabet are supressed by the -S1 option,
- * __LINE__, __FILE__, __DATE__, __TIME__, __STDC__ , __STDC_HOSTED__ and
- * __MCPP are always present (if defined).
- * __STDC_VERSION__ and __cplusplus are defined by do_options() after
- * command-line scanning.
+ * Note: the built-in static definitions are removed by the -N option,
+ * definitions beginning with alphabet are removed by the -S1 option,
  */
 {
-#if MODE == STANDARD
-    char    tmp[ 16];
-    char    timestr[ 14];
-    time_t  tvec;
-    char *  tstring;
-#endif
     int     n = sizeof preset / sizeof (PRESET);
-    register PRESET *   pp;
+    PRESET *    pp;
 
     /* Predefine the built-in symbols.  */
     for (pp = preset; pp < preset + n; pp++) {
@@ -850,61 +782,20 @@ init_defines()
             look_and_install( pp->name, DEF_NOARGS - 1, null, pp->val);
     }
 
-#if MODE == STANDARD
-/*
- * The magic pre-defines (Standard predefined macros) are initialized with
- * negative argument counts.  expand() notices this and calls the appropriate
- * routine.  DEF_NOARGS is one greater than the first "magic" definition.
- * 'DEF_NOARGS - n' is reserved for the pre-defined macros.
- */
-    look_and_install( "__LINE__", DEF_NOARGS - 3, null, "-1234567890");
-    /* Room for 11 chars (10 for long and 1 for '-' in case of wrap round.  */
-    look_and_install( "__FILE__", DEF_NOARGS - 4, null, null);
-                                            /* Should be stuffed    */
-
-    /*
-     * Define __DATE__, __TIME__ as present date and time.
-     */
-    time( &tvec);
-    tstring = ctime( &tvec);
-    sprintf( timestr, "\"%.3s %c%c %.4s\"",
-        tstring + 4,
-        *(tstring + 8) == '0' ? ' ' : *(tstring + 8),
-        *(tstring + 9),
-        tstring + 20);
-    look_and_install( "__DATE__", DEF_NOARGS - 2, null, timestr);
-    sprintf( timestr, "\"%.8s\"", tstring + 11);
-    look_and_install( "__TIME__", DEF_NOARGS - 2, null, timestr);
-
-/* Define __STDC__ as 1 or such for Standard conforming compiler.   */
-    sprintf( tmp, "%d", STDC);
-    look_and_install( "__STDC__", DEF_NOARGS - 2, null, tmp);
-    sprintf( tmp, "%d", STDC_HOSTED);
-    look_and_install( "__STDC_HOSTED__", DEF_NOARGS - 1, null, tmp);
-    /*
-     * Some compilers, e.g. GNU C older than 3.3, define this macro by
-     * -D option.
-     */
-#endif  /* MODE == STANDARD */
-/* Not define __STDC__ for pre-Standard compiler.   */
-
     look_and_install( "__MCPP", DEF_NOARGS - 1, null, "2");
     /* MCPP V.2.x   */
     /* This macro is predefined yet can be undefined by -U or #undef.   */
 }
 
 void
-#if PROTO
-un_predefine( int clearall)
-#else
-un_predefine( clearall)
-    int     clearall;                       /* TRUE for -N option   */
-#endif
+un_predefine(
+    int clearall                            /* TRUE for -N option   */
+)
 /*
  * Remove predefined symbols from the symbol table.
  */
 {
-    register PRESET *   pp;
+    PRESET *    pp;
     DEFBUF *    defp;
     int     n = sizeof preset / sizeof (PRESET);
 
@@ -919,13 +810,9 @@ un_predefine( clearall)
     }
 }
 
-void
-#if PROTO
-undef_a_predef( const char * name)
-#else
-undef_a_predef( name)
-    char *  name;
-#endif
+void    undef_a_predef(
+    const char * name
+)
 /*
  * Remove a predefined name from the preset[] table so that the name can be
  * redefined by -D option.
@@ -933,7 +820,7 @@ undef_a_predef( name)
  * is needed to avoid interaction with -D arguments.
  */
 {
-    register PRESET *   pp;
+    PRESET *    pp;
     int     n = sizeof preset / sizeof (PRESET);
 
     for (pp = preset; pp < preset + n; pp++) {
@@ -945,18 +832,9 @@ undef_a_predef( name)
 }
 
 /*
- * These definitions are used by the routines of string concatenation.
- */
-#if CONCAT_STRINGS
-#define DONE            0
-#define SUSPEND         1
-#define FLUSH           (-1)
-#endif
-
-/*
  * output[] and out_ptr are used for:
  *      buffer to store preprocessed line (this line is put out or handed to
- *      post_preproc() via putout() for string concatenation)
+ *      post_preproc() via putout() in some cases)
  */
 static char     output[ NMACWORK];  /* Buffer for preprocessed line */
 static     char * const out_end = & output[ NWORK - 2];
@@ -964,26 +842,14 @@ static     char * const out_end = & output[ NWORK - 2];
 static     char * const out_wend = & output[ NMACWORK - 2];
                                     /* Buffer end of output line    */
 static     char *       out_ptr;    /* Current pointer into output[]*/
-#if CONCAT_STRINGS
-static char     catbuf[ NWORK + IDMAX + 4]; /* Buffer for string catenation */
-static     char *       catbufp = catbuf;   /* Pointer into catbuf[]*/
-static     char * const catbuf_end = & catbuf[ NWORK + IDMAX];
-static     int          catflag;    /* Flag returned from post_preproc()    */
-#endif
 
-static void
-#if PROTO
-mcpp_main( void)
-#else
-mcpp_main()
-#endif
+static void mcpp_main( void)
 /*
  * Main process for mcpp -- copies tokens from the current input stream
  * (main file or included file) to the output file.
  */
 {
-    register int    c;              /* Current character            */
-    int     newlines;               /* Blank lines and control lines*/
+    int     c;                      /* Current character            */
     char *  wp;                     /* Temporary pointer            */
     DEFBUF *    defp;               /* Macro definition             */
 
@@ -1002,8 +868,9 @@ mcpp_main()
      * 'newlines' variable counts the number of blank lines that have been
      * skipped over.  These are then either output via #line records or
      * by outputting explicit blank lines.
+     * 'newlines' will be cleared on end of an included file by get().
      */
-    while (1) {                             /* For the whole file   */
+    while (1) {                             /* For the whole input  */
         newlines = 0;                       /* Count empty lines    */
 
         while (1) {                         /* For each line, ...   */
@@ -1013,17 +880,14 @@ mcpp_main()
                 *out_ptr++ = ' ';           /* Retain a space       */
                 c = get();          /* First of token (else '\n')   */
             }
-#if MODE == PRE_STANDARD
             if (mode == OLD_PREP && c == COM_SEP)
                  c = get();                 /* Skip 0-length comment*/
-#endif
             if (c == '#') {                 /* Is 1st non-space '#' */
-                newlines = control( newlines);      /* Do a #command*/
-#if MODE == STANDARD && OK_DIGRAPHS
-            } else if (mode == STD && digraphs && c == '%') {
+                newlines = control();       /* Do a #directive      */
+            } else if (mode == STD && dig_flag && c == '%') {
                     /* In POST_STD digraphs are already converted   */
                 if (get() == ':') {         /* '%:' i.e. '#'        */
-                    newlines = control( newlines);  /* Do a #command*/
+                    newlines = control();   /* Do a #directive      */
                 } else {
                     unget();
                     if (! compiling) {
@@ -1033,16 +897,13 @@ mcpp_main()
                         break;
                     }
                 }
-#endif
             } else if (c == CHAR_EOF) {     /* End of input         */
                 break;
             } else if (! compiling) {       /* #ifdef false?        */
                 skip_nl();                  /* Skip to newline      */
                 newlines++;                 /* Count it, too.       */
-#if MODE == PRE_STANDARD
             } else if (in_asm && ! no_output) { /* In #asm block    */
                 put_asm();                  /* Put out as it is     */
-#endif
             } else if (c == '\n') {         /* Blank line           */
                 if (keep_comments)
                     fputc( '\n', fp_out);   /* May flush comments   */
@@ -1061,19 +922,14 @@ mcpp_main()
          * know there is a token to compile.  First, clean up after
          * absorbing newlines.  newlines has the number we skipped.
          */
-#if CONCAT_STRINGS
-        if (catflag != SUSPEND)
-#endif
-        {
-            if (no_output) {
-                wrong_line = FALSE;
-            } else {
-                if (wrong_line || newlines > 10) {
-                    sharp();                /* Output # line number */
-                } else {                    /* If just a few, stuff */
-                    while (newlines-- > 0)  /* them out ourselves   */
-                        fputc('\n', fp_out);
-                }
+        if (no_output) {
+            wrong_line = FALSE;
+        } else {
+            if (wrong_line || newlines > 10) {
+                sharp();                /* Output # line number */
+            } else {                    /* If just a few, stuff */
+                while (newlines-- > 0)  /* them out ourselves   */
+                    fputc('\n', fp_out);
             }
         }
 
@@ -1085,15 +941,12 @@ mcpp_main()
                     && (defp = is_macro( &wp)) != NULL) {   /* A macro  */
                 wp = expand( defp, out_ptr, out_wend);
                                             /* Expand it completely */
-#if MODE == STANDARD && OK_PRAGMA_OP
                 if (has_pragma) {           /* Found _Pramga()      */
                     do_pragma_op();         /* Do _Pragma() operator*/
                     has_pragma = FALSE;     /* Reset signal         */
                     out_ptr = output;       /* Do the rest of line  */
                     wrong_line = TRUE;      /* Line-num out of sync */
-                } else
-#endif
-                {
+                } else {
                     out_ptr = wp;
                 }
             } else {                        /* Not a macro call     */
@@ -1109,29 +962,15 @@ mcpp_main()
                 *out_ptr++ = ' ';
                 c = get();                  /* First of token       */
             }
-#if PRE_STANDARD
             if (mode == OLD_PREP && c == COM_SEP)
                 c = get();                  /* Skip 0-length comment*/
-#endif
         }                                   /* Line for loop        */
 
         putout( output);                    /* Output the line      */
     }                                       /* Continue until EOF   */
-
-#if CONCAT_STRINGS
-    if (catflag == SUSPEND)                 /* Input end with string*/
-        put_a_line( catbuf);
-#endif
 }
 
-#if MODE == STANDARD && OK_PRAGMA_OP
-
-static void
-#if PROTO
-do_pragma_op( void)
-#else
-do_pragma_op()
-#endif
+static void do_pragma_op( void)
 /*
  * Execute the _Pragma() operator contained in an expanded macro.
  * Note: _Pragma() operator is also implemented as a special macro.  Therefore
@@ -1147,7 +986,7 @@ do_pragma_op()
     int     prev = output < out_ptr;        /* There is a previous sequence */
     int     token_type;
     char *  cp1, * cp2;
-    register int    c;
+    int     c;
 
     file = unget_string( out_ptr, NULLST);
     while (c = get(), file == infile) {
@@ -1198,20 +1037,16 @@ do_pragma_op()
     sharp();
 }
 
-static void
-#if PROTO
-put_seq( char * begin, char * seq)
-#else
-put_seq( begin, seq)
-    char *  begin;                  /* Sequence already in buffer   */
-    char *  seq;                    /* Sequence to be read          */
-#endif
+static void put_seq(
+    char *  begin,                  /* Sequence already in buffer   */
+    char *  seq                     /* Sequence to be read          */
+)
 /*
  * Put out the failed sequence as it is.
  */
 {
     FILEINFO *  file = infile;
-    register int    c;
+    int     c;
 
     cerror( "Operand of _Pragma() is not a string literal"  /* _E_  */
             , NULLST, 0L, NULLST);
@@ -1222,21 +1057,17 @@ put_seq( begin, seq)
     putout( begin);
 }
 
-static char *
-#if PROTO
-de_stringize( char * in, char * out)
-#else
-de_stringize( in, out)
-    char *  in;                 /* Null terminated string literal   */
-    char *  out;                            /* Output buffer        */
-#endif
+static char *   de_stringize(
+    char *  in,                 /* Null terminated string literal   */
+    char *  out                             /* Output buffer        */
+)
 /*
  * Make token sequence from a string literal for _Pragma() operator.
  */
 {
     char *  in_p;
     int     c1;
-    register int   c;
+    int     c;
 
     in_p = in;
     if (*in_p == 'L')
@@ -1250,26 +1081,17 @@ de_stringize( in, out)
     return  out;
 }
 
-#endif  /* MODE == STANDARD && OK_PRAGMA_OP */
-
 #if NWORK < NMACWORK
-static void
-#if PROTO
-devide_line( void)
-#else
-devide_line()
-#endif
+static void devide_line( void)
 /*
  * Devide a too long line into output lines shorter than NWORK.
- * This routine is called prior to post_preproc() to save size of catbuf[]
- * for 8-bits systems.
+ * This routine is called prior to post_preproc().
  */
 {
     FILEINFO *  file;
     char *  save;
     char *  wp;
-    int     token_type;
-    register int    c;
+    int     c;
 
     file = unget_string( output, NULLST);   /* To re-read the line  */
     wp = out_ptr = output;
@@ -1284,27 +1106,15 @@ devide_line()
             wp++;
             continue;
         }
-        token_type = scan_token( c, &wp, out_wend); /* Read a token */
+        scan_token( c, &wp, out_wend);          /* Read a token     */
         if (NWORK-1 <= wp - out_ptr) {          /* Too long a token */
             cfatal( "Too long token %s", out_ptr, 0L, NULLST);      /* _F_  */
-        } else if (out_end <= wp || token_type == STR
-#if MODE == STANDARD
-                    || token_type == WSTR
-#endif
-                ) {
-            /* Too long line or string literal (maybe concatenated later)   */
+        } else if (out_end <= wp) {             /* Too long line    */
             save = save_string( out_ptr);       /* Save the token   */
             while (*(out_ptr - 1) == ' ')
                 out_ptr--;              /* Remove trailing spaces   */
             putout( output);            /* Putout the former tokens */
-#if CONCAT_STRINGS
-            if (catflag != SUSPEND)
-                sharp();
-            else
-                wrong_line = TRUE;
-#else
             sharp();                        /* Correct line number  */
-#endif
             wp = out_ptr = stpcpy( output, save);   /* Restore the token    */
             free( save);
         } else {                            /* Still in size        */
@@ -1316,13 +1126,9 @@ devide_line()
 }
 #endif
 
-static void
-#if PROTO
-putout( char * out)
-#else
-putout( out)
-    char *  out;    /* Output line (line-end is always 'out_ptr')   */
-#endif
+static void putout(
+    char *  out     /* Output line (line-end is always 'out_ptr')   */
+)
 /*
  * Put out a line with or without "post-preprocessing".
  */
@@ -1330,48 +1136,39 @@ putout( out)
     *out_ptr++ = '\n';                      /* Put out a newline    */
     *out_ptr = EOS;
 
-#if CONCAT_STRINGS
-    do {                                    /* String concatenation */
-        catflag = post_preproc( out);
-        switch (catflag) {
-        case DONE   :               /* The line has been done       */
-        case FLUSH  :               /* The line has been suspended  */
-            put_a_line( catbuf);            /* Put out the line     */
-            catbufp = catbuf;               /* This line has done   */
-            break;
-        case SUSPEND:
-            catbufp = NULL;                 /* Suspend the line     */
-            break;
-        }
-    } while (catflag == FLUSH);     /* Process the current line     */
-#else
-#if (BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE) || ! HAVE_C_BACKSLASH_A
+#if ! MBCHAR_IS_ESCAPE_FREE
     post_preproc( out);
-#else
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
-    if (mode == STD && digraphs)
+#elif   ! HAVE_DIGRAPHS
+    if (mode == STD && dig_flag)
         post_preproc( out);
 #endif
-#endif
-    put_a_line( out);                       /* No post-preprocess   */
-#endif
+    /* Else no post-preprocess  */
+    put_a_line( out);
 }
 
-static void
-#if PROTO
-put_a_line( const char * out)
-#else
-put_a_line( out)
-    char *  out;
-#endif
+static void put_a_line(
+    char * out
+)
 /*
  * Finally put out the preprocessed line.
  */
 {
+    size_t  len;
+    char *  out_p;
+    char *  tp;
+
     if (no_output)
         return;
-    if (NWORK <= strlen( out))
+    len = strlen( out);
+    if (NWORK <= len)
         cfatal( "Too long output line %s", out, 0L, NULLST);        /* _F_  */
+    tp = out_p = out + len - 2;             /* Just before '\n'     */
+    while (type[ *out_p & UCHARMAX] & SPA)
+        out_p--;                    /* Remove trailing white spaces */
+    if (out_p < tp) {
+        *++out_p = '\n';
+        *++out_p = EOS;
+    }
     if (fputs( out, fp_out) == EOF)
         cfatal( "File write error", NULLST, 0L, NULLST);    /* _F_  */
 }
@@ -1419,30 +1216,31 @@ put_a_line( out)
  *          extension of multi-byte character handling.
  */
 
-#if ! CONCAT_STRINGS
 
-#if (MODE == PRE_STANDARD || !OK_DIGRAPHS || HAVE_DIGRAPHS) \
-        && ! (BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE) && HAVE_C_BACKSLASH_A
+/*
+ * 2006/07      kmatsui
+ *      Removed the implementation of post_preproc() for pre-Standard compiler.
+ *      Removed conv_esc(), is_last_esc(), conv2oct().
+ *      Removed HAVE_C_BACKSLASH_A and CONCAT_STRINGS macros.
+ */
+
+#if HAVE_DIGRAPHS && MBCHAR_IS_ESCAPE_FREE
     /* No post_preproc()    */
 #else
 
-static int
-#if PROTO
-post_preproc( char * out)
-#else
-post_preproc( out)
-    char *  out;
-#endif
+static int  post_preproc(
+    char * out
+)
 /*
  * Convert digraphs and double '\\' of the second byte of SJIS (BIGFIVE or
  * ISO2022_JP).
  */
 {
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
+#if ! HAVE_DIGRAPHS
     int     di_count = 0;
 #endif
     int     token_type;
-    register int    c;
+    int     c;
     char *  str;
     char *  cp = out;
 
@@ -1455,24 +1253,18 @@ post_preproc( out)
         str = cp;
         token_type = scan_token( c, &cp, out_end);
         switch (token_type) {
-#if (BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE) || ! HAVE_C_BACKSLASH_A
-#if MODE == STANDARD
+#if ! MBCHAR_IS_ESCAPE_FREE
         case WSTR   :
         case WCHR   :
             str++;                          /* Skip prefix 'L'      */
             /* Fall through */
-#endif
         case STR    :
         case CHR    :
-#if ! HAVE_C_BACKSLASH_A
-            cp = conv_esc( str);
-#endif
             if (bsl_need_escape)
                 cp = esc_mbchar( str, cp);
             break;
-#endif  /* (BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE)
-            || ! HAVE_C_BACKSLASH_A */
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
+#endif  /* ! MBCHAR_IS_ESCAPE_FREE  */
+#if ! HAVE_DIGRAPHS
         case OPE    :
             if (mode == STD && (openum & OP_DIGRAPH)) {
                 cp = conv_a_digraph( cp);   /* Convert a digraph    */
@@ -1484,7 +1276,7 @@ post_preproc( out)
     }
     *cp++ = '\n';
     *cp = EOS;
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
+#if ! HAVE_DIGRAPHS
     if (mode == STD && di_count && (warn_level & 16))
         cwarn( "%.0s%ld digraph(s) converted"           /* _W16_    */
                 , NULLST, (long) di_count, NULLST);
@@ -1492,333 +1284,12 @@ post_preproc( out)
     return  0;
 }
 
-#endif  /* (MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS)
-    || (BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE) || ! HAVE_C_BACKSLASH_A   */
+#endif  /* ! HAVE_DIGRAPHS || ! MBCHAR_IS_ESCAPE_FREE   */
 
-#else   /* CONCAT_STRINGS   */
-
-static int
-#if PROTO
-post_preproc( char * out)
-#else
-post_preproc( out)
-    char *  out;
-#endif
-/*
- * Concatenate adjacent character string literals, concatenate adjacent wide
- * string literals.
- */
-{
-    static     char *   catenated
-                = "String literals %s are concatenated";    /* _W8_ */
-    static     char *   catp;           /* Current output pointer   */
-    static     char *   prev_token;     /* Previous token pointer   */
-    static     int      prev_type = 0;  /* Type of previous token   */
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
-    int     di_count = 0;               /* Count of digraphs        */
-#endif
-    int     c;                          /* Value of the character   */
-    int     token_type;                 /* Type of current token    */
-    char *  token;                      /* Top of current token     */
-    register char *     cp;
-
-    if (catbufp)                        /* Output newer line        */
-        catp = catbufp;
-    if (catflag != FLUSH) {
-#if DEBUG
-        if (debug & TOKEN)
-            dump_string( "catstr enter", out);
-#endif
-        unget_string( out, NULLST);     /* To re-read               */
-    }
-
-    while ((c = get()) != '\n') {
-        if (c == ' ') {
-            *catp++ = ' ';
-            continue;
-        }
-        token = cp = catp;
-        token_type = scan_token( c, &catp, catbuf_end);
-
-        switch (token_type) {
-#if MODE == STANDARD
-        case WCHR   :   cp++;           /* Wide-character constant  */
-            /* Fall through */
-#endif
-        case CHR    :                   /* Character constant       */
-#if ! HAVE_C_BACKSLASH_A
-            catp = conv_esc( cp);
-#endif
-#if BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE
-            if (bsl_need_escape)
-                catp = esc_mbchar( cp, catp);
-#endif
-            break;
-#if MODE == STANDARD
-        case WSTR   :   cp++;           /* Wide string literal      */
-            /* Fall through */
-#endif
-        case STR    :                   /* Character string literal */
-            if (prev_type == token_type) {      /* Diagnose prior   */
-                if (warn_level & 8)             /*   to conversion. */
-                    cwarn( catenated, prev_token, 0L, NULLST);
-            }
-#if MODE == STANDARD
-            else if (prev_type == WSTR) {
-                if (warn_level & 8)
-                    cwarn( catenated, prev_token, 0L, NULLST);
-                token_type = WSTR;
-            }
-#endif
-#if ! HAVE_C_BACKSLASH_A
-            catp = conv_esc( cp);
-#endif
-            if (prev_type == token_type) {      /* Adjacent strings */
-                char    *catp1, *catp2;
-
-                catp1 = token - 1;      /* Just before the token    */
-                catp2 = cp + 1;         /* To the content of token  */
-                while (type[ *catp1 & UCHARMAX] & SPA)
-                    --catp1;            /* Back to closing quote    */
-                if (is_last_esc( prev_token)) {
-                    catp = conv2oct( catp2, catp1);
-                } else {
-                    memmove( catp1, catp2, (size_t)(catp - cp));
-                    catp -= (size_t)(catp2 - catp1);    /* End of string    */
-                }
-#if MODE == STANDARD
-                if (token_type == WSTR && *prev_token != 'L') {
-                    memmove( prev_token + 1, prev_token
-                            , (size_t)(catp - prev_token));
-                    *prev_token = 'L';
-                    catp++;
-                }
-#endif
-                token = prev_token;     /* Preserve prev_token      */
-            }
-            break;
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
-        case OPE    :
-            if (mode == STD && (openum & OP_DIGRAPH)) { /* Digraph  */
-                catp = conv_a_digraph( catp);
-                di_count++;
-            }
-            break;
-#endif
-        default :
-            break;
-        }
-
-#if BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE
-        if ((prev_type == STR
-#if MODE == STANDARD
-                    || prev_type == WSTR
-#endif
-                ) && prev_type != token_type && bsl_need_escape)
-            catp = esc_mbchar( prev_token, catp);
-#endif
-        if (catflag == SUSPEND      /* The line has been suspended  */
-                && token_type != prev_type) {   /* Next non-string  */
-            catflag = FLUSH;        /* To output the pending line   */
-            unget_string( token, NULLST);       /* To re-read later */
-            prev_type = 0;          /* To re-read the same token    */
-            catp = token;
-            while (type[ *(catp - 1) & UCHARMAX] & SPA)
-                catp--;
-            goto  ret;              /* Output the pending line      */
-        }
-        prev_type = token_type;     /* Remember the token           */
-        prev_token = token;
-    }
-
-    if (token_type == STR
-#if MODE == STANDARD
-            || token_type == WSTR
-#endif
-            )
-        catflag = SUSPEND;          /* Suspend the line             */
-    else
-        catflag = DONE;             /* The line has been processed  */
-ret:
-    *catp++ = '\n';
-    *catp = EOS;
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
-    if (mode == STD && di_count && (warn_level & 16))
-        cwarn( "%.0s%ld digraph(s) converted"           /* _W16_    */
-                , NULLST, (long) di_count, NULLST);
-#endif
-#if DEBUG
-    if (catflag != FLUSH && (debug & TOKEN))
-        dump_string( "catstr exit", NULLST);
-#endif
-    return  catflag;
-}
-
-#if HOST_COMPILER == BORLANDC
-#define MAXOCT  8   /* To work around a bug of tcc, bcc */
-#else
-#define MAXOCT  3
-#endif
-
-static int
-#if PROTO
-is_last_esc( char * cp)
-#else
-is_last_esc( cp)
-    char *  cp;
-#endif
-/*
- * Is the last character of the string a hex-or-octal escape sequence ?
- */
-{
-    int     i;
-    register int    c;
-
-#if MODE == STANDARD
-    if (*cp++ == 'L')
-#endif
-        cp++;                           /* The content of string    */
-    while ((c = *cp++ & UCHARMAX) != '"') {
-#if BSL_IN_MBCHAR
-        if (bsl_in_mbchar) {
-            if (type[ c] & mbstart) {   /* Not an escape sequence   */
-                mb_read( c, &cp, (workp = work, &workp));
-                continue;
-            }
-        }
-#endif
-        if (c != '\\')
-            continue;
-
-        switch (c = *cp++) {            /* An escape sequence       */
-        case 'x' :                  /* Hexadecimal-escape-sequence  */
-            while (isxdigit( *cp & UCHARMAX))
-                cp++;
-            goto  is_last;
-        case '0': case '1': case '2': case '3':     /* Octal-escape */
-        case '4': case '5': case '6': case '7':     /*  -sequence   */
-            for (i = 1; i < MAXOCT && isdigit( *cp & UCHARMAX) && *cp < '8';
-                    i++)    /* MAXOCT is bug-to-bug implementation  */
-                cp++;
-is_last:    if (*cp == '"')             /* String ends with hex or  */
-                return  TRUE;           /*   octal escape sequence. */
-            break;
-        default  :
-#if BSL_IN_MBCHAR
-            if (bsl_in_mbchar && (type[ c & UCHARMAX] & mbstart))
-                cp--;
-#endif
-            break;
-        }
-    }
-    return  FALSE;
-}
-
-static char *
-#if PROTO
-conv2oct( char * cp, char * out)
-#else
-conv2oct( cp, out)
-    char *  cp;
-    char *  out;
-#endif
-/*
- * If the former string ends with hex or oct escape sequence and the current
- * string starts with a hex char, convert the char to octal sequence.
- */
-{
-    char *  save;
-    char *  in;
-
-    in = save = save_string( cp);       /* Content of the quote     */
-    if (isxdigit( *in & UCHARMAX)) {
-        sprintf( out, "\\%03o", *in++);
-        out += 4;
-#if MAXOCT > 3
-        while (isdigit( *in & UCHARMAX) && *in != 8 && *in != 9) {
-            sprintf( out, "\\%03o", *in++);
-            out += 4;
-        }
-#endif
-    }
-    out = stpcpy( out, in);
-    free( save);
-    return  out;
-}
-
-#endif      /* CONCAT_STRINGS   */
-
-#if ! HAVE_C_BACKSLASH_A
-
-#ifdef  ALERT_STR
-static const char * const   alert = ALERT_STR;
-#endif
-#ifdef  VT_STR
-static const char * const   vt = VT_STR;
-#endif
-
-static char *
-#if PROTO
-conv_esc( char * cp)
-#else
-conv_esc( cp)
-    char *  cp;
-#endif
-/*
- * Convert \a, \v to 3 digits octal escape sequence.
- */
-{
-    char *  in;
-    char *  save;
-    register int    c;
-
-    in = save = save_string( ++cp);     /* Content of the quote     */
-
-    while ((c = *in++ & UCHARMAX) != EOS) {
-        if (bsl_in_mbchar && (type[ c] & mbstart)) {
-            mb_read( c, &in, (*cp++ = c, &cp));
-                /* Multi-byte character is not an escape sequence   */
-            continue;
-        }
-        *cp++ = c;
-        if (c != '\\')
-            continue;
-
-        switch (c = *in++) {            /* An escape sequence       */
-#ifdef  ALERT_STR
-        case 'a' :
-            cp = stpcpy( cp, alert + 1);
-            break;
-#endif
-#ifdef  VT_STR
-        case 'v' :
-            cp = stpcpy( cp, vt + 1);
-            break;
-#endif
-        default  :
-            if (bsl_in_mbchar && (type[ c & UCHARMAX] & mbstart))
-                in--;
-            else
-                *cp++ = c;
-            break;
-        }
-
-    }
-
-    *cp = EOS;
-    free( save);
-    return  cp;
-}
-#endif  /* ! HAVE_C_BACKSLASH_A */
-
-#if MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS
-static char *
-#if PROTO
-conv_a_digraph( char * cp)
-#else
-conv_a_digraph( cp)
-    char *  cp;                     /* The end of the digraph token */
-#endif
+#if ! HAVE_DIGRAPHS
+static char *   conv_a_digraph(
+    char *  cp                      /* The end of the digraph token */
+)
 /*
  * Convert a digraph to usual token in place.
  * This routine is never called in POST_STD mode.
@@ -1849,17 +1320,13 @@ conv_a_digraph( cp)
     }
     return  cp;
 }
-#endif  /* MODE == STANDARD && OK_DIGRAPHS && ! HAVE_DIGRAPHS   */
+#endif  /* ! HAVE_DIGRAPHS  */
 
-#if BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE
-static char *
-#if PROTO
-esc_mbchar( char * str,  char * str_end)
-#else
-esc_mbchar( str, str_end)
-    char *  str;        /* String literal or character constant without 'L' */
-    char *  str_end;    /* The end of the token */
-#endif
+#if ! MBCHAR_IS_ESCAPE_FREE
+static char *   esc_mbchar(
+    char *  str,        /* String literal or character constant without 'L' */
+    char *  str_end     /* The end of the token */
+)
 /*
  * Insert \ before the byte of 0x5c('\\') of the SJIS, BIGFIVE or ISO2022_JP
  * multi-byte character code in string literal or character constant.
@@ -1869,13 +1336,11 @@ esc_mbchar( str, str_end)
 {
     char *  cp;
     int     delim;
-    register int    c;
+    int     c;
 
     if (! bsl_need_escape)
         return  str_end;
-#if MODE == STANDARD
     if ((delim = *str++) == 'L')
-#endif
         delim = *str++;                         /* The quote character  */
     while ((c = *str++ & UCHARMAX) != delim) {
         if (type[ c] & mbstart) {               /* MBCHAR   */
@@ -1897,5 +1362,5 @@ esc_mbchar( str, str_end)
     }
     return  str_end;
 }
-#endif  /* BSL_IN_MBCHAR && ! MBCHAR_IS_ESCAPE_FREE */
+#endif  /* ! MBCHAR_IS_ESCAPE_FREE  */
 

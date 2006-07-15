@@ -1,113 +1,105 @@
-*** noconfig.H	2005-01-28 18:51:45.000000000 +0900
---- noconfig.H.cyg1310	2005-01-28 21:33:40.000000000 +0900
+*** noconfig.H	2006-07-03 00:29:27.000000000 +0900
+--- noconfig.H.cyg1310	2006-07-03 00:30:13.000000000 +0900
 ***************
-*** 20,26 ****
+*** 27,33 ****
    */
   
   /* Define target operating-system.  */
 ! #define SYSTEM              SYS_FREEBSD
   
   /* Define target compiler.          */
-  #define COMPILER            GNUC
---- 20,26 ----
+  #ifndef COMPILER
+--- 27,33 ----
    */
   
   /* Define target operating-system.  */
 ! #define SYSTEM              SYS_CYGWIN
   
   /* Define target compiler.          */
-  #define COMPILER            GNUC
+  #ifndef COMPILER
 ***************
-*** 34,40 ****
-  /* Version message.                 */
-  /* "MCPP V.2.* (200y/mm) $(MODE) mode for " precedes VERSION_MSG    */
-  #define VERSION_MSG     \
-!     "GNU C compiled by GNU C 3.4"
-  #if     0
-      "DJGPP compiled by DJGPP (GNU C 2.7.1)"
-      "LCC-Win32 compiled by LCC-Win32 V.3.2"
---- 34,40 ----
-  /* Version message.                 */
-  /* "MCPP V.2.* (200y/mm) $(MODE) mode for " precedes VERSION_MSG    */
-  #define VERSION_MSG     \
-!     "GNU C compiled by GNU C 2.95"
-  #if     0
-      "DJGPP compiled by DJGPP (GNU C 2.7.1)"
-      "LCC-Win32 compiled by LCC-Win32 V.3.2"
-***************
-*** 359,369 ****
+*** 42,48 ****
   
+  /* Version message.                 */
+  /* "MCPP V.2.* (200y/mm) compiled by " precedes VERSION_MSG */
+! #define VERSION_MSG         "GCC 3.4"
+  #if     0
+      "LCC-Win32 V.3.8"
+      "Visual C 2005"
+--- 42,48 ----
+  
+  /* Version message.                 */
+  /* "MCPP V.2.* (200y/mm) compiled by " precedes VERSION_MSG */
+! #define VERSION_MSG         "GCC 2.95"
+  #if     0
+      "LCC-Win32 V.3.8"
+      "Visual C 2005"
+***************
+*** 293,303 ****
   #if     COMPILER_FAMILY == GNUC
+  #define CMP_NAME            "GCC"
   #define COMPILER_EXT        "__GNUC__"
 ! #define COMPILER_EXT_VAL    "3"     /* "2" for V.2.*, "3" for V.3.* */
-  #define COMPILER_EX2        "__GNUC_MINOR__"
-! #define COMPILER_EX2_VAL    "4"     /* "95" for V.2.95, "3" for V.3.3   */
+  #define COMPILER_EXT2       "__GNUC_MINOR__"
+! #define COMPILER_EXT2_VAL   "4"     /* "95" for V.2.95, "3" for V.3.3   */
   #define COMPILER_CPLUS      "__GNUG__"
 ! #define COMPILER_CPLUS_VAL  "3"     /* "2" for V.2.*, "3" for V.3.* */
   #define LINE_PREFIX         "# "
   #ifndef HAVE_DIGRAPHS
   #define HAVE_DIGRAPHS       TRUE
---- 359,369 ----
-  
+--- 293,303 ----
   #if     COMPILER_FAMILY == GNUC
+  #define CMP_NAME            "GCC"
   #define COMPILER_EXT        "__GNUC__"
 ! #define COMPILER_EXT_VAL    "2"     /* "2" for V.2.*, "3" for V.3.* */
-  #define COMPILER_EX2        "__GNUC_MINOR__"
-! #define COMPILER_EX2_VAL    "95"     /* "95" for V.2.95, "3" for V.3.3   */
+  #define COMPILER_EXT2       "__GNUC_MINOR__"
+! #define COMPILER_EXT2_VAL   "95"     /* "95" for V.2.95, "3" for V.3.3   */
   #define COMPILER_CPLUS      "__GNUG__"
 ! #define COMPILER_CPLUS_VAL  "2"     /* "2" for V.2.*, "3" for V.3.* */
   #define LINE_PREFIX         "# "
   #ifndef HAVE_DIGRAPHS
   #define HAVE_DIGRAPHS       TRUE
 ***************
-*** 372,387 ****
-  #ifndef HAVE_LONG_LONG
-  #define HAVE_LONG_LONG      TRUE
+*** 305,316 ****
+  #ifndef TARGET_HAVE_LONG_LONG
+  #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
-! #define HAVE_INTMAX_T       TRUE    /* FALSE for V.2, TRUE for V.3  */
-  #if     HAVE_INTMAX_T
-  #define HAVE_INTTYPES_H     TRUE
-  #endif
-  #define HAVE_LONG_DOUBLE    TRUE
 ! #define STDC_VERSION        0L      /* 199409L for V.2.9, 0L for V.3.*      */
-! #define CPLUS_INCLUDE_DIR1  "/usr/include/c++"  /* "/usr/include/c++/3.3.2" */
-! #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/backward"     /* "/usr/include/c++/3.3.2/i386-vine-linux" */
-  /* #define CPLUS_INCLUDE_DIR3  "/usr/include/c++/3.3.2/backward"    */
-! /* #define C_INCLUDE_DIR1  "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */
+! #define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.2" */  /* "/usr/include/c++/4.0.2" */
+! #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.2/i386-vine-linux" */  /* "/usr/include/c++/4.0.2/i586-suse-linux" */
+  /* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.2/backward"    */  /* "/usr/include/c++/4.0.2/backward"    */
+! /* #define C_INCLUDE_DIR1   */  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */  /* "/usr/lib/gcc/i586-suse-linux/4.0.2/include" */
+! /* #define C_INCLUDE_DIR2   */  /* "/usr/i586-suse-linux/include"   */
   #ifndef ENV_C_INCLUDE_DIR
   #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
   #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"
---- 372,387 ----
-  #ifndef HAVE_LONG_LONG
-  #define HAVE_LONG_LONG      TRUE
+--- 305,316 ----
+  #ifndef TARGET_HAVE_LONG_LONG
+  #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
-! #define HAVE_INTMAX_T       FALSE    /* FALSE for V.2, TRUE for V.3  */
-  #if     HAVE_INTMAX_T
-  #define HAVE_INTTYPES_H     TRUE
-  #endif
-  #define HAVE_LONG_DOUBLE    TRUE
 ! #define STDC_VERSION        199409L      /* 199409L for V.2.9, 0L for V.3.*      */
-! #define CPLUS_INCLUDE_DIR1  "/usr/include/g++-3"  /* "/usr/include/c++/3.3.2" */
-! /* #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/backward" */    /* "/usr/include/c++/3.3.2/i386-vine-linux" */
-  /* #define CPLUS_INCLUDE_DIR3  "/usr/include/c++/3.3.2/backward"    */
-! #define C_INCLUDE_DIR1  "/usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include" */
+! #define CPLUS_INCLUDE_DIR1  "/usr/include/g++-3"  /* "/usr/include/c++/3.4" */ /* "/usr/include/c++/3.3.2" */  /* "/usr/include/c++/4.0.2" */
+! /* #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward" */    /* "/usr/include/c++/3.3.2/i386-vine-linux" */  /* "/usr/include/c++/4.0.2/i586-suse-linux" */
+  /* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.2/backward"    */  /* "/usr/include/c++/4.0.2/backward"    */
+! #define C_INCLUDE_DIR1      "/usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5/include"  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */  /* "/usr/lib/gcc/i586-suse-linux/4.0.2/include" */
+! #define C_INCLUDE_DIR2      "/usr/include/win32api" /* "/usr/i586-suse-linux/include"   */
   #ifndef ENV_C_INCLUDE_DIR
   #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
   #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"
 ***************
-*** 399,405 ****
-      /* SYS_DJGPP: "long unsigned int", others: "unsigned int"       */
+*** 323,329 ****
+  #define COMPILER_SP3        "__WCHAR_TYPE__"
+  #define COMPILER_SP1_VAL    "unsigned int"
   #define COMPILER_SP2_VAL    "int"
-      /* SYS_DJGPP: "long int", others: "int"     */
 ! #define COMPILER_SP3_VAL    "int"
-      /* SYS_FREEBSD,SYS_DJGPP: "int" , SYS_CYGWIN: "short unsigned int"
+      /* SYS_FREEBSD: "int" , SYS_CYGWIN: "short unsigned int"
           , others: "long int"    */
   #endif  /* COMPILER_FAMILY == GNUC   */
---- 399,405 ----
-      /* SYS_DJGPP: "long unsigned int", others: "unsigned int"       */
+--- 323,329 ----
+  #define COMPILER_SP3        "__WCHAR_TYPE__"
+  #define COMPILER_SP1_VAL    "unsigned int"
   #define COMPILER_SP2_VAL    "int"
-      /* SYS_DJGPP: "long int", others: "int"     */
 ! #define COMPILER_SP3_VAL    "short unsigned int"
-      /* SYS_FREEBSD,SYS_DJGPP: "int" , SYS_CYGWIN: "short unsigned int"
+      /* SYS_FREEBSD: "int" , SYS_CYGWIN: "short unsigned int"
           , others: "long int"    */
   #endif  /* COMPILER_FAMILY == GNUC   */

@@ -6,6 +6,8 @@
  *  1998/08     kmatsui
  *  2002/08     Updated for "cpp-test.txt" V.1.3    kmatsui
  *  2004/11     Updated for "cpp-test.txt" V.1.5    kmatsui
+ *  2006/07     Changed non-prototype declarations to prototype ones.
+ *                                                  kmatsui
  */
 
 #include    "stdio.h"
@@ -34,17 +36,16 @@ int     mttlcpl[ MAX_COLS]; /* mid-total of C++ only features conformance   */
 int     grandtotal[ MAX_COLS];
 char    buf[ MAX_LLEN];
 
-void    usage();
-void    add_points();
-void    put_subtotal();
-void    put_mttl();
-void    put_grandtotal();
-char    *stpcpy();
+void    usage( void);
+void    add_points( int norm);
+void    put_subtotal( void);
+void    put_mttl( int norm);
+void    put_grandtotal( void);
+#if !__TURBOC__
+char    *stpcpy( char *p, const char *app);
+#endif
 
-main( argc, argv)
-    int     argc;
-    char    **argv;
-{
+int main( int argc, char **argv) {
     int     i, len, sitem, mitem90, mitem99, mitemcpl, gitem, cplus;
 
     if (argc < 2 || argc > 4)
@@ -110,8 +111,7 @@ main( argc, argv)
     return 0;
 }
 
-void    usage()
-{
+void    usage( void) {
     char    **mesp;
     static char     *mes[] = {
         "Total:  Put totals of \"cpp_test.tbl\".\n",
@@ -126,9 +126,7 @@ void    usage()
     exit( 0);
 }
 
-void    add_points( norm)
-    int     norm;
-{
+void    add_points( int norm) {
     int     i;
     int     len;
     int     max, point;
@@ -167,8 +165,7 @@ void    add_points( norm)
     }
 }
 
-void    put_subtotal()
-{
+void    put_subtotal( void) {
     int     i;
     char    *p;
     buf[ OFFS - 1] = ' ';
@@ -184,9 +181,7 @@ void    put_subtotal()
     strcpy( p, "\n");
 }
 
-void    put_mttl( norm)
-    int     norm;
-{
+void    put_mttl( int norm) {
     int     i;
     char    *p;
     int     *mttl;
@@ -215,8 +210,7 @@ void    put_mttl( norm)
     strcpy( p, "\n");
 }
 
-void    put_grandtotal()
-{
+void    put_grandtotal( void) {
     int     i;
     char    *p;
 
@@ -231,11 +225,8 @@ void    put_grandtotal()
     strcpy( p, "\n");
 }
 
-#if !__TURBOC__ && !LSI_C && !__MWC09__
-char    *stpcpy( p, app)
-    char    *p;
-    const char  *app;
-{
+#if !__TURBOC__
+char    *stpcpy( char *p, const char *app) {
     strcpy( p, app);
     return p + strlen( p);
 }

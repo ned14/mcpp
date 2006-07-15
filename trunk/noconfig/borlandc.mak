@@ -1,126 +1,96 @@
-# makefile to compile MCPP version 2.* for Turbo C, Borland C / BC make
-#		1998/08, 2003/11, 2004/02, 2005/03 	kmatsui
-# To compile MCPP using resident cpp do
-#		make
-# To re-compile MCPP using compiled MCPP do
-#		make -DPREPROCESSED
-# To specify the preprocessor to compile MCPP
-#		make -DCPP=mcpp32_std
-# To generate MCPP of PRE_STANDARD mode do as
-#		make -DMODE=PRE_STANDARD -DNAME=mcpp32_prestd
-# To link malloc() package of kmatsui do
-#		make [-DPREPROCESSED] -DKMMALLOC
-# To compile MCPP with C++, rename *.c other than lib.c and preproc.c to *.cpp,
-#	then do
-#		make -DCPLUS
-# To compile with bcc32
-#		make -DWIN32
-# To compile MCPP for MS-DOS / Borland C by WIN32 / Borland C
-#		make -DWIN32
+# makefile to compile MCPP version 2.6 for Borland C / BC make
+#       2006/05 kmatsui
+# You must first edit BINDIR according to your system.
+# To make stand-alone-build of MCPP do:
+#       make
+# To make Visual-C-specific-build of MCPP do:
+#       make -DCOMPILER=BORLANDC
+# To re-compile MCPP using Visual-C-specific-build of MCPP do:
+#       make -DCOMPILER=BORLANDC -DPREPROCESSED
+# To link kmmalloc V.2.5.1 (malloc() package of kmatsui) or later do:
+#       make [-DPREPROCESSED] -DKMMALLOC
+# To compile MCPP with C++, rename *.c other than lib.c to *.cpp and do:
+#       make -DCPLUS
 
-!if 	!$d( NAME)
-!if 	$d( WIN32)
-NAME = mcpp32_std
-!else
-NAME = mcpp_std
-!endif
-!endif
+NAME = mcpp
 
-!if 	!$d( CPP)
-!if 	$d( WIN32)
-CPP = mcpp32_std
-!else
-CPP = mcpp_std
-!endif
-!endif
-
-CFLAGS = $(CFLAGS) -c -a -d -f- -G # -5
-	# Don't use -A to compile eval.c when OK_SIZE is set to TRUE
+CC = bcc32
+CFLAGS = $(CFLAGS) -c -a -d -f- -G -5 -DWIN32
+    # -DWIN32 is nessecary to compile with bcc32
 LINKFLAGS = -e$(NAME)
 
+!if		$d( COMPILER)
+CPPFLAGS = -DCOMPILER=BORLANDC
 # BINDIR : Adjust to your system.
 #	for Borland C V.5.5
 CFLAGS = $(CFLAGS) -Oi
 BINDIR = \BCC55\BIN
 #	for Borland C V.4.0
-# BINDIR = \BC4\BIN
-#	to make mcpp for LSI C-86 V.3.3		# Don't use -DPREPROCESSED
-# BINDIR = \LSIC86\BIN
+#BINDIR = E:\BC4\BIN
+!else
+BINDIR = \PUBLIC\BIN
+!endif
 
 !if 	$d( CPLUS)
-LANG = -+
+LANG = -P
+CPP_LANG = -+
+preproc = preproc.cc
 !else
-LANG = -S1
-	# Don't use -S1 to compile eval.c when OK_SIZE is set to TRUE
+LANG =
+CPP_LANG =
+preproc = preproc.c
 !endif
 
-!if 	$d( WIN32)
 # '-N -D__BORLANDC__=0x0452' to work around bugs of bcc32 V.4.0
-CC = bcc32
-# CFLAGS = $(CFLAGS) -N -D__BORLANDC__=0x0452
-MM = 32
-MEM =
-!else
-CC = bcc
-# CC = tcc
-MM = l
-MEM = -m$(MM)
-!endif
-
-!if		$d( MODE)
-CPPFLAGS = -DMODE=$(MODE)
-!else
-CPPFLAGS =
-!endif
+#CFLAGS = $(CFLAGS) -N -D__BORLANDC__=0x0452
 
 !if 	$d( KMMALLOC)
 MEM_MACRO = -DKMMALLOC=1 -D_MEM_DEBUG=1 -DXMALLOC=1
-!if 	$d( WIN32)
 MEMLIB = kmmalloc_debug32.lib
 !else
-MEMLIB = kmma_d_$(MM).lib
-!endif
-!else
 MEM_MACRO =
-MEMLIB =
+MEM_LIB =
 !endif
 
 OBJS = main.obj control.obj eval.obj expand.obj support.obj system.obj	\
 	mbchar.obj lib.obj
 
 $(NAME).exe : $(OBJS)
-	$(CC) $(MEM) $(LINKFLAGS) $(OBJS) $(MEMLIB)
+	$(CC) $(LINKFLAGS) $(OBJS) $(MEMLIB)
 
 !if 	$d( PREPROCESSED)
-CMACRO =
 # Make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H noconfig.H internal.H
-	$(CPP) $(LANG) $(CPPFLAGS) $(MEM_MACRO) $(MEM) preproc.c mcpp.H
+	$(NAME) $(CPPFLAGS) $(CPP_LANG) $(MEM_MACRO) $(preproc) mcpp.H
 $(OBJS) : mcpp.H
 !else
-CMACRO = $(MEM_MACRO)
+$(OBJS) : noconfig.H
 main.obj control.obj eval.obj expand.obj support.obj system.obj mbchar.obj:	\
-	system.H noconfig.H internal.H
-lib.obj : system.H noconfig.H
+	    system.H internal.H
 !endif
 
 !if 	$d( PREPROCESSED)
 !if 	$d( CPLUS)
 .cpp.obj:
-	$(CPP) $(LANG) $(MEM) -DPREPROCESSED=1 $< $(<B).i
-	$(CC) $(CFLAGS) $(MEM) $(<B).i
+	$(NAME) -DPREPROCESSED=1 -+ $< $(<B).i
+	$(CC) $(CFLAGS) $(LANG) $(<B).i
 .c.obj	:
-	$(CC) $(CFLAGS) $(MEM) $(CMACRO) $<
+	$(CC) $(CFLAGS) $(MEM_MACRO) $<
 !else
 .c.obj	:
-	$(CPP) $(LANG) $(MEM) -DPREPROCESSED=1 $< $(<B).i
-	$(CC) $(CFLAGS) $(MEM) $(<B).i
+	$(NAME) -DPREPROCESSED=1 $(CPPFLAGS) $< $(<B).i
+	$(CC) $(CFLAGS) $(<B).i
 !endif
 !else
+!if 	$d( CPLUS)
 .cpp.obj:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM) $(CMACRO) $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) $(LANG) $<
 .c.obj	:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM) $(CMACRO) $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) $<
+!else
+.c.obj	:
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) $<
+!endif
 !endif
 
 install :
