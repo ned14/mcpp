@@ -8,6 +8,9 @@
  *          other than '/'.
  *  2004/11     kmatsui
  *      Changed '#pragma __once' to '#pragma once'.
+ *  2006/07     kmatsui
+ *      Removed -o option.
+ *      Changed non-prototype declarations to prototype ones.
  */
 
 #include    "stdio.h"
@@ -27,7 +30,6 @@
 #define IF          0x101
 #define PRAGMA      0x102
 #define DEFINED     0x103
-#define _MCPP       0x110
 #define _ONCE       0x111
 
 void    usage( void);
@@ -41,12 +43,6 @@ void    ins_once( FILE *);
 
 int     test;
     /* Only test files whether beginning with #ifndef or #if !defined.  */
-int     pre_ansi;
-/*
- * If TRUE, insert 9 lines for the old pre-ansi preprocessors.
- * If FALSE insert only '#pragma once' line for the preprocessors
- * which can accept #pragma.
- */
 int     prepend;
 /*
  * If TRUE, prepend '#pragma once' line to the file.
@@ -58,16 +54,14 @@ int     gcc;
  * This is the option for GCC family.
  */
 
-main( argc, argv)
-    int     argc;
-    char    **argv;
-{
+int main( int argc, char **argv) {
     extern int      getopt( int, char **, char *);
     extern int      optind;
     extern char     *optarg;
     int     opt;
     char    *except[] = { "assert.h", "cassert", "cassert.h", NULL};
-    char    *g_except[] = { "stddef.h", NULL};
+    char    *g_except[] = { "stddef.h", "stdio.h", "signal.h", "errno.h"
+                    , NULL};
     char    *arg;
     char    **ep;
 
@@ -78,9 +72,6 @@ main( argc, argv)
         switch (opt) {
         case 't':
             test = TRUE;
-            break;
-        case 'o':
-            pre_ansi = TRUE;
             break;
         case 'p':
             prepend = TRUE;
@@ -123,13 +114,12 @@ void    usage( void)
 {
     static char     *mes[] = {
    "ins_once: Insert '#pragma once' to header files except \"assert.h\"\n",
-   "            and \"stddef.h\" (for GNU C).\n",
-   "Usage: ins_once [-DPATH_DELIM=\\] [-t|-p|-o|-g] [header1.h [header2.h [...]]]\n",
+   "            and \"stddef.h\" and some others (for GCC).\n",
+   "Usage: ins_once [-DPATH_DELIM=\\] [-t|-p|-g] [header1.h [header2.h [...]]]\n",
    "    -t : Only test files whether beginning with #ifndef or #if !defined.\n",
    "    -p : Prepend the line to the file\n",
-   "        (default: insert after the first #ifndef line -- for GNU C).\n",
-   "    -o : For the OLD C preprocessors which cannot accept #pragma.\n",
-   "    -g : Do not convert \"stddef.h\".\n",
+   "        (default: insert after the first #ifndef line -- for GCC).\n",
+   "    -g : Do not convert stddef.h, stdio.h, signal.h, errno.h.\n",
         NULL,
     };
     char    **mesp = mes;
@@ -143,12 +133,10 @@ void    usage( void)
     exit( errno);
 }
 
-void    test_a_file( fname)
-    char    *fname;
+void    test_a_file( char *fname) {
 /*
  * Only test the file whether it begins with #ifndef or #if !defined.
  */
-{
     char    buf[ BUFSIZ];
     FILE    *fp_in;
     int     token;
@@ -174,13 +162,11 @@ void    test_a_file( fname)
     fclose( fp_in);
 }
 
-void    conv_a_file( fname)
-    char    *fname;
+void    conv_a_file( char *fname) {
 /*
  * Insert '#pragma once' line to seemingly apropriate place according
  * the command-line options.
  */
-{
     char    *tmp = "tmp_once";
     FILE    *fp_in, *fp_out;
 
@@ -201,15 +187,12 @@ void    conv_a_file( fname)
         usage();
 }
 
-void    insert_once( fp_in, fp_out, fname)
-    FILE    *fp_in, *fp_out;
-    char    *fname;
+void    insert_once( FILE *fp_in, FILE *fp_out, char *fname) {
 /*
  * Insert '#pragma once' line after the first directive line, if the
  * directive is #ifndef or #if !defined, else append the line at the end
  * of the file.
  */
-{
     char    buf[ BUFSIZ];
     int     token;
     int     no_ifndef = TRUE;
@@ -240,12 +223,10 @@ void    insert_once( fp_in, fp_out, fname)
         ins_once( fp_out);          /* Append the line to the file  */
 }
 
-void    prepend_once( fp_in, fp_out)
-    FILE    *fp_in, *fp_out;
+void    prepend_once( FILE *fp_in, FILE *fp_out) {
 /*
  * Prepend the '#pragma once' line at the top of the file.
  */
-{
     char    buf[ BUFSIZ];
 
     if (! look_directive( fp_in))
@@ -255,12 +236,10 @@ void    prepend_once( fp_in, fp_out)
         fputs( buf, fp_out);
 }
 
-int     look_directive( fp)
-    FILE    *fp;
+int     look_directive( FILE *fp) {
 /*
  * Look whether the next line is '#pragma once'.
  */
-{
     char    buf[ BUFSIZ];
     long    pos;
     int     res = 0;
@@ -270,21 +249,15 @@ int     look_directive( fp)
     pos = ftell( fp);
     cp = buf;
     if (fgets( buf, BUFSIZ, fp) && buf[ 0] == '\n'
-            && fgets( buf, BUFSIZ, fp) && get_token( &cp) == '#') {
-        if (!pre_ansi && get_token( &cp) == PRAGMA && get_token( &cp) == _ONCE)
-            res = 1;
-        else if (pre_ansi && get_token( &cp) == IF
-                && get_token( &cp) == _MCPP)
-            res = 1;
-    }
+            && fgets( buf, BUFSIZ, fp) && get_token( &cp) == '#'
+            && get_token( &cp) == PRAGMA && get_token( &cp) == _ONCE)
+        res = 1;
     fseek( fp, pos, SEEK_SET);
     return res;
 }
 
-int     get_token( cpp)
-    char    **cpp;
+int     get_token( char **cpp) {
 /* Get the next 'token', without parsing comments, literals, etc.   */
-{
     int     token;
     char    *cp = *cpp;
 
@@ -302,9 +275,6 @@ int     get_token( cpp)
     } else if (memcmp( cp, "defined", 7) == 0) {
         token = DEFINED;
         cp += 7;
-    } else if (memcmp( cp, "__MCPP", 6) == 0) {
-        token = _MCPP;
-        cp += 11;
     } else if (memcmp( cp, "once", 6) == 0) {
         token = _ONCE;
         cp += 6;
@@ -315,40 +285,7 @@ int     get_token( cpp)
     return token;
 }
 
-void    ins_once( fp)
-    FILE    *fp;
-{
-    static char     *once[] = {
-        /* Redundant directives not to reject old preprocessors.    */
-        "\n",
-        "#if     __MCPP >= 2\n",
-        "#ifdef  __STDC__\n",
-        "#pragma once\n",
-        "#else\n",
-        "#ifdef  __cplusplus\n",
-        "#pragma once\n",
-        "#endif\n",
-        "#endif\n",
-        "#endif\n",
-        "\n",
-         NULL,
-    };
-    static char     *once_only[] = {
-        "\n#pragma once\n\n",
-        NULL,
-    };
-    static char    **cpp;
-    char           **tpp;
-
-    if (cpp == NULL) {                  /* Have to initialize           */
-        if (pre_ansi)
-            cpp = once;
-        else
-            cpp = once_only;
-    }
-
-    tpp = cpp;
-    while (*tpp)
-        fputs( *tpp++, fp);
+void    ins_once( FILE *fp) {
+    fputs( "\n#pragma once\n\n", fp);
 }
 

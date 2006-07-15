@@ -52,7 +52,8 @@ main( void)
         source file).   */
 #define m       n
 #define n( a)   a 
-    assert( m( m) == 2);
+    c = m( m);
+    assert( c == 2);
 
     fputs( "success\n", stderr);
     return  0;

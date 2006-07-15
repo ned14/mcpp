@@ -1,79 +1,132 @@
-# makefile to compile MCPP version 2.* for CygWIN / GNU C / GNU make
-#		2002/08, 2003/11, 2004/02, 2005/03	kmatsui
-# To compile MCPP using resident cpp do
-#		make
-# To re-compile MCPP using compiled MCPP do
-#		make PREPROCESSED=1
-# To generate MCPP of PRE_STANDARD mode do as
-#		make MODE=PRE_STANDARD NAME=mcpp_prestd
-# To compile MCPP with C++, rename *.c other than lib.c and preproc.c to *.cc
-#   then do
-#		make CPLUS=1
+# makefile to compile MCPP version 2.6 for CygWIN / GCC / GNU make
+# 2006/05     kmatsui
+#
+# First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
+# To make stand-alone-build of MCPP do:
+#       make
+# To make GCC-specific-build of MCPP:
+#       make COMPILER=GNUC
+# To re-compile MCPP using GCC-specific-build of MCPP do:
+#       make COMPILER=GNUC PREPROCESSED=1
+# To link malloc() package of kmatsui do:
+#       make [COMPILER=GNUC] [PREPROCESSED=1] MALLOC=KMMALLOC
+# To compile cpp with C++, rename *.c other than lib.c and preproc.c to *.cc,
+#   and do:
+#       make CPLUS=1
 
-NAME = mcpp_std
-CPP = cpp0
+# COMPILER: Specify whether make a stand-alone-build or GCC-specific-build
+# stand-alone-build:    empty
+# compiler-specific-build:  GNUC
+
+# NAME: name of mcpp executable
+NAME = mcpp
+
+# CC:   name of gcc executable
+#       e.g. cc, gcc, gcc-2.95.3, i686-pc-linux-gnu-gcc-3.4.3
 CC = gcc
-GPP = c++
-GCC = $(CC)
-CFLAGS = -c -O2 -Wall
+GPP = g++
+CFLAGS = -c -O2 -Wall   -v
+CPPFLAGS =
+#CPPFLAGS = -Wp,-vQW3
+    # for MCPP to output a bit verbose diagnosis to "mcpp.err"
 
-# To use MCPP on GCC 3.x
-#CFLAGS = -c -O2 -Wall -no-integrated-cpp
 
 LINKFLAGS = -o $(NAME)
-BINDIR ?= /usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5
-# Adjust for your system
+
+ifeq    ($(COMPILER), )
+# stand-alone-build
+CPPOPTS =
+# BINDIR:   /usr/bin or /usr/local/bin
+BINDIR = /usr/local/bin
+# INCDIR:   empty
+INCDIR =
+else
+# compiler-specific-build:  Adjust for your system
+
+ifeq    ($(COMPILER), GNUC)
+CPPOPTS = -DCOMPILER=$(COMPILER)
+# BINDIR:   the directory where cpp0 or cc1 resides
+#BINDIR = /usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5
+BINDIR = /usr/lib/gcc/i686-pc-cygwin/3.4.4
+# INCDIR:   version specific include directory
+#INCDIR = /usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5/include
+INCDIR = /usr/lib/gcc/i686-pc-cygwin/3.4.4/include
+# set GCC version
+gcc_maj_ver = 3
+gcc_min_ver = 4
+ifeq ($(gcc_maj_ver), 2)
+cpp_call = $(BINDIR)/cpp0.exe
+else
+cpp_call = $(BINDIR)/cc1.exe
+endif
+endif
+endif
+
+# The directory where 'gcc' (cc) command is located
+GCCDIR = /usr/bin
+#GCCDIR = /usr/local/bin
 
 CPLUS =
 ifeq	($(CPLUS), 1)
 	GCC = $(GPP)
+	preproc = preproc.cc
+else
+	GCC = $(CC)
+	preproc = preproc.c
 endif
 
 OBJS = main.o control.o eval.o expand.o support.o system.o mbchar.o lib.o
 
-$(NAME) : $(OBJS)
+$(NAME): $(OBJS)
 	$(GCC) $(LINKFLAGS) $(OBJS)
-
-CPPFLAGS =
-ifdef	MODE
-CPPFLAGS += -DMODE=$(MODE)
-endif
 
 PREPROCESSED = 0
 
 ifeq	($(PREPROCESSED), 1)
+CMACRO = -DPREPROCESSED
+#CPPFLAGS += -std=c99
+    # '-std=c99' option is nessecary to work around the confusion of headers
 # Make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H noconfig.H internal.H
-ifeq	($(CPLUS), 1)
-	$(GCC) -E -Wp,-b -o mcpp.H preproc.cc
+ifeq    ($(COMPILER), GNUC)
+	$(GCC) -v -E -Wp,-b $(CPPFLAGS) $(CPPOPTS) -o mcpp.H $(preproc)
 else
-	$(GCC) -E -Wp,-b -o mcpp.H preproc.c
+	@echo "Do 'sudo make COMPILER=GNUC install' prior to recompile."
+	@echo "Then, do 'make COMPILER=GNUC PREPROCESSED=1'."
+	@exit
 endif
-
 $(OBJS) : mcpp.H
 else
-$(OBJS) : system.H noconfig.H
-main.o control.o eval.o expand.o support.o system.o mbchar.o: internal.H
+CMACRO = $(CPPOPTS)
+$(OBJS) : noconfig.H
+main.o control.o eval.o expand.o support.o system.o mbchar.o:   \
+        system.H internal.H
 endif
-
-CPPFLAGS += -DPREPROCESSED=$(PREPROCESSED)
 
 ifeq	($(CPLUS), 1)
 .cc.o	:
-	$(GPP) $(CFLAGS) $(CPPFLAGS) $<
+	$(GPP) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
 .c.o	:
-	$(CC) $(CFLAGS) $(CMACRO) $<
+	$(CC) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
 else
 .c.o	:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $<
+	$(CC) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
 endif
 
 install :
-	install -s -b -o root -g Administrators $(NAME).exe $(BINDIR)/$(NAME).exe
-# Do backup GNU C / cpp.exe (cpp0.exe) before executing the following command.
-#ifneq	($(NAME), $(CPP))
-#	ln -f -s $(BINDIR)/$(NAME).exe $(BINDIR)/$(CPP).exe
-#endif
+	install -s -b $(NAME).exe $(BINDIR)/$(NAME).exe
+ifeq    ($(COMPILER), GNUC)
+	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)' \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)'
+endif
 
 clean	:
-	-rm *.o *.exe mcpp.H
+	-rm *.o mcpp.exe mcpp.H mcpp.err
+
+uninstall:
+	rm -f $(BINDIR)/$(NAME).exe
+ifeq    ($(COMPILER), GNUC)
+	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' '$(INCDIR)'
+endif
+

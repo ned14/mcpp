@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = dejagnu foreign
 
-if MAINTAINER_MODE
+if REPLACE_CPP
 
 Makefile:
 
@@ -21,12 +21,12 @@ check-DEJAGNU:
 	@if test -f "$(gcc_testsuite_dir)/gcc.dg/cpp-test/test-t/cpp-test.exp"; \
             then :; \
     else \
-        echo '  cp -Rp ../cpp-test $(gcc_testsuite_dir)/gcc.dg'; \
-        cp -Rp ../cpp-test "$(gcc_testsuite_dir)/gcc.dg"; \
+        echo '  cp -Rp $(top_srcdir)/cpp-test $(gcc_testsuite_dir)/gcc.dg'; \
+        cp -Rp $(top_srcdir)/cpp-test "$(gcc_testsuite_dir)/gcc.dg"; \
     fi
-	@./set_test.sh '$(CC)' '$(gcc_path)' '$(gcc_testsuite_dir)' $(gcc_maj_ver) '$(LN_S)'
+	@$(top_srcdir)/tests/set_test.sh '$(CC)' '$(gcc_path)' '$(gcc_testsuite_dir)' $(gcc_maj_ver) '$(LN_S)' '$(cpp_call)'
 	-$(RUNTEST) --tool gcc --srcdir $(gcc_testsuite_dir) cpp-test.exp
-	@./after_test.sh '$(CC)' '$(gcc_path)'
+	@$(top_srcdir)/tests/after_test.sh '$(CC)' '$(gcc_path)' '$(cpp_call)'
 
 uninstall:
 	@if test x"$(gcc_testsuite_dir)" != x""; then \

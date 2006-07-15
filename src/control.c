@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2005 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2006 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -90,7 +90,13 @@
  */
 
 /*
- * The routines to handle #directives other than #include and #pragma
+ * MCPP Version 2.6
+ * 2006/07      kmatsui
+ *      Integrated STANDARD and PRE_STANDARD modes into one executable.
+ */
+
+/*
+ * The routines to handle directives other than #include and #pragma
  * are placed here.
  */
 
@@ -101,39 +107,26 @@
 #include    "internal.H"
 #endif
 
-#if PROTO
-
 static int      do_if( int hash);
+                /* #if, #elif, #ifdef, #ifndef      */
 static long     do_line( void);
+                /* Process #line directive          */
 static int      get_parm( void);
+                /* Get parm., its nargs, names, lens*/
 static int      get_repl( const char * macroname);
+                /* Get replacement embedded parm-no.*/
 static char *   is_formal( const char * name, int conv);
-#if MODE == STANDARD
+                /* If formal param., save the num.  */
 static char *   def_stringization( char * repl_cur);
+                /* Define stringization     */
 static char *   mgtoken_save( const char * macroname);
-#else
+                /* Prefix DEF_MAGIC to macro name   */
 static char *   str_parm_scan( char * string_end);
-#endif
+                /* Scan the param. in string        */
 static void     do_undef( void);
+                /* Process #undef directive         */
 static void     dump_repl( const DEFBUF * dp, FILE * fp);
-
-#else   /* ! PROTO  */
-
-static int      do_if();        /* #if, #elif, #ifdef, #ifndef      */
-static long     do_line();      /* Process #line directive          */
-static int      get_parm();     /* Get parm., its nargs, names, lens*/
-static int      get_repl();     /* Get replacement embedded parm-no.*/
-static char *   is_formal();    /* If formal param., save the num.  */
-#if MODE == STANDARD
-static char *   def_stringization();    /* Define stringization     */
-static char *   mgtoken_save(); /* Prefix DEF_MAGIC to macro name   */
-#else
-static char *   str_parm_scan();    /* Scan the param. in string    */
-#endif
-static void     do_undef();     /* Process #undef directive         */
-static void     dump_repl();    /* Dump replacement text            */
-
-#endif  /* ! PROTO  */
+                /* Dump replacement text            */
 
 /*
  * Generate (by hand-inspection) a set of unique values for each directive.
@@ -143,9 +136,7 @@ static void     dump_repl();    /* Dump replacement text            */
 #define L_if            ('i' ^ (EOS << 1))
 #define L_ifdef         ('i' ^ ('e' << 1))
 #define L_ifndef        ('i' ^ ('d' << 1))
-#if MODE == STANDARD
 #define L_elif          ('e' ^ ('f' << 1))
-#endif
 #define L_else          ('e' ^ ('e' << 1))
 #define L_endif         ('e' ^ ('i' << 1))
 #define L_define        ('d' ^ ('i' << 1))
@@ -155,26 +146,16 @@ static void     dump_repl();    /* Dump replacement text            */
 #if COMPILER == GNUC
 #define L_include_next  ('i' ^ ('l' << 1) ^ ('_' << 1))
 #endif
-#if MODE == STANDARD
 #define L_error         ('e' ^ ('o' << 1))
 #define L_pragma        ('p' ^ ('g' << 1))
-#endif
 
 static const char * const   not_ident
             = "Not an identifier \"%s\"";               /* _E_      */
 static const char * const   no_arg = "No argument";     /* _E_      */
-#if ! OK_IF_JUNK
 static const char * const   excess
             = "Excessive token sequence \"%s\"";        /* _E_ _W1_ */
-#endif
 
-int
-#if PROTO
-control( int newlines)
-#else
-control( newlines)
-    int         newlines;                       /* Pending newlines */
-#endif
+int control( void)
 /*
  * Process #directive lines.  Each directive have their own subroutines.
  */
@@ -186,11 +167,9 @@ control( newlines)
     const char * const  illeg_dir
             = "Illegal #directive \"%s%.0ld%s\"";       /* _E_ _W8_ */
     const char * const  in_skipped = " (in skipped block)"; /* _W8_ */
-#if MODE == PRE_STANDARD
     int     token_type;
-#endif
-    register int    c;
-    register int    hash;
+    int     c;
+    int     hash;
     char *  tp;
 
     in_directive = TRUE;
@@ -201,7 +180,6 @@ control( newlines)
     c = skip_ws();
     if (c == '\n')                              /* 'null' directive */
         goto  ret;
-#if MODE == PRE_STANDARD
     token_type = scan_token( c, (workp = work, &workp), work_end);
     if (in_asm && (token_type != NAM            /* In #asm block    */
             || (! str_eq( identifier, "asm")    /* Ignore #anything */
@@ -218,15 +196,6 @@ control( newlines)
             goto  skip_line;
         }
     }
-#else   /* MODE == STANDARD */
-    if (scan_token( c, (workp = work, &workp), work_end) != NAM) {
-        if (compiling)
-            cerror( illeg_dir, work, 0L, NULLST);
-        else if (warn_level & 8)
-            cwarn( illeg_dir, work, 0L, in_skipped);
-        goto  skip_line;
-    }
-#endif
     if (identifier[ 2] == EOS)
         identifier[ 3] = EOS;                   /* Diddle           */
     hash = (identifier[ 1] == EOS) ? identifier[ 0]
@@ -238,9 +207,7 @@ control( newlines)
     case L_if:      tp = "if";      break;
     case L_ifdef:   tp = "ifdef";   break;
     case L_ifndef:  tp = "ifndef";  break;
-#if MODE == STANDARD
     case L_elif:    tp = "elif";    break;
-#endif
     case L_else:    tp = "else";    break;
     case L_endif:   tp = "endif";   break;
     case L_define:  tp = "define";  break;
@@ -250,10 +217,8 @@ control( newlines)
 #if COMPILER == GNUC
     case L_include_next:    tp = "include_next";    break;
 #endif
-#if MODE == STANDARD
     case L_error:   tp = "error";   break;
     case L_pragma:  tp = "pragma";  break;
-#endif
     default:        tp = NULL;      break;
     }
 
@@ -268,9 +233,12 @@ control( newlines)
     if (! compiling) {                      /* Not compiling now    */
         switch (hash) {
         case L_else :                       /* Test the #if's nest, */
-#if MODE == STANDARD
         case L_elif :                       /*   if 0, compile.     */
-#endif
+            if (! standard) {
+                if (warn_level & 8)
+                    do_old();               /* Unknown directive    */
+                goto  skip_line;            /* Skip the line        */
+            }   /* Else fall through    */
         case L_endif:                       /* Un-nest #if          */
             break;
         case L_if   :                       /* These can't turn     */
@@ -278,10 +246,9 @@ control( newlines)
         case L_ifndef:                      /*   we must nest #if's.*/
             if (&ifstack[ BLK_NEST] < ++ifptr)
                 goto  if_nest_err;
-#if MODE == STANDARD && BLK_NEST > BLK_NEST90MIN
-            if ((warn_level & 8) && &ifstack[ blk_nest_min + 1] == ifptr)
+            if (standard && (warn_level & 8)
+                    && &ifstack[ blk_nest_min + 1] == ifptr)
                 cwarn( many_nesting, NULLST, (long) blk_nest_min, in_skipped);
-#endif
             ifptr->stat = 0;                /* !WAS_COMPILING       */
             ifptr->ifline = line;           /* Line at section start*/
             goto  skip_line;
@@ -300,17 +267,18 @@ control( newlines)
     case L_ifndef:
         if (&ifstack[ BLK_NEST] < ++ifptr)
             goto  if_nest_err;
-#if MODE == STANDARD && BLK_NEST > BLK_NEST90MIN
-        if ((warn_level & 4) &&
+        if (standard && (warn_level & 4) &&
                 &ifstack[ blk_nest_min + 1] == ifptr)
             cwarn( many_nesting, NULLST , (long) blk_nest_min, NULLST);
-#endif
         ifptr->stat = WAS_COMPILING;
         ifptr->ifline = line;
-#if MODE == STANDARD
         goto  ifdo;
 
     case L_elif:
+        if (! standard) {
+            do_old();               /* Unrecognized directive       */
+            break;
+        }
         if (ifptr == &ifstack[0])
             goto  nest_err;
         if (ifptr == infile->initif) {
@@ -324,16 +292,13 @@ control( newlines)
         }
         hash = L_if;
 ifdo:
-#endif  /* MODE == STANDARD    */
         c = do_if( hash);
-#if DEBUG
         if (debug & IF) {
             fprintf( fp_debug
                     , "#if (#elif, #ifdef, #ifndef) evaluate to %s.\n"
                     , compiling ? "TRUE" : "FALSE");
             fprintf( fp_debug, "line %ld: %s", line, infile->buffer);
         }
-#endif
         if (c == FALSE) {                   /* Error                */
             compiling = FALSE;              /* Skip this group      */
             goto  skip_line;    /* Prevent an extra error message   */
@@ -344,12 +309,10 @@ ifdo:
         if (ifptr == &ifstack[0])
             goto  nest_err;
         if (ifptr == infile->initif) {
-#if MODE == STANDARD
-            goto  in_file_nest_err;
-#else
-            if (warn_level & 1)
+            if (standard)
+                goto  in_file_nest_err;
+            else if (warn_level & 1)
                 cwarn( not_in_section, NULLST, 0L, NULLST);
-#endif
         }
         if (ifptr->stat & ELSE_SEEN)
             goto  else_seen_err;
@@ -367,12 +330,10 @@ ifdo:
         if (ifptr == &ifstack[0])
             goto  nest_err;
         if (ifptr <= infile->initif) {
-#if MODE == STANDARD
-            goto  in_file_nest_err;
-#else
-            if (warn_level & 1)
+            if (standard)
+                goto  in_file_nest_err;
+            else if (warn_level & 1)
                 cwarn( not_in_section, NULLST, 0L, NULLST);
-#endif
         }
         if (! compiling && (ifptr->stat & WAS_COMPILING))
             wrong_line = TRUE;
@@ -404,16 +365,22 @@ ifdo:
             newlines = -1;                  /* To clear line number */
         break;
 
-#if MODE == STANDARD
     case L_error:
+        if (! standard) {
+            do_old();               /* Unrecognized directive       */
+            break;
+        }
         cerror( infile->buffer                              /* _E_  */
                 , NULLST, 0L, NULLST);
         break;
 
     case L_pragma:
+        if (! standard) {
+            do_old();               /* Unrecognized directive       */
+            break;
+        }
         do_pragma();
         break;
-#endif
 
     default:                /* Non-Standard or unknown directives   */
         do_old();
@@ -424,48 +391,43 @@ ifdo:
     case L_if       :
     case L_define   :
     case L_line     :
-#if MODE == STANDARD
-    case L_error    :
-#endif
         goto  skip_line;    /* To prevent duplicate error message   */
 #if COMPILER == GNUC
     case L_include_next  :
         newlines = -1;
 #endif
+    case L_error    :
+        if (standard)
+            goto  skip_line;
+        /* Else fall through    */
     case L_include  :
-#if MODE == STANDARD
     case L_pragma   :
-#endif
-        break;              /* Already read over the line           */
+        if (standard)
+            break;          /* Already read over the line           */
+        /* Else fall through    */
     default :               /* L_else, L_endif, L_undef, etc.       */
-#if MODE == PRE_STANDARD
+        if (mode == OLD_PREP) {
         /*
          * Ignore the rest of the #control line so you can write
          *          #if     foo
          *          #endif  foo
          */
-        if (mode == OLD_PREP) {
             skip_nl();
             break;
         }
-#endif
         if (skip_ws() != '\n') {
-#if MODE == STANDARD
-            cerror( excess, infile->bptr-1, 0L, NULLST);
-#else
-            if (warn_level & 1)
+            if (standard)
+                cerror( excess, infile->bptr-1, 0L, NULLST);
+            else if (warn_level & 1)
                 cwarn( excess, infile->bptr-1, 0L, NULLST);
-#endif
             skip_nl();
         }
     }
     goto  ret;
 
-#if MODE == STANDARD
 in_file_nest_err:
     cerror( not_in_section, NULLST, 0L, NULLST);
     goto  skip_line;
-#endif
 nest_err:
     cerror( "Not in a #if (#ifdef) section", NULLST, 0L, NULLST);   /* _E_  */
     goto  skip_line;
@@ -485,13 +447,7 @@ ret:
     return  (wrong_line ? 0 : ++newlines);
 }
 
-static int
-#if PROTO
-do_if( int hash)
-#else
-do_if( hash)
-    int     hash;
-#endif
+static int  do_if( int hash)
 /*
  * Process an #if (#elif), #ifdef or #ifndef.  The latter two are straight-
  * forward, while #if needs a subroutine of its own to evaluate the
@@ -501,8 +457,8 @@ do_if( hash)
  * unnecessary warnings.
  */
 {
-    register int    c;
-    register int    found;
+    int     c;
+    int     found;
 
     if ((c = skip_ws()) == '\n') {
         unget();
@@ -529,12 +485,7 @@ do_if( hash)
     return  TRUE;
 }
 
-static long
-#if PROTO
-do_line( void)
-#else
-do_line()
-#endif
+static long do_line( void)
 /*
  * Parse the line to update the line number and "filename" field for the next
  * input line.
@@ -548,11 +499,9 @@ do_line()
 {
     const char * const  not_digits
         = "Line number \"%s\" isn't a decimal digits sequence"; /* _E_ _W1_ */
-#if MODE == STANDARD
     const char * const  out_of_range
         = "Line number \"%s\" is out of range of [1,%ld]";      /* _E_ _W1_ */
-    register int    token_type;
-#endif
+    int     token_type;
     VAL_SIGN *      valp;
     char *  save;
     int     c;
@@ -563,33 +512,31 @@ do_line()
         return  -1L;                /* Line number is not changed   */
     }
 
-#if MODE == STANDARD
-    token_type = get_unexpandable( c, FALSE);
-    if (macro_line == MACRO_ERROR)          /* Unterminated macro   */
-        return  -1L;                        /*   already diagnosed. */
-    if (token_type == NO_TOKEN)     /* Macro expanded to 0 token    */
-        goto  no_num;
-    if (token_type != NUM)
-#else   /* MODE == PRE_STANDARD */
-    if (scan_token( c, (workp = work, &workp), work_end) != NUM)
-#endif  /* MODE == PRE_STANDARD */
+    if (standard) {
+        token_type = get_unexpandable( c, FALSE);
+        if (macro_line == MACRO_ERROR)      /* Unterminated macro   */
+            return  -1L;                    /*   already diagnosed. */
+        if (token_type == NO_TOKEN) /* Macro expanded to 0 token    */
+            goto  no_num;
+        if (token_type != NUM)
+            goto  illeg_num;
+    } else if (scan_token( c, (workp = work, &workp), work_end) != NUM) {
         goto  illeg_num;
+    }
     for (workp = work; *workp != EOS; workp++) {
         if (! isdigit( *workp & UCHARMAX)) {
-#if MODE == STANDARD
-            cerror( not_digits, work, 0L, NULLST);
-            return  -1L;
-#else
-            if (warn_level & 1)
+            if (standard) {
+                cerror( not_digits, work, 0L, NULLST);
+                return  -1L;
+            } else if (warn_level & 1) {
                 cwarn( not_digits, work, 0L, NULLST);
-#endif
+            }
         }
     }
     valp = eval_num( work);                 /* Evaluate number      */
     if (valp->sign == VAL_ERROR) {  /* Error diagnosed by eval_num()*/
         return  -1;
-#if MODE == STANDARD
-    } else if (line_limit < valp->val || valp->val <= 0L) {
+    } else if (standard && (line_limit < valp->val || valp->val <= 0L)) {
         if (valp->val < LINE99LIMIT && valp->val > 0L) {
             if (warn_level & 1)
                 cwarn( out_of_range, work, line_limit, NULLST);
@@ -597,39 +544,37 @@ do_line()
             cerror( out_of_range, work, line_limit, NULLST);
             return  -1L;
         }
-#endif
     }
 
-#if MODE == STANDARD
-    token_type = get_unexpandable( skip_ws(), FALSE);
-    if (macro_line == MACRO_ERROR)
-        return  -1L;
-    if (token_type != STR) {
-        if (token_type == NO_TOKEN) {       /* Filename is absent   */
-            return  (long) valp->val;
-        } else {
-            goto  not_fname;    /* Expanded macro should be a quoted string */
+    if (standard) {
+        token_type = get_unexpandable( skip_ws(), FALSE);
+        if (macro_line == MACRO_ERROR)
+            return  -1L;
+        if (token_type != STR) {
+            if (token_type == NO_TOKEN) {   /* Filename is absent   */
+                return  (long) valp->val;
+            } else {    /* Expanded macro should be a quoted string */
+                goto  not_fname;
+            }
         }
+    } else {
+        if ((c = skip_ws()) == '\n') {
+            unget();
+            return  (long) valp->val;
+        }
+        if (scan_token( c, (workp = work, &workp), work_end) != STR)
+            goto  not_fname;
     }
-#else   /* MODE == PRE_STANDARD */
-    if ((c = skip_ws()) == '\n') {
-        unget();
-        return  (long) valp->val;
-    }
-    if (scan_token( c, (workp = work, &workp), work_end) != STR)
-        goto  not_fname;
-#endif  /* MODE == PRE_STANDARD */
     *(workp - 1) = EOS;                     /* Ignore right '"'     */
     save = save_string( &work[ 1]);         /* Ignore left '"'      */
 
-#if MODE == STANDARD
-    if (get_unexpandable( skip_ws(), FALSE) != NO_TOKEN) {
-        cerror( excess, work, 0L, NULLST);
-        free( save);
-        return  -1L;
-    }
-#else   /* MODE == PRE_STANDARD */
-    if (mode == OLD_PREP) {
+    if (standard) {
+        if (get_unexpandable( skip_ws(), FALSE) != NO_TOKEN) {
+            cerror( excess, work, 0L, NULLST);
+            free( save);
+            return  -1L;
+        }
+    } else if (mode == OLD_PREP) {
         skip_nl();
         unget();
     } else if ((c = skip_ws()) == '\n') {
@@ -642,17 +587,14 @@ do_line()
         skip_nl();
         unget();
     }
-#endif  /* MODE == PRE_STANDARD */
 
     infile->filename = save;                /* New file name        */
                                 /* Do not free() infile->filename   */
     return  (long) valp->val;               /* New line number      */
 
-#if MODE == STANDARD
 no_num:
     cerror( "No line number", NULLST, 0L, NULLST);          /* _E_  */
     return  -1L;
-#endif
 illeg_num:
     cerror( "Not a line number \"%s\"", work, 0L, NULLST);  /* _E_  */
     return  -1L;
@@ -689,13 +631,9 @@ static char *   repl_base;      /* Base of buffer for repl-text */
 static char *   repl_end;       /* End of buffer for repl-text  */
 static const char * const   no_ident = "No identifier";     /* _E_  */
 
-DEFBUF *
-#if PROTO
-do_define( int ignore_redef)
-#else
-do_define( ignore_redef)
-    int     ignore_redef;   /* Do not redefine   */
-#endif
+DEFBUF *    do_define(
+    int     ignore_redef        /* Do not redefine   */
+)
 /*
  * Called from control() when a #define is scanned or called from do_options()
  *      when a -D option is scanned.  This module parses formal parameters
@@ -730,21 +668,19 @@ do_define( ignore_redef)
  * def_stringization()  is called when '#' operator is scanned.  It surrounds
  *              the token to stringize with magic-codes.
  *
- * MODEs other than STANDARD ignore difference of parameter names in macro
+ * modes other than STD ignore difference of parameter names in macro
  * redefinition.
  */
 {
-#if MODE == STANDARD
     const char * const  predef = "\"%s\" shouldn't be redefined";   /* _E_  */
-#endif
     char    repl_list[ NMACWORK + IDMAX];   /* Replacement text     */
     char    macroname[ IDMAX + 1];  /* Name of the macro defining   */
-    register DEFBUF *   defp;       /* -> Old definition            */
+    DEFBUF *    defp;               /* -> Old definition            */
     DEFBUF **   prevp;      /* -> Pointer to previous def in list   */
     int     c;
     int     redefined;                      /* TRUE if redefined    */
     int     dnargs;                         /* defp->nargs          */
-    int     cmp;            /* Result of definition comparison      */
+    int     cmp;                    /* Result of name comparison    */
 
     repl_base = repl_list;
     repl_end = & repl_list[ NMACWORK];
@@ -758,36 +694,40 @@ do_define( ignore_redef)
     } else {
         prevp = look_prev( identifier, &cmp);
         defp = *prevp;
-#if MODE == STANDARD
-        if (cmp || defp->push) {    /* Not known or 'pushed' macro  */
-#else
-        if (cmp) {
-#endif
-#if MODE == STANDARD
-            if (str_eq( identifier, "defined")
-                    || ((stdc_val || cplus)
-                        &&  str_eq( identifier, "__VA_ARGS__"))) {
-                cerror(
+        if (standard) {
+            if (cmp || defp->push) {    /* Not known or 'pushed' macro      */
+                if (str_eq( identifier, "defined")
+                        || ((stdc_val || cplus)
+                            &&  str_eq( identifier, "__VA_ARGS__"))) {
+                    cerror(
             "\"%s\" shouldn't be defined", identifier, 0L, NULLST); /* _E_  */
-                return  NULL;
+                    return  NULL;
+                }
+                redefined = FALSE;          /* Quite new definition */
+            } else {                        /* It's known:          */
+                if (ignore_redef)
+                    return  defp;
+                    dnargs = (defp->nargs == DEF_NOARGS-1) ? DEF_NOARGS
+                            : defp->nargs;
+                if (dnargs < DEF_NOARGS - 1 /* Standard predefined  */
+                        || dnargs == DEF_PRAGMA /* _Pragma() pseudo-macro   */
+                        ) {
+                    cerror( predef, identifier, 0L, NULLST);
+                    return  NULL;
+                } else {
+                    redefined = TRUE;       /* Remember this fact   */
+                }
             }
-#endif  /* MODE == STANDARD    */
-            redefined = FALSE;              /* Quite new definition */
-        } else {                            /* It's known:          */
-            if (ignore_redef)
-                return  defp;
-            dnargs = (defp->nargs == DEF_NOARGS-1) ? DEF_NOARGS : defp->nargs;
-#if MODE == STANDARD
-            if (dnargs < DEF_NOARGS - 1     /* Standard predefined  */
-#if OK_PRAGMA_OP
-                    || dnargs == DEF_PRAGMA /* _Pragma() pseudo-macro       */
-#endif
-                    ) {
-                cerror( predef, identifier, 0L, NULLST);
-                return  NULL;
-            } else
-#endif  /* MODE == STANDARD    */
-                redefined = TRUE;           /* Remember this fact   */
+        } else {
+            if (cmp) {
+                redefined = FALSE;          /* Quite new definition */
+            } else {                        /* It's known:          */
+                if (ignore_redef)
+                    return  defp;
+                dnargs = (defp->nargs == DEF_NOARGS-1) ? DEF_NOARGS
+                        : defp->nargs;
+                redefined = TRUE;
+            }
         }
     }
     strcpy( macroname, identifier);         /* Remember the name    */
@@ -805,9 +745,7 @@ do_define( ignore_redef)
     in_define = FALSE;
     if (redefined) {
         if (dnargs != nargs || ! str_eq( defp->repl, repl_list)
-#if MODE == STANDARD
                 || (mode == STD && ! str_eq( defp->parmnames, work))
-#endif
                 ) {             /* Warn if differently redefined    */
             if (warn_level & 1) {
                 cwarn(
@@ -821,26 +759,19 @@ do_define( ignore_redef)
         }
     }                                   /* Else new or re-definition*/
     defp = install( macroname, nargs, work, repl_list, prevp, cmp);
-#if MODE == STANDARD
     if (mode == STD && cplus && id_operator( macroname) && (warn_level & 1))
         /* These are operators, not identifiers, in C++98   */
         cwarn( "\"%s\" is defined as macro", macroname      /* _W1_ */
                 , 0L, NULLST);
-#endif
     return  defp;
 }
 
-static int
-#if PROTO
-get_parm( void)
-#else
-get_parm()
-#endif
+static int  get_parm( void)
 /*
  *   Get parameters i.e. numbers into nargs, name into work[], name-length
  * into parlen[].
  *   Return TRUE if the parameters are legal, else return FALSE.
- *   In STANDARD mode preprocessor must remember the parameter names, only for
+ *   In STD mode preprocessor must remember the parameter names, only for
  * checking the validity of macro redefinitions.  This is required by the
  * Standard (what an overhead !).
  */
@@ -850,14 +781,13 @@ get_parm()
     const char * const  illeg_parm
             = "Illegal parameter \"%s\"";           /* _E_          */
     int     token_type;
-    register int    c;
+    int     c;
 
     parlist[ 0] = workp = work;
     work[ 0] = EOS;
-#if MODE == STANDARD
+
     /* POST_STD mode    */
     insert_sep = NO_SEP;    /* Clear the inserted token separator   */
-#endif
     c = get();
 
     if (c == '(') {                         /* With arguments?      */
@@ -880,13 +810,13 @@ get_parm()
                 } else if (c == ',' || c == ')') {
                     cerror( "Empty parameter", NULLST, 0L, NULLST); /* _E_  */
                     return  FALSE;
-#if MODE == STANDARD
-                /*
-                 * Enable variable argument macro which is the feature of C99.
-                 * We enable this even on C90 or C++ for GNU C compatibility.
-                 */
-                } else if ((stdc_val || cplus) && token_type == OPE
-                        && openum == OP_ELL) {
+                } else if (standard && (stdc_val || cplus)
+                        && token_type == OPE && openum == OP_ELL) {
+                    /*
+                     * Enable variable argument macro which is a feature of
+                     * C99.  We enable this even on C90 or C++ for GCC
+                     * compatibility.
+                     */
                     if (skip_ws() != ')') {
                         cerror( "\"...\" isn't the last parameter", /* _E_  */
                                 NULLST, 0L, NULLST);
@@ -895,19 +825,17 @@ get_parm()
                     parlen[ nargs++] = 3;
                     nargs |= VA_ARGS;
                     goto  ret;
-#endif
                 } else {
                     cerror( illeg_parm , parlist[ nargs], 0L, NULLST);
                     return  FALSE;          /* Bad parameter syntax */
                 }
             }
-#if MODE == STANDARD
-            if ((stdc_val || cplus) && str_eq( identifier, "__VA_ARGS__")) {
+            if (standard && (stdc_val || cplus)
+                    && str_eq( identifier, "__VA_ARGS__")) {
                 cerror( illeg_parm, parlist[ nargs], 0L, NULLST);
                 return  FALSE;
                 /* __VA_ARGS__ should not be used as a parameter    */
             }
-#endif
             if (is_formal( parlist[ nargs], FALSE)) {
                 cerror( "Duplicate parameter name \"%s\""   /* _E_  */
                         , parlist[ nargs], 0L, NULLST);
@@ -935,23 +863,15 @@ get_parm()
         nargs = DEF_NOARGS;                 /* Object-like macro    */
         unget();
     }
-#if MODE == STANDARD
 ret:
 #if NMACPARS > NMACPARS90MIN
     if ((warn_level & 4) && (nargs & ~VA_ARGS) > n_mac_pars_min)
         cwarn( many_parms, NULLST , (long) n_mac_pars_min , NULLST);
 #endif
-#endif
     return  TRUE;
 }
 
-static int
-#if PROTO
-get_repl( const char * macroname)
-#else
-get_repl( macroname)
-    char *  macroname;
-#endif
+static int  get_repl( const char * macroname)
 /*
  *   Get replacement text i.e. names of formal parameters are converted to
  * the magic numbers, and operators #, ## is converted to magic characters.
@@ -964,42 +884,41 @@ get_repl( macroname)
  * of token separator makes no difference.
  */
 {
-#if MODE == STANDARD
     const char * const  mixed_ops
     = "Macro with mixing of ## and # operators isn't portable";     /* _W4_ */
     const char * const  multiple_cats
     = "Macro with multiple ## operators isn't portable";    /* _W4_ */
     char *  prev_token = NULL;              /* Preceding token      */
-    char *  prev_prev_token;                /* Pre-preceding token  */
+    char *  prev_prev_token = NULL;         /* Pre-preceding token  */
     int     multi_cats = FALSE;             /* Multiple ## operators*/
-#endif
-    register int    c;
+    int     c;
     int     token_type;                     /* Type of token        */
     char *  temp;
     char *  repl_cur = repl_base;   /* Pointer into repl-text buffer*/
 
     *repl_cur = EOS;
     token_p = NULL;
-#if MODE == STANDARD
-    c = get();
-    unget();
-    if (((type[ c] & SPA) == 0) && (nargs < 0) && (warn_level & 1))
-        cwarn( "No space between macro name \"%s\" and repl-text"   /* _W1_ */
+    if (STD) {
+        c = get();
+        unget();
+        if (((type[ c] & SPA) == 0) && (nargs < 0) && (warn_level & 1))
+            cwarn( "No space between macro name \"%s\" and repl-text"/* _W1_ */
                 , macroname, 0L, NULLST);
-#endif
+    }
     c = skip_ws();                           /* Get to the body      */
 
     while (c != CHAR_EOF && c != '\n') {
-#if MODE == STANDARD
-        prev_prev_token = prev_token;
-        prev_token = token_p;
-#endif
+        if (standard) {
+            prev_prev_token = prev_token;
+            prev_token = token_p;
+        }
         token_p = repl_cur;                 /* Remember the pointer */
         token_type = scan_token( c, &repl_cur, repl_end);
 
         switch (token_type) {
-#if MODE == STANDARD
         case OPE:                   /* Operator or punctuator       */
+            if (! standard)
+                break;
             switch (openum) {
             case OP_CAT:                    /* ##                   */
                 if (prev_token == NULL) {
@@ -1035,7 +954,6 @@ get_repl( macroname)
                 break;
             }
             break;
-#endif  /* MODE == STANDARD    */
         case NAM:
         /*
          * Replace this name if it's a parm.  Note that the macro name is a
@@ -1046,7 +964,8 @@ get_repl( macroname)
          */
             temp = is_formal( identifier, TRUE);
             if (temp == NULL) {             /* Not a parameter name */
-#if MODE == STANDARD
+                if (! standard)
+                    break;
                 if ((stdc_val || cplus)
                             && str_eq( identifier, "__VA_ARGS__")) {
                     cerror( "\"%s\" without corresponding \"...\""  /* _E_  */
@@ -1055,13 +974,11 @@ get_repl( macroname)
                 }
                 if ((temp = mgtoken_save( macroname)) != NULL)
                     repl_cur = temp;        /* Macro name           */
-#endif
             } else {                        /* Parameter name       */
                 repl_cur = temp;
             }
             break;
 
-#if MODE == PRE_STANDARD
         case STR:                           /* String in mac. body  */
         case CHR:                           /* Character constant   */
             if (mode == OLD_PREP)
@@ -1071,7 +988,6 @@ get_repl( macroname)
             if (mode == OLD_PREP && c == COM_SEP)
                 repl_cur--;                 /* Skip comment now     */
             break;
-#endif
         default:                            /* Any token as it is   */
             break;
         }
@@ -1084,49 +1000,43 @@ get_repl( macroname)
     }
 
     unget();                                /* For control check    */
-#if MODE == STANDARD
-    if (token_p && *token_p == CAT) {
-        cerror( "No token after ##", NULLST, 0L, NULLST);   /* _E_  */
-        return  FALSE;
+    if (standard) {
+        if (token_p && *token_p == CAT) {
+            cerror( "No token after ##", NULLST, 0L, NULLST);       /* _E_  */
+            return  FALSE;
+        }
+        if (multi_cats && (warn_level & 4))
+            cwarn( multiple_cats, NULLST, 0L, NULLST);
+        if ((nargs & VA_ARGS) && stdc_ver < 199901L && (warn_level & 2))
+            /* Variable arg macro is the spec of C99, not C90 nor C++98     */
+            cwarn( "Variable argument macro is defined",    /* _W2_ */
+                    NULLST, 0L, NULLST);
     }
-    if (multi_cats && (warn_level & 4))
-        cwarn( multiple_cats, NULLST, 0L, NULLST);
-    if ((nargs & VA_ARGS) && stdc_ver < 199901L && (warn_level & 2))
-        /* Variable arg macro is the spec of C99, not C90 nor C++98 */
-        cwarn( "Variable argument macro is defined",        /* _W2_ */
-                NULLST, 0L, NULLST);
-#endif
     *repl_cur = EOS;                        /* Terminate work       */
 
     return  TRUE;
 }
 
-static char *
-#if PROTO
-is_formal( const char * name, int conv)
-#else
-is_formal( name, conv)
-    char *      name;
-    int         conv;                   /* Convert to magic number? */
-#endif
+static char *   is_formal(
+    const char *    name,
+    int         conv                    /* Convert to magic number? */
+)
 /*
  * If the identifier is a formal parameter, save the MAC_PARM and formal
  * offset, returning the advanced pointer into the replacement text.
  * Else, return NULL.
  */
 {
-    register char *   repl_cur;
+    char *  repl_cur;
     int     i;
 
-    for (i = 0; i < (nargs & ~VA_ARGS); i++) { /* For each parameter   */
+    for (i = 0; i < (nargs & ~VA_ARGS); i++) {      /* For each parameter   */
         if ((strlen( name) == parlen[ i]
                             /* Note: parlist[] are comma separated  */
                     && memcmp( name, parlist[ i], parlen[ i]) == 0)
-#if MODE == STANDARD
-                || ((nargs & VA_ARGS) && i == (nargs & ~VA_ARGS) - 1 && conv
-                    && memcmp( name, "__VA_ARGS__", 12) == 0)
-#endif
-            ) {
+                || (standard && (nargs & VA_ARGS)
+                    && i == (nargs & ~VA_ARGS) - 1 && conv
+                    && memcmp( name, "__VA_ARGS__", 12) == 0)) {
                                             /* If it's known        */
             if (conv) {
                 repl_cur = token_p;         /* Overwrite on the name*/
@@ -1142,15 +1052,7 @@ is_formal( name, conv)
     return  NULL;                           /* Not a formal param   */
 }
 
-#if MODE == STANDARD
-
-static char *
-#if PROTO
-def_stringization( char * repl_cur)
-#else
-def_stringization( repl_cur)
-    char *  repl_cur;
-#endif
+static char *   def_stringization( char * repl_cur)
 /*
  * Define token stringization.
  * We store a magic cookie (which becomes " on output) preceding the
@@ -1160,7 +1062,7 @@ def_stringization( repl_cur)
  */
 {
     int     c;
-    register char *     temp;
+    char *  temp;
 
     *repl_cur++ = ST_QUOTE;                 /* prefix               */
     if ((c = get()) == ' ') {
@@ -1178,20 +1080,14 @@ def_stringization( repl_cur)
     return  NULL;
 }
 
-static char *
-#if PROTO
-mgtoken_save( const char * macroname)
-#else
-mgtoken_save( macroname)
-    char *  macroname;
-#endif
+static char *   mgtoken_save( const char * macroname)
 /*
  * A magic cookie is inserted if the token is identical to the macro name,
  * so the expansion doesn't recurse.
  * Return the advanced pointer into the replacement text or NULL.
  */
 {
-    register char *   repl_cur;
+    char *   repl_cur;
 
     if (str_eq( macroname, identifier)) {   /* Macro name in body   */
         repl_cur = token_p;                 /* Overwrite on token   */
@@ -1204,17 +1100,7 @@ mgtoken_save( macroname)
     }
 }
 
-#endif  /* MODE == STANDARD    */
-
-#if MODE == PRE_STANDARD
-
-static char *
-#if PROTO
-str_parm_scan( char * string_end)
-#else
-str_parm_scan( string_end)
-    char *  string_end;
-#endif
+static char *   str_parm_scan( char * string_end)
 /*
  * String parameter scan.
  * This code -- if enabled -- recognizes a formal parameter in a string
@@ -1231,7 +1117,7 @@ str_parm_scan( string_end)
     int     delim;
     int     c;
     char *  tp;
-    register char *     wp;     /* Pointer into the quoted literal  */
+    char *  wp;             /* Pointer into the quoted literal  */
 
     delim = *token_p;
     unget_string( ++token_p, NULLST);
@@ -1248,20 +1134,13 @@ str_parm_scan( string_end)
     return  wp;
 }
 
-#endif  /* MODE == PRE_STANDARD */
-
-static void
-#if PROTO
-do_undef( void)
-#else
-do_undef()
-#endif
+static void do_undef( void)
 /*
  * Remove the symbol from the defined list.
  * Called from control().
  */
 {
-    register DEFBUF *   defp;
+    DEFBUF *    defp;
     int     c;
 
     if ((c = skip_ws()) == '\n') {
@@ -1278,26 +1157,21 @@ do_undef()
             if (warn_level & 8)
                 cwarn( "\"%s\" wasn't defined"              /* _W8_ */
                         , identifier, 0L, NULLST);
-#if MODE == STANDARD
-        } else if (defp->nargs < DEF_NOARGS - 1 /* Standard predef  */
-#if OK_PRAGMA_OP
-                || defp->nargs == DEF_PRAGMA    /* _Pragma() pseudo-macro   */
-#endif
-                ) {
+        } else if (standard 
+                && (defp->nargs < DEF_NOARGS - 1        /* Standard predef  */
+                    || defp->nargs == DEF_PRAGMA)) {
+                                        /* _Pragma() pseudo-macro   */
             cerror( "\"%s\" shouldn't be undefined"         /* _E_  */
                     , identifier, 0L, NULLST);
-#endif
-        } else {
-#if MODE == STANDARD
+        } else if (standard) {
             c = skip_ws();
             unget();
             if (c != '\n')                      /* Trailing junk    */
                 return;
             else
                 undefine( identifier);
-#else
+        } else {
             undefine( identifier);
-#endif
         }
     }
 }
@@ -1311,17 +1185,9 @@ do_undef()
 
 /* Symbol table queue headers.  */
 static DEFBUF *     symtab[ SBSIZE];
-#if MODE == STANDARD
 static long         num_of_macro;
-#endif
 
-DEFBUF *
-#if PROTO
-look_id( const char * name)
-#else
-look_id( name)
-    char *      name;
-#endif
+DEFBUF *    look_id( const char * name)
 /*
  * Look for the identifier in the symbol table.
  * If found, return the table pointer;  Else return NULL.
@@ -1332,27 +1198,22 @@ look_id( name)
 
     prevp = look_prev( name, &cmp);
 
-#if MODE == STANDARD
-    return ((cmp == 0 && (*prevp)->push == 0) ? *prevp : (DEFBUF *)NULL);
-#else
-    return ((cmp == 0) ? *prevp : (DEFBUF *)NULL);
-#endif
+    if (standard)
+        return ((cmp == 0 && (*prevp)->push == 0) ? *prevp : (DEFBUF *)NULL);
+    else
+        return ((cmp == 0) ? *prevp : (DEFBUF *)NULL);
 }
 
-DEFBUF **
-#if PROTO
-look_prev( const char * name, int * cmp)
-#else
-look_prev( name, cmp)
-    char *  name;                           /* Name of the macro    */
-    int *   cmp;                            /* Result of comparison */
-#endif
+DEFBUF **   look_prev(
+    const char *    name,                   /* Name of the macro    */
+    int *   cmp                             /* Result of comparison */
+)
 /*
  * Look for the place to insert the macro definition.
  * Return a pointer to the previous member in the linked list.
  */
 {
-    register const char *   np;
+    const char *    np;
     DEFBUF **   prevp;
     DEFBUF *    dp;
     size_t      s_name;
@@ -1363,7 +1224,7 @@ look_prev( name, cmp)
     hash += s_name = (size_t)(np - name);
     s_name++;
     prevp = & symtab[ hash & SBMASK];
-    *cmp = -1;                              /* Initialize !         */
+    *cmp = -1;                              /* Initialize           */
 
     while ((dp = *prevp) != NULL) {
         if ((*cmp = memcmp( dp->name, name, s_name)) >= 0)
@@ -1374,17 +1235,12 @@ look_prev( name, cmp)
     return  prevp;
 }
 
-DEFBUF *
-#if PROTO
-look_and_install( const char * name, int numargs, const char * parmnames
-        , const char * repl)
-#else
-look_and_install( name, numargs, parmnames, repl)
-    char *  name;                           /* Name of the macro    */
-    int     numargs;                        /* The numbers of parms */
-    char *  parmnames;          /* Names of parameters concatenated */
-    char *  repl;                           /* Replacement text     */
-#endif
+DEFBUF *    look_and_install(
+    const char *    name,                   /* Name of the macro    */
+    int     numargs,                        /* The numbers of parms */
+    const char *    parmnames,  /* Names of parameters concatenated */
+    const char *    repl                    /* Replacement text     */
+)
 /*
  * Look for the name and (re)define it.
  * Returns a pointer to the definition block.
@@ -1400,51 +1256,38 @@ look_and_install( name, numargs, parmnames, repl)
     return  defp;
 }
 
-DEFBUF *
-#if PROTO
-install( const char * name, int numargs, const char * parmnames
-        , const char * repl, DEFBUF ** prevp, int cmp)
-#else
-install( name, numargs, parmnames, repl, prevp, cmp)
-    char *  name;                           /* Name of the macro    */
-    int     numargs;                        /* The numbers of parms */
-    char *  parmnames;          /* Names of parameters concatenated */
-    char *  repl;                           /* Replacement text     */
-    DEFBUF **  prevp;           /* The place to insert definition   */
-    int     cmp;        /* Result of comparison of new name and old */
-#endif
+DEFBUF *    install(
+    const char *    name,                   /* Name of the macro    */
+    int     numargs,                        /* The numbers of parms */
+    const char *    parmnames,  /* Names of parameters concatenated */
+    const char *    repl,                   /* Replacement text     */
+    DEFBUF **  prevp,           /* The place to insert definition   */
+    int     cmp         /* Result of comparison of new name and old */
+)
 /*
  * Enter this name in the lookup table.
  * Returns a pointer to the definition block.
  * Returns NULL if the symbol was Standard-predefined.
  */
 {
-    register DEFBUF *   dp;
-    register DEFBUF *   defp;
-    size_t              s_name, s_parmnames, s_repl;
+    DEFBUF *    dp;
+    DEFBUF *    defp;
+    size_t      s_name, s_parmnames, s_repl;
 
     defp = *prevp;
     if (cmp == 0 && defp->nargs < DEF_NOARGS - 1)
         return  NULL;                       /* Standard predefined  */
     s_parmnames = 0;
-#if DEBUG
     if (parmnames == NULL || repl == NULL)      /* Shouldn't happen */
         cfatal( "Bug: Illegal macro installation of \"%s\"" /* _F_  */
                 , name, 0L, NULLST);    /* Use "" instead of NULL   */
-#endif
     s_name = strlen( name);
-#if MODE == STANDARD
     if (mode == STD)
         s_parmnames = strlen( parmnames) + 1;
-#endif
     s_repl = strlen( repl) + 1;
     dp = (DEFBUF *)
         xmalloc( sizeof (DEFBUF) + s_name + s_parmnames + s_repl);
-    if (cmp
-#if MODE == STANDARD
-                || (*prevp)->push
-#endif
-                ) {                     /* New definition           */
+    if (cmp || (standard && (*prevp)->push)) {  /* New definition   */
         dp->link = defp;                /* Insert to linked list    */
         *prevp = dp;
     } else {                            /* Redefinition             */
@@ -1453,125 +1296,115 @@ install( name, numargs, parmnames, repl, prevp, cmp)
         free( defp);
     }
     dp->nargs = numargs;
-#if MODE == STANDARD
-    dp->push = 0;
-#endif
-#if MODE == STANDARD
-    dp->parmnames = (char *)dp + sizeof (DEFBUF) + s_name;
-    dp->repl = dp->parmnames + s_parmnames;
-    if (mode == STD)
-        memcpy( dp->parmnames, parmnames, s_parmnames);
-#else
-    dp->repl = (char *)dp + sizeof (DEFBUF) + s_name;
-#endif
+    if (standard) {
+        dp->push = 0;
+        dp->parmnames = (char *)dp + sizeof (DEFBUF) + s_name;
+        dp->repl = dp->parmnames + s_parmnames;
+        if (mode == STD)
+            memcpy( dp->parmnames, parmnames, s_parmnames);
+    } else {
+        dp->repl = (char *)dp + sizeof (DEFBUF) + s_name;
+    }
     memcpy( dp->name, name, s_name + 1);
     memcpy( dp->repl, repl, s_repl);
-#if DEBUG                   /* Remember where the macro is defined  */
+    /* Remember where the macro is defined  */
     dp->dir = *inc_dirp;
     dp->fname = cur_fname;
     dp->mline = line;
-#endif
-#if MODE == STANDARD
-    if (cmp && ++num_of_macro == n_macro_min + 1 && n_macro_min
+    if (standard && cmp && ++num_of_macro == n_macro_min + 1 && n_macro_min
             && (warn_level & 4))
         cwarn( "More than %.0s%ld macros defined"           /* _W4_ */
                 , NULLST , n_macro_min , NULLST);
-#endif
     return  dp;
 }
 
-int
-#if PROTO
-undefine( const char * name)
-#else
-undefine( name)
-    char *  name;                           /* Name of the macro    */
-#endif
+int undefine(
+    const char *  name                      /* Name of the macro    */
+)
 /*
  * Delete the macro definition from the symbol table.
  * Returns TRUE, if deleted;
  * Else returns FALSE (when the macro was not defined or was predefined).
  */
 {
-    register DEFBUF **  prevp;  /* Preceding definition in list     */
-    DEFBUF *            dp;             /* Definition to delete     */
-    int                 cmp;
+    DEFBUF **   prevp;          /* Preceding definition in list     */
+    DEFBUF *    dp;                     /* Definition to delete     */
+    int         cmp;
 
     prevp = look_prev( name, &cmp);
     dp = *prevp;                        /* Definition to delete     */
     if (cmp || dp->nargs < DEF_NOARGS - 1)
         return  FALSE;                      /* Standard predefined  */
-#if MODE == STANDARD
-    if (dp->push)
+    if (standard && dp->push)
         return  FALSE;                  /* 'Pushed' macro           */
-#endif
     *prevp = dp->link;          /* Link the previous and the next   */
     free( dp);                          /* Delete the definition    */
-#if MODE == STANDARD
-    num_of_macro--;
-#endif
+    if (standard)
+        num_of_macro--;
     return  TRUE;
 }
 
 static void
-#if PROTO
 dump_repl( const DEFBUF * dp, FILE * fp)
-#else
-dump_repl( dp, fp)
-    const DEFBUF *  dp;
-    FILE *          fp;
-#endif
 /*
  * Dump replacement text.
  */
 {
-#if MODE == STANDARD
     int     numargs = dp->nargs;
     char *  cp1;
     size_t  i;
-#endif
     int     c;
-    register const char *   cp;
+    const char *    cp;
 
     for (cp = dp->repl; (c = *cp++ & UCHARMAX) != EOS; ) {
 
         switch (c) {
         case MAC_PARM:                              /* Parameter    */
             c = (*cp++ & UCHARMAX) - 1;
-#if MODE == STANDARD
-            if ((numargs & VA_ARGS) && c == (numargs & ~VA_ARGS) - 1) {
-                fputs( "__VA_ARGS__", fp);
-            } else {
-                if (mode == STD) {
-                    for (i = 0, cp1 = parlist[ c]; i < parlen[ c]; i++)
-                        fputc( *cp1++, fp);
+            if (standard) {
+                if ((numargs & VA_ARGS) && c == (numargs & ~VA_ARGS) - 1) {
+                    fputs( "__VA_ARGS__", fp);
                 } else {
-                    fputc( 'a' + c % 26, fp);
-                    if (c > 26)
-                        fputc( '0' + c / 26, fp);
+                    if (mode == STD) {
+                        for (i = 0, cp1 = parlist[ c]; i < parlen[ c]; i++)
+                            fputc( *cp1++, fp);
+                    } else {
+                        fputc( 'a' + c % 26, fp);
+                        if (c > 26)
+                            fputc( '0' + c / 26, fp);
+                    }
                 }
+            } else {
+                fputc( 'a' + c % 26, fp);
+                if (c > 26)
+                    fputc( '0' + c / 26, fp);
             }
-#else
-            fputc( 'a' + c % 26, fp);
-            if (c > 26)
-                fputc( '0' + c / 26, fp);
-#endif
             break;
-#if MODE == STANDARD
         case DEF_MAGIC:
+            if (! standard)
+                fputc( c, fp);
+            /* Else skip    */
             break;
         case CAT:
-            fputs( "##", fp);
+            if (standard)
+                fputs( "##", fp);
+            else
+                fputc( c, fp);
             break;
         case ST_QUOTE:
-            fputs( "#", fp);
+            if (standard)
+                fputs( "#", fp);
+            else
+                fputc( c, fp);
             break;
-#else
         case COM_SEP:
+            /*
+             * Though TOK_SEP coincides to COM_SEP, this cannot appear in
+             * Standard mode.
+             */
             if (mode == OLD_PREP)
                 fputs( "/**/", fp);
             break;
-#endif
         default:
             fputc( c, fp);
             break;
@@ -1589,40 +1422,28 @@ dump_repl( dp, fp)
 #define CAN_REDEF   (DEF_NOARGS - 1)
 #endif
 
-void
-#if PROTO
-dump_a_def( const char * why, const DEFBUF * dp, int newdef, int dDflag
-    , int comment, FILE * fp)
-#else
-dump_a_def( why, dp, newdef, dDflag, comment, fp)
-    const char *    why;
-    DEFBUF *        dp;
-    int     newdef;         /* TRUE if parmnames are currently in parlist[] */
-    int     dDflag;         /* TRUE if -dD option is used (for GNU C)       */
-    int     comment;        /* Show location of the definition in comment   */
-    FILE *  fp;
-#endif
+void    dump_a_def(
+    const char *    why,
+    const DEFBUF *  dp,
+    int     newdef,         /* TRUE if parmnames are currently in parlist[] */
+    int     dDflag,         /* TRUE if -dD option is used (for GCC)         */
+    int     comment,        /* Show location of the definition in comment   */
+    FILE *  fp
+)
 /*
  * Dump a macro definition.
  */
 {
-#if MODE == STANDARD
     char *  cp, * cp1;
-#endif
     int     numargs = dp->nargs & ~VA_ARGS;
     int     commented;                      /* To be commented out  */
-    register int    i;
+    int     i;
 
-#if MODE == STANDARD && OK_PRAGMA_OP
-    if (numargs == DEF_PRAGMA)              /* _Pragma pseudo-macro */
+    if (standard && numargs == DEF_PRAGMA)  /* _Pragma pseudo-macro */
         return;
-#endif
-    if ((numargs < CAN_REDEF) || (dDflag && (numargs == DEF_NOARGS - 1)))
+    if ((numargs < CAN_REDEF) || (dDflag && (numargs == DEF_NOARGS - 1))
+            || (standard && dp->push))
         commented = TRUE;
-#if MODE == STANDARD
-    else if (dp->push)
-        commented = TRUE;
-#endif
     else
         commented = FALSE;
     if (! comment && commented)             /* For -dM option       */
@@ -1632,11 +1453,11 @@ dump_a_def( why, dp, newdef, dDflag, comment, fp)
     fprintf( fp, "%s#define %s", commented ? "/* " : "",
             dp->name);                      /* Macro name           */
     if (numargs >= 0) {                     /* Parameter list       */
-#if MODE == STANDARD
         if (mode == STD) {
             fprintf( fp, "(%s)", dp->parmnames);
             if (! newdef) {
-                for (i = 0, cp = dp->parmnames; i < numargs; i++, cp = cp1 + 1) {
+                for (i = 0, cp = dp->parmnames; i < numargs;
+                        i++, cp = cp1 + 1) {
                     if ((cp1 = strchr( cp, ',')) == NULL)   /* The last arg */
                         parlen[ i] = strlen( cp);
                     else
@@ -1644,9 +1465,7 @@ dump_a_def( why, dp, newdef, dDflag, comment, fp)
                     parlist[ i] = cp;
                 }
             }
-        } else
-#endif
-        {
+        } else {
             if (newdef) {
                 fprintf( fp, "(%s)", parlist[0]);
             } else if (numargs == 0) {
@@ -1671,26 +1490,20 @@ dump_a_def( why, dp, newdef, dDflag, comment, fp)
     if (commented)
             /* Standard predefined or one-pass-compiler-predefined  */
         fputs( " */", fp);
-#if DEBUG
     if (comment)                            /* Not -dM option       */
         fprintf( fp, " \t/* %s%s:%ld\t*/", dp->dir, dp->fname, dp->mline);
-#endif
     fputc( '\n', fp);
 }
 
-void
-#if PROTO
-dump_def( int dDflag, int comment)
-#else
-dump_def( dDflag)
-    int     dDflag;                 /* -dD option (for GNU C)       */
-    int     comment;        /* Location of definition in comment    */
-#endif
+void    dump_def(
+    int     dDflag,                 /* -dD option (for GCC)         */
+    int     comment         /* Location of definition in comment    */
+)
 /*
  * Dump all the current macro definitions to output stream.
  */
 {
-    register DEFBUF *   dp;
+    DEFBUF *    dp;
     DEFBUF **   syp;
 
     sharp();            /* Report the current source file & line    */

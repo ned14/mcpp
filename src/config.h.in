@@ -3,10 +3,7 @@
 /* Define if '0x5c' in BIG5 multi-byte character is safe. */
 #undef BIGFIVE_IS_ESCAPE_FREE
 
-/* Define if adjacent string literals are concatenated. */
-#undef CAN_CONCAT_STRINGS
-
-/* Define the compiler. */
+/* Define the target compiler. */
 #undef COMPILER
 
 /* Define the type of size_t. */
@@ -81,14 +78,8 @@
 /* Define gcc minor version. */
 #undef GCC_MINOR_VERSION
 
-/* Define if backslash-a works in C strings. */
-#undef HAVE_C_BACKSLASH_A
-
 /* Define if digraphs are available. */
 #undef HAVE_DIGRAPHS
-
-/* Define to 1 if you have the `getenv' function. */
-#undef HAVE_GETENV
 
 /* Define to 1 if you have the `getopt' function. */
 #undef HAVE_GETOPT
@@ -99,32 +90,11 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the <limits.h> header file. */
-#undef HAVE_LIMITS_H
-
-/* Define to 1 if the system has the type `long double'. */
-#undef HAVE_LONG_DOUBLE
-
 /* Define to 1 if the system has the type `long long'. */
 #undef HAVE_LONG_LONG
 
-/* Define to 1 if you have the `memcmp' function. */
-#undef HAVE_MEMCMP
-
-/* Define to 1 if you have the `memcpy' function. */
-#undef HAVE_MEMCPY
-
-/* Define to 1 if you have the `memmove' function. */
-#undef HAVE_MEMMOVE
-
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
-
-/* Define if pragma directive can be used. */
-#undef HAVE_PRAGMA
-
-/* Define if fgets retains the last line after EOF. */
-#undef HAVE_SANE_FGETS
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -135,17 +105,11 @@
 /* Define to 1 if you have the `stpcpy' function. */
 #undef HAVE_STPCPY
 
-/* Define to 1 if you have the `strcspn' function. */
-#undef HAVE_STRCSPN
-
 /* Define to 1 if you have the <strings.h> header file. */
 #undef HAVE_STRINGS_H
 
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
-
-/* Define to 1 if you have the `strstr' function. */
-#undef HAVE_STRSTR
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
@@ -153,20 +117,14 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
-/* Define to 1 if you have the <time.h> header file. */
-#undef HAVE_TIME_H
-
-/* Define to 1 if the system has the type `time_t'. */
-#undef HAVE_TIME_T
-
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to 1 if the system has the type `unsigned long'. */
-#undef HAVE_UNSIGNED_LONG
+/* Define the host compiler name. */
+#undef HOST_CMP_NAME
 
-/* Define to 1 if the system has the type `__int64'. */
-#undef HAVE___INT64
+/* Define the host compiler. */
+#undef HOST_COMPILER
 
 /* Define the host system. */
 #undef HOST_SYSTEM
@@ -203,9 +161,6 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
-
-/* Define to 1 if the C compiler supports function prototypes. */
-#undef PROTOTYPES
 
 /* Define include preference. */
 #undef SEARCH_INIT
@@ -245,12 +200,3 @@
 
 /* Version number of package */
 #undef VERSION
-
-/* Define like PROTOTYPES; this can be used by system headers. */
-#undef __PROTOTYPES
-
-/* Define to empty if `const' does not conform to ANSI C. */
-#undef const
-
-/* Define to `unsigned' if <sys/types.h> does not define. */
-#undef size_t

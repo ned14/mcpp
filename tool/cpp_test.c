@@ -5,7 +5,11 @@
  *              Made after runtest.c and summtest.c of
  *              "Plum-Hall Validation Sampler".
  *      2005/03 by kmatsui
- *              Decreased 'PGNUM' by 1.
+ *              Changed 'PGNUM'.
+ *      2006/07 by kmatsui
+ *              Changed 'PGNUM'.
+ *              Changed non-prototype declarations to prototype ones.
+ *              Removed DOS-extender option.
  */
 
 #include    "stdio.h"
@@ -15,7 +19,7 @@
 #include    "errno.h"
 
 #define NAMEMAX     8
-#define PGMNUM      37
+#define PGMNUM      35
 
 #if     __MSDOS__ || __WIN32__ || _WIN32
 #define PATH_DELIM  '\\'
@@ -24,14 +28,14 @@
 #endif
 
 #if 0
-extern int  sleep();
+extern int  sleep( unsigned int seconds);
 #endif
 
-void    test_cpp();
-void    sum_test();
-void    usage();
+void    test_cpp( int argc, char **argv);
+void    sum_test( void);
+void    usage( void);
 
-char    comp_fmt[ BUFSIZ/2] = "cc -ansi -o%s %s.c";
+char    comp_fmt[ BUFSIZ/2] = "cc -o%s %s.c";
 char    cmp_name[ NAMEMAX+1];
 char    out_file[ NAMEMAX+5];
 char    err_file[ NAMEMAX+5];
@@ -39,31 +43,18 @@ char    sum_file[ NAMEMAX+5];
 char    err_name[ PGMNUM][ NAMEMAX+5];
 char    buf[ BUFSIZ];
 
-main(argc, argv)
-    int     argc;
-    char    *argv[];
-{
-    char    *extender;
+int main( int argc, char **argv) {
     char    *cp;
     int     i;
-    int     ac = 1;
 
     if (argc < 2)
         usage();
-    if (ac < argc && (argv[ac][0] == '-' || argv[ac][0] == '/')) {
-        if (argv[ac][1] == '?')
-            usage();
-        else
-            extender = argv[ac++] + 1;
-    } else {
-        extender = NULL;
-    }
-    if (argc <= ac || (! isalpha( argv[ac][ 0]) && argv[ac][0] != '_')
-            || strchr( argv[ac], '.') != NULL
-            || strlen( argv[ac]) > NAMEMAX) {
+    if (! isalpha( argv[ 1][ 0])
+            || strchr( argv[ 1], '.') != NULL
+            || strlen( argv[ 1]) > NAMEMAX) {
         usage();
     }
-    strcpy( cmp_name, argv[ac]);
+    strcpy( cmp_name, argv[ 1]);
     sprintf( sum_file, "%s.sum", cmp_name);
     sprintf( out_file, "%s.out", cmp_name);
     sprintf( err_file, "%s.err", cmp_name);
@@ -71,9 +62,8 @@ main(argc, argv)
         if (i == '-' || i == '_' || i == '~')
             *cp = '|';      /* Convert horizontal line to vertical line */
     }
-    if (++ac < argc)
-        strcpy( comp_fmt, argv[ac]);
-    ac++;
+    if (argc > 2)
+        strcpy( comp_fmt, argv[ 2]);
     if (freopen( out_file, "w", stdout) == NULL)
         usage();
     if (freopen( err_file, "w", stderr) == NULL)
@@ -81,18 +71,13 @@ main(argc, argv)
     setbuf( stdout, NULL);
     setbuf( stderr, NULL);
 
-    test_cpp( argc, argv, ac, extender);
+    test_cpp( argc, argv);
     sum_test();
 
     return  0;
 }
 
-void    test_cpp( argc, argv, ac, extender)
-    int     argc;
-    char    **argv;
-    int     ac;
-    char    *extender;
-{
+void    test_cpp( int argc, char ** argv) {
     int     i, len;
     int     pgm_num;
 
@@ -110,21 +95,18 @@ void    test_cpp( argc, argv, ac, extender)
         system( buf);
         printf( "COMPILE:    %s\n", buf);
 #if 0
-        sleep( 2);                      /* Wait a moment    */
+        sleep( 1);                      /* Wait a moment    */
 #endif
         sprintf( err_name[ pgm_num], "%s.err", pgm_name);
         freopen( err_name[ pgm_num], "w", stderr);
-        if (extender)
-            sprintf( buf, "%s .%c%s", extender, PATH_DELIM, pgm_name);
-        else
-            sprintf( buf, ".%c%s", PATH_DELIM, pgm_name);
+        sprintf( buf, ".%c%s", PATH_DELIM, pgm_name);
         system( buf);
         printf( "EXECUTE:    %s\n", buf);
 #if 0
-        sleep( 2);                      /* Wait a moment    */
+        sleep( 1);                      /* Wait a moment    */
 #endif
         freopen( err_file, "a", stderr);
-        for (i = ac; i < argc; ++i) {
+        for (i = 3; i < argc; ++i) {
             sprintf( buf, argv[i], pgm_name, pgm_name);
             system( buf);
             printf( "CLEANUP:    %s\n", buf);
@@ -132,7 +114,7 @@ void    test_cpp( argc, argv, ac, extender)
     }   /* end loop over each program   */
 }
 
-void    sum_test()
+void    sum_test( void)
 {
     FILE    *sumfp, *errfp;
     char    *cp;
@@ -156,10 +138,8 @@ void    sum_test()
             fputs( "  -\n", sumfp);
             nerror++;
         } else {
-            while ((cp = fgets( buf, BUFSIZ, errfp)) != NULL
-                    && strcmp( buf, "started\n") != 0)
-                ;           /* To work around the message of "go32" */
-            if (cp == NULL) {
+            cp = fgets( buf, BUFSIZ, errfp);
+            if (cp == NULL || strcmp( buf, "started\n") != 0) {
                 fputs( "  -\n", sumfp);
                 nerror++;
             } else {
@@ -180,18 +160,18 @@ void    sum_test()
 
 void    usage( void)
 {
-    fputs( "Usage:\n", stderr);
-    fputs(
-"  cpp_test [-extender] compiler-name \"compile command\" \"cleaning command\"s\n"
-            , stderr);
-    fputs( "  Option specifies the name of DOS-extender (eg. -go32).\n",
-            stderr);
-    fprintf( stderr,
-        "  Compiler-name must be %d bytes or less and must be without dot.\n",
-            NAMEMAX);
-    fputs( "  Number of \"cleaning command\"s can be any.\n", stderr);
-    fputs(
-"Example: cpp_test GNUC_272 \"cc -ansi -o%s %s.c\" \"rm %s\" < n_i_.lst\n"
+    fputs( "Usage:\n"
+    "  cpp_test compiler-name \"compile command\" \"cleaning command\"s\n"
+    "  Compiler-name must be 8 bytes or less and must be without dot.\n"
+    "  Number of \"cleaning command\"s can be any.\n"
+    "  Do this command in mcpp's test-c directory.\n"
+    "Examples:\n"
+	"    cpp_test GCC332 \"gcc -std=iso9899:199409 -o%s %s.c\""
+    " \"rm %s\" < n_i_.lst\n"
+    "    cpp_test VC2005 \"cl -Za -D_CRT_SECURE_NO_DEPRECATE -Fe%s.exe %s.c\""
+    " \"del %s.exe\" < n_i_.lst\n"
+    "    cpp_test MCPP26 \"gcc -Wp,-23 -std=iso9899:199409 -o%s %s.c\""
+    " \"rm %s\" < n_i_.lst\n"
             , stderr);
     exit( 0);
 }

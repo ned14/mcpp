@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2005 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2006 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -58,6 +58,12 @@
  * 2005/03      MCPP Version 2.5 / internal.H
  *              Absorbed POST_STANDARD into STANDARD and OLD_PREPROCESSOR
  *                  into PRE_STANDARD.                  by kmatsui
+ * 2006/07      MCPP Version 2.6 / internal.H
+ *              Integrated STANDARD and PRE_STANDARD modes into one executable.
+ *              Removed non-prototype declarations.
+ *              Absorbed DEBUG, DEBUG_EVAL, OK_MAKE, OK_TRIGRAPHS,
+ *                  OK_DIGRAPHS, OK_TRIGRAPHS, OK_PRAGMA_OP into default.
+ *                                                      by kmatsui
  */
 
 #ifndef SYSTEM_H
@@ -77,16 +83,15 @@
  * These magic characters must be control characters which can't be used
  * in source file.
  */
-#if     MODE == STANDARD
+/* In STD and POST_STD modes (IN_SRC and TOK_SEP are for STD mode only).    */
 #define DEF_MAGIC       0x19        /* Magic for #defines           */
 #define IN_SRC          0x1A        /* Magic of name from source    */
 #define RT_END          0x1C        /* Magic of macro rescan boundary   */
 #define ST_QUOTE        0x1D        /* Magic for stringizing        */
 #define CAT             0x1E        /* Token concatenation delim.   */
 #define TOK_SEP         0x1F        /* Magic to wrap expanded macro */
-#else
+/* In OLD_PREP mode.    */
 #define COM_SEP         0x1F        /* Comment as token separator   */
-#endif
 
 #define MAC_PARM        0x7F        /* Macro formals signal         */
 
@@ -144,11 +149,10 @@
 /*
  * The following are operators used in macro definition only.
  */
-#if     MODE == STANDARD
+/* In STD and POST_STD modes.   */
 #define OP_STR          30          /* #    */
 #define OP_CAT          31          /* ##   */
 #define OP_ELL          32          /* ...  */
-#endif
 
 /*
  * The following are C source operators or punctuators,
@@ -163,7 +167,7 @@
 /*
  * The following are operators spelled in digraphs.
  */
-#if     MODE == STANDARD
+/* In STD and POST_STD modes.   */
 #define OP_LBRACE_D     0x40        /* <% i.e. {    */
 #define OP_RBRACE_D     0x41        /* %> i.e. }    */
 #define OP_LBRCK_D      0x42        /* <: i.e. [    */
@@ -171,7 +175,6 @@
 #define OP_SHARP_D      0x44        /* %: i.e. #    */
 #define OP_DSHARP_D     0x45        /* %:%: i.e. ## */
 #define OP_DIGRAPH      0x40    /* (OP_*_D & OP_DIGRAPH) == 0x40    */
-#endif
 
 /*
  * The following are for lexical scanning only.
@@ -182,10 +185,11 @@
 #define NUM             66          /* Preprocessing number         */
 #define STR             67          /* Character string literal     */
 #define CHR             69          /* Integer character constant   */
-#if     MODE == STANDARD
+
+/* In STD and POST_STD modes.   */
 #define WSTR            68          /* Wide string literal          */
 #define WCHR            70          /* Wide character constant      */
-#endif
+
 #define OPE             71          /* Operator or punctuator       */
 #define SPE             72          /* Unknown token (@ or others)  */
 #define SEP             73          /* Token separator or magics    */
@@ -202,37 +206,24 @@
 #define GETC            32
 #define MEMORY          64
 
-/*
- * USE_MBCHAR means to implement multi-byte character handling routines.
- * BSL_IN_MBCHAR means multi-byte character may coincide with '\\'.
- * MB_ERROR signals wrong multi-byte character sequence.
- */
-#define USE_MBCHAR      (SYSTEM != SYS_MSDOS | MBCHAR)
-#define BSL_IN_MBCHAR   \
-        (SYSTEM != SYS_MSDOS | (MBCHAR & (SJIS | BIGFIVE | ISO2022_JP)))
+/* MB_ERROR signals wrong multi-byte character sequence.    */
 #define MB_ERROR        0x8000
 
 /*
  * The DEFBUF structure stores information about #defined macros.
  * Note that DEFBUF->parmnames is parameter names catenated with commas,
- * which is saved for the check of redefinition for Standard mode.
+ * which is saved for the check of redefinition for STD mode.
  * 'parmnames' and 'repl' are allocated to the area succeding to name.
  */
 typedef struct defbuf {
         struct defbuf * link;       /* Pointer to next def in chain */
         short           nargs;      /* Number of parameters         */
-#if     MODE == STANDARD
         char *          parmnames;  /* -> Parameter names catenated by ','  */
-#endif
         char *          repl;       /* Pointer to replacement text  */
-#if     DEBUG
         const char *    dir;        /* The macro is defined in      */
         const char *    fname;      /*      dir/fname source file   */
         long            mline;      /*          at the line.        */
-#endif
-#if     MODE == STANDARD
         char            push;       /* Push level indicator         */
-#endif
         char            name[1];    /* Macro name                   */
 } DEFBUF;
 
@@ -284,14 +275,6 @@ typedef struct val_sign {
 /* Value of macro_line on macro call error.         */
 #define MACRO_ERROR     (-1L)
 
-/* Values of mkdep. */
-#define MD_MKDEP        1   /* Output source file dependency line   */
-#define MD_SYSHEADER    2   /* Print also system-header names       */
-#define MD_FILE         4   /* Output to the file named *.d         */
-#define MD_PHONY        8   /* Print also phony targets for each header */
-#define MD_QUOTE        16  /* 'Quote' $ and space in target name   */
-
-#if     MODE == STANDARD
 /*
  * Values of insert_sep (flag of insertion of token separator).
  * Used only in POST_STD mode.
@@ -299,33 +282,6 @@ typedef struct val_sign {
 #define NO_SEP          0   /* No separator is inserted             */
 #define INSERT_SEP      1   /* Next get() shall insert a separator  */
 #define INSERTED_SEP    2   /* Last get() has Inserted a separator  */
-#endif
-
-#if     OK_SIZE
-/*
- * Define bits for the basic types and their adjectives.
- */
-#define T_CHAR          1
-#define T_INT           2
-#define T_FLOAT         4
-#define T_DOUBLE        8
-#define T_LONGDOUBLE    16
-#define T_SHORT         32
-#define T_LONG          64
-#define T_LONGLONG      128
-#define T_SIGNED        256
-#define T_UNSIGNED      512
-#define T_PTR           1024        /* Pointer to data objects      */
-#define T_FPTR          2048        /* Pointer to functions         */
-/*
- * The SIZES structure is used to store the values for #if sizeof.
- */
-typedef struct sizes {
-        int             bits;       /* If this bit is set,          */
-        int             size;       /* this is the datum size value */
-        int             psize;      /* this is the pointer size     */
-} SIZES;
-#endif
 
 #define str_eq(s1, s2)  (strcmp(s1, s2) == 0)
 
@@ -348,18 +304,14 @@ extern int      cflag;              /* -C option (keep comments)    */
 extern int      zflag;  /* -Z option (no-output of included file)   */
 extern int      pflag;              /* -P option (no #line output)  */
 extern int      qflag;              /* -Q option (diag to mcpp.err) */
-#if     MODE == STANDARD
-#if     OK_TRIGRAPHS
-extern int      tflag;              /* -3 option (toggle trigraphs) */
-#endif
-#if     OK_DIGRAPHS
-extern int      digraphs;           /* -2 option (toggle digraphs)  */
-#endif
+extern int      trig_flag;          /* -3 option (toggle trigraphs) */
+extern int      dig_flag;           /* -2 option (toggle digraphs)  */
 extern int      stdc_val;           /* Value of __STDC__            */
 extern long     stdc_ver;           /* Value of __STDC_VERSION__    */
 extern long     cplus;              /* Value of __cplusplus for C++ */
 extern int      stdc2;              /* cplus || stdc_ver >= 199901L */
 extern int      stdc3;      /* (stdc_ver or cplus) >= 199901L       */
+extern int      standard;           /* mode is STD or POST_STD      */
 extern long     str_len_min;        /* Least maxmum of string len.  */
 extern size_t   id_len_min;         /* Least maximum of ident len.  */
 extern int      n_mac_pars_min;     /* Least maximum of num of pars.*/
@@ -369,13 +321,13 @@ extern int      inc_nest_min;       /* Least maximum of include nest*/
 extern long     n_macro_min;        /* Least maximum of num of macro*/
 extern long     line_limit;         /* Maximum source line number   */
 extern int      has_pragma;         /* '_Pragma()' has been expanded*/
-#endif  /* MODE == STANDARD */
 extern int      lang_asm;           /* -a option (assembler source) */
 extern int      std_line_prefix;    /* #line in C source style      */
 extern int      warn_level;         /* Level of warning             */
 extern int      errors;             /* Error counter                */
 extern long     line;               /* Current source line number   */
 extern int      wrong_line;         /* Force #line to compiler      */
+extern int      newlines;           /* Count of blank lines         */
 extern int      keep_comments;      /* Don't remove comments        */
 extern int      include_nest;       /* Nesting level of #include    */
 extern const char *     null;       /* "" string for convenience    */
@@ -384,10 +336,8 @@ extern const char *     cur_fname;  /* Current source file name     */
 extern int      no_output;          /* Don't output included file   */
 extern int      in_directive;       /* In process of #directive     */
 extern int      in_define;          /* In #define line              */
-#if     MODE == STANDARD
 extern int      in_getarg;          /* Collecting arguments of macro*/
 extern int      compat_mode;        /* Compatible macro recursion   */
-#endif
 extern long     macro_line;         /* Line number of macro call    */
 extern int      openum;             /* Number of operator or punct. */
 extern IFINFO *     ifptr;          /* -> current ifstack item      */
@@ -397,205 +347,146 @@ extern FILE *   fp_in;              /* Input stream to preprocess   */
 extern FILE *   fp_out;             /* Output stream preprocessed   */
 extern FILE *   fp_err;             /* Diagnostics stream           */
 extern FILE *   fp_debug;           /* Debugging information stream */
-#if     MODE == STANDARD
 extern int      insert_sep;         /* Inserted token separator flag*/
-#endif
-#if     OK_MAKE
 extern int      mkdep;              /* Output source file dependency*/
-#endif
 extern int      mbchar;             /* Encoding of multi-byte char  */
 extern int      mbmask;             /* Char type other than mbchar  */
 extern int      mbstart;            /* 1st byte of mbchar (or shift)*/
-#if     BSL_IN_MBCHAR
 extern int      bsl_in_mbchar;      /* 2nd byte of mbchar has '\\'  */
 extern int      bsl_need_escape;/* '\\' in mbchar should be escaped */
-#endif
 extern char *   workp;              /* Free space in work[]         */
 extern char * const     work_end;   /* End of work[] buffer         */
 extern char     identifier[];       /* Lastly scanned name          */
-#if     SYSTEM == SYS_MSDOS
-extern char     type[];             /* Character classifier         */
-#else
-extern short    *type;              /* Character classifier         */
-#endif
+extern short *  type;               /* Character classifier         */
 extern IFINFO   ifstack[];          /* Information of #if nesting   */
 extern char     cur_fullname[];     /* Full name of current source  */
 extern char     work[];
         /* Temporary buffer for directive line and macro expansion  */
-
-#if     OK_SIZE
-extern SIZES    size_table[];       /* For #if sizeof sizes         */
-#endif
-#if     DEBUG || DEBUG_EVAL
 extern int      debug;              /* Debug class                  */
-#endif
-#if     MODE == PRE_STANDARD
 extern long     in_asm;             /* In #asm - #endasm block      */
-#endif
-
-#if     PROTO   /* prototype declarations   */
 
 /* main.c   */
 extern void     sharp( void);
+                /* Output # line number         */
 extern void     un_predefine( int clearall);
+                /* Undefine predefined macros   */
 extern void     undef_a_predef( const char * name);
+                /* Remove a non-standard predef */
+
 /* control.c    */
-extern int      control( int newlines);
+extern int      control( void);
+                /* Process #directive lines     */
 extern DEFBUF * do_define( int ignore_redef);
+                /* Do #define directive         */
 extern DEFBUF * look_id( const char * name);
+                /* Look for a #define'd thing   */
 extern DEFBUF **    look_prev( const char * name, int * cmp);
+                /* Look for place to insert def.*/
 extern DEFBUF * look_and_install( const char * name, int numargs
         , const char * parmnames, const char * repl);
+                /* Look and insert macro def.   */
 extern DEFBUF * install( const char * name, int numargs, const char * parmnames
         , const char * repl, DEFBUF ** prevp, int cmp);
+                /* Install to symbol table      */
 extern int      undefine( const char * name);
+                /* Delete from symbol table     */
 extern void     dump_a_def( const char * why, const DEFBUF * dp, int newdef
         , int dDflag, int comment, FILE * fp);
+                /* Dump a specific macro def    */
 extern void     dump_def( int dDflag, int comment);
+                /* Dump current macro defs      */
+
 /* eval.c   */
 extern expr_t   eval( void);
+                /* Evaluate #if expression      */
 extern VAL_SIGN *   eval_num( const char * nump);
+                /* Evaluate preprocessing number*/
+
 /* expand.c */
+extern char *   (*expand)( DEFBUF * defp, char * out, char * out_end);
+                /* Expand a macro completely    */
+extern void     expand_init( void);
+                /* Initialize expand() function */
 extern DEFBUF * is_macro( char ** cp);
-extern char *   expand( DEFBUF * defp, char * out, char * out_end);
+                /* The sequence is a macro call?*/
+
+/* mbchar.c     */
+extern size_t   (*mb_read)( int c1, char ** in_pp, char ** out_pp);
+                /* Read mbchar sequence         */
+extern const char *     set_encoding( char * name, char * env, int pragma);
+                /* Multi-byte char encoding     */
+extern void     mb_init( void);
+                /* Initialize mbchar variables  */
+extern uexpr_t  mb_eval( char ** seq_pp);
+                /* Evaluate mbchar in #if       */
+
 /* support.c    */
 extern int      get_unexpandable( int c, int diag);
+                /* Get next unexpandable token  */
 extern void     skip_nl( void);
+                /* Skip to the end of the line  */
 extern int      skip_ws( void);
+                /* Skip over white-spaces       */
 extern int      scan_token( int c, char ** out_pp, char * out_end);
+                /* Get the next token           */
 extern char *   scan_quote( int delim, char * out, char * out_end, int diag);
-#if     MODE == STANDARD
+                /* Scan a quoted literal        */
 extern int      id_operator( const char * name);
-#endif
+                /* Check identifier-like ops    */
 extern int      get( void);
-#if     MODE == STANDARD && OK_TRIGRAPHS
+                /* Get the next char from input */
 extern int      cnv_trigraph( char * in);
-#endif
-#if     MODE == STANDARD && OK_DIGRAPHS
+                /* Do trigraph replacement      */
 extern int      cnv_digraph( char * in);
-#endif
+                /* Convert digraphs to usual tok*/
 extern void     unget( void);
+                /* Push back the char to input  */
 extern FILEINFO *   unget_string( const char * text, const char * name);
+                /* Push back the string to input*/
 extern char *   save_string( const char * text);
+                /* Stuff string in malloc mem.  */
 extern FILEINFO *   get_file( const char * name, size_t bufsize);
+                /* New FILEINFO initialization  */
 extern char *   (xmalloc)( size_t size);
+                /* Get memory or die            */
 extern char *   (xrealloc)( char * ptr, size_t size);
+                /* Reallocate memory or die     */
 extern void     cfatal( const char * format, const char * arg1, long arg2
         , const char * arg3);
+                /* Print a fatal error and exit */
 extern void     cerror( const char * format, const char * arg1, long arg2
         , const char * arg3);
+                /* Print an error message       */
 extern void     cwarn( const char * format, const char * arg1, long arg2
         , const char * arg3);
+                /* Print a warning message      */
+extern void     dump_string( const char * why, const char * text);
+                /* Dump text readably           */
+extern void     dump_unget( const char * why);
+                /* Dump all ungotten junk       */
+
 /* system.c */
 extern void     do_options( int argc, char ** argv, char ** in_pp
         , char ** out_pp);
+                /* Process command line args    */
 extern void     at_start( void);
-#if     OK_MAKE
+                /* Commands prior to main input */
 extern void     put_depend( const char * filename);
-#endif
+                /* Output source dependency line*/
 extern int      do_include( int next);
+                /* Process #include directive   */
 extern void     add_file( FILE * fp, const char * filename);
+                /* Chain the included file      */
 extern void     conv_case( char * name, char * lim, int upper);
-#if     MODE == STANDARD
+                /* Convert to upper/lower case  */
 extern void     do_pragma( void);
-#else
+                /* Process #pragma directive    */
 extern void     put_asm( void);
-#endif
+                /* Putout an asm code line      */
 extern void     do_old( void);
+                /* Process older directives     */
 extern void     at_end( void);
-/* mbchar.c     */
-#if     SYSTEM != SYS_MSDOS
-extern const char *     set_encoding( char * name, char * env, int pragma);
-#endif
-extern void     mb_init( void);
-extern size_t   (*mb_read)( int c1, char ** in_pp, char ** out_pp);
-extern uexpr_t  mb_eval( char ** seq_pp);
-#if     DEBUG
-/* support.c    */
-extern void     dump_string( const char * why, const char * text);
-extern void     dump_unget( const char * why);
-/* system.c     */
+                /* Do the final commands        */
 extern void     print_heap( void);
-#endif
-
-#else           /* old style function declarations  */
-
-/* main.c   */
-extern void     sharp();            /* Output # line number         */
-extern void     un_predefine();     /* Undefine predefined macros   */
-extern void     undef_a_predef();   /* Remove a non-standard predef */
-/* control.c    */
-extern int      control();          /* Process #directive lines     */
-extern DEFBUF * do_define();        /* Do #define directive         */
-extern DEFBUF * look_id();          /* Look for a #define'd thing   */
-extern DEFBUF **    look_prev();    /* Look for place to insert def.*/
-extern DEFBUF * look_and_install(); /* Look and insert macro def.   */
-extern DEFBUF * install();          /* Install to symbol table      */
-extern int      undefine();         /* Delete from symbol table     */
-extern void     dump_a_def();       /* Dump a specific macro def    */
-extern void     dump_def();         /* Dump current macro defs      */
-/* eval.c   */
-extern expr_t   eval();             /* Evaluate #if expression      */
-extern VAL_SIGN *   eval_num();     /* Evaluate preprocessing number*/
-/* expand.c */
-extern DEFBUF * is_macro();         /* The sequence is a macro call?*/
-extern char *   expand();           /* Expand a macro completely    */
-/* support.c    */
-extern int      get_unexpandable(); /* Get next unexpandable token  */
-extern void     skip_nl();          /* Skip to the end of the line  */
-extern int      skip_ws();          /* Skip over white-spaces       */
-extern int      scan_token();       /* Get the next token           */
-extern char *   scan_quote();       /* Scan a quoted literal        */
-#if     MODE == STANDARD
-extern int      id_operator();      /* Check identifier-like ops    */
-#endif
-extern int      get();              /* Get the next char from input */
-#if     MODE == STANDARD && OK_TRIGRAPHS
-extern int      cnv_trigraph();     /* Do trigraph replacement      */
-#endif
-#if     MODE == STANDARD && OK_DIGRAPHS
-extern int      cnv_digraph();      /* Convert digraphs to usual tok*/
-#endif
-extern void     unget();            /* Push back the char to input  */
-extern FILEINFO *   unget_string(); /* Push back the string to input*/
-extern char *   save_string();      /* Stuff string in malloc mem.  */
-extern FILEINFO *   get_file();     /* New FILEINFO initialization  */
-extern char *   (xmalloc)();        /* Get memory or die            */
-extern char *   (xrealloc)();       /* Reallocate memory or die     */
-extern void     cfatal();           /* Print a fatal error and exit */
-extern void     cerror();           /* Print an error message       */
-extern void     cwarn();            /* Print a warning message      */
-/* system.c */
-extern void     do_options();       /* Process command line args    */
-extern void     at_start();         /* Commands prior to main input */
-#if     OK_MAKE
-extern void     put_depend();       /* Output source dependency line*/
-#endif
-extern int      do_include();       /* Process #include directive   */
-extern void     add_file();         /* Chain the included file      */
-extern void     conv_case();        /* Convert to upper/lower case  */
-#if     MODE == STANDARD
-extern void     do_pragma();        /* Process #pragma directive    */
-#else
-extern void     put_asm();          /* Putout an asm code line      */
-#endif
-extern void     do_old();           /* Process older directives     */
-extern void     at_end();           /* Do the final commands        */
-/* mbchar.c     */
-#if     SYSTEM != SYS_MSDOS
-extern char *   set_encoding();     /* Multi-byte char encoding     */
-#endif
-extern void     mb_init();          /* Initialize mbchar variables  */
-extern size_t   (*mb_read)();       /* Read mbchar sequence         */
-extern uexpr_t  mb_eval();          /* Evaluate mbchar in #if       */
-
-#if     DEBUG
-/* support.c    */
-extern void     dump_string();      /* Dump text readably           */
-extern void     dump_unget();       /* Dump all ungotten junk       */
-/* system.c     */
-extern void     print_heap();       /* Print blocks of heap memory  */
-#endif
-
-#endif          /* ! PROTO  */
+                /* Print blocks of heap memory  */
 

@@ -7,36 +7,38 @@
  */
 
 
-/* n_ucn.t: Universal-character-name    */ 
+
+/* n_ucn1:  Universal-character-name    */ 
 
 /* UCN in character constant    */
 
-#if '\u5678'
+#if '\u5B57'
     UCN-16bits is implemented.
 #endif
 
-#if '\U56789ABC'
+#if '\U00006F22'
     UCN-32bits is implemented.
 #endif
 
 /* UCN in string literal    */
 
-    "abc\u5678xyz";
-
-/* UCN in pp-number */
-
-#define mkint( a)   a ## 1\u5678
-
-    int mkint( abc) = 0;  /* int abc1\u5678 = 0;    */
+    "abc\u6F22\u5B57xyz";   /* i.e. "abc´Á»úxyx";   */
 
 /* UCN in identifier    */
 
-#define macro\u5678         9
-#define macro\U56789ABC     99
+#define macro\u5B57         9
+#define macro\U00006F22     99
 
-    macro\u5678;        /* 9    */
-    macro\U56789ABC;    /* 99   */
+    macro\u5B57         /* 9    */
+    macro\U00006F22     /* 99   */
+    macro\U00006f22     /* 99   */
 
+/* n_ucn2.t:    Universal-character-name    */
+/* UCN in pp-number */
+
+#define mkint( a)   a ## 1\u5B57
+
+    int mkint( abc) = 0;  /* int abc1\u5B57 = 0;    */
 
 /* n_dslcom.t:  // is a comment of C99. */
 /*  a;  */ 

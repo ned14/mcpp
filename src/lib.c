@@ -11,17 +11,18 @@
  * Some standard functions for the library which has not those or the library
  *      which has only non-conforming ones.
  *
- * 1998/08      First released.                     kmatsui
+ * 1998/08      First released.                             kmatsui
  * 2003/11      Added strstr() and strcspn().
- *              Uses macros defined by configure.   kmatsui
+ *              Uses macros defined by configure.           kmatsui
+ * 2006/07      Removed Standard functions (memmove(), memcpy(), memcmp(),
+ *                  strstr(), strcspn()).
+ *              Removed non-prototype declarations.         kmatsui
  */
 
-#if 1
-#if PREPROCESSED
-#include    "mcpp.H"
+#if     HAVE_CONFIG_H
+#include    "configed.H"
 #else
-#include    "system.H"  /* For PROTO, UCHARMAX and function declarations    */
-#endif
+#include    "noconfig.H"
 #endif
 
 #if ! HOST_HAVE_GETOPT || HOST_LIB_IS_GLIBC
@@ -46,15 +47,11 @@ int     opterr = 1;
 int     optopt;
 char *  optarg;
 
-int
-#if PROTO
-getopt( int argc, char * const * argv, const char * opts)
-#else
-getopt( argc, argv, opts)
-    int         argc;
-    char **     argv;
-    char *      opts;
-#endif
+int     getopt(
+    int         argc,
+    char * const *  argv,
+    const char *    opts
+)
 /*
  * Get the next option (and it's argument) from the command line.
  */
@@ -62,8 +59,8 @@ getopt( argc, argv, opts)
     const char * const   error1 = ": option requires an argument --";
     const char * const   error2 = ": illegal option --";
     static int      sp = 1;
-    register int    c;
-    register char *     cp;
+    int             c;
+    const char *    cp;
 
     if (sp == 1) {
         if (argc <= optind ||
@@ -107,47 +104,12 @@ getopt( argc, argv, opts)
 
 #endif
 
-#if ! HOST_HAVE_SANE_FGETS
-
-char *
-#if PROTO
-fgets( char * buf, int size, FILE * fp)
-#else
-fgets( buf, size, fp)
-    char *  buf;
-    int     size;
-    FILE *  fp;
-#endif
-{
-    int     c;
-    char *  cp = buf;
-
-    if (size <= 1)
-        return  NULL;
-    while (--size && (c = getc( fp)) != EOF && c != '\n')
-        *cp++ = c;
-    if (c != EOF || buf < cp) {
-        if (c == '\n')
-            *cp++ = '\n';
-        *cp = '\0';
-        return  buf;
-    } else {
-        return  NULL;
-    }
-}
-
-#endif
-
 #if ! HOST_HAVE_STPCPY
 
-char *
-#if PROTO
-stpcpy( char * dest, const char * src)
-#else
-stpcpy( dest, src)
-    char *  dest;
-    char *  src;
-#endif
+char *  stpcpy(
+    char *          dest,
+    const char *    src
+)
 /*
  * Copy the string and return the advanced pointer.
  */
@@ -161,123 +123,3 @@ stpcpy( dest, src)
 }
 
 #endif
-
-#if ! HOST_HAVE_STRSTR
-
-char *
-#if PROTO
-strstr( const char * src, const char * pat)
-#else
-strstr( src, pat)
-    char *  src;
-    char *  pat;
-#endif
-{
-    const char  *s1, *s2, *p;
-
-    if (*src == '\0' || *pat == '\0')       /* No element specified */
-        return  (char *)src;
-    for (s1 = src; *s1 != '\0'; s1++)
-        if (*s1 == *pat)            /* Matched the first element    */
-            break;                          /* Else *s1 == '\0'     */
-    for (s2 = s1, p = pat; *s2 != '\0', *p != '\0'; s2++, p++)
-        if (*s2 != *p)                      /* Unmatched the rest   */
-            break;                          /* Else *p == '\0'      */
-    return  *p ? NULL : (char *)s1;
-}
-
-#endif
-
-#if ! HOST_HAVE_STRCSPN
-
-size_t
-#if PROTO
-strcspn( const char * src, const char * cset)
-#else
-strcspn( src, cset)
-    char *  src;
-    char *  cset;
-#endif
-{
-    const char  *s1, *cs;
-
-    for (s1 = src; *s1 != '\0'; s1++)
-        for (cs = cset; *cs != '\0'; cs++)
-            if (*s1 == *cs)
-                    /* Found the first occurence of any of cset[]   */
-                return  s1 - src;
-    return  NULL;
-}
-
-#endif
-
-#if ! HOST_HAVE_MEMMOVE
-
-char *
-#if PROTO
-memmove( char * dest, const char * src, size_t size)
-#else
-memmove( dest, src, size)
-    char *  dest;
-    char *  src;
-    size_t  size;
-#endif
-{
-    char *  cp = dest;
-
-    if (dest < src) {
-        while (size--)
-            *cp++ = *src++;
-    } else {
-        cp += size - 1;
-        src += size - 1;
-        while (size--)
-            *cp-- = *src--;
-    }
-    return  dest;
-}
-
-#endif
-
-#if ! HOST_HAVE_MEMCPY
-
-char *
-#if PROTO
-memcpy( char * dest, const char * src, size_t size)
-#else
-memcpy( dest, src, size)
-    char *  dest;
-    char *  src;
-    size_t  size;
-#endif
-{
-    char *  p = dest;
-
-    while (size-- > 0)
-        *p++ = *src++;
-    return  dest;
-}
-
-#endif
-
-#if ! HOST_HAVE_MEMCMP
-
-int
-#if PROTO
-memcmp( const char * s1, const char * s2, size_t size)
-#else
-memcmp( s1, s2, size)
-    char *  s1;
-    char *  s2;
-    size_t  size;
-#endif
-{
-    for ( ; size; size--, s1++, s2++) {
-        if (*s1 != *s2)
-            return  ((*s1 & UCHARMAX) < (*s2 & UCHARMAX)) ? -1 : 1;
-    }
-    return  0;
-}
-
-#endif
-

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2005 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2006 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -77,8 +77,8 @@
  *      Extended -D option to enable function-like macro definition.
  *      Added -a (-lang-asm, -x assembler-with-cpp) option.
  *      Added handling of #pragma __include_next and #pragma __warning_cpp.
- *      Added handling of #include_next and #warning for GNU C.
- *      Added -dM, -dD, -include and -isystem option for GNU C.
+ *      Added handling of #include_next and #warning for GCC.
+ *      Added -dM, -dD, -include and -isystem option for GCC.
  *      Fixed the bugs of parse_env() and bsl2sl().
  *      Created conv_case(), chk_env() and at_end().
  *      Split set_limit(), set_pragma_op(), def_a_macro() from dooptions().
@@ -89,13 +89,13 @@
  * CPP Version 2.3 pre-release 2 / system.c
  * 2002/12      kmatsui
  *      Added norm_path() to normalize include directories.
- *      Added -I- option and -std=xx option for GNU C.
+ *      Added -I- option and -std=xx option for GCC.
  *      Fixed the bug of #pragma __include_next (#include_next).
  *
  * CPP Version 2.3 release / system.c
  * 2003/02      kmatsui
  *      Enabled options interspersed between the filename arguments.
- *      Added -j option (for the GNU C compatible diagnostic format).
+ *      Added -j option (for the GCC compatible diagnostic format).
  *      Changed #pragma __debug and #pragma __warning to #pragma __debug_cpp
  *          and #pragma __warning_cpp.
  *
@@ -142,9 +142,25 @@
  *      Removed FOLD_CASE settings.
  *      Sorted usage() message lines alphabetically.
  *      Renamed most of #pragma __* or #pragma __*_cpp as #pragma MCPP *.
- *      Updated in order to cope with GNU C V.3.3 and 3.4 (created
+ *      Updated in order to cope with GCC V.3.3 and 3.4 (created
  *          init_gcc_macro(), undef_gcc_macro()).
  *      Removed -E option, changed -m option to -e.
+ */
+
+/*
+ * MCPP Version 2.6
+ * 2006/07      kmatsui
+ *      Removed settings for pre-C90 compiler.
+ *      Removed settings for MS-DOS compiler, removed mem_model().
+ *      Added stand-alone preprocessor setting.
+ *      Revised handling of include directories list and #pragma once,
+ *          making path of include directories and once files absolute,
+ *          dereferencing the symbolic linked file.
+ *      Removed #pragma MCPP include_next.
+ *      Created init_msc_macro(), parse_warn_level(), chk_opts()
+ *          , init_predefines(), init_std_defines(), do_prestd_directive().
+ *      Removed set_cplus().
+ *      Added some options for Visual C++.
  */
 
 /*
@@ -158,19 +174,40 @@
 #include    "internal.H"
 #endif
 
+#if     HOST_SYS_FAMILY == SYS_UNIX
+#include    "unistd.h"              /* For getcwd(), readlink(), getopt()   */
+#elif   HOST_COMPILER == MSC || HOST_COMPILER == LCC
+#include    "direct.h"
+#define getcwd( buf, size)  _getcwd( buf, size)
+#endif
+
+/* Functions other than standard.   */
+#if     HOST_SYS_FAMILY != SYS_UNIX     /* On UNIX "unistd.h" will suffice  */
+#ifdef  __cplusplus
+extern "C" {
+    int     getopt( int argc, char * const * argv, const char * opts);
+    extern int      optind;
+    extern char *   optarg;
+}
+#else   /* #ifndef __cplusplus  */
+extern int      getopt( int argc, char * const * argv, const char * opts);
+extern int      optind;
+extern char *   optarg;
+#endif
+#endif
+
 /*
  * PATH_DELIM is defined for the O.S. which has single byte path-delimiter.
  * Note: '\\' or any other character identical to second byte of MBCHAR should
  * not be used for PATH_DELIM for convenience of path-list parsing.
  */
-#if SYS_FAMILY == SYS_UNIX || SYS_FAMILY == SYS_OS9 || SYS_FAMILY == SYS_MSDOS
+#if SYS_FAMILY == SYS_UNIX || SYS_FAMILY == SYS_WIN || SYSTEM == SYS_UNKNOWN
 #define PATH_DELIM      '/'
 #define SPECIAL_PATH_DELIM  FALSE
 #else
 #if SYSTEM == SYS_MAC
 #define PATH_DELIM      ':'         /* ?? I don't know  */
 #else   /* Any other path-delimiter, define by yourself */
-#define PATH_DELIM      '/'
 #endif
 #define SPECIAL_PATH_DELIM  TRUE    /* Any path-delimiter other than '/'    */
 #endif
@@ -179,141 +216,100 @@
  * OBJEXT is the suffix to denote "object" file.
  */
 #ifndef OBJEXT
-#if SYS_FAMILY == SYS_UNIX || SYSTEM == SYS_DJGPP
+#if     SYS_FAMILY == SYS_UNIX
 #define OBJEXT     "o"
-#else
-#if SYS_FAMILY == SYS_MSDOS
+#elif   SYS_FAMILY == SYS_WIN
 #define OBJEXT     "obj"
-#else
-#if SYS_FAMILY == SYS_OS9
-#define OBJEXT     "r"
-#else
+#elif   1
 /* Add here appropriate definitions for other systems.  */
-#define OBJEXT     "o"
 #endif
 #endif
-#endif
-#endif
-
-#if PROTO
 
 static void     version( void);
+                /* Print version message            */
 static void     usage( int opt);
+                /* Putout usage of MCPP             */
 static void     set_opt_list( char * optlist);
+                /* Set list of legal option chars   */
+static int      parse_warn_level( const char * optarg, int opt);
+                /* Parse warning level option       */
 static void     def_a_macro( int opt, char * def);
-#if MODE == STANDARD
-static void     set_cplus( char * val, const char * stdc_name
-        , const char * stdc_v_name, int nflag);
+                /* Do a -D option                   */
+static void     chk_opts( int sflag, long std_val, int ansi, int trad);
+                /* Check consistency of options     */
+static void     init_predefines( int nflag, long std_val);
+                /* Set and unset predefined macros  */
+static void     init_std_defines( void);
+                /* Predefine Standard macros        */
 static void     set_limit( void);
-#if OK_PRAGMA_OP
+                /* Set minimum translation limits   */
 static void     set_pragma_op( void);
-#endif
-#endif
+                /* Set the _Pragma() operator       */
 static char *   set_files( int argc, char ** argv, char ** in_pp
         , char ** out_pp);
+                /* Set input, output, diagnostic    */
 static void     set_sys_dirs( int set_cplus_dir);
-#if HOST_HAVE_GETENV
+                /* Set system-specific include dirs */
 static void     set_env_dirs( void);
+                /* Set user-defined include dirs    */
 static void     parse_env( const char * env);
-#endif
+                /* Parse environment variables      */
 static void     set_a_dir( const char * dirname);
-static char *   norm_path( const char * dirname);
+                /* Append an include directory      */
+static char *   norm_path( const char * dirname, int from_do_once);
+                /* Normalize pathname to compare    */
 #if COMPILER == GNUC
 static void     init_gcc_macro( int gcc_maj_ver, int gcc_min_ver);
+                /* Predefine GCC macros             */
 static void     undef_gcc_macro( int clearall);
+                /* Undefine GCC predef-macros       */
 static void     chk_env( void);
+                /* Check the environment variables  */
+#elif   COMPILER == MSC
+static void     init_msc_macro( int wchar_t_modified);
+                /* Predefine Visual C macros        */
 #endif
-#if OK_MAKE
 static char *   md_init( const char * filename, char * output);
+                /* Initialize makefile dependency   */
 static char *   md_quote( char * output);
-#endif
+                /* 'Quote' special characters       */
 static int      open_include( char * filename, int searchlocal, int next);
+                /* Open the included file           */
 static int      has_directory( const char * source, char * directory);
+                /* Get directory part of fname      */
 static int      search_dir( char * filename, int searchlocal, int next);
+                /* Search the include directories   */
 static int      open_file( const char ** dirp, const char * filename
         , int local);
+                /* Open a source file               */
 static const char *     set_fname( const char * filename);
-static void     do_preprocessed( void);
+                /* Remember the source filename     */
 static int      is_junk( void);
-#if MODE == STANDARD
+                /* The directive has trailing junk? */
 static void     do_once( const char * filename);
+                /* Process #pragma once             */
 static int      included( const char * filename);
+                /* The file has been once included? */
 static void     push_or_pop( int direction);
-#endif
-#if DEBUG || DEBUG_EVAL
+                /* Push or pop a macro definition   */
+static void     do_prestd_directive( void);
+                /* Process pre-Standard directives  */
+static void     do_preprocessed( void);
+                /* Process preprocessed file        */
 static int      do_debug( int set);
-#endif
-#if DEBUG
+                /* #pragma MCPP debug, #debug       */
 static void     dump_path( void);
-#endif
-#if MODE == PRE_STANDARD
+                /* Print include search path        */
 static void     do_asm( int asm_start);
-#endif
+                /* Process #asm, #endasm            */
 
-#else   /* ! PROTO  */
+static int      mb_changed = FALSE;     /* Flag of -e option        */
 
-static void     version();      /* Print version message            */
-static void     usage();        /* Putout usage of MCPP             */
-static void     set_opt_list(); /* Set list of legal option chars   */
-static void     def_a_macro();  /* Do a -D option                   */
-
-#if MODE == STANDARD
-static void     set_cplus();    /* Set the macro __cplusplus        */
-static void     set_limit();    /* Set minimum translation limits   */
-#if OK_PRAGMA_OP
-static void     set_pragma_op();    /* Set the _Pragma() operator   */
-#endif
-#endif
-static char *   set_files();    /* Set input, output, diagnostic    */
-static void     set_sys_dirs(); /* Set system-specific include dirs */
-#if HOST_HAVE_GETENV
-static void     set_env_dirs(); /* Set user-defined include dirs    */
-static void     parse_env();    /* Parse environment variables      */
-#endif
-static void     set_a_dir();    /* Append an include directory      */
-static char *   norm_path();    /* Normalize pathname to compare    */
-#if COMPILER == GNUC
-static void     init_gcc_macro();   /* Predefine GNU C macros       */
-static void     undef_gcc_macro();  /* Undefine GNU C predef-macros */
-static void     chk_env();      /* Check the environment variables  */
-#endif
-#if OK_MAKE
-static char *   md_init();      /* Initialize makefile dependency   */
-static char *   md_quote();     /* 'Quote' special characters       */
-#endif
-static int      open_include(); /* Open the included file           */
-static int      has_directory();    /* Get directory part of fname  */
-static int      search_dir();   /* Search the include directories   */
-static int      open_file();    /* Open a source file               */
-static char *   set_fname();    /* Remember the source filename     */
-static void     do_preprocessed();  /* Process preprocessed file    */
-static int      is_junk();      /* The directive has trailing junk? */
-#if MODE == STANDARD
-static void     do_once();      /* Process #pragma once             */
-static int      included();     /* The file has been included ?     */
-static void     push_or_pop();  /* Push or pop a macro definition   */
-#endif
-#if DEBUG || DEBUG_EVAL
-static int      do_debug();     /* #pragma MCPP debug, #debug       */
-#endif
-#if DEBUG
-static void     dump_path();    /* Print include search path        */
-#endif
-#if MODE == PRE_STANDARD
-static void     do_asm();       /* Process #asm, #endasm            */
-#endif
-
-#endif  /* ! PROTO  */
-
-#if SYSTEM == SYS_MSDOS
-static int      mem_model( int model);  /* Specify memory-model     */
-#else
-static int      mb_changed = FALSE;     /* Flag of -m option        */
-#endif
-
-#if SYS_FAMILY == SYS_MSDOS
+#if SYS_FAMILY == SYS_WIN
 static char *   bsl2sl( char * filename);       /* Convert \ to /   */
 #endif
+
+static char     cur_work_dir[ FILENAMEMAX + 1]; /* Current working directory*/
 
 /*
  * incdir[] stores the -I directories (and the system-specific #include <...>
@@ -341,18 +337,23 @@ static const char **    fname_end = fnamelist;
 
 static int      search_rule = SEARCH_INIT;  /* Rule to search include file  */
 
-static int      dDflag = FALSE;         /* Flag of -dD option (for GNU C)   */
+static int      dDflag = FALSE;         /* Flag of -dD option (for GCC)     */
 static int      nflag = FALSE;          /* Flag of -N (-undef) option       */
 
-#if OK_MAKE
+/* Values of mkdep. */
+#define MD_MKDEP        1   /* Output source file dependency line   */
+#define MD_SYSHEADER    2   /* Print also system-header names       */
+#define MD_FILE         4   /* Output to the file named *.d         */
+#define MD_PHONY        8   /* Print also phony targets for each header */
+#define MD_QUOTE        16  /* 'Quote' $ and space in target name   */
+
 static FILE *   mkdep_fp;                       /* For -Mx option   */
 static char *   mkdep_target;
-    /* For -MT TARGET option and for GNU C's queer environment variables.   */
+    /* For -MT TARGET option and for GCC's queer environment variables.     */
 static char *   mkdep_mf;               /* Argument of -MF option   */
 static char *   mkdep_md;               /* Argument of -MD option   */
 static char *   mkdep_mq;               /* Argument of -MQ option   */
 static char *   mkdep_mt;               /* Argument of -MT option   */
-#endif
 
 #if COMPILER == GNUC
 /* sys_dirp indicates the first directory to search for system headers  */
@@ -370,14 +371,6 @@ static char **  preinc_end = preinclude;    /* -> active end of preinclude  */
 static int      dMflag = FALSE;                 /* Flag of -dM option       */
 #endif
 
-#if HOST_COMPILER == BORLANDC
-extern unsigned     _stklen = NMACWORK + (NEXP * 30) + (sizeof (int) * 1280)
-#if MODE == STANDARD
-                        + (sizeof (char *) * 12 * RESCAN_LIMIT)
-#endif
-                        + 0x800;
-#endif
-
 #if COMPILER == LCC
 static const char *     optim_name = "__LCCOPTIMLEVEL";
 #endif
@@ -387,16 +380,12 @@ static const char *     optim_name = "__LCCOPTIMLEVEL";
 
 #define OPTLISTLEN  80
 
-void
-#if PROTO
-do_options( int argc, char ** argv, char ** in_pp, char ** out_pp)
-#else
-do_options( argc, argv, in_pp, out_pp)
-    int         argc;
-    char **     argv;
-    char **     in_pp;                      /* Input file name      */
-    char **     out_pp;                     /* Output file name     */
-#endif
+void    do_options(
+    int         argc,
+    char **     argv,
+    char **     in_pp,                      /* Input file name      */
+    char **     out_pp                      /* Output file name     */
+)
 /*
  * Process command line arguments (-D, etc.), called only at MCPP startup.
  */
@@ -406,24 +395,18 @@ do_options( argc, argv, in_pp, out_pp)
     int         vflag;                      /* -v option            */
     int         unset_sys_dirs;
     /* Unset system-specific and site-specific include directories ?    */
-    int         set_cplus_dir;  /* Set C++ include directory ? (for GNU C)  */
+    int         set_cplus_dir;  /* Set C++ include directory ? (for GCC)*/
     int         show_path;          /* Show include directory list  */
     DEFBUF *    defp;
     int         i;
-    register int    opt;
+    int         opt;
     char *      cp;
 
-#if MODE == STANDARD
-    const char *    stdc_name = "__STDC__";
-    const char *    stdc_v_name = "__STDC_VERSION__";
-    char        tmp[ 16];
     long        std_val;        /* Value of __STDC_VERSION__ or __cplusplus */
     VAL_SIGN    *valp;
-    int         sflag, Vflag;               /* -S, -V, -H option    */
-#endif
-#if SYSTEM == SYS_MSDOS
-    int         memmodel = FALSE;
-#endif
+    int         sflag;                      /* -S option or similar */
+    int         ansi, trad;                 /* -ansi, -traditional  */
+    int         old_mode;                   /* backup of 'mode'     */
 #if COMPILER == GNUC
 #define NSYSDIR   8
     /* System include directory specified by -isystem   */
@@ -431,18 +414,28 @@ do_options( argc, argv, in_pp, out_pp)
     char **     sysdir_end = sysdir;
     int         integrated_cpp; /* Flag of cc1 which integrates cpp in it   */
     int         gcc_maj_ver, gcc_min_ver;       /* __GNUC__, __GNUC_MINOR__ */
-#endif
-#if COMPILER == LCC
+#elif   COMPILER == MSC
+    int         wchar_t_modified = FALSE;   /* -Zc:wchar_t flag     */
+#elif   COMPILER == LCC
     const char *    debug_name = "__LCCDEBUGLEVEL";
 #endif
 
-    set_opt_list( optlist);
-
     vflag = nflag = unset_sys_dirs = show_path = FALSE;
     set_cplus_dir = TRUE;
-#if MODE == STANDARD
-    sflag = Vflag = FALSE;
+    sflag = ansi = trad = FALSE;
+    std_val = -1L;
+
+    /* Get current directory for -I option and #pragma once */
+    getcwd( cur_work_dir, FILENAMEMAX);
+#if FNAME_FOLD
+    conv_case( cur_work_dir, cur_work_dir + strlen( cur_work_dir), LOWER);
 #endif
+#if SYS_FAMILY == SYS_WIN
+    bsl2sl( cur_work_dir);
+#endif
+    sprintf( cur_work_dir + strlen( cur_work_dir), "%c%c", PATH_DELIM, EOS);
+        /* Append trailing path-delimiter   */
+
 #if COMPILER == GNUC
     defp = look_id( "__GNUC__");
     gcc_maj_ver = atoi( defp->repl);
@@ -450,8 +443,9 @@ do_options( argc, argv, in_pp, out_pp)
     gcc_min_ver = atoi( defp->repl);
     integrated_cpp = ((gcc_maj_ver == 3 && gcc_min_ver >= 3)
             || gcc_maj_ver == 4);
-    init_gcc_macro( gcc_maj_ver, gcc_min_ver);
 #endif
+
+    set_opt_list( optlist);
 
 opt_search: ;
     while (optind < argc
@@ -464,58 +458,72 @@ opt_search: ;
             break;                          /* Ignore this option   */
 #endif
 
-#if MODE == STANDARD
         case '+':
+#if COMPILER == GNUC
 plus:
+#endif
             if (cplus || sflag) {
-                fprintf( fp_err, "warning: -+ option is ignored\n");
+                fputs( "warning: -+ option is ignored\n", fp_err);
                 break;
             }
             cplus = CPLUS;
             break;
-#endif  /* MODE == STANDARD */
-
-#if MODE == STANDARD && OK_DIGRAPHS
         case '2':                   /* Revert digraphs recognition  */
-            digraphs = ! digraphs;
+            dig_flag = ! dig_flag;
             break;
-#endif
-
-#if MODE == STANDARD && OK_TRIGRAPHS
         case '3':                   /* Revert trigraph recogniion   */
-            tflag = ! tflag;
+            trig_flag = ! trig_flag;
             break;
-#endif
 
         case '@':                   /* Special preprocessing mode   */
-#if MODE == STANDARD
+            old_mode = mode;
             if (str_eq( optarg, "post") || str_eq( optarg, "poststd"))
                 mode = POST_STD;        /* 'post-Standard' mode     */
-            else if (str_eq( optarg, "std"))
-                mode = STD;             /* 'Standard' mode (default)*/
-            else if (str_eq( optarg, "compat"))
-                compat_mode = TRUE;     /* 'compatible' mode        */
-#else
-            if (str_eq( optarg, "old") || str_eq( optarg, "oldprep"))
+            else if (str_eq( optarg, "old") || str_eq( optarg, "oldprep"))
                 mode = OLD_PREP;        /* 'old-Preprocessor' mode  */
             else if (str_eq( optarg, "kr"))
                 mode = KR;              /* 'K&R 1st' mode (default) */
-#endif
-            else
+            else if (str_eq( optarg, "std"))
+                mode = STD;             /* 'Standard' mode (default)*/
+            else if (str_eq( optarg, "compat")) {
+                compat_mode = TRUE;     /* 'compatible' mode        */
+                mode = STD;
+            }
+            else 
                 usage( opt);
+            standard = (mode == STD || mode == POST_STD);
+            if (old_mode != STD && old_mode != mode)
+                fprintf( fp_err, "Mode is redefined to: %s\n", optarg);
             break;
 
 #if COMPILER == GNUC
         case 'A':       /* Ignore -A system(gnu), -A cpu(vax) or so */
             break;
         case 'a':
-#if MODE == STANDARD
             if (str_eq( optarg, "nsi")) {   /* -ansi                */
                 look_and_install( "__STRICT_ANSI__", DEF_NOARGS, "", "1");
+                ansi = TRUE;
                 break;
             }
-#endif
             usage( opt);
+#elif   COMPILER == MSC
+        case 'a':
+            if (memcmp( optarg, "rch", 3) == 0) {
+                if (str_eq( optarg + 3, ":SSE")     /* -arch:SSE    */
+                        || str_eq( optarg + 3, ":sse"))
+                    look_and_install( "_M_IX86_FP", DEF_NOARGS, null, "1");
+                else if (str_eq( optarg + 3, ":SSE2")       /* -arch:SSE2   */
+                        || str_eq( optarg + 3, ":sse2"))
+                    look_and_install( "_M_IX86_FP", DEF_NOARGS, null, "2");
+                /* Else ignore  */
+            } else {
+                usage( opt);
+            }
+            break;
+
+        case 'A':
+            lang_asm = TRUE;                /* "assembler" source   */
+            break;
 #else
         case 'a':
             lang_asm = TRUE;                /* "assembler" source   */
@@ -543,31 +551,24 @@ plus:
                 no_output++;
             } else if (str_eq( optarg, "D"))  {     /* -dD          */
                 dDflag = TRUE;
-#if MODE == STANDARD
             } else if (str_eq( optarg, "igraphs")) {        /* -digraphs    */
-                digraphs = TRUE;
-#endif
+                dig_flag = TRUE;
             } else {
                 usage( opt);
             }
             break;
 #endif  /* COMPILER == GNUC */
 
-#if COMPILER == LSIC
-        case 'd':
-#endif
         case 'D':                           /* Define symbol        */
             def_a_macro( opt, optarg);
             break;
 
-#if SYSTEM != SYS_MSDOS
         case 'e':
             /* Change the default MBCHAR encoding   */
             if (set_encoding( optarg, FALSE, 0) == NULL)
                 usage( opt);
             mb_changed = TRUE;
             break;
-#endif
 
 #if COMPILER == GNUC
         case 'E':
@@ -576,6 +577,7 @@ plus:
             break;                          /* Ignore this option   */
         case 'f':
             if (memcmp( optarg, "input-charset=", 14) == 0) {
+                /* Treat -finput-charset= as the same option as -e  */
                 if (set_encoding( optarg + 14, FALSE, 0) == NULL)
                     usage( opt);
                 mb_changed = TRUE;
@@ -595,8 +597,7 @@ plus:
             if (!isdigit( *optarg) && str_eq( argv[ optind - 2], "-g"))
                 optind--;   /* Neither '-g 0' nor '-ggdb' -- No argument    */
             break;                          /* Ignore the option    */
-#else
-#if COMPILER == LCC
+#elif COMPILER == LCC
         case 'g':               /* Define __LCCDEBUGLEVEL as <n>    */
             if (*(optarg + 1) == EOS && isdigit( *optarg)) {
                 defp = look_id( debug_name);
@@ -605,19 +606,46 @@ plus:
                 usage( opt);
             }
             break;
-#endif
-#endif
+#elif COMPILER == MSC
+        case 'G':
+            if (*(optarg + 1) == EOS) {     /* -Gx                  */
+                char    val[ 4] = "000";
 
-#if MODE == STANDARD
-        case 'h':
-            if (*(optarg + 1) == EOS && isdigit( *optarg)) {
-                defp = look_id( "__STDC_HOSTED__");
-                strcpy( defp->repl, optarg);
+                switch (*optarg) {
+                case '3':   case '4':   case '5':   case '6':
+                    *val = *optarg; /* "300", "400", "500", "600"   */
+                    break;
+                case 'B':                   /* -GB                  */
+                    *val = '6';
+                    break;
+                case 'R':
+                    look_and_install( "_CPPRTTI", DEF_NOARGS, null, "1");
+                    break;
+                case 'X':
+                    look_and_install( "_CPPUNWIND", DEF_NOARGS, null, "1");
+                    break;
+                case 'Z':
+                    look_and_install( "__MSVC_RUNTIME_CHECKS", DEF_NOARGS
+                            , null, "1");
+                    break;
+                default :
+                    fprintf( fp_err, warning, opt, optarg);
+                }
+                if (*val)
+                    look_and_install( COMPILER_SP2, DEF_NOARGS, null, val);
             } else {
                 usage( opt);
             }
             break;
 #endif
+
+        case 'h':
+            if (*(optarg + 1) == EOS && isdigit( *optarg))      /* a digit  */
+                look_and_install( "__STDC_HOSTED__", DEF_NOARGS - 1, null
+                        , optarg);
+            else
+                usage( opt);
+            break;
 
 #if COMPILER == MSC
         case 'X':
@@ -677,15 +705,10 @@ plus:
                                             /* -iwithprefixbefore   */
                     || str_eq( optarg, "dirafter")) {   /* -idirafter       */
                 optind++;                   /* Skip the argument    */
+                /* Ignore these options */
             } else {
                 usage( opt);
             }
-            break;
-#endif
-
-#if COMPILER == PLAN9_PCC && DEBUG
-        case 'i':
-            show_path = TRUE;
             break;
 #endif
 
@@ -693,32 +716,34 @@ plus:
             no_source_line = TRUE;
             break;  /* Do not output the source line in diagnostics */
 
+#if COMPILER == MSC
+        case 'J':
+            look_and_install( "_CHAR_UNSIGNED", DEF_NOARGS, null, "1");
+            break;
+#endif
+
 #if COMPILER == GNUC
         case 'l':
             if (memcmp( optarg, "ang-", 4) != 0) {
                 usage( opt);
             } else if (str_eq( optarg + 4, "c")) {      /* -lang-c          */
                 break;                      /* Ignore this option   */
-#if MODE == STANDARD
             } else if (str_eq( optarg + 4, "c99")       /* -lang-c99*/
                         || str_eq( optarg + 4, "c9x")) {    /* -lang-c9x    */
                 if (! sflag) {
                     look_and_install( "__STRICT_ANSI__", DEF_NOARGS, "", "1");
-                    i = 1;                  /* Define __STDC__ to 1 */
+                    stdc_val = 1;           /* Define __STDC__ to 1 */
                     std_val = 199901L;
-                    strcpy( tmp, "199901L");
-                    Vflag = TRUE;
-                    goto  stdc;
+                    sflag = TRUE;
                 }
             } else if (str_eq( optarg + 4, "c89")) {    /* -lang-c89*/
                 if (! sflag) {
                     look_and_install( "__STRICT_ANSI__", DEF_NOARGS, "", "1");
-                    i = 1;                  /* Define __STDC__ to 1 */
-                    goto  stdc;
+                    stdc_val = 1;           /* Define __STDC__ to 1 */
+                    sflag = TRUE;
                 }
             } else if (str_eq( optarg + 4, "c++")) {    /* -lang-c++*/
                 goto  plus;
-#endif
             } else if (str_eq( optarg + 4, "asm")) {    /* -lang-asm*/
                 lang_asm = TRUE;
                 break;
@@ -728,7 +753,6 @@ plus:
             break;
 #endif  /* COMPILER == GNUC */
 
-#if OK_MAKE
         case 'M':           /* Output source file dependency line   */
             if (str_eq( optarg, "M")) {                     /* -MM  */
                 ;
@@ -758,25 +782,13 @@ plus:
             }
             mkdep |= MD_MKDEP;
             break;
-#endif
 
-        case 'm':
-#if SYSTEM == SYS_MSDOS
-            /* Specify a memory model   */
-            if (*(optarg + 1) != EOS)
-                usage( opt);
-            else if (mem_model( toupper( *optarg & UCHARMAX)) == FALSE) {
-                fprintf( fp_err, "Invalid memory model '%s'\n", optarg);
-                usage( opt);
-            }
-            memmodel = TRUE;
-#else
 #if COMPILER == GNUC
+        case 'm':
             if (! integrated_cpp)
                 usage( opt);
-#endif
-#endif  /* SYSTEM != SYS_MSDOS  */
             break;
+#endif
 
 #if COMPILER == GNUC
         case 'u':
@@ -787,29 +799,17 @@ plus:
 #if COMPILER == MSC
         case 'u':
 #endif
-#if COMPILER == PLAN9_PCC
-        case 'n':
-#else
         case 'N':
-#endif
             /* No predefines:   remove "vax", "__VAX" and friends.  */
             nflag = TRUE;
             break;
-
-#if COMPILER == PLAN9_PCC
-        case 'N':
-            unset_sys_dirs = TRUE;  /* Unset default include directories    */
-            break;
-#endif
 
 #if COMPILER == GNUC
         case 'n':
             if (str_eq( optarg, "ostdinc")) {               /* -nostdinc    */
                 unset_sys_dirs = TRUE;  /* Unset pre-specified directories  */
-#if MODE == STANDARD
             } else if (str_eq( optarg, "ostdinc++")) {      /* -nostdinc++  */
                 set_cplus_dir = FALSE;  /* Unset C++-specific directories   */
-#endif
             } else if (str_eq( optarg, "oprecomp")) {       /* -noprecomp   */
                 fprintf( fp_err, warning, opt, optarg);
                 break;
@@ -832,8 +832,7 @@ plus:
                 usage( opt);
             }
             break;                  /* Else ignore -Ox option       */
-#endif
-#if COMPILER == LCC
+#elif COMPILER == LCC
         case 'O':                   /* Define __LCCOPTIMLEVEL as 1  */
             defp = look_id( optim_name);
             strcpy( defp->repl, "1");
@@ -853,19 +852,13 @@ plus:
             if (str_eq( optarg, "edantic")          /* -pedantic    */
                     || str_eq( optarg, "edantic-errors")) {
                                             /* -pedantic-errors     */
-#if MODE == STANDARD
                 if (warn_level == -1)
                     warn_level = 0;
                 warn_level |= (1 | 2 | 4);
                 if (! sflag && ! cplus) {
-                    i = 1;
-                    goto  stdc;             /* Set -S1 option       */
+                    stdc_val = 1;
+                    sflag = TRUE;
                 }
-#else
-                fputs( "Use STANDARD MODE mcpp for -pedantic option\n"
-                        , fp_err);
-                usage( opt);
-#endif
             } else {
                 usage( opt);
             }
@@ -882,7 +875,16 @@ plus:
             qflag = TRUE;
             break;
 
-#if MODE == STANDARD
+#if COMPILER == MSC
+        case 'R':               /* -RTC1, -RTCc, -RTCs, -RTCu, etc. */
+            if (memcmp( optarg, "TC", 2) == 0 && *(optarg + 2) != EOS)
+                look_and_install( "__MSVC_RUNTIME_CHECKS", DEF_NOARGS, null
+                        , "1");
+            else
+                usage( opt);
+            break;
+#endif
+
         case 'S':
             if (cplus || sflag) {       /* C++ or the second time   */
                 fprintf( fp_err, warning, opt, optarg);
@@ -891,16 +893,9 @@ plus:
             i = *optarg;
             if (! isdigit( i) || *(optarg + 1) != EOS)
                 usage( opt);
-            i = i - '0';
-#if COMPILER == GNUC
-stdc:
-#endif
-            defp = look_id( stdc_name);
-            sprintf( defp->repl, "%d", i);          /* Redefine     */
-            stdc_val = i;
+            stdc_val = i - '0';
             sflag = TRUE;
             break;
-#endif  /* MODE == STANDARD */
 
 #if COMPILER == GNUC
         case 'r':
@@ -911,7 +906,6 @@ stdc:
                 usage( opt);
             break;
 
-#if MODE == STANDARD
         case 's':
             if (memcmp( optarg, "td=", 3) == 0 && strlen( optarg) > 3) {
                 /* -std=STANDARD    */
@@ -921,7 +915,6 @@ stdc:
                         || str_eq( cp, "gnu89")     /* std=gnu89    */
                         || str_eq( cp, "iso9899:1990")) {
                     std_val = 0L;               /* C90 + extensions */
-                    strcpy( tmp, "0L"); /* Will be modified later   */
                 } else if (str_eq( cp, "c99")       /* std=c99      */
                         || str_eq( cp, "c9x")       /* std=c9x      */
                         || str_eq( cp, "gnu99")     /* std=gnu99    */
@@ -929,10 +922,8 @@ stdc:
                         || str_eq( cp, "iso9899:1999")
                         || str_eq( cp, "iso9899:199x")) {
                     std_val = 199901L;
-                    strcpy( tmp, "199901L");
                 } else if (str_eq( cp, "c++98")) {  /* std=c++98    */
                     cplus = std_val = 199711L;
-                    strcpy( tmp, "199711L");
                 } else if (memcmp( cp, "iso9899:", 8) == 0
                         && strlen( cp) >= 14) { /* std=iso9899:199409, etc. */
                     optarg = cp + 8;
@@ -952,34 +943,21 @@ stdc:
                 }
                 if (! cplus && memcmp( cp, "gnu", 3) != 0)
                     look_and_install( "__STRICT_ANSI__", DEF_NOARGS, "", "1");
-                Vflag = TRUE;
-                i = 1;
-                goto stdc;
+                stdc_val = 1;
+                sflag = TRUE;
             } else {
                 usage( opt);
             }
             break;
-#endif  /* MODE == STANDARD */
-#endif  /* COMPILER == GNUC */
 
-#if COMPILER == LSIC
-        case 's':
-            pflag = TRUE;
-            break;
-#endif
-
-#if COMPILER == GNUC
         case 't':
-            if (str_eq( optarg, "raditional")) {    /* -traditional */
-#if MODE == PRE_STANDARD
+            if (str_eq( optarg, "raditional")
+                    || str_eq( optarg, "raditional-cpp")) {
+                                /* -traditional, -traditional-cpp   */
+                trad = TRUE;
                 mode = OLD_PREP;
-#else
-                usage( opt);
-#endif
-#if MODE == STANDARD && OK_TRIGRAPHS
             } else if (str_eq( optarg, "rigraphs")) {
-                tflag = TRUE;                       /* -trigraphs   */
-#endif
+                trig_flag = TRUE;                   /* -trigraphs   */
             } else {
                 usage( opt);
             }
@@ -993,11 +971,9 @@ stdc:
             i = tolower( *optarg);                  /* Fold case    */
             if (i == 'c') {
                 break;                      /* Ignore this option   */
-#if MODE == STANDARD
             } else if (i == 'p') {
                 cplus = CPLUS;
                 break;
-#endif
             } else {
                 usage( opt);
             }
@@ -1012,39 +988,21 @@ stdc:
                 if (defp->nargs == DEF_NOARGS - 1) {
                     undef_a_predef( optarg);
                 }
-#if MODE == STANDARD
-                else if (defp->nargs < DEF_NOARGS - 1) {
-                    fprintf( fp_err, "\"%s\" shouldn't be undefined\n"
-                            , optarg);
-                    usage( opt);
-                }
-#endif
                 undefine( optarg);
             } else {
                 fprintf( fp_err, "\"%s\" wasn't defined\n", optarg);
             }
             break;
 
-#if MODE == STANDARD
-#if COMPILER == PLAN9_PCC
-        case 's':
-#else
         case 'V':
-#endif
+#if COMPILER == GNUC
 Version:
+#endif
             valp = eval_num( optarg);
             if (valp->sign == VAL_ERROR)
                 usage( opt);
             std_val = (long) valp->val;
-            sprintf( tmp, "%ldL", std_val);
-            Vflag = TRUE;
             break;
-#endif  /* MODE == STANDARD */
-
-#if COMPILER == PLAN9_PCC
-        case 'V':                           /* Ignore this option   */
-            break;
-#endif
 
         case 'v':
             vflag = TRUE;
@@ -1075,12 +1033,10 @@ Version:
                 warn_level |= (1 | 16);     /* Convert -Wall to -W17*/
                 break;
             }
-#if MODE == STANDARD && OK_TRIGRAPHS
             else if (str_eq( optarg, "trigraphs")) {
                 warn_level |= 16;
                 break;
             }
-#endif
 #endif  /* COMPILER == GNUC */
 #if COMPILER == MSC
             if (str_eq( optarg, "all")) {
@@ -1091,14 +1047,15 @@ Version:
                 break;
             }
 #endif
-            if ((warn_level |= atoi( optarg)) > 31 || warn_level < 0)
+            warn_level |= parse_warn_level( optarg, opt);
+            if (warn_level > 31 || warn_level < 0)
                 usage( opt);
             if (warn_level == 0)
                 warn_level = 0xFF;          /* Remember this option */
             /* Else ignore the option   */
             break;
 
-#if COMPILER == GNUC || COMPILER == MSC || COMPILER == LSIC
+#if COMPILER == GNUC || COMPILER == MSC
         case 'w':                           /* Same as -W0          */
             warn_level = 0xFF;              /* Remenber this option */
             break;
@@ -1108,10 +1065,8 @@ Version:
         case 'x':
             if (str_eq( optarg, "c")) {
                 break;                      /* -x c -- ignore this  */
-#if MODE == STANDARD
             } else if (str_eq( optarg, "c++")) {
                 goto plus;
-#endif
             } else if (str_eq( optarg, "assembler-with-cpp")) {
                 lang_asm = TRUE;
                 break;
@@ -1123,9 +1078,24 @@ Version:
 
 #if COMPILER == MSC
         case 'Z':
-            if (*optarg != 'a')
+            if (str_eq( optarg, "c:wchar_t")) {     /* -Zc:wchar_t  */
+                look_and_install( "_NATIVE_WCHAR_T_DEFINED", DEF_NOARGS, null
+                        , "1");
+                look_and_install( "_WCHAR_T_DEFINED", DEF_NOARGS, null, "1");
+                wchar_t_modified = TRUE;
+            } else if (str_eq( optarg, "c:wchar_t-")) {     /* -Zc:wchar_t- */
+                wchar_t_modified = TRUE;        /* Do not define the macros */
+            } else if (str_eq( optarg, "l")) {
+                look_and_install( "_VC_NODEFAULTLIB", DEF_NOARGS, null, "1");
+            } else if (str_eq( optarg, "a") || str_eq( optarg, "e")) {
+                /* Ignore -Za and -Ze silently  */
+                break;
+            } else if (*(optarg + 1) == EOS) {  /* -Z followed by one char  */
+                fprintf( fp_err, warning, opt, optarg);
+                /* Ignore the option with warning   */
+            } else {
                 usage( opt);
-            /* Else ignore this option (-Za)    */
+            }
             break;
 #endif
 
@@ -1143,65 +1113,14 @@ Version:
     if (optind < argc && set_files( argc, argv, in_pp, out_pp) != NULL)
         goto  opt_search;       /* More options after the filename  */
 
-#if MODE == STANDARD
-    /* Check 'mode' and incompatible options, modify magic characters.  */
-	if (mode == POST_STD) {
-		if (lang_asm || compat_mode || tflag)
-            usage( '?');
-            /* 'lang_asm', 'compat_mode' and trigraphs are not available    */
-        type[ IN_SRC] = type[ TOK_SEP] = 0;
-	} else if (compat_mode) {
-		type[ IN_SRC] = 0;
-	}
-#else
-    if (mode == OLD_PREP)
-        type[ COM_SEP] = SPA;
-#endif
+    /* Check consistency of specified options, set some variables   */
+    chk_opts( sflag, std_val, ansi, trad);
 
     if (warn_level == -1)               /* No -W option             */
         warn_level = 1;                 /* Default warning level    */
     else if (warn_level == 0xFF)
         warn_level = 0;                 /* -W0 has high precedence  */
-    if (nflag) {
-        un_predefine( TRUE);
-#if COMPILER == GNUC
-        undef_gcc_macro( TRUE);
-#endif
-    }
-#if MODE == STANDARD
-    else if (stdc_val || cplus) {
-        un_predefine( FALSE);           /* Undefine "unix" or so    */
-#if COMPILER == GNUC
-        undef_gcc_macro( FALSE);
-#endif
-    }
-    if (Vflag) {                        /* Version is specified     */
-        if (cplus)
-            cplus = std_val;            /* Value of __cplusplus     */
-        else
-            stdc_ver = std_val;     /* Value of __STDC_VERSION__    */
-    } else {
-        if (!cplus)
-            stdc_ver = stdc_val ? STDC_VERSION : 0L;
-        sprintf( tmp, "%ldL", cplus ? cplus : stdc_ver);
-    }
-    if (!cplus && stdc_ver)         /* Define __STDC_VERSION__      */
-        look_and_install( stdc_v_name, DEF_NOARGS - 2, "", tmp);
-    set_cplus( tmp, stdc_name, stdc_v_name, nflag);
-    set_limit();
-    stdc2 = cplus || stdc_ver >= 199901L;
-    stdc3 = (cplus >= 199901L) || (stdc_ver >= 199901L);
-                /* (cplus >= 199901L) makes C++ C99-compatible mode */
-#if OK_PRAGMA_OP
-    if (stdc3)
-        set_pragma_op();
-#endif
-#endif
 
-#if SYSTEM == SYS_MSDOS
-    if (memmodel == FALSE)
-        mem_model( 'S');            /* Default memory model : SMALL */
-#endif
 #if COMPILER == GNUC
     if (sysdir < sysdir_end) {
         char **     dp = sysdir;
@@ -1209,14 +1128,12 @@ Version:
             set_a_dir( *dp++);
     }
     if (lang_asm)
-        look_and_install( "__ASSEMBLER__", DEF_NOARGS, "", "1");
+        look_and_install( "__ASSEMBLER__", DEF_NOARGS, null, "1");
 #endif
-#if HOST_HAVE_GETENV
     set_env_dirs();
-#endif
     if (! unset_sys_dirs)
         set_sys_dirs( set_cplus_dir);
-#if OK_MAKE
+
     if (mkdep_mf) {                         /* -MF overrides -MD    */
         mkdep_fp = fopen( mkdep_mf, "w");
     } else if (mkdep_md) {
@@ -1226,10 +1143,15 @@ Version:
         mkdep_target = mkdep_mq;
     else if (mkdep_mt)
         mkdep_target = mkdep_mt;
-#endif
+
 #if COMPILER == GNUC
+    init_gcc_macro( gcc_maj_ver, gcc_min_ver);
     chk_env();  /* Check the env-vars to specify version and dependency line*/
+#elif   COMPILER == MSC
+    init_msc_macro( wchar_t_modified);
 #endif
+
+    init_predefines( nflag, std_val);
 
     if (vflag)
         version();
@@ -1240,12 +1162,7 @@ Version:
     }
 }
 
-static void
-#if PROTO
-version( void)
-#else
-version()
-#endif
+static void version( void)
 /*
  * Print version message.
  */
@@ -1253,27 +1170,25 @@ version()
     const char *    mes[] = {
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.5 (2005/03) "
+        "MCPP V.2.6 (2006/07) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif
-#if     MODE == STANDARD
-            , "STANDARD"
+#if     COMPILER == STAND_ALONE
+            , "stand-alone build "
 #else
-            , "PRE_STANDARD"
+#ifdef  CMP_NAME
+            , "for ", CMP_NAME, " "
 #endif
+#endif
+            , "compiled by "
 #ifdef  VERSION_MSG
-            , " mode for "
             , VERSION_MSG
 #else
-            , " mode"
-#ifdef  CMP_NAME
-            , " for ", CMP_NAME
 #ifdef  HOST_CMP_NAME
-            , " compiled by ", HOST_CMP_NAME
+            , HOST_CMP_NAME
 #if     HOST_COMPILER == GNUC
             , " V.", GCC_MAJOR_VERSION, ".", GCC_MINOR_VERSION
-#endif
 #endif
 #endif
 #endif
@@ -1285,13 +1200,9 @@ version()
         fputs( *mpp++, fp_err);
 }
 
-static void
-#if PROTO
-usage( int opt)
-#else
-usage( opt)
-    int     opt;
-#endif
+static void usage(
+    int     opt
+)
 /*
  * Print usage.
  */
@@ -1300,39 +1211,17 @@ usage( opt)
 
 "Usage:  mcpp [-<opts> [-<opts>]] [<infile> [-<opts>] [<outfile>] [-<opts>]]\n",
 "    <infile> defaults to stdin and <outfile> defaults to stdout.\n",
-"The following options and some more (see mcpp-manual.txt) are valid:\n",
 
-#if MODE == STANDARD
-"-+          Process C++ source.\n",
-#if OK_DIGRAPHS
-#if DIGRAPHS_INIT
-"-2          Disable digraphs.\n",
-#else
-"-2          Enable digraphs.\n",
-#endif
-#endif
-#if OK_TRIGRAPHS
-#if TFLAG_INIT
-"-3          Disable trigraphs.\n",
-#else
-"-3          Enable trigraphs.  (Cannot use with -@post option).\n",
-#endif
-#endif
-#endif  /* MODE == STANDARD */
+"\nCommonly used options:\n",
 
-#if MODE == STANDARD
-"-@poststd, -@post   'post-Standard' mode of preprocessing.\n",
-"-@compat    Expand recursive macro more than Standard.\n",
-"            (Cannot use with -@post option).\n",
-#else
-"-@oldprep, -@old    'old_preprocessor' mode (i.e. 'Reiser model' cpp).\n",
-#endif
+"-@MODE      Specify preprocessing mode. MODE should be one of these 4:\n",
+"    -@std               Standard conforming mode. (default)\n",
+"    -@poststd, -@post   special 'post-Standard' mode.\n",
+"    -@kr                K&R 1st mode.\n",
+"    -@oldprep, -@old    'old_preprocessor' mode (i.e. 'Reiser model' cpp).\n",
 
-#if COMPILER != GNUC
-"-a          Process \"assembler\" source (the \"traditional\" preprocessing).\n",
-#if MODE == STANDARD
-"            (Cannot use with -@post option).\n",
-#endif
+#if COMPILER == MSC
+"-arch:SSE, -arch:SSE2   Define the macro _M_IX86_FP as 1, 2 respectively.\n",
 #endif
 
 #if ! STD_LINE_PREFIX
@@ -1340,123 +1229,54 @@ usage( opt)
 #endif
 
 "-C          Output also comments.\n",
-
-#if COMPILER == LSIC
-"-D, -d <macro>[=<value>]    Define <macro> as <value> (default:1).\n",
-"-D, -d <macro(args)>[=<replace>]     Define <macro(args)> as <replace>.\n",
-#else
 "-D <macro>[=<value>]    Define <macro> as <value> (default:1).\n",
 "-D <macro(args)>[=<replace>]    Define <macro(args)> as <replace>.\n",
-#endif
-
-#if MODE == STANDARD && OK_DIGRAPHS && COMPILER == GNUC
-"-digraphs   Enable digraphs.\n",
-#endif
-
-#if SYSTEM != SYS_MSDOS
 "-e <encoding>   Change the default multi-byte character encoding to one of:\n",
 "            euc_jp, gb2312, ksc5601, big5, sjis, iso2022_jp, utf8.\n",
-#endif
 
 #if COMPILER == GNUC
 "-finput-charset=<encoding>      Same as -e <encoding>.\n",
 "            (Do not insert spaces around '=').\n",
 #endif
-
 #if COMPILER == MSC
 "-Fl <file>  Include the <file> prior to the main input file.\n",
+"-G<n>       Define the macro _M_IX86 according to <n>.\n",
 #endif
-
 #if COMPILER == LCC
 "-g <n>      Define the macro __LCCDEBUGLEVEL as <n>.\n",
 #endif
 
-#if MODE == STANDARD
-"-h <n>      Re-define the pre-defined macro __STDC_HOSTED__ as <n>.\n",
-#endif
-
 "-I <directory>      Add <directory> to the #include search list.\n",
-
 "-I-         Unset system or site specific include directories.\n",
 
 #if COMPILER == GNUC
 "-include <file>     Include the <file> prior to the main input file.\n",
 #endif
+#if COMPILER == MSC
+"-J          Define the macro _CHAR_UNSIGNED as 1.\n",
+#endif
 
 "-j          Do not output the source line in diagnostics.\n",
-
-#if COMPILER == GNUC
-"-lang-asm   Same as -x assembler-with-cpp.\n",
-#if MODE == STANDARD
-"-lang-c89   Same as -S1.\n",
-"-lang-c++   Same as -+.\n",
-#endif
-#endif
-
-#if OK_MAKE
 "-M, -MM, -MD, -MMD, -MP, -MQ target, -MT target, -MF file\n",
 "            Output source file dependency line for makefile.\n",
-#endif
-
-#if SYSTEM == SYS_MSDOS
-#if COMPILER == LSIC || COMPILER == LATTICEC
-"-m <x>      Specify memory-model as <x> (t,s,d,p,l,h).\n",
-#else
-"-m <x>      Specify memory-model as <x> (t,s,c,m,l,h).\n",
-#endif
-#endif  /* SYSTEM == SYS_MSDOS  */
-
-#if COMPILER == PLAN9_PCC
-"-N          Same as -I-.\n",
-"-n          Don't predefine any non-standard macros.\n",
-#else
 "-N          Don't predefine any non-standard macros.\n",
-#endif
 
 #if COMPILER == GNUC
 "-nostdinc   Unset system or site specific include directories.\n",
 #endif
-
 #if COMPILER == LCC
 "-O          Define the macro __LCCOPTIMLEVEL as 1.\n",
 #endif
 
 "-o <file>   Output to <file>.\n",
-
 "-P          Don't output #line lines.\n",
-
-#if MODE == STANDARD && COMPILER == GNUC
-"-pedantic, -pedantic-errors     Same as -W7.\n",
-#endif
-
 "-Q          Output diagnostics to \"mcpp.err\" (default:stderr).\n",
-
-#if MODE == STANDARD
-"-S <n>      Redefine __STDC__ to <n>, undefine old style macros.\n",
+#if COMPILER == MSC
+"-RTC*       Define the macro __MSVC_RUNTIME_CHECKS as 1.\n",
+#endif
 #if COMPILER == GNUC
-"-std=<STANDARD>     Specify the standard to which the code should conform.\n",
-"            <STANDARD> may be one of: c90, c99, iso9899:1990, iso14882, etc.\n",
-"            iso9899:<n>, iso14882:<n> : Same as -V <n> (long in decimals).\n",
+"-traditional, -traditional-cpp      Same as -@oldprep.\n",
 #endif
-#if COMPILER == PLAN9_PCC
-"-s <n>      Redefine __STDC_VERSION__ or __cplusplus to <n>.\n",
-"            C with -s199901L specifies C99 mode.\n",
-"            C++ with -s199901L specifies C99 compatible mode.\n",
-#endif
-#endif  /* MODE == STANDARD */
-
-#if COMPILER == LSIC
-"-s          Same as -P.\n",
-#endif
-
-#if MODE == STANDARD && COMPILER == MSC
-"-Tp         Same as -+.\n",
-#endif
-
-#if MODE == STANDARD && OK_TRIGRAPHS && COMPILER == GNUC
-"-trigraphs  Enable trigraphs.\n",
-#endif
-
 "-U <macro>  Undefine <macro>.\n",
 
 #if COMPILER == GNUC
@@ -1466,37 +1286,87 @@ usage( opt)
 "-u          Same as -N.\n",
 #endif
 
-#if MODE == STANDARD && COMPILER != PLAN9_PCC
-"-V <n>      Redefine __STDC_VERSION__ or __cplusplus to <n>.\n",
-"            C with -V199901L specifies C99 mode.\n",
-"            C++ with -V199901L specifies C99 compatible mode.\n",
-#endif
-
-"-v          Show version of mcpp.\n",
-
+"-v          Show version and include directories of mcpp.\n",
 "-W <level>  Set warning level to <level> (OR of {0,1,2,4,8,16}, default:1).\n",
 
 #if COMPILER == MSC
 "-WL         Same as -j.\n",
 #endif
-
-#if COMPILER == LSIC || COMPILER == MSC || COMPILER == GNUC
+#if COMPILER == MSC || COMPILER == GNUC
 "-w          Same as -W0.\n",
 #endif
-
 #if COMPILER == MSC
 "-X          Same as -I-.\n",
-#endif
-
-#if COMPILER == GNUC
-"-x assembler-with-cpp   Process \"assembler\" source.\n",
-#if MODE == STANDARD
-"-x c++      Same as -+.\n",
-#endif
+"-Zc:wchar_t     Define _NATIVE_WCHAR_T_DEFINED and _WCHAR_T_DEFINED as 1.\n",
+"-Zl         Define the macro _VC_NODEFAULTLIB as 1.\n",
 #endif
 
 "-z          Don't output the included file, only defining macros.\n",
 
+"\nOptions available with -@std (default) or -@poststd options:\n",
+
+"-+          Process C++ source.\n",
+
+#if DIGRAPHS_INIT
+"-2          Disable digraphs.\n",
+#else
+"-2          Enable digraphs.\n",
+#endif
+#if COMPILER == GNUC
+"-digraphs   Enable digraphs.\n",
+#endif
+
+"-h <n>      Re-define the pre-defined macro __STDC_HOSTED__ as <n>.\n",
+
+#if COMPILER == GNUC
+"-lang-c89   Same as -S1.\n",
+"-lang-c++   Same as -+.\n",
+"-pedantic, -pedantic-errors     Same as -W7.\n",
+#endif
+
+"-S <n>      Redefine __STDC__ to <n>, undefine old style macros.\n",
+
+#if COMPILER == GNUC
+"-std=<STANDARD>     Specify the standard to which the code should conform.\n",
+"            <STANDARD> may be one of: c90, c99, iso9899:1990, iso14882, etc.\n",
+"            iso9899:<n>, iso14882:<n> : Same as -V <n> (long in decimals).\n",
+#endif
+#if COMPILER == MSC
+"-Tp         Same as -+.\n",
+#endif
+
+"-V <n>      Redefine __STDC_VERSION__ or __cplusplus to <n>.\n",
+"            C with -V199901L specifies C99 specs.\n",
+"            C++ with -V199901L specifies C99 compatible specs.\n",
+
+#if COMPILER == GNUC
+"-x c++      Same as -+.\n",
+#endif
+
+"\nOptions available with only -@std (default) option:\n",
+
+"-@compat    Expand recursive macro more than Standard.\n",
+#if TRIGRAPHS_INIT
+"-3          Disable trigraphs.\n",
+#else
+"-3          Enable trigraphs.\n",
+#endif
+#if COMPILER == GNUC
+"-trigraphs  Enable trigraphs.\n",
+#endif
+
+"\nOptions available with -@std (default), -@kr or -@oldprep options:\n",
+
+#if COMPILER == GNUC
+"-lang-asm   Same as -x assembler-with-cpp.\n",
+"-x assembler-with-cpp   Process \"assembler\" source.\n",
+#elif   COMPILER == MSC
+"-A          Process \"assembler\" source.\n",
+#else
+"-a          Process \"assembler\" source.\n",
+#endif
+
+"\nFor further details see mcpp-manual.txt.\n",
         NULL,
     };
 
@@ -1511,89 +1381,86 @@ usage( opt)
     exit( IO_ERROR);
 }
 
-static void
-#if PROTO
-set_opt_list( char * optlist)
-#else
-set_opt_list( optlist)
-    char *  optlist;
-#endif
+static void set_opt_list(
+    char *  optlist
+)
 /*
  * Set list of legal option characters.
  */
 {
     const char *    list[] = {
 
-#if MODE == STANDARD && OK_TRIGRAPHS
-    "3",
-#endif
-
-#if MODE == STANDARD
-#if OK_DIGRAPHS
-    "2",
-#endif
-#if COMPILER == PLAN9_PCC
-    "s:",
-#else
-    "V:",
-#endif
-    "+h:S:",
-#endif  /* MODE == STANDARD */
-
-#if OK_MAKE
-    "M:",
-#endif
-
 #if ! STD_LINE_PREFIX
     "b",
 #endif
 
-#if SYSTEM == SYS_MSDOS
-    "m:",
-#else
-    "e:",
-#endif
-
 #if COMPILER == GNUC
     "$A:a:cd:Ef:g:i:l:m:n:r:s:t:u:O:p:q:wx:",
-#else
+#elif   COMPILER != MSC
     "a",
 #endif
 
 #if COMPILER == MSC
-    "F:T:XZ:uw",
-#endif
-#if COMPILER == LCC
+    "Aa:F:G:JR:T:XZ:uw",
+#elif   COMPILER == LCC
     "g:O",
-#endif
-#if COMPILER == LSIC
-    "d:sw",
-#endif
-#if COMPILER == PLAN9_PCC
-    "ins:V",
 #endif
     NULL
     };
 
     const char * const *    lp = & list[ 0];
 
-    strcpy( optlist, "@:jo:vzCD:I:NPQU:W:");    /* Default options  */
+    strcpy( optlist, "23+@:e:h:jo:vzCD:I:M:NPQS:U:V:W:");
+                                                /* Default options  */
     while (*lp)
         strcat( optlist, *lp++);
-#if DEBUG
     if (strlen( optlist) >= OPTLISTLEN)
         cfatal( "Bug: Too long option list", NULLST, 0L, NULLST);   /* _F_  */
-#endif
 }
 
-static void
-#if PROTO
-def_a_macro( int opt, char * def)
-#else
-def_a_macro( opt)
-    int     opt;
-    char *  def;
-#endif
+static int  parse_warn_level(
+    const char *    optarg,
+    int     opt
+)
+/*
+ * Parse warn level option.
+ * Warning level option is specified as '19' or '1|2|16' or even '3|16'.
+ * Even spaces are allowed as ' 1 | 2|16 '.
+ */
+{
+    const char *    cp = optarg;
+    int             w, i;
+
+    w = i = 0;
+    while( *cp != EOS) {
+        while( *cp == ' ')
+            cp++;                           /* Skip spaces          */
+        if (! isdigit( *cp))
+            break;                          /* Error    */
+        while (isdigit( *cp)) {
+            i *= 10;
+            i += (*cp++ - '0');
+        }
+        while (*cp == ' ')
+            cp++;
+        if (*cp == '|') {       /* Only digits or '|' are allowed   */
+            w |= i;                         /* Take OR of the args  */
+            i = 0;
+            cp++;
+        }
+    }
+    if (*cp != EOS) {               /* Not ending with digit        */
+        fprintf( fp_err, "Illegal warning level option \"%s\"\n", optarg);
+        usage( opt);
+    }
+    w |= i;                                 /* Take the last arg    */
+    return  w;
+}
+
+static void def_a_macro(
+    int     opt,
+    char *  def
+)
 /*
  * Define a macro specified by -D option.
  * The macro maybe either object-like or function-like (with parameter).
@@ -1604,15 +1471,11 @@ def_a_macro( opt)
     char *      cp;
     int         i;
 
-#if MODE == STANDARD && OK_TRIGRAPHS
     /* Convert trigraphs for the environment which need trigraphs   */
-    if (tflag)
+    if (mode == STD && trig_flag)
         cnv_trigraph( def);
-#endif
-#if MODE == STANDARD && OK_DIGRAPHS
-    if (mode == POST_STD && digraphs)
+    if (mode == POST_STD && dig_flag)
         cnv_digraph( def);  /* Convert prior to installing macro    */
-#endif
     definition = xmalloc( strlen( def) + 4);
     strcpy( definition, def);
     if ((cp = strchr( definition, '=')) != NULL) {
@@ -1632,21 +1495,6 @@ def_a_macro( opt)
             undef_a_predef( definition);
             /* Remove the name from the table of pre-defined-macros.*/
         }
-#if MODE == STANDARD
-        else if (defp->nargs < DEF_NOARGS - 1) {
-#if COMPILER == PLAN9_PCC
-            if (str_eq( definition, "__STDC__")) {
-                defp->nargs = DEF_NOARGS;
-                /* PLAN9 PCC uses '-D__STDC__=1' option */
-            } else
-#endif
-            {
-                fprintf( fp_err, "\"%s\" shouldn't be redefined\n"
-                        , definition);      /* Standard predefined  */
-                usage( opt);
-            }
-        }
-#endif
         undefine( definition);
     }
     *cp = i;
@@ -1664,91 +1512,170 @@ def_a_macro( opt)
     skip_nl();                      /* Clear the appended <newline> */
 }
 
-static char *
-#if PROTO
-set_files( int argc, char ** argv, char ** in_pp, char ** out_pp)
-#else
-set_files( argc, argv, in_pp, out_pp)
-    int     argc;
-    char ** argv;
-    char ** in_pp;
-    char ** out_pp;
-#endif
+static void     chk_opts( 
+    int     sflag,      /* Flag of Standard or post-Standard mode   */
+    long    std_val,                /* Value of __STDC_VERSION__    */
+    int     ansi,                   /* -ansi (GCC only)             */
+    int     trad                    /* -traditional (GCC only)      */
+)
 /*
- * Set input and/or output files.
+ * Check consistency between the specified options.
+ * Set default value of some variables for each 'mode'.
  */
 {
-    char *      cp;
+    int     incompat = FALSE;
 
-    if (*in_pp == NULL) {                           /* Input file   */
-        cp = argv[ optind++];
-#if SYS_FAMILY == SYS_MSDOS
-        cp = bsl2sl( cp);
-#endif
-        *in_pp = cp;
+    switch (mode) {
+    case STD    :
+    case POST_STD   :
+        if (trad)
+            incompat = TRUE;
+        if (! stdc_val)
+            stdc_val = STDC;
+        break;
+    case KR :
+    case OLD_PREP   :
+        if (sflag || cplus || ansi || std_val != -1L)
+            incompat = TRUE;
+        if (dig_flag) {
+            if (dig_flag != DIGRAPHS_INIT)
+                incompat = TRUE;
+            else
+                dig_flag = 0;
+        }
+        break;
     }
-    if (optind < argc && argv[ optind][ 0] != '-' && *out_pp == NULL) {
-        cp = argv[ optind++];
-#if SYS_FAMILY == SYS_MSDOS
-        cp = bsl2sl( cp);
-#endif
-        *out_pp = cp;                               /* Output file  */
+    if (mode == POST_STD && (lang_asm || compat_mode))
+        incompat = TRUE;
+    if (mode != STD && trig_flag) {
+        if (trig_flag != TRIGRAPHS_INIT)
+            incompat = TRUE;
+        else
+            trig_flag = FALSE;
     }
-    if (optind >= argc)
-        return  NULL;           /* Exhausted command line arguments */
-    if (argv[ optind][ 0] == '-')
-        return  argv[ optind];                      /* More options */
-    cfatal( "Excessive file argument \"%s\"", argv[ optind], 0L , NULLST);
-    return  NULL;
+    if (incompat) {
+        fputs( "Incompatible options are specified.", fp_err);
+        usage( '?');
+    }
+
+    standard = (mode == STD || mode == POST_STD);
+    /* Modify magic characters in character type table. */
+    if (! standard)
+        type[ DEF_MAGIC] = 0;
+    if (mode != STD)
+        type[ IN_SRC] = 0;
+    if (mode == POST_STD || mode == KR)
+        type[ TOK_SEP] = 0;         /* TOK_SEP equals to COM_SEP    */
+
+    expand_init();
+                /* Set function pointer to macro expansion routine  */
 }
 
-#if MODE == STANDARD
-
-static void
-#if PROTO
-set_cplus( char * val, const char * stdc_name , const char * stdc_v_name
-        , int nflag)
-#else
-set_cplus( val, stdc_name, stdc_v_name, nflag)
-    char *  val;
-    char *  stdc_name;
-    char *  stdc_v_name;
-    int     nflag;
-#endif
+static void init_predefines(
+    int     nflag,                  /* -N option                    */
+    long    std_val                 /* Value of __STDC_VERSION__    */
+)
 /*
- * Set the macro "__cplusplus" and remove "__STDC__", "__STDC_VERSION__".
+ * Set or unset predefined macros.
+ * This routine should be called after init_gcc_macro().
  */
 {
-    const char * const  cplus_name = "__cplusplus";
-    DEFBUF *    defp;
+    char    tmp[ 16];
 
-    if (! cplus) {
+    if (std_val != -1L) {               /* Version is specified     */
+        if (cplus)
+            cplus = std_val;            /* Value of __cplusplus     */
+        else
+            stdc_ver = std_val;     /* Value of __STDC_VERSION__    */
+    } else {
+        if (! cplus)
+            stdc_ver = stdc_val ? STDC_VERSION : 0L;
+    }
+
+    if (nflag) {
+        un_predefine( TRUE);
+#if COMPILER == GNUC
+        undef_gcc_macro( TRUE);
+#endif
+    } else if (stdc_val || cplus) {
+        un_predefine( FALSE);           /* Undefine "unix" or so    */
+#if COMPILER == GNUC
+        undef_gcc_macro( FALSE);
+#endif
+    }
+    sprintf( tmp, "%ldL", cplus ? cplus : stdc_ver);
+    if (cplus) {
+        look_and_install( "__cplusplus", DEF_NOARGS - 2, null, tmp);
+    } else {
+        if (stdc_ver)
+            look_and_install( "__STDC_VERSION__", DEF_NOARGS - 2, null, tmp);
 #ifdef  COMPILER_CPLUS
         if (! nflag)        /* Undefine pre-defined macro for C++   */
             undefine( COMPILER_CPLUS);
 #endif
-    } else {
-#if COMPILER != GNUC    /* GNU C do not undefine __STDC__ on C++    */
-        if ((defp = look_id( stdc_name)) != NULL) {
-            defp->nargs = DEF_NOARGS;
-            undefine( stdc_name);           /* Remove __STDC__      */
-            stdc_val = 0;
-        }
+    }
+    set_limit();
+    stdc2 = cplus || stdc_ver >= 199901L;
+    stdc3 = (cplus >= 199901L) || (stdc_ver >= 199901L);
+                /* (cplus >= 199901L) makes C++ C99-compatible specs    */
+    if (standard)
+        init_std_defines();
+    if (stdc3)
+        set_pragma_op();
+}
+
+static void init_std_defines( void)
+/*
+ * For STD and POST_STD modes.
+ * The magic pre-defines (Standard predefined macros) are initialized with
+ * negative argument counts.  expand() notices this and calls the appropriate
+ * routine.  DEF_NOARGS is one greater than the first "magic" definition.
+ * 'DEF_NOARGS - n' is reserved for pre-defined macros.
+ * __STDC_VERSION__ and __cplusplus are defined by chk_opts() and set_cplus().
+ */
+{
+    char    tmp[ 16];
+    char    timestr[ 14];
+    time_t  tvec;
+    char *  tstring;
+
+    look_and_install( "__LINE__", DEF_NOARGS - 3, null, "-1234567890");
+    /* Room for 11 chars (10 for long and 1 for '-' in case of wrap round.  */
+    look_and_install( "__FILE__", DEF_NOARGS - 4, null, null);
+                                            /* Should be stuffed    */
+
+    /* Define __DATE__, __TIME__ as present date and time.          */
+    time( &tvec);
+    tstring = ctime( &tvec);
+    sprintf( timestr, "\"%.3s %c%c %.4s\"",
+        tstring + 4,
+        *(tstring + 8) == '0' ? ' ' : *(tstring + 8),
+        *(tstring + 9),
+        tstring + 20);
+    look_and_install( "__DATE__", DEF_NOARGS - 2, null, timestr);
+    sprintf( timestr, "\"%.8s\"", tstring + 11);
+    look_and_install( "__TIME__", DEF_NOARGS - 2, null, timestr);
+
+    if (! look_id( "__STDC_HOSTED__")) {
+        /*
+         * Some compilers, e.g. GCC older than 3.3, define this macro by
+         * -D option.
+         */
+        sprintf( tmp, "%d", STDC_HOSTED);
+        look_and_install( "__STDC_HOSTED__", DEF_NOARGS - 1, null, tmp);
+    }
+#if COMPILER != GNUC        /* GCC do not undefine __STDC__ on C++  */
+    if (cplus)
+        return;
 #endif
-        if ((defp = look_id( stdc_v_name)) != NULL) {
-            defp->nargs = DEF_NOARGS;
-            undefine( stdc_v_name);     /* Remove __STDC_VERSION__  */
-        }
-        look_and_install( cplus_name, DEF_NOARGS - 2, "", val);
+    /* Define __STDC__ as 1 or such for Standard conforming compiler.   */
+    if (! look_id( "__STDC__")) {
+        sprintf( tmp, "%d", stdc_val);
+        look_and_install( "__STDC__", DEF_NOARGS - 2, null, tmp);
     }
 }
 
-static void
-#if PROTO
-set_limit( void)
-#else
-set_limit()
-#endif
+static void set_limit( void)
 /*
  * Set the minimum translation limits specified by the Standards.
  */
@@ -1771,7 +1698,7 @@ set_limit()
         inc_nest_min = INCLUDE_NEST99MIN;
         n_macro_min = NMACRO99MIN;
         line_limit = LINE99LIMIT;
-    } else {                        /* Specified by C 1990 Standard */
+    } else if (standard) {                  /* Specified by C 1990 Standard */
         str_len_min = SLEN90MIN;
         id_len_min = IDLEN90MIN;
         n_mac_pars_min = NMACPARS90MIN;
@@ -1781,15 +1708,10 @@ set_limit()
         n_macro_min = NMACRO90MIN;
         line_limit = LINE90LIMIT;
     }
+    /* Else pre-Standard mode   */
 }
 
-#if OK_PRAGMA_OP
-static void
-#if PROTO
-set_pragma_op( void)
-#else
-set_pragma_op()
-#endif
+static void set_pragma_op( void)
 /*
  *      #define _Pragma(a)  _Pragma ( a )
  * Define _Pragma() operator as a special macro so as to be searched
@@ -1804,148 +1726,12 @@ set_pragma_op()
                                                 /* Replacement text */
     look_and_install( name, DEF_PRAGMA, "a", tmp);
 }
-#endif  /* OK_PRAGMA_OP */
 
-#endif  /* MODE == STANDARD */
-
-#if SYSTEM == SYS_MSDOS
-
-#define LARGE   4
-#define SMALL   2
-
-static int
-mem_model( int model)
-/*
- * Support the selection of different memory models for the i8086 family.
- */
-{
-#if OK_SIZE
-    SIZES *         sizp = size_table;      /* Get start of table   */
-#endif
-#if COMPILER == MSC
-    char            name[ 8] = "M_I86SM";
-#else
-    const char *    name;
-#endif
-
-#if MODE == STANDARD
-    if (mode == POST_STD)
-        /* '#if sizeof' is not available in POST_STD mode   */
-        goto  set_macro;
-#endif
-
-    switch (model) {
-#if ! OK_SIZE
-    case 'T' :
-    case 'S' :
-#if COMPILER == LATTICEC || COMPILER == LSIC
-    case 'D' :
-#else
-    case 'C' :
-#endif
-#if COMPILER == LATTICEC || COMPILER == LSIC
-    case 'P' :
-#else
-    case 'M' :
-#endif
-    case 'L' :
-    case 'H' :
-        break;
-#else   /* OK_SIZE  */
-    case 'T' :                  /* Tiny model...    */
-    case 'S' :                  /* Small model...   */
-        while (sizp->bits != T_FPTR)
-            (sizp++)->psize = SMALL;
-        sizp->psize = SMALL;
-        break;
-#if COMPILER == LATTICEC || COMPILER == LSIC
-    case 'D' :
-#else
-    case 'C' :                  /* Compact model... small code, large data  */
-#endif
-        while (sizp->bits != T_FPTR)
-            (sizp++)->psize = LARGE;
-        sizp->psize = SMALL;
-        break;
-#if COMPILER == LATTICEC || COMPILER == LSIC
-    case 'P' :
-#else
-    case 'M' :                  /* Medium model... large code, small data   */
-#endif
-        while (sizp->bits != T_FPTR )
-            (sizp++)->psize = SMALL;    /* All data pointers are short.     */
-        sizp->psize = LARGE;    /* Function pointers are long.  */
-        break;
-
-    case 'L' :                  /* Large model...   */
-    case 'H' :                  /* Huge model... large code, large data     */
-        while (sizp->bits)
-            (sizp++)->psize = LARGE;
-        break;
-#endif  /* OK_SIZE  */
-
-    default  :                  /* Invalid model    */
-        return  FALSE;
-    }
-
-#if MODE == STANDARD
-set_macro:
-#endif
-
-#if COMPILER == MSC
-
-    name[ 5] = model;
-
-#else   /* COMPILER != MSC  */
-
-    switch (model) {
-    case 'T' :
-        name = "__TINY__";
-        break;
-    case 'S' :
-        name = "__SMALL__";
-        break;
-#if COMPILER == LATTICEC || COMPILER == LSIC
-    case 'D' :
-#else
-    case 'C' :
-#endif
-        name = "__COMPACT__";
-        break;
-#if COMPILER == LATTICEC || COMPILER == LSIC
-    case 'P' :
-#else
-    case 'M' :
-#endif
-        name = "__MEDIUM__";
-        break;
-    case 'L' :
-        name = "__LARGE__";
-        break;
-    case 'H' :
-        name = "__HUGE__";
-        break;
-    }
-
-#endif  /* COMPILER != MSC  */
-
-    look_and_install( name, DEF_NOARGS, "", "1");
-    return  TRUE;
-}
-
-#endif  /* SYS_MSDOS    */
-
-void
-#if PROTO
-at_start( void)
-#else
-at_start()
-#endif
+void    at_start( void)
 /*
  * Do the commands prior to processing main source file.
  */
 {
-#if SYSTEM != SYS_MSDOS && HOST_HAVE_GETENV
     /*
      * Set multi-byte character encoding according to environment variables
      * LC_ALL, LC_CTYPE and LANG -- with preference in this order.
@@ -1960,7 +1746,6 @@ at_start()
         set_encoding( env, "LC_CTYPE", 0);
     else if ((env = getenv( "LANG")) != NULL)
         set_encoding( env, "LANG", 0);
-#endif
 
 #if COMPILER == GNUC || COMPILER == MSC
     /*
@@ -1973,37 +1758,58 @@ at_start()
 #endif
 }
 
-#if HOST_HAVE_GETENV
+static char *   set_files(
+    int     argc,
+    char ** argv,
+    char ** in_pp,
+    char ** out_pp
+)
+/*
+ * Set input and/or output files.
+ */
+{
+    char *      cp;
 
-static void
-#if PROTO
-set_env_dirs( void)
-#else
-set_env_dirs()
+    if (*in_pp == NULL) {                           /* Input file   */
+        cp = argv[ optind++];
+#if SYS_FAMILY == SYS_WIN
+        cp = bsl2sl( cp);
 #endif
+        *in_pp = cp;
+    }
+    if (optind < argc && argv[ optind][ 0] != '-' && *out_pp == NULL) {
+        cp = argv[ optind++];
+#if SYS_FAMILY == SYS_WIN
+        cp = bsl2sl( cp);
+#endif
+        *out_pp = cp;                               /* Output file  */
+    }
+    if (optind >= argc)
+        return  NULL;           /* Exhausted command line arguments */
+    if (argv[ optind][ 0] == '-')
+        return  argv[ optind];                      /* More options */
+    cfatal( "Excessive file argument \"%s\"", argv[ optind], 0L , NULLST);
+    return  NULL;
+}
+
+static void set_env_dirs( void)
 /*
  * Add to include path those specified by environment variables.
  */
 {
     const char *    env;
 
-#if MODE == STANDARD
     if (cplus) {
         if ((env = getenv( ENV_CPLUS_INCLUDE_DIR)) != NULL)
             parse_env( env);
     }
-#endif
     if ((env = getenv( ENV_C_INCLUDE_DIR)) != NULL)
         parse_env( env);
 }
 
-static void
-#if PROTO
-parse_env( const char * env)
-#else
-parse_env( env)
-    char *    env;
-#endif
+static void parse_env(
+    const char *    env
+)
 /*
  * Parse environmental variable and append the path to include-dir-list.
  */
@@ -2030,45 +1836,30 @@ parse_env( env)
     }
 }
 
-#endif  /* HOST_HAVE_GETENV */
-
-static void
-#if PROTO
-set_sys_dirs( int set_cplus_dir)
-#else
-set_sys_dirs( set_cplus_dir)
-    int     set_cplus_dir;      /* Set C++ include-directory too    */
-#endif
+static void set_sys_dirs(
+    int     set_cplus_dir       /* Set C++ include-directory too    */
+)
 /*
  * Set site-specific and system-specific directories to the include directory
  * list.
  */
 {
-#if SYSTEM == SYS_PLAN9
-    const char *    env;
-    char *          objinc;
-#endif
-
-#if MODE == STANDARD
+    if (cplus && set_cplus_dir) {
 #ifdef  CPLUS_INCLUDE_DIR1
-    if (cplus && set_cplus_dir)
         set_a_dir( CPLUS_INCLUDE_DIR1);
 #endif
 #ifdef  CPLUS_INCLUDE_DIR2
-    if (cplus && set_cplus_dir)
         set_a_dir( CPLUS_INCLUDE_DIR2);
 #endif
 #ifdef  CPLUS_INCLUDE_DIR3
-    if (cplus && set_cplus_dir)
         set_a_dir( CPLUS_INCLUDE_DIR3);
 #endif
 #ifdef  CPLUS_INCLUDE_DIR4
-    if (cplus && set_cplus_dir)
         set_a_dir( CPLUS_INCLUDE_DIR4);
 #endif
-#endif  /* MODE == STANDARD */
+    }
 
-#if SYS_FAMILY == SYS_UNIX && SYSTEM != SYS_PLAN9
+#if SYS_FAMILY == SYS_UNIX
     set_a_dir( "/usr/local/include");
 #endif
 
@@ -2080,32 +1871,13 @@ set_sys_dirs( set_cplus_dir)
 #endif
 
 #if SYS_FAMILY == SYS_UNIX
-#if SYSTEM == SYS_PLAN9
-    if ((env = getenv( "objtype")) != NULL) {
-        objinc = xmalloc( 20);
-        strcpy( objinc, "/");
-        strcat( objinc, env);
-        strcat( objinc, "/include/ape");
-        set_a_dir( objinc);
-    }
-    set_a_dir( "/sys/include/ape");
-#else
-    set_a_dir( "/usr/include");
-#endif
-#endif
-
-#if SYS_FAMILY == SYS_OS9
-    set_a_dir( "/DD/DEFS");
+    set_a_dir( "/usr/include"); /* Should be placed after C_INCLUDE_DIR?    */
 #endif
 }
 
-static void
-#if PROTO
-set_a_dir( const char * dirname)
-#else
-set_a_dir( dirname)
-    char *    dirname;                      /* The path-name        */
-#endif
+static void set_a_dir(
+    const char *    dirname                 /* The path-name        */
+)
 /*
  * Append an include directory, checking array boundary.
  * This routine is called from the following routines (in this order).
@@ -2120,7 +1892,7 @@ set_a_dir( dirname)
     char *  norm_name;
     const char **   ip;
 
-    norm_name = norm_path( dirname);
+    norm_name = norm_path( dirname, FALSE);
                             /* Normalize the pathname to compare    */
     for (ip = incdir; ip < incend; ip++) {
         if (str_eq( *ip, norm_name))
@@ -2132,39 +1904,57 @@ set_a_dir( dirname)
     *incend++ = norm_name;
 }
 
-static char *
-#if PROTO
-norm_path( const char * dirname)
-#else
-norm_path( dirname)
-    char *  dirname;
-#endif
+static char *   norm_path(
+    const char *    dirname,
+    int             from_do_once        /* Called from do_once()    */
+)
 /*
  * Normalize the pathname removing redundant components such as
  * "foo/../", "./" and trailing "/.".
- * Append trailing "/".
+ * Append trailing "/" unless called from do_once().
+ * Change relative path to absolute path.
+ * Dereference a symbolic linked file to a real file.
  * Returns a malloc'ed buffer.
- * This routine is called from set_a_dir() only.
+ * This routine is called from set_a_dir() and do_once().
  */
 {
     char *  norm_name;
     char *  start;
     char *  cp1;
     char *  cp2;
+    char *  abs_path;
     size_t  len, slen;
+    size_t  start_pos = 0;
+#if SYS_FAMILY == SYS_UNIX
+    int     real_len = 0;
+    char    slbuf[ FILENAMEMAX];
+#endif
 
     len = slen = strlen( dirname);
+    if (len == 0)
+        return  (char *) dirname;   /* Ignore the empty argument    */
+#if SYS_FAMILY == SYS_UNIX
+    if ((real_len = readlink( dirname, slbuf, FILENAMEMAX-1)) > 0) {
+        /* Dereference symbolic linked file */
+        *(slbuf + real_len) = EOS;
+        len = real_len;
+    }
+#endif
     start = norm_name = xmalloc( len + 2);  /* Need a new buffer    */
+#if SYS_FAMILY == SYS_UNIX
+    strcpy( norm_name, real_len > 0 ? slbuf : dirname);
+#else
     strcpy( norm_name, dirname);
-#if SYS_FAMILY == SYS_MSDOS
+#endif
+#if SYS_FAMILY == SYS_WIN
     bsl2sl( norm_name);
 #endif
     cp1 = norm_name + len;
-    if (*(cp1 - 1) != PATH_DELIM) {
+    if (*(cp1 - 1) != PATH_DELIM && ! from_do_once) {
         *(norm_name + len++) = PATH_DELIM;  /* Append PATH_DELIM    */
         *(norm_name + len) = EOS;
     }
-    if (len <= 1)                                   /* Only "/"     */
+    if (len == 1 && *norm_name == PATH_DELIM)       /* Only "/"     */
         return  norm_name;
 #if FNAME_FOLD
     conv_case( norm_name, cp1, LOWER);
@@ -2177,13 +1967,25 @@ norm_path( dirname)
 #endif
     cp1 = norm_name;
 
-#if SYS_FAMILY == SYS_MSDOS
-    if (*(cp1 + 1) == ':')
+#if SYS_FAMILY == SYS_WIN
+    if (*(cp1 + 1) == ':') {
         start = cp1 += 2;               /* Skip the drive letter    */
+        start_pos = 2;
+    }
 #endif
 
     if (strncmp( cp1, "./", 2) == 0)    /* Remove beginning "./"    */
         memmove( cp1, cp1 + 2, strlen( cp1 + 2) + 1);       /* +1 for EOS   */
+    if (*start != '/') {    /* Relative path to current directory   */
+        /* Make absolute path   */
+        abs_path = xmalloc( len + strlen( cur_work_dir) + 1);
+        cp1 = stpcpy( abs_path, cur_work_dir);
+        strcpy( cp1, start);
+        free( norm_name);
+        norm_name = abs_path;
+        start = cp1 = norm_name + start_pos;
+        slen = strlen( norm_name);
+    }
 
     /* Remove redundant "foo/../".  This routine works recursively. */
     while ((cp1 = strstr( cp1, "/../")) != NULL) {
@@ -2221,18 +2023,19 @@ norm_path( dirname)
     if (slen > len)                                 /* Truncated    */
         memset( norm_name + len, EOS, slen - len + 1);
         /* Make sure to clear the trailing characters for getopt()  */
+    if (debug & PATH) {
+        fprintf( fp_debug, "Normalized the path \"%s\" to \"%s\"\n"
+                , dirname, norm_name);
+    }
+
     return  norm_name;
 }
 
-void
-#if PROTO
-conv_case( char * name, char * lim, int upper)
-#else
-conv_case( name, lim, upper)
-    char *  name;                       /* (diretory) Name          */
-    char *  lim;                        /* End of (directory) name  */
-    int     upper;                      /* TRUE if to upper         */
-#endif
+void    conv_case(
+    char *  name,                       /* (diretory) Name          */
+    char *  lim,                        /* End of (directory) name  */
+    int     upper                       /* TRUE if to upper         */
+)
 /* Convert a string to upper-case letters or lower-case letters in-place    */
 {
     int     c;
@@ -2240,7 +2043,7 @@ conv_case( name, lim, upper)
 
     for (sp = name; sp < lim; sp++) {
         c = *sp & UCHARMAX;
-#if USE_MBCHAR
+#if MBCHAR
         if ((type[ c] & mbstart)) {
             char    tmp[ FILENAMEMAX];
             char *  tp = tmp;
@@ -2262,44 +2065,36 @@ conv_case( name, lim, upper)
 static DEFBUF * gcc_predef_std[ 128];
 static DEFBUF * gcc_predef_old[ 16];
 
-static void
-#if PROTO
-init_gcc_macro( int gcc_maj_ver, int gcc_min_ver)
-#else
-init_gcc_macro( gcc_maj_ver, gcc_min_ver
-    int     gcc_maj_ver;                        /* __GNUC__         */
-    int     gcc_min_ver;                        /* __GNUC_MINOR__   */
-#endif
+static void init_gcc_macro(
+    int     gcc_maj_ver,        /* __GNUC__         */
+    int     gcc_min_ver         /* __GNUC_MINOR__   */
+)
 /*
- * Predefine GNU C macros.
+ * Predefine GCC macros.
  */
 {
     char        fname[ 256];
+    char *      include_dir;
     char        lbuf[ BUFSIZ];
     FILE *      fp;
     DEFBUF **   predef;
     DEFBUF *    defp;
-    const char *    inc_dir;
+    const char *    cp;
     char *      tp;
     int         i;
 
-#ifdef C_INCLUDE_DIR1
-    inc_dir = C_INCLUDE_DIR1;
+#ifdef  C_INCLUDE_DIR1
+    include_dir = C_INCLUDE_DIR1;
 #else
-    inc_dir = "/usr/local/include";
+    include_dir = "/usr/local/include";
 #endif
 
     for (i = 0; i <= 1; i++) {
         /* The predefined macro file    */
-        tp = i ? "std" : "old";
+        cp = i ? "std" : "old";
         sprintf( fname, "%s%cmcpp_g%s%d%d_predef_%s.h"
-                , inc_dir, PATH_DELIM
-#if MODE == STANDARD
-                , cplus ? "xx" : "cc"
-#else
-                , "cc"
-#endif
-                , gcc_maj_ver, gcc_min_ver, tp);
+                , include_dir, PATH_DELIM, cplus ? "xx" : "cc"
+                , gcc_maj_ver, gcc_min_ver, cp);
         if ((fp = fopen( fname, "r")) == NULL) {
             fprintf( fp_err, "Predefined macro file '%s' is not found\n"
                     , fname);
@@ -2321,15 +2116,11 @@ init_gcc_macro( gcc_maj_ver, gcc_min_ver
     }
 }
 
-static void
-#if PROTO
-undef_gcc_macro( int clearall)
-#else
-undef_gcc_macro( clearall)
-    int     clearall;
-#endif
+static void undef_gcc_macro(
+    int     clearall
+)
 /*
- * Undefine GNU C predefined macros.
+ * Undefine GCC predefined macros.
  */
 {
     DEFBUF **   predef;
@@ -2346,26 +2137,13 @@ undef_gcc_macro( clearall)
     }
 }
 
-static void
-#if PROTO
-chk_env( void)
-#else
-chk_env()
-#endif
+static void chk_env( void)
 /*
- * Check the environment variables to specify version of GNU C and
- * output of dependency lines.
+ * Check the environment variables to specify output of dependency lines.
  */
 {
     char *  env;
     char *  cp;
-
-    /* Version of GNU C */
-    if (look_id( "__VERSION__") == NULL     /* Predefined one precedes  */
-            && (env = getenv( ENV_VERSION)) != NULL)
-        look_and_install( "__VERSION__", DEF_NOARGS-1, "", env);
-
-#if OK_MAKE
 
     /* Output of dependency lines   */
     if ((env = getenv( "DEPENDENCIES_OUTPUT")) == NULL) {
@@ -2384,19 +2162,35 @@ chk_env()
         mkdep_fp = fopen( env, "a");
     if (! mkdep_target)
         mkdep_target = cp;
-#endif
 }
-#endif  /* COMPILER == GNUC */
 
-#if OK_MAKE
+#elif   COMPILER == MSC
 
-void
-#if PROTO
-put_depend( const char * filename)
-#else
-put_depend( filename)
-    char *  filename;
+static void init_msc_macro(
+    int     wchar_t_modified
+)
+{
+    DEFBUF *    defp;
+    int         i;
+
+    defp = look_id( "_MSC_VER");
+    i = atoi( defp->repl);
+    if (i >= 1400) {                        /* _MSC_VER >= 1400     */
+        look_and_install( "_MT", DEF_NOARGS - 1, null, "1");
+        if (cplus && ! wchar_t_modified) {
+            /* -Zc:wchar_t- was not specified   */
+            look_and_install( "_NATIVE_WCHAR_T_DEFINED", DEF_NOARGS - 1, null
+                    , "1");
+            look_and_install( "_WCHAR_T_DEFINED", DEF_NOARGS - 1, null, "1");
+        }
+    }
+}
+
 #endif
+
+void    put_depend(
+    const char *    filename
+)
 /*
  * Append a header name to the source file dependency line.
  */
@@ -2471,14 +2265,10 @@ put_depend( filename)
     out_p = stpcpy( out_p, filename);
 }
 
-static char *
-#if PROTO
-md_init( const char * filename, char * output)
-#else
-md_init( output, fp_p)
-    char *  filename;           /* The source file name             */ 
-    char *  output;             /* Output to dependency file        */
-#endif
+static char *   md_init(
+    const char *    filename,   /* The source file name             */ 
+    char *  output              /* Output to dependency file        */
+)
 /*
  * Initialize output file and target.
  */
@@ -2529,16 +2319,12 @@ md_init( output, fp_p)
     return  out_p;
 }
 
-static char *
-#if PROTO
-md_quote( char * output)
-#else
-md_quote( output)
-    char *  output;
-#endif
+static char *   md_quote(
+    char *  output
+)
 /*
  * 'Quote' $, tab and space.
- * This part of source code is taken from GNU C V.3.2.
+ * This part of source code is taken from GCC V.3.2.
  */
 {
     char *  p;
@@ -2565,20 +2351,14 @@ md_quote( output)
     return  output;
 }
 
-#endif  /* OK_MAKE  */
-
 static const char *     toolong_fname =
         "Too long header name \"%s%.0ld%s\"";               /* _F_  */
 static const char *     excess_token =
         "Excessive token sequence \"%s\"";          /* _E_, _W1_    */
 
-int
-#if PROTO
-do_include( int next)
-#else
-do_include( next)
-    int     next;       /* TRUE if the directive is #include_next   */
-#endif
+int     do_include(
+    int     next        /* TRUE if the directive is #include_next   */
+)
 /*
  * Process the #include line.
  * There are three variations:
@@ -2596,14 +2376,12 @@ do_include( next)
  */
 {
     const char * const  no_name = "No header name";         /* _E_  */
-#if MODE == STANDARD
-    char            header[ FILENAMEMAX + 16];
-    char            *hp;
-    int             c;
-    int             token_type;
-#endif
-    char *          fname;
-    register int    delim;                  /* " or <, >            */
+    char    header[ FILENAMEMAX + 16];
+    char    *hp;
+    int     c;
+    int     token_type;
+    char *  fname;
+    int     delim;                          /* " or <, >            */
 
     if ((delim = skip_ws()) == '\n') {      /* No argument          */
         cerror( no_name, NULLST, 0L, NULLST);
@@ -2611,8 +2389,7 @@ do_include( next)
     }
     fname = infile->bptr - 1;       /* Current token for diagnosis  */
 
-#if MODE == STANDARD
-    if (type[ delim] & LET) {               /* Maybe a macro        */
+    if (standard && (type[ delim] & LET)) { /* Maybe a macro        */
         if ((token_type = get_unexpandable( delim, FALSE)) == NO_TOKEN) {
             cerror( no_name, NULLST, 0L, NULLST);   /* Expanded to  */
             return  FALSE;                          /*   0 token.   */
@@ -2640,7 +2417,6 @@ do_include( next)
             goto not_header;                /*   cluding <=, <<, <% */
         }
     }
-#endif  /* MODE == STANDARD */
 
     if (delim == '"') {                     /* String literal form  */
         workp = scan_quote( delim, work, work + FILENAMEMAX, FALSE);
@@ -2661,22 +2437,20 @@ found_name:
     *--workp = EOS;                     /* Remove the closing and   */
     fname = save_string( &work[ 1]);    /*  the starting delimiter. */
 
-#if MODE == STANDARD
-    if (get_unexpandable( skip_ws(), FALSE) != NO_TOKEN) {
-        cerror( excess_token, work, 0L, NULLST);
-        skip_nl();
-        goto  error;
-    }
-    get();                              /* Skip the newline         */
-#else
-    if (mode == OLD_PREP) {
+    if (standard) {
+        if (get_unexpandable( skip_ws(), FALSE) != NO_TOKEN) {
+            cerror( excess_token, work, 0L, NULLST);
+            skip_nl();
+            goto  error;
+        }
+        get();                          /* Skip the newline         */
+    } else if (mode == OLD_PREP) {
         skip_nl();
     } else if (skip_ws() != '\n') {
         if (warn_level & 1)
             cwarn( excess_token, infile->bptr-1, 0L, NULLST);
         skip_nl();
     }
-#endif
 
     if (open_include( fname, (delim == '"'), next)) {
         goto opened;
@@ -2699,15 +2473,11 @@ opened:
     return  TRUE;
 }
 
-static int
-#if PROTO
-open_include( char * filename, int searchlocal, int next)
-#else
-open_include( filename, searchlocal, next)
-    char *  filename;               /* File name to include         */
-    int     searchlocal;            /* TRUE if #include "file"      */
-    int     next;                   /* TRUE if #include_next        */
-#endif
+static int  open_include(
+    char *  filename,               /* File name to include         */
+    int     searchlocal,            /* TRUE if #include "file"      */
+    int     next                    /* TRUE if #include_next        */
+)
 /*
  * Open an include file.  This routine is only called from do_include()
  * above, but was written as a separate subroutine for portability.
@@ -2724,7 +2494,7 @@ open_include( filename, searchlocal, next)
     char *  dirend;         /* End of directory part (if any) of filename   */
 #endif
 
-#if SYS_FAMILY == SYS_MSDOS
+#if SYS_FAMILY == SYS_WIN
     bsl2sl( filename);
 #endif
 #if FNAME_FOLD  /* If O.S. folds upper and lower cases of file-name */
@@ -2737,19 +2507,15 @@ open_include( filename, searchlocal, next)
     conv_case( dirend, dirend + strlen( dirend), LOWER);
 #endif
 
-#if SYS_FAMILY == SYS_UNIX || SYS_FAMILY == SYS_OS9
+#if SYS_FAMILY == SYS_UNIX
     if (filename[0] == PATH_DELIM)
-#else
-#if SYS_FAMILY == SYS_MSDOS
+#elif   SYS_FAMILY == SYS_WIN
     if (filename[1] == ':' && filename[2] == PATH_DELIM)
-#else
-#if SYSTEM == SYS_MAC           /* I don't know.  Write by yourself */
+#elif   SYSTEM == SYS_MAC         /* I don't know.  Write by yourself */
     if (filename[0] != PATH_DELIM && strchr( filename, PATH_DELIM))
-#else
+#elif   1
 /* For other systems you should write code here.    */
-    if (0)
-#endif
-#endif
+    if (filename[0] == PATH_DELIM)
 #endif
         full_path = TRUE;
     else
@@ -2790,72 +2556,19 @@ open_include( filename, searchlocal, next)
     }
 
     /* Search the system include directories    */
+#if COMPILER == GNUC
 search_dirs:
+#endif
     if (search_dir( filename, searchlocal, next))
         return  TRUE;
-
-#if COMPILER == BORLANDC && MODE == STANDARD
-    if ((cplus && !strchr( filename, '.'))
-                                    /* <iostream>, <cstdlib>, etc   */
-            || strlen( filename) > 10) {    /* Longer than 8 + 1    */
-        char *  fname;              /* Mapped file-name             */
-        char *  fp;                 /* File-name without directory  */
-        char *  cp;                 /* Place of the '.'             */
-        size_t  len;        /* Length of file-name without suffix   */
-
-        fname = xmalloc( strlen( filename) + 3);
-        strcpy( fname, filename);
-        if (cplus && !strchr( filename, '.')) {
-            strcat( fname, ".h");           /* Append ".h"          */
-            if (search_dir( fname, searchlocal, next))
-                goto  success;
-        }
-        /*
-         * If the filename is longer than 8 + 1 (or 8 + 3), truncate it
-         * (what a mess !).
-         */
-        if ((fp = strrchr( fname, PATH_DELIM)) != NULL)
-            fp++;
-        else
-            fp = fname;
-        if ((cp = strchr( fp, '.')) != NULL)
-            len = cp - fp;
-        else
-            len = strlen( fp);
-        if (len > 8) {
-            if (fp[ 8] == '_') {
-                if (cp)
-                    *cp = EOS;
-                fp[ 8] = '.';
-            } else if (cp) {
-                memmove( fp + 8, cp, strlen( cp) + 1);
-            } else {
-                strcpy( fp + 8, ".h");
-            }
-            if (strlen( fp) > 12)
-                fp[ 12] = EOS;
-            if (search_dir( fname, searchlocal, next))
-                goto  success;
-        }
-        free( fname);
-        return  FALSE;
-success:
-        free( fname);
-        return  TRUE;
-    }
-#endif  /* COMPILER == BORLANDC && MODE == STANDARD */
 
     return  FALSE;
 }
 
-static int
-#if PROTO
-has_directory( const char * source, char * directory)
-#else
-has_directory( source, directory)
-    char *  source;                 /* Filename to examine          */
-    char *  directory;              /* Put directory stuff here     */
-#endif
+static int  has_directory(
+    const char *    source,         /* Filename to examine          */
+    char *  directory               /* Put directory stuff here     */
+)
 /*
  * If a directory is found in the 'source' filename string (i.e. "includer"),
  * the directory part of the string is copied to 'directory' and 
@@ -2863,7 +2576,7 @@ has_directory( source, directory)
  * Else, nothing is copied and it returns FALSE.
  */
 {
-    char *  sp;
+    const char *    sp;
     size_t  len;
 
     if ((sp = strrchr( source, PATH_DELIM)) == NULL) {
@@ -2879,36 +2592,33 @@ has_directory( source, directory)
     }
 }
 
-static int
-#if PROTO
-search_dir( char * filename, int searchlocal, int next)
-#else
-search_dir( filename, searchlocal, next)
-    char *  filename;               /* File name to include         */
-    int     searchlocal;            /* #include "header.h" for GNUC */
-    int     next;                   /* TRUE if #include_next        */
-#endif
+static int  search_dir(
+    char *  filename,               /* File name to include         */
+    int     searchlocal,            /* #include "header.h" for GNUC */
+    int     next                    /* TRUE if #include_next        */
+)
 /*
  * Look in any directories specified by -I command line arguments,
  * specified by environment variable, then in the builtin search list.
  */
 {
-    register const char **  incptr;         /* -> inlcude directory */
+    const char **   incptr;                 /* -> inlcude directory */
 
+#if COMPILER == GNUC
     if (next && **inc_dirp != EOS) {
         incptr = inc_dirp + 1;
         /* In case of include_next search after the includer's directory    */
     } else {
     /* If (next && **inc_dirp == EOS), it should be #include_next "header.h"*/
-#if COMPILER == GNUC
-        if (searchlocal)
+        if (searchlocal || next)
+            /* #include_next does not distinguish "header.h" and <header.h> */
             incptr = incdir;
         else
             incptr = sys_dirp;
-#else
-        incptr = incdir;
-#endif
     }
+#else
+    incptr = incdir;
+#endif
 
     for ( ; incptr < incend; incptr++) {
         if (strlen( *incptr) + strlen( filename) >= FILENAMEMAX) {
@@ -2925,15 +2635,11 @@ search_dir( filename, searchlocal, next)
     return  FALSE;
 }
 
-static int
-#if PROTO
-open_file( const char ** dirp, const char * filename, int local)
-#else
-open_file( dirp, filename, local)
-    char **     dirp;
-    char *      filename;
-    int         local;
-#endif
+static int  open_file(
+    const char **   dirp,
+    const char *    filename,
+    int         local
+)
 /*
  * Open a file, add it to the linked list of open files, close the includer
  * if nessesary and truncate the includer's buffer.
@@ -2942,26 +2648,22 @@ open_file( dirp, filename, local)
 {
 #if HOST_COMPILER == BORLANDC
     /* Borland's fopen() fails to set errno to EMFILE.  */
-    static int  max_open = 15;
+    static int  max_open = FOPEN_MAX - 5;
 #else
     static int  max_open;
 #endif
     int         len;
     FILEINFO *  file = infile;
-    register FILE *     fp;
+    FILE *      fp;
     char *      cp;
     char        fullname[ FILENAMEMAX + 1];
 
-#if DEBUG
     if (debug & PATH)
         fprintf( fp_debug, "Searching %s\n", **dirp == EOS ? "." : *dirp);
-#endif
     cp = stpcpy( fullname, *dirp);
     strcat( cp, filename);
-#if MODE == STANDARD
-    if (included( fullname))                /* Once included        */
+    if (standard && included( fullname))        /* Once included    */
         return  TRUE;
-#endif
 
     if ((max_open != 0 && max_open <= include_nest)
                             /* Exceed the known limit of open files */
@@ -2992,10 +2694,8 @@ open_file( dirp, filename, local)
         file->bptr = file->buffer + len;
     }
 
-#if OK_MAKE
     if (mkdep && ((mkdep & MD_SYSHEADER) || local))
         put_depend( fullname);          /* Output dependency line   */
-#endif
 
     add_file( fp, filename);    /* Add file-info to the linked list */
     /*
@@ -3016,14 +2716,10 @@ open_file( dirp, filename, local)
     return  TRUE;
 }
 
-void
-#if PROTO
-add_file( FILE * fp, const char * filename)
-#else
-add_file( fp, filename)
-    FILE *      fp;                         /* Open file pointer    */
-    char *      filename;                   /* Name of the file     */
-#endif
+void    add_file(
+    FILE *      fp,                         /* Open file pointer    */
+    const char *    filename                /* Name of the file     */
+)
 /*
  * Initialize tables for this open file.  This is called from open_file()
  * (for #include files), and from the entry to MCPP to open the main input
@@ -3031,28 +2727,22 @@ add_file( fp, filename)
  * structure which is used to read characters.
  */
 {
-    register FILEINFO *     file;
+    FILEINFO *      file;
 
     filename = set_fname( filename);    /* Search or append to fnamelist[]  */
     file = get_file( filename, (size_t) NBUFF); /* file == infile   */
     file->fp = fp;                      /* Better remember FILE *   */
     cur_fname = filename;
 
-#if MODE == STANDARD
-    if ((warn_level & 4) && include_nest == inc_nest_min + 1)
-            cwarn( "More than %.0s%ld nesting of #include"  /* _W4_ */
-                    , NULLST , (long) inc_nest_min , NULLST);
-#endif
+    if (standard && (warn_level & 4) && include_nest == inc_nest_min + 1)
+        cwarn( "More than %.0s%ld nesting of #include"      /* _W4_ */
+                , NULLST , (long) inc_nest_min , NULLST);
     include_nest++;
 }
 
-static const char *
-#if PROTO
-set_fname( const char * filename)
-#else
-set_fname( filename)
-    char *  filename;
-#endif
+static const char *     set_fname(
+    const char *    filename
+)
 /*
  * Register the source filename to fnamelist[].
  * Search fnamelist[] for filename or append filename to fnamelist[].
@@ -3080,10 +2770,11 @@ set_fname( filename)
     return  filename;
 }
 
-#if SYS_FAMILY == SYS_MSDOS
+#if SYS_FAMILY == SYS_WIN
 
-static char *
-bsl2sl( char * filename)
+static char *   bsl2sl(
+    char * filename
+)
 /*
  * Convert '\\' in the path-list to '/'.
  */
@@ -3122,21 +2813,14 @@ bsl2sl( char * filename)
     return  filename;
 }
 
-#endif  /* SYS_FAMILY == SYS_MSDOS  */
+#endif  /* SYS_FAMILY == SYS_WIN    */
 
 static const char * const   unknown_arg =
         "Unknown argument \"%s\"";      /*_W1_*/
-#if MODE == STANDARD || DEBUG || DEBUG_EVAL
 static const char * const   not_ident =
         "Not an identifier \"%s\"";     /*_W1_*/
-#endif
 
-static int
-#if PROTO
-is_junk( void)
-#else
-is_junk()
-#endif
+static int  is_junk( void)
 /*
  * Check the trailing junk in a directive line.
  * This routine is never called in OLD_PREP mode.
@@ -3155,20 +2839,13 @@ is_junk()
     }
 }
 
-#if MODE == STANDARD
-
 #define PUSH    1
 #define POP    -1
 
 #define __SETLOCALE     1       /* #pragma __setlocale( "encoding") */
 #define SETLOCALE       2       /* #pragma setlocale( "encoding")   */
 
-void
-#if PROTO
-do_pragma( void)
-#else
-do_pragma()
-#endif
+void    do_pragma( void)
 /*
  * Process the #pragma lines.
  * 1. Process the sub-directive for MCPP.
@@ -3183,12 +2860,12 @@ do_pragma()
  * the next to 'pragma' token is 'STDC' or 'MCPP'.
  */
 {
-    register int    c;
-    int             warn = FALSE;           /* Necessity of warning */
-    int             token_type;
-    char *          bp;                     /* Pointer to argument  */
-    char *          tp;
-    FILEINFO *      file;
+    int         c;
+    int         warn = FALSE;               /* Necessity of warning */
+    int         token_type;
+    char *      bp;                         /* Pointer to argument  */
+    char *      tp;
+    FILEINFO *  file;
 
     c = skip_ws();
     bp = infile->bptr - 1;  /* Remember token to pass to compiler   */
@@ -3200,8 +2877,13 @@ do_pragma()
     }
     token_type = scan_token( c, (tp = work, &tp), work_end);
 #if EXPAND_PRAGMA
+#if COMPILER == MSC
+    if (token_type == NAM
+            && !str_eq( identifier, "STDC") && !str_eq( identifier, "MCPP")) {
+#else
     if (stdc3 && token_type == NAM
             && !str_eq( identifier, "STDC") && !str_eq( identifier, "MCPP")) {
+#endif
         DEFBUF *        defp;
         char *          mp;
         char *          mp_end;
@@ -3211,8 +2893,13 @@ do_pragma()
         mp_end = mp + NMACWORK;
         tp = stpcpy( mp, identifier);
         do {                /* Expand all the macros in the line    */
-            if (token_type == NAM && (defp = is_macro( &tp)) != NULL)
+            if (token_type == NAM && (defp = is_macro( &tp)) != NULL) {
                 tp = expand( defp, bp, mp_end);
+                if (! stdc3 && (warn_level & 2))
+                    cwarn(
+                "\"%s\" is macro expanded in other than C99 mode"   /* _W2_ */
+                            , identifier, 0L, NULLST);
+            }
             token_type = scan_token( c = get(), (bp = tp, &tp), mp_end);
         } while (c != '\n');
         unget_string( mp, NULLST);                  /* To re-read   */
@@ -3229,7 +2916,7 @@ do_pragma()
     } else if (str_eq( identifier, "once")) {   /* #pragma once     */
        if (! is_junk()) {
             file = infile;
-            if (stdc3 && file->fp == NULL)
+            while (file->fp == NULL)
                 file = file->parent;
             tp = stpcpy( work, *(file->dirp));
             strcpy( tp, file->filename);
@@ -3254,8 +2941,6 @@ do_pragma()
                 do_preprocessed();
                 return;
             }
-        } else if (str_eq( identifier, "include_next")) {
-            do_include( TRUE);          /* #pragma MCPP include_next*/
         } else if (str_eq( identifier, "warning")) {
                                         /* #pragma MCPP warning     */
             cwarn( infile->buffer, NULLST, 0L, NULLST);
@@ -3263,12 +2948,10 @@ do_pragma()
             push_or_pop( PUSH);         /* #pragma MCPP push_macro  */
         } else if (str_eq( identifier, "pop_macro")) {
             push_or_pop( POP);          /* #pragma MCPP pop_macro   */
-#if DEBUG || DEBUG_EVAL
         } else if (str_eq( identifier, "debug")) {
             do_debug( TRUE);            /* #pragma MCPP debug       */
         } else if (str_eq( identifier, "end_debug")) {
             do_debug( FALSE);           /* #pragma MCPP end_debug   */
-#endif
         } else {
             warn = TRUE;
         }
@@ -3276,7 +2959,7 @@ do_pragma()
             cwarn( unknown_arg, identifier, 0L, NULLST);
         goto  skip_nl;                  /* Do not putout the line   */
 #if COMPILER == GNUC
-    /* The #pragma lines for GNU C / cpp is skipped not to confuse cc1. */
+    /* The #pragma lines for GCC is skipped not to confuse cc1.     */
     } else if (str_eq( identifier, "GCC")) {    /* #pragma GCC *    */
         if ((scan_token( skip_ws(), (tp = work, &tp), work_end) == NAM)
                 && (str_eq( identifier, "poison")
@@ -3289,7 +2972,6 @@ do_pragma()
         }
 #endif
 
-#if SYSTEM != SYS_MSDOS
 #if COMPILER == MSC
     } else if (str_eq( identifier, "setlocale")) {
         if (skip_ws() == '('
@@ -3317,7 +2999,6 @@ do_pragma()
         } else {
             warn = TRUE;
         }
-#endif
 #endif
 
 #if COMPILER == MSC
@@ -3352,32 +3033,12 @@ do_pragma()
         warn = TRUE;                        /* Need to warn         */
     }
 
-parse_end:
-    /*
-     * If HAVE_PRAGMA, #pragma lines are handed to the compiler proper.
-     * Else #pragma lines are warned and skipped.
-     */
-#if HAVE_PRAGMA
     sharp();            /* Synchronize line number before output    */
-#if COMPILER == LSIC
-    if (!no_output) {
-        if (std_line_prefix)
-            fputs( "#pragma ", fp_out);
-        else
-            fputs( "#p ", fp_out);
-    }
-#else
-    if (!no_output)
+    if (! no_output) {
         fputs( "#pragma ", fp_out);
-#endif
-    if (!no_output)
         fputs( bp, fp_out);             /* Line is put out, though  */
+    }
     wrong_line = TRUE;                  /*   it is a directive line */
-#else   /* ! HAVE_PRAGMA    */
-    if (warn && (warn_level & 1))
-        cwarn( unknown_arg, identifier, 0L, NULLST);
-    /* Else already warned by is_junk() or do_debug().   */
-#endif
 skip_nl: /* Don't use skip_nl() which skips to the newline in source file */
     while (get() != '\n')
         ;
@@ -3391,24 +3052,21 @@ typedef struct inc_list {               /* List of #pragma once file*/
 static INC_LIST *   start_inc = NULL;   /* The first file in list   */
 static INC_LIST *   last_inc;           /* The last file in list    */
 
-static void
-#if PROTO
-do_once( const char * filename)
-#else
-do_once( filename)
-    char *  filename;
-#endif
+static void do_once(
+    const char *    filename
+)
 /*
  * Process #pragma MCPP once or #pragma once so as not to re-include the file
  * in future.
- * This directive has been imported from GNU C V.1.* / cpp as an extension.
+ * This directive has been imported from GCC V.1.* / cpp as an extension.
  */
 {
-    register INC_LIST *     inc;
+    INC_LIST *  inc;
     size_t      fnamlen;
 
+    filename = norm_path( filename, TRUE);  /* Normalize path name  */
     fnamlen = strlen( filename);
-    inc = (INC_LIST *) xmalloc( sizeof (INC_LIST) + fnamlen);
+    inc = (INC_LIST *) xmalloc( sizeof (INC_LIST) + fnamlen + 1);
     memcpy( inc->fname, filename, fnamlen + 1);
     inc->next = NULL;
     if (start_inc == NULL)
@@ -3417,38 +3075,28 @@ do_once( filename)
         last_inc = last_inc->next = inc;    /* Append the file to the list  */
 }
 
-static int
-#if PROTO
-included( const char * filename)
-#else
-included( filename)
-    char *  filename;
-#endif
+static int  included(
+    const char *    filename
+)
 /*
  * Has the file been once included ?
  */
 {
-    register INC_LIST *     inc;
+    INC_LIST *  inc;
 
     for (inc = start_inc; inc; inc = inc->next) {
         if (str_eq( inc->fname, filename)) {    /* Already included */
-#if DEBUG
             if (debug & PATH)
                 fprintf( fp_debug, "Once included \"%s\"\n", filename);
-#endif
             return  TRUE;
         }
     }
     return  FALSE;                          /* Not yet included     */
 }
 
-static void
-#if PROTO
-push_or_pop( int direction)
-#else
-push_or_pop( direction)
-    int     direction;
-#endif
+static void push_or_pop(
+    int     direction
+)
 {
     char *          tp;
     DEFBUF **       prevp;
@@ -3477,11 +3125,7 @@ push_or_pop( direction)
                     return;
                 }
                 s_def = sizeof (DEFBUF) + 3 + s_name
-                        + strlen( defp->repl)
-#if DEBUG
-                        + strlen( defp->fname)
-#endif
-                        ;
+                        + strlen( defp->repl) + strlen( defp->fname);
                 if (mode == STD)
                     s_def += strlen( defp->parmnames);
                 dp = (DEFBUF *) xmalloc( s_def);
@@ -3522,15 +3166,9 @@ push_or_pop( direction)
     }
 }
 
-#else   /* MODE == PRE_STANDARD */
-
-static void
-#if PROTO
-do_asm( int asm_start)
-#else
-do_asm( asm_start)
-    int     asm_start;                      /* #asm ?               */
-#endif
+static void do_asm(
+    int     asm_start                       /* #asm ?               */
+)
 /*
  * #asm, #endasm
  * Originally written for OS-9/09 Microware C.
@@ -3551,17 +3189,10 @@ do_asm( asm_start)
     in_asm = asm_start ? line : 0L;
 }
 
-#endif
-
-void
-#if PROTO
-do_old( void)
-#else
-do_old()
-#endif
+void    do_old( void)
 /*
  * Process the out-of-standard directives.
- * GNU C permits #include_next and #warning even in STANDARD mode.
+ * GCC permits #include_next and #warning even in STANDARD mode.
  */
 {
     static const char * const   unknown
@@ -3624,7 +3255,30 @@ do_old()
     }
 #endif
 
-#if MODE == PRE_STANDARD
+    if (! standard)
+        do_prestd_directive();
+
+    if (compiling) {
+        if (lang_asm) {                     /* "Assembler" source   */
+            if (warn_level & 1)
+                cwarn( unknown, identifier, 0L, NULLST);
+            fputs( infile->buffer, fp_out);     /* Putout the line  */
+        } else {
+            cerror( unknown, identifier, 0L, NULLST);
+        }
+    } else if (warn_level & 8) {
+        cwarn( unknown, identifier, 0L, " (in skipped block)");
+    }
+    skip_nl();
+    unget();
+    return;
+}
+
+static void do_prestd_directive( void)
+/*
+ * Process directives for pre-Standard mode.
+ */
+{
 #if COMPILER != GNUC
     if (str_eq( identifier, "assert")) {    /* #assert              */
         if (! compiling)                    /* Only validity check  */
@@ -3668,7 +3322,6 @@ do_old()
         return;
     }
 
-#if DEBUG || DEBUG_EVAL
     if (str_eq( identifier, "debug")) {     /* #debug <args>        */
         if (! compiling)                    /* Only validity check  */
             return;
@@ -3680,7 +3333,6 @@ do_old()
         do_debug( FALSE);                   /* #end_debug <args>    */
         return;
     }
-#endif
 
     if (str_eq( identifier, "asm")) {       /* #asm                 */
         do_asm( TRUE);
@@ -3692,31 +3344,9 @@ do_old()
         unget();
         return;
     }
-
-#endif  /* MODE = PRE_STANDARD */
-
-    if (compiling) {
-        if (lang_asm) {                     /* "Assembler" source   */
-            if (warn_level & 1)
-                cwarn( unknown, identifier, 0L, NULLST);
-            fputs( infile->buffer, fp_out);     /* Putout the line  */
-        } else {
-            cerror( unknown, identifier, 0L, NULLST);
-        }
-    } else if (warn_level & 8) {
-        cwarn( unknown, identifier, 0L, " (in skipped block)");
-    }
-    skip_nl();
-    unget();
-    return;
 }
 
-static void
-#if PROTO
-do_preprocessed( void)
-#else
-do_preprocessed()
-#endif
+static void do_preprocessed( void)
 /*
  * The source file has been already preprocessed.
  * Copy the lines to output.
@@ -3728,12 +3358,10 @@ do_preprocessed()
     FILEINFO *      file;
     char *          lbuf;
     char *          cp;
-#if DEBUG
     const char **   incptr;
     char *          comment;
     char *          colon;
     const char *    dir;
-#endif
 #if STD_LINE_PREFIX == FALSE
     char            conv[ NBUFF];
     char *          arg;
@@ -3771,13 +3399,13 @@ do_preprocessed()
                                     /* Standard predefined macro    */
             continue;
         } else {
-			if (memcmp( lbuf, "#define ", 8) != 0) {
+            if (memcmp( lbuf, "#define ", 8) != 0) {
                 if (memcmp( lbuf, "#line", 5) == 0)
                     continue;
                 else
                     cfatal( corrupted, NULLST, 0L, NULLST);
-			}
-#if DEBUG   /* Filename and line-number information in comment as:  */
+            }
+            /* Filename and line-number information in comment as:  */
             /* dir/fname:1234\t*/
             cp = lbuf + strlen( lbuf);
             if ((memcmp( cp - 4, "\t*/\n", 4) != 0)
@@ -3798,9 +3426,9 @@ do_preprocessed()
                 }
             }
             /* Register the filename to fnamelist[] */
+            /* inc_dirp may be NULL, and cur_fname may be "(predefined)"    */
             cur_fname = set_fname( dir + strlen( *inc_dirp));
             strcpy( comment - 2, "\n");     /* Remove the comment   */
-#endif
             unget_string( lbuf + 8, NULLST);
             do_define( FALSE);
             get();      /* '\n' */
@@ -3811,15 +3439,9 @@ do_preprocessed()
     file->bptr = file->buffer + strlen( file->buffer);
 }
 
-#if DEBUG || DEBUG_EVAL
-
-static int
-#if PROTO
-do_debug( int set)
-#else
-do_debug( set)
-    int     set;                        /* TRUE to set debugging    */
-#endif
+static int  do_debug(
+    int     set                         /* TRUE to set debugging    */
+)
 /*
  * #pragma MCPP debug, #pragma MCPP end_debug, #debug, #end_debug
  * Return TRUE when diagnostic is issued else return FALSE.
@@ -3830,17 +3452,13 @@ do_debug( set)
         int     arg_num;                        /* Value of 'debug' */
     };
     static struct Debug_arg     debug_args[] = {
-#if DEBUG
         { "path",   PATH    },
         { "token",  TOKEN   },
         { "expand", EXPAND  },
         { "if",     IF      },
+        { "expression", EXPRESSION  },
         { "getc",   GETC    },
         { "memory", MEMORY  },
-#endif
-#if DEBUG_EVAL
-        { "expression", EXPRESSION  },
-#endif
         { NULL,     0       },
     };
     struct Debug_arg    *argp;
@@ -3874,12 +3492,10 @@ do_debug( set)
             num = argp->arg_num;
             if (set) {
                 debug |= num;
-#if DEBUG
                 if (num == PATH)
                     dump_path();
                 else if (num == MEMORY)
                     print_heap();
-#endif
             } else {
                 debug &= ~num;
             }
@@ -3899,16 +3515,7 @@ diagnosed:
     return TRUE;
 }
 
-#endif  /* DEBUG || DEBUG_EVAL  */
-
-#if MODE == PRE_STANDARD
-
-void
-#if PROTO
-put_asm( void)
-#else
-put_asm()
-#endif
+void    put_asm( void)
 /*
  * Put out source line as it is.
  */
@@ -3920,16 +3527,7 @@ put_asm()
 #endif
 }
 
-#endif  /* MODE == PRE_STANDARD */
-
-#if DEBUG
-
-static void
-#if PROTO
-dump_path( void)
-#else
-dump_path()
-#endif
+static void dump_path( void)
 /*
  * Show the include directories.
  */
@@ -3950,55 +3548,32 @@ dump_path()
 
 /*
  * list_heap() is a function to print out information of heap-memory.
- * See "kmmalloc-2.5.lzh" by kmatsui.
+ * See "kmmalloc-2.5.1.lzh" by kmatsui.
  */
-#if KMMALLOC
+#if     KMMALLOC
 #ifdef  __cplusplus
     extern "C"  int     list_heap( int);
 #else
-#if PROTO
     int     list_heap( int);
-#else
-    int     list_heap();
 #endif
-#endif
-#endif
-#if BSD_MALLOC
+#elif   BSD_MALLOC
     int     list_heap( char *);
-#else
-#if DB_MALLOC || DMALLOC
+#elif   DB_MALLOC || DMALLOC
     int     list_heap( FILE *);
 #endif
-#endif
 
-void
-#if PROTO
-print_heap( void)
-#else
-print_heap()
-#endif
+void    print_heap( void)
 {
-#if KMMALLOC
+#if     KMMALLOC
     list_heap( 1);
-#else
-#if BSD_MALLOC
+#elif   BSD_MALLOC
     list_heap( ":cpp");
-#else
-#if DB_MALLOC || DMALLOC || PHK_MALLOC || DLMALLOC
+#elif   DB_MALLOC || DMALLOC || PHK_MALLOC || DLMALLOC
     list_heap( fp_debug);
-#endif
-#endif
 #endif
 }
 
-#endif  /* DEBUG    */
-
-void
-#if PROTO
-at_end( void)
-#else
-at_end()
-#endif
+void    at_end( void)
 /*
  * Handle the commands to be executed at the end of processing.
  */
@@ -4009,9 +3584,7 @@ at_end()
     }
 #endif
 
-#if DEBUG
     if (debug & MEMORY)
         print_heap();
-#endif
 }
 

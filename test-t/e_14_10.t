@@ -7,7 +7,7 @@
 
 #if     LONG_MAX - LONG_MIN
 #endif
-#if     LONG_MAX + 1
+#if     LONG_MAX + 1 > SHRT_MAX
 #endif
 #if     LONG_MIN - 1
 #endif

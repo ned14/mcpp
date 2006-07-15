@@ -1,16 +1,40 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
+2006/07/15  kmatsui
+        * V.2.6
+        * Integrated STANDARD mode and PRE_STANDARD mode into one
+        executable, differentiating the modes by the execution time
+        options.
+        * Changed --enable-maintainer-mode option of configure to --
+        enable-replace-cpp option which generates compiler-specific-
+        build of mcpp.
+        * Made stand-alone-build independent on any compiler-systems.
+        * Revised #pragma once and handling of include directories list,
+        judging a identity of directory and file by absolute path, and
+        dereferencing symbolic linked file.
+        * Revised #line output and its related problem at the end of an
+        included file.
+        * Added portings to GCC V.4.0, CygWIN 1.5.18, Visual C++ 2005
+        and LCC-Win32 V.3.8.
+        * Removed support for pre-C90 compilers, MS-DOS and Plan 9.
+        * Renamed 'doc' directory as 'doc-jp' and renamed 'doc_eng' as
+        'doc'.
+        * Removed some manuscript files of mcpp-summary.pdf from the
+        distribution.
+        * Validation Suite: Revised a few testcases.
+        * Updated all the documents accordingly.
+
 2005/03/19  kmatsui
         * V.2.5
-        * Revised judgment of GNU C version and include directories in
+        * Revised judgment of GCC version and include directories in
         configure script.
         * Absorbed POST_STANDARD mode into STANDARD as an execution time
         option, absorbed OLD_PREPROCESSOR mode as an execution time
         option of PRE_STANDARD.
         * Renamed most of #pragma __* directives as #pragma MCPP *.
-        * Revised the Standard mode macro expansion routine using GNU C
-        3.2 testsuite and Wave 1.0 testcases.
-        * Added porting to GNU C V.3.3 and 3.4.  Changed some options
+        * Revised the Standard mode macro expansion routine using GCC 3.
+        2 testsuite and Wave 1.0 testcases.
+        * Added porting to GCC V.3.3 and 3.4.  Changed some options
         accordingly (changed -c to -@compat, changed -m to -e, removed -
         E, added -finput-charset=).
         * Revised the old-preprocessor mode to follow "Reiser cpp model".
