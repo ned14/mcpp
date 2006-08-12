@@ -2,18 +2,13 @@
  * configed.H
  * Configurations for MCPP using config.h genarated by configure script.
  *
- * 2003/11  Created.                                        by kmatsui
- *
- * 2004/02  Extended multi-byte character handling.         by kmatsui
- *
- * 2006/07  Created settings for stand-alone (compiler-independent) build.
- *          Removed settings for pre-C90 compiler.          by kmatsui
- *
  * WARNING: These settings assume HOST == TARGET.  In case of HOST
  *      differs from TARGET, you must edit this file here and there.
  */
 
-#define     DATE            "2006/07"               /* Date of mcpp     */
+#define     TRUE            1
+#define     FALSE           0
+#define     DATE            "2006/08"               /* Date of mcpp     */
 
 /*
  *  'Target' means the O.S. and the compiler to which cpp is implemented.
@@ -46,6 +41,7 @@
 #define SYS_MAC             0x6000
 #define SYS_WIN             0x7000
 #define SYS_WIN32           0x7400  /* (SYS_WIN32 & 0xF000) == SYS_WIN      */
+#define SYS_MINGW           0x7C00  /* (SYS_MINGW & 0xF000) == SYS_WIN      */
 
 /* COMPILER */
 #define COMPILER_UNKNOWN    0
@@ -160,6 +156,14 @@
 #if     SYSTEM == SYS_CYGWIN
 #define SYSTEM_EXT          "__CYGWIN__"
 #define SYSTEM_EXT2         "__CYGWIN32__"
+#ifndef MBCHAR
+#define MBCHAR              SJIS
+#endif
+#endif
+
+#if     SYSTEM == SYS_MINGW
+#define SYSTEM_EXT          "__MINGW__"
+#define SYSTEM_EXT2         "__MINGW32__"
 #ifndef MBCHAR
 #define MBCHAR              SJIS
 #endif

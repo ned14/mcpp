@@ -49,6 +49,11 @@ V.2.6           2006/07     Integrated STANDARD and PRE_STANDARD
                 Added comment on GCC system header and #include_next.
                                                                 kmatsui
 
+V.2.6.1         2006/08     Added porting to MinGW.
+                Revised some subtle points.
+                                                                kmatsui
+
+
                               ☆　目次　☆
 
 １．概要
@@ -753,7 +758,8 @@ H で定義されるマクロです。[3], [4], [5] でも同様です。これらのマクロはあ
 リプロセッサを消してしまうことのないよう、あらかじめ別名のファイルにコピ
 ーしておいてください。
   Linux, FreeBSD, CygWIN での設定については [3.9.5] を参照してください。
-GCC 3.*, 4.* での設定については [3.9.7] を参照してください。
+GCC 3.*, 4.* での設定については [3.9.7], [3.9.7.1] を参照してください。
+MinGW での設定についても [3.9.7.1] を参照してください。
 
   処理系付属のコンパイラドライバからは通常の方法では MCPP に渡す方法のな
 いオプションもあります。
@@ -854,6 +860,8 @@ arch:SSE, arch:SSE2
 -finput-charset=<encoding>
     -e <encoding> オプションと同じ。GCC はこのオプションを指定すると
     <encoding> を UTF-8 に変換するが、MCPP は変換はしないことに注意。
+-fworking-directory
+    出力の２行目にカレントディレクトリを表す特別な #line 行を出力する。
 -I-
     このオプションの前と後とで -I <directory> オプションの仕様を変える。
     このオプションの前に -I で指定されたディレクトリは #include
@@ -922,6 +930,12 @@ arch:SSE, arch:SSE2
 
 -traditional, -traditional-cpp
     -@old と同じ。
+
+  CygWIN / GCC 版では次のオプションが使えます。
+
+-mno-cygwin
+    Include directory の /usr/include を /usr/include/mingw に変更し、事
+    前定義マクロを cygwin1.dll 用から msvcrt.dll 用に変更する。
 
   次のオプションはいずれもエラーにはしませんが、何も対応しません（ウォー
 ニングを出す場合もある）。
@@ -1364,7 +1378,7 @@ directive が続く行）の指示であるかどうかを確かめるためにはコメントも処理
 のとして扱い、"header.h" と "HEADER.H" とは Windows では同じもの、UNIX
 系では別のものとして扱います。ディレクトリは絶対パスに変換して記憶します。
 UNIX 系では symbolic link はリンク先に変換します。したがって、同じファイ
-ルであるかどうかは確実に判定されます。
+ルであるかどうかは確実に判定されます。*1, *2
 
   この #pragma once は GCC V.1.* / cpp の #pragma once のアイデアを借用
 したものです。GCC V.2.*, V.3.* でもこの機能は残っていますが、obsolete な
@@ -1395,9 +1409,20 @@ __need_ptrdiff_t, etc. のマクロを定義しては <stddef.h> を #include しま
 てゆきます。<errno.h>, <signal.h> 等も同様です。<stdio.h> でさえも、他の
 system header が __need_FILE 等のマクロを定義しては #include <stdio.h>
 し、そのたびに FILE 等が定義されてゆく場合があります。これらのファイルに
-は #pragma once は書き込むわけにはいきません。*1
+は #pragma once は書き込むわけにはいきません。*3
 
-  *1 少なくとも Linux / GCC 2.9x, 3.*, 4.* / glibc 2.1, 2.2, 2.3 ではそ
+  *1 CygWIN では / と /usr とは実際には同じディレクトリで、/ が Windows
+    上の例えば C:/dir/cygwin だとすると /cygdrive/c/dir/cygwin もそれと
+    同じディレクトリであるが、MCPP ではこれらはすべて同じディレクトリと
+    して扱う。path-list はすべて /cygdrive/c/dir/cygwin/dir-list/file の
+    形に変換する。
+  *2 MinGW では /bin と /usr/bin、/lib と /usr/lib はそれぞれ同じディレ
+    クトリで、/ が Windows 上の C:/dir/msys/1.0 だとすると /c/dir/msys/1.
+    0 もそれと同じディレクトリで、/mingw が C:/dir/mingw だとすると /c/
+    dir/mingw もそれと同じディレクトリである。MCPP ではこれらはそれぞれ
+    同じディレクトリとして扱う。path-list はすべて c:/dir/msys/1.0/dir-
+    list/file, c:/dir/mingw/dir-list/file の形に変換する。
+  *3 少なくとも Linux / GCC 2.9x, 3.*, 4.* / glibc 2.1, 2.2, 2.3 ではそ
     うなっている。
     FreeBSD 4, 5 では glibc は使われていないので、こういう複雑なシステム
     ヘッダにはなっていない。
@@ -1470,7 +1495,7 @@ GCC には #include_next, #warning という規格違反のディレクティブがありま
 は include directory をサーチする際に、この include 元のファイルのあるデ
 ィレクトリをスキップして、その次のサーチ順のディレクトリからサーチを始め
 ます。
-  CygWIN では、ヘッダ名の大文字・小文字の区別は無視します。
+  CygWIN, MinGW では、ヘッダ名の大文字・小文字の区別は無視します。
 
     #pragma MCPP warning    any message
     #warning    any message
@@ -2529,15 +2554,15 @@ mcpp.sh が実行され、MCPP に上記のオプションを（gcc の付加するオプション
 
   次に、ウォーニングを整理します。
 
-    grep warning `find . -name mcpp.err` | sort -k4 -u | less
+    grep warning `find . -name mcpp.err` | sort -k3 -u | less
 
   ウォーニングの出所をすべて見るためには、次のようにします。
 
-    grep warning `find . -name mcpp.err` | sort -k4 | uniq | less
+    grep warning `find . -name mcpp.err` | sort -k3 | uniq | less
 
   特定の種類のウォーニングを見るには、たとえば次のようにします。
 
-    grep 'warning: Replacement' `find . -name mcpp.err` | sort -k4   \
+    grep 'warning: Replacement' `find . -name mcpp.err` | sort -k3   \
         | uniq | less
 
   こうして見当をつけたうえで、該当する mcpp.err を less で見て内容を確認
@@ -2877,11 +2902,12 @@ interface および cpplib を使うユーザプログラムとの外部的な interface を
 が、今度は cc1 (cc1plus) の呼び出しを MCPP と cc1 (cc1plus) とに振り分け
 ることが必要になります。このための shell-script は src/set_mcpp.sh の中
 に用意しました。大量の事前定義マクロは１つ１つ対応しているわけにはいかな
-いので、GCC の -dM オプションの出力を一括して利用するようにしました。
+いので、GCC の -dM オプションの出力を一括して利用するようにしました。*1,
+*2
 
   GCC V.3.4 ではさらに、ソースファイルはすべて UTF-8 に変換してから処理
 するように変わりました。ドキュメントによると、具体的には次のようになって
-います。*1
+います。*3
 
   1.  プリプロセスの最初のフェーズで、multi-byte character を UTF-8 に変
     換する。
@@ -2916,7 +2942,7 @@ specific-build では、BIG5, shift-JIS, ISO2022-JP では <backslash> 等と一
 致する値のバイトの直前に <backslash> を挿入してコンパイラの欠陥を補いま
 す。しかし、UTF-8 には変換せず、元の encoding のまま出力します。-finput-
 charset オプションも -e オプションと同じものとして扱います。これは次のよ
-うな理由です。*2, *3
+うな理由です。*4, *5
 
   1.  Big5, SJIS, ISO2022-JP は UTF-8 に変換してしまうと cc1 が元の
     encoding に正しく戻せない。GCC V.4.1 でもダメである。しかし、どのバ
@@ -2927,11 +2953,22 @@ charset オプションも -e オプションと同じものとして扱います。これは次のよ
     encoding に戻せない。
   3.  GCC の近い将来の仕様変更を期待したい。
 
-  *1 私のところの FreeBSD 5.3 ではなぜか GCC のこの変換はまったく動作し
+  *1 MinGW では symbolic link が使えない。ln -s というコマンドはあるが、
+    これは単にコピーするだけのものである。また、MinGW の GCC はたとえ
+    cc1 という名前のファイルであってもそれが shell-script であると、起動
+    を拒否する。そのため、MCPP の GCC-specific-build では、MinGW に限っ
+    て cc1.exe という名前の実行プログラムを生成する（これは cc1plus.exe
+    にもコピーされる）。そして、その中から mcpp.exe または GCC の cc1.
+    exe ないし cc1plus.exe を起動するようにしている。
+  *2 CygWIN / GCC では -mno-cygwin というオプションがあり、これを指定す
+    ると system include directory が変わり、GCC の事前定義マクロも変わる。
+    このため、MCPP の CygWIN GCC-specific-build では V.2.6.1 からは２セ
+    ットの事前定義マクロを用意するようにした。
+  *3 私のところの FreeBSD 5.3 ではなぜか GCC のこの変換はまったく動作し
     ない。libiconv はリンクされているのであるが。
-  *2 MCPP の出力を cc1 に渡す時には finput-charset はもちろん fexec-
+  *4 MCPP の出力を cc1 に渡す時には finput-charset はもちろん fexec-
     charset オプションも付けてはいけない。
-  *3 MCPP V.2.5 では GCC が V.3.4 の場合は <backslash> を補うこともやめ
+  *5 MCPP V.2.5 では GCC が V.3.4 の場合は <backslash> を補うこともやめ
     ていた。GCC の動作が不安定なのでようすを見ていたのである。しかし、V.
     4.1 になってもまともに動作する状態になっていないので、MCPP V.2.6 で
     は V.2.4 までの仕様に戻した。すなわち、GCC V.3.4 以降についても V.3.
@@ -3154,7 +3191,7 @@ GCC V.3.2 までなら、これでもまだ
 
             [3.9.8.4]   当面の対策
 
-  以上をまとめると、問題は次の点にあります。*1, *2
+  以上をまとめると、問題は次の点にあります。*1, *2, *3
 
   1、Linux のシステムヘッダを GCC 専用にしないためには /usr/include に
     float.h, iso646.h, stdarg.h, stdbool.h, stddef.h が必要であるが、こ
@@ -3197,7 +3234,7 @@ directory も組み込みません。
     include のものだけで十分である。
   3、float.h は DBL_MAX_EXP が __DBL_MAX_EXP__ に定義されるといった内容
     なので、他のプリプロセッサには役に立たない。必要なら GCC の内部設定
-    などを参考に書く。*3
+    などを参考に書く。*4
   4、GCC 固有の C の include directory は環境変数では設定しない。
   5、環境変数 CPLUS_INCLUDE で /usr/include/c++/VERSION:/usr/include/c++
     /VERSION/SYSTEM:/usr/include/c++/VERSION/backward を C++ の include
@@ -3222,7 +3259,11 @@ directory も組み込みません。
     specific な include directory が作られる。そこにできるヘッダファイル
     の多くはムダなものである。しかし、/usr/include のヘッダファイルが書
     き換えられることはない。
-  *3 GCC の設定を参照して書けば、次のようになる。
+  *3 MinGW では include directories とその優先順位が他のシステムと異なる
+    が、GCC の #include_next の動作は同じであり、また標準の include
+    directory である /mingw/include にいくつかの標準ヘッダがなくて
+    version-specific-directory にある点も CygWIN 等と同じである。
+  *4 GCC の設定を参照して書けば、次のようになる。
 
 /* float.h  */ 
 
@@ -3439,13 +3480,13 @@ header-name とする。ソース中にマクロで書かれていて、それを展開した結果が
 文字列リテラルになった場合も、同様である。文字列リテラルの形式の header-
 name では、単にその両端の " をとったものをファイル名とする。
   2. ソース中に <filename> の形で書かれていれば、それをそのまま header-
-name とする。単に両端の <, > をとったものをファイル名とする。
-  3. ソース中にマクロで書かれていて、それを展開した結果が <filename> の
-形になった場合は、両端の <, > をとり、さらにすべての space を除去したも
-のをファイル名とする。
-  4. どの場合でも、Windows では path-delimiter として \ も / も使えるが、
+name とする。ソース中にマクロで書かれていて、それを展開した結果が
+<filename> の形になった場合も、同様である。マクロ中の space は複数の
+spaces を１個の space に圧縮した上で保存される。単に両端の <, > をとった
+ものをファイル名とする。
+  3. どの場合でも、Windows では path-delimiter として \ も / も使えるが、
 \ は / に変換する。
-  5. Windows ではファイル名の中の大文字はすべて小文字に変換する。
+  4. Windows ではファイル名の中の大文字はすべて小文字に変換する。
 
     [4.4]       #if 式の評価
 
@@ -3639,6 +3680,7 @@ long long を持つ処理系と持たない処理系とでは #if 式の評価に違いがありま
     VineLinux 3.2-x86:  GCC V.2.95, V.3.2, V.3.3, V.3.4
     openSUSE Linux 10.0:    GCC V.4.0
     CygWIN 1.3.10 (GCC V.2.95), 1.5.18 (GCC 3.4)
+    MinGW & MSYS (GCC 3.4)
     WIN32:  LCC-Win32 V.3.2, V.3.8
     WIN32:  Visual C++ 2002, 2003, 2005
     WIN32:  Borland C++ V.4.0, V.5.5
@@ -3666,6 +3708,7 @@ digraphs) オプションで有効となります。
     RESCAN_LIMIT（マクロ再走査の最大ネストレベル）  :   64
     IDMAX   （identifier の有効長）                 :   1024
     NINCLUDE（include directory の最大数）          :   64
+    INCLUDE_NEST（#include の最大ネストレベル）     :   256
     NBUFF（ソースの最大行長で、かつコメントを a space に処理し
         <backslash><newline> による行接続をした後の最大行長） : 65536
     NWORK（出力の最大行長）                         :   65536
@@ -3676,7 +3719,7 @@ digraphs) オプションで有効となります。
 
     MBCHAR  （デフォルトの multi-byte character encoding）
         FreeBSD, Linux          :   EUC_JP
-        Win32, CygWIN           :   SJIS
+        Win32, CygWIN, MinGW    :   SJIS
 
   次のマクロは処理系によって異なった設定にしています。
 
@@ -3690,8 +3733,8 @@ digraphs) オプションで有効となります。
         Visual C                :   TRUE
         その他                  :   FALSE
 
-  #include のネストレベルには、特に制限はありません（同時にオープンでき
-るファイルの数に関するＯＳの制限を超えていてもかまわない）。
+  #include のネストレベルは、同時にオープンできるファイルの数に関するＯ
+Ｓの制限を超えていてもかまいません。
 
   GCC 2.7-2.95 では __STDC_VERSION__ は 199409L となっていましたが、3.*,
 4.* では __STDC_VERSION__ はデフォルトでは事前定義されず、実行時オプショ
@@ -3782,6 +3825,12 @@ pragma 行はマクロ展開しません。
                 __MCPP (=2), __GNUC__ (=3), __GNUC_MINOR__ (=4),
                 __SIZE_TYPE__ (=unsigned int), __PTRDIFF_TYPE__ (=int),
                 __WCHAR_TYPE__ (=short unsigned int)
+    MinGW / Stand-alone:    __i386__, __MINGW__, __MINGW32__,
+                __MCPP (=2)
+    MinGW / GCC 3.4.5:      __i386__, __MINGW__, __MINGW32__,
+                __MCPP (=2), __GNUC__ (=3), __GNUC_MINOR__ (=2),
+                __SIZE_TYPE__ (=unsigned int), __PTRDIFF_TYPE__ (=int),
+                __WCHAR_TYPE__ (=short unsigned int)
     Win32 / Stand-alone:    __i386__, __WIN32__, _WIN32,  WIN32,
                 __FLAT__, __MCPP (=2)
     LCC-Win32:  __i386__, __WIN32__, WIN32, _WIN32, __FLAT__,
@@ -3820,11 +3869,11 @@ __cplusplus が事前定義されますが、その初期値は 1L です。そのほかにさらに
 前定義されます。その内容は MCPP をインストールする時に生成される mcpp_g*.
 h というヘッダファイルでわかります。
 
-  FreeBSD, Linux, CygWIN / GCC, LCC-Win32 は long long を持っているので、
-#if 式は long long, unsigned long long で評価します。Visual C, Borland C
-5.5 では long long はありませんが、__int64, unsigned __int64 という型が
-あるのでこれを使います。Borland C 4.0 では long long も __int64 もないの
-で、#if 式は long, unsigned long で評価します。
+  FreeBSD, Linux, CygWIN, MinGW / GCC, LCC-Win32 は long long を持ってい
+るので、#if 式は long long, unsigned long long で評価します。Visual C,
+Borland C 5.5 では long long はありませんが、__int64, unsigned __int64
+という型があるのでこれを使います。Borland C 4.0 では long long も
+__int64 もないので、#if 式は long, unsigned long で評価します。
   これらの処理系では long の範囲はいずれも
         [-2147483647-1, 2147483647] ([-0x7fffffff-1, 0x7fffffff])
 です。unsigned long はいずれも
@@ -3915,9 +3964,9 @@ translation phase でのエラー等では、その phase の行が表示される。
   MCPP はきわめて多種の診断メッセージを用意しています。std モードでは次
 のような種類にのぼっています。
 
-    fatal error     :   19 種
-    error           :   75 種
-    warning class 1 :   42 種
+    fatal error     :   20 種
+    error           :   72 種
+    warning class 1 :   46 種
     warning class 2 :   14 種
     warning class 4 :   15 種
     warning class 8 :   31 種
@@ -4016,7 +4065,9 @@ More than BLK_NEST nesting of #if (#ifdef) sections
     #if, #ifdef, #ifndef 等のネストが BLK_NEST を超えています（BLK_NEST
     等のマクロ名の部分は実際にはその値が表示される。以下同様）。#if
     section を分割してください。
-
+More than INCLUDE_NEST nesting of #include
+    #include のネストが INCLUDE_NEST を超えています。#include が無限再帰
+    になっているのでしょう。
 Too many include directories "dir"
     Include directory の指定が NINCLUDE を超えています。
 Too many include files
@@ -4143,25 +4194,19 @@ Illegal multi-byte character sequence "XY"
 
         [5.4.2]     完結しないソースファイルのエラー
 
-  次のメッセージはソースファイルが完結しない行、コメント、#if section、
-マクロ呼び出し等で終わっている場合に出ます。そのファイルで入力が終わりの
-場合（include されたファイルでない場合）は、"End of file" ではなく "End
-of input" と表示されます。
+  次のメッセージはソースファイルが完結しない #if section、マクロ呼び出し
+等で終わっている場合に出ます。そのファイルで入力が終わりの場合（include
+されたファイルでない場合）は、"End of file" ではなく "End of input" と表
+示されます。
   これらの診断メッセージは MCPP のモードによって、エラーとなる場合とウォ
 ーニングとなる場合とあります。
-  Standard モードではこれらはすべてエラーです。その行やマクロ呼び出しは
-スキップし、#if section の対応関係はそのファイルが include された時の初
-期状態に戻します。
-  pre-Standard モードでは、\ で終わるソースはチェックしません。それ以外
-のものはウォーニングです。pre-Standard モードでも、oldprep モードでは
-unterminated macro call 以外はウォーニングさえも出ません。
+  Standard モードではこれらはすべてエラーです。そのマクロ呼び出しはスキ
+ップし、#if section の対応関係はそのファイルが include された時の初期状
+態に戻します。
+  pre-Standard モードではすべてウォーニングです。pre-Standard モードでも、
+oldprep モードでは unterminated macro call 以外はウォーニングさえも出ま
+せん。
 
-End of file with no newline, skipped the line
-    ファイルが改行コードのない行で終わっていてはなりません。
-End of file with \, skipped the line
-    ファイルが <backslash><newline> で終わっていてはなりません。
-End of file with unterminated comment, skipped the line
-    コメントの閉じ忘れです。
 End of file within #if (#ifdef) section started at line 123
     123 行の #if (#ifdef, #ifndef) に対応する #endif がありません。
 End of file within macro call started at line 123
@@ -4605,6 +4650,12 @@ poison (dependency, system_header) のように、処理系付属のプリプロセッサ
 
         [5.5.1]     文字、トークンおよびコメントに関するウォーニング
 
+Converted [CR+LF] to [LF]
+    改行コードを [CR+LF] から [LF] に変換しました。Windows 用のソースフ
+    ァイルを UNIX 系のシステムでコンパイルすると、このウォーニングが出て、
+    改行コードが自動的に変換されます。このウォーニングは１回しか出ません。
+    Stand-alone-build ではクラス１で、compiler-specific-build ではクラス
+    ２です。
 Illegal control character 0x1b in quotation
     文字列リテラル、文字定数、header name 中に white space でないコント
     ロールコードがあります。これらはコンパイラ本体でエラーになるかもしれ
@@ -4660,14 +4711,23 @@ Unterminated string literal, catenated to the next line
 
         [5.5.2]     完結しないソースファイルのウォーニング
 
+  ソースファイルの最後の行が中途半端である場合に、次のウォーニングが出ま
+す。old_prep モードではウォーニングも出ません。
+
+End of file with no newline, supplemented newlin
+    ファイルが改行コードのない行で終わっていてはなりません。改行コードを
+    補います。
+End of file with \, deleted the \
+    ファイルが <backslash><newline> で終わっていてはなりません。
+    <backslash> を削除します。
+End of file with unterminated comment, terminated the commen
+    コメントの閉じ忘れです。コメントを閉じます。
+
   次のウォーニングは pre-Standard モードでしか出ません（Standard モード
 ではエラー）。入力の終わりでない場合は、これらのウォーニングを無視して処
 理を続けますが、その結果はさらに妙なエラーを引き起こすでしょう。oldprep
 モードでは unterminated macro call 以外はウォーニングさえも出ません。
 
-End of file with no newline, skipped the line
-End of file with \, skipped the line
-End of file with unterminated comment, skipped the line
 End of file within #if (#ifdef) section started at line 123
 End of file within macro call started at line 123
 End of file with unterminated #asm block started at line 123
@@ -4920,6 +4980,11 @@ Line number 32769 is out of range
   間違いではないが portability に問題のあるケースについてのウォーニング
 です。
 
+Converted [CR+LF] to [LF]
+    改行コードを [CR+LF] から [LF] に変換しました。このウォーニングは
+    Stand-alone-build ではクラス１で、compiler-specific-build ではクラス
+    ２です。
+
   #if 式は Standard モードでは C90, C++98 でも long long / unsigned long
 long で評価します。ただし、C90, C++98 で long / unsigned long の範囲を超
 えた場合はウォーニングを出します。LL という suffix についても同様に、C99
@@ -5067,20 +5132,17 @@ translation limits とします。ただし、マクロのパラメータの最大数は MCPP
   次のウォーニングも実際にはうるさいので、class 1, 2 から外してあります。
 
 Converted 0x0c to a space
-    ソース中の token separator としての [FF], [VT], [CR]（[CR] が '\n'
-    と違うコードである場合）のコードは space に変換します。これが
-    directive 行にある場合は Standard C では undefined です。コメント、
-    文字列リテラル、文字定数中のコードは変換しません（変換してもよいので
-    あるが、文字セットは処理系依存なので、MCPP ではあまり制約を課さない。
-    必要なチェックはコンパイラ本体で行われるであろう）。他方で、token
-    separator としての [TAB] も a space に変換しますが、これはコンパイル
-    結果に何の影響も与えないので（プリプロセッサにとってもコンパイラ本体
-    にとっても [TAB] は space と同じ意味しか持たない）、ウォーニングは出
-    しません。
-    [CR] が出てくるのはたいていは、Windows のソースを UNIX 系に持ってき
-    てそのままコンパイルしようとした場合です。改行コードを変換してからコ
-    ンパイルしてください。[FF] は実際のソースに時々見られるものです。
-    「改ページ」を意図しているのでしょうが、感心しないスタイルです。
+    ソース中の token separator としての [FF], [VT], [CR] （[CR][LF] では
+    ない単独の [CR]）のコードは space に変換します。これが directive 行
+    にある場合は Standard C では undefined です。コメント、文字列リテラ
+    ル、文字定数中のコードは変換しません（変換してもよいのであるが、文字
+    セットは処理系依存なので、MCPP ではあまり制約を課さない。必要なチェ
+    ックはコンパイラ本体で行われるであろう）。他方で、token separator と
+    しての [TAB] も a space に変換しますが、これはコンパイル結果に何の影
+    響も与えないので（プリプロセッサにとってもコンパイラ本体にとっても
+    [TAB] は space と同じ意味しか持たない）、ウォーニングは出しません。
+    [FF] は実際のソースに時々見られるものです。「改ページ」を意図してい
+    るのでしょうが、感心しないスタイルです。
 Undefined symbol "name", evaluated to 0
     #if 行で identifier "name" はマクロとして値が定義されていません。0
     と評価します。これは決してエラーではありませんが、プログラムの間違い
@@ -5261,6 +5323,7 @@ Constant "1234567890123456789012" is out of range
                                     [5.4.6]                   [5.8]
 Constant "123456789012" is out of range of (unsigned) long
                                             [5.5.4][5.6]      [5.8]
+Converted [CR+LF] to [LF]                   [5.5.1][5.6]
 Converted 0x0c to a space                               [5.7]
 Converted \ to /                                  [5.6]
 Division by zero                    [5.4.6]                   [5.8]
@@ -5268,12 +5331,11 @@ Duplicate parameter names "a"       [5.4.7]
 Empty argument in macro call "MACRO( a, ,"        [5.6]
 Empty character constant ''         [5.4.1]
 Empty parameter                     [5.4.7]
-End of file with \, skipped the line
-                                    [5.4.2] [5.5.2]
-End of file with unterminated comment, skipped the line
-                                    [5.4.2] [5.5.2]
-End of file with no newline, skipped the line
-                                    [5.4.2] [5.5.2]
+End of file with \, deleted the \           [5.5.2]
+End of file with unterminated comment, terminated the comment
+                                            [5.5.2]
+End of file with no newline, supplemented the newline
+                                            [5.5.2]
 End of file with unterminated #asm block started at line 123
                                     [5.4.2] [5.5.2]
 End of file within #if (#ifdef) section started at line 123
@@ -5341,6 +5403,8 @@ Missing "," or ")" in parameter list "(a,b"
 More than BLK_NEST nesting of #if (#ifdef) sections
                             [5.3.3]
 More than 8 nesting of #if (#ifdef) sections            [5.7] [5.8]
+More than INCLUDE_NEST nesting of #include
+                            [5.3.3]
 More than 8 nesting of #include                         [5.7]
 More than 32 nesting of parens in #if expression        [5.7]
 More than NEXP*2-1 constants stacked at "12"

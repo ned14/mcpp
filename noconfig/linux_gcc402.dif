@@ -1,7 +1,7 @@
-*** noconfig.H	2006-07-03 00:29:27.000000000 +0900
---- noconfig.H.linux_gcc402	2006-07-03 00:48:30.000000000 +0900
+*** noconfig.H	2006-08-07 19:04:19.000000000 +0900
+--- noconfig.H.linux_gcc402	2006-08-07 21:55:51.000000000 +0900
 ***************
-*** 27,33 ****
+*** 15,21 ****
    */
   
   /* Define target operating-system.  */
@@ -9,7 +9,7 @@
   
   /* Define target compiler.          */
   #ifndef COMPILER
---- 27,33 ----
+--- 15,21 ----
    */
   
   /* Define target operating-system.  */
@@ -18,7 +18,7 @@
   /* Define target compiler.          */
   #ifndef COMPILER
 ***************
-*** 42,48 ****
+*** 30,36 ****
   
   /* Version message.                 */
   /* "MCPP V.2.* (200y/mm) compiled by " precedes VERSION_MSG */
@@ -26,7 +26,7 @@
   #if     0
       "LCC-Win32 V.3.8"
       "Visual C 2005"
---- 42,48 ----
+--- 30,36 ----
   
   /* Version message.                 */
   /* "MCPP V.2.* (200y/mm) compiled by " precedes VERSION_MSG */
@@ -90,7 +90,7 @@
   #define COMPILER_SP1_VAL    "unsigned int"
   #define COMPILER_SP2_VAL    "int"
 ! #define COMPILER_SP3_VAL    "int"
-      /* SYS_FREEBSD: "int" , SYS_CYGWIN: "short unsigned int"
+      /* SYS_FREEBSD: "int" , SYS_CYGWIN, SYS_MINGW: "short unsigned int"
           , others: "long int"    */
   #endif  /* COMPILER_FAMILY == GNUC   */
 --- 323,329 ----
@@ -98,6 +98,6 @@
   #define COMPILER_SP1_VAL    "unsigned int"
   #define COMPILER_SP2_VAL    "int"
 ! #define COMPILER_SP3_VAL    "long int"
-      /* SYS_FREEBSD: "int" , SYS_CYGWIN: "short unsigned int"
+      /* SYS_FREEBSD: "int" , SYS_CYGWIN, SYS_MINGW: "short unsigned int"
           , others: "long int"    */
   #endif  /* COMPILER_FAMILY == GNUC   */

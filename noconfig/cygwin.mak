@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.6 for CygWIN / GCC / GNU make
-# 2006/05     kmatsui
+# 2006/08     kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make stand-alone-build of MCPP do:
@@ -8,8 +8,6 @@
 #       make COMPILER=GNUC
 # To re-compile MCPP using GCC-specific-build of MCPP do:
 #       make COMPILER=GNUC PREPROCESSED=1
-# To link malloc() package of kmatsui do:
-#       make [COMPILER=GNUC] [PREPROCESSED=1] MALLOC=KMMALLOC
 # To compile cpp with C++, rename *.c other than lib.c and preproc.c to *.cc,
 #   and do:
 #       make CPLUS=1
@@ -25,7 +23,7 @@ NAME = mcpp
 #       e.g. cc, gcc, gcc-2.95.3, i686-pc-linux-gnu-gcc-3.4.3
 CC = gcc
 GPP = g++
-CFLAGS = -c -O2 -Wall   -v
+CFLAGS = -c -O2 -Wall   #-v
 CPPFLAGS =
 #CPPFLAGS = -Wp,-vQW3
     # for MCPP to output a bit verbose diagnosis to "mcpp.err"
@@ -85,7 +83,8 @@ PREPROCESSED = 0
 ifeq	($(PREPROCESSED), 1)
 CMACRO = -DPREPROCESSED
 #CPPFLAGS += -std=c99
-    # '-std=c99' option is nessecary to work around the confusion of headers
+    # '-std=c99' option is sometimes nessecary to work around 
+    # the confusion of system header files
 # Make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H noconfig.H internal.H
 ifeq    ($(COMPILER), GNUC)
@@ -127,6 +126,6 @@ uninstall:
 	rm -f $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
 	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' '$(INCDIR)'
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)'
 endif
 

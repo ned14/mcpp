@@ -31,89 +31,6 @@
  *                              E V A L . C
  *                  E x p r e s s i o n   E v a l u a t i o n
  *
- * Edit History of DECUS CPP / cpp5.c
- * 31-Aug-84    MM      USENET net.sources release
- * 29-Apr-85            Latest revision
- */
-
-/*
- * CPP Version 2.0 / eval.c
- * 1998/08      kmatsui
- *      Renamed cpp5.c eval.c.
- *      Created overflow(), dumpval().
- *      Split evalsval(), evaluval() from evaleval().
- *      Made #if error returns 0 (rather than 1).
- *      Changed the type of #if evaluation from int to long / unsigned long
- *          (unsigned long is only for the compiler which has that type)
- *          or long long / unsigned long long for C99.
- *      Reinforced expression evaluation (eval(), opdope[]).
- *      Implemented evaluation of multi-character character constant, wide
- *          character constant and revised evaluation of multi-byte
- *          character constant.
- *      Revised most of the functions.
- */
-
-/*
- * CPP Version 2.1 / eval.c
- * 1998/09      kmatsui
- *      Changed the type of #if expression from fixed size to variable size,
- *          which is determined by the value of __STDC_VERSION__.
- *      Implemented the evaluation of UCN sequence in character constant.
- */
-
-/*
- * CPP Version 2.2 / eval.c
- * 1998/11      kmatsui
- *      Changed to evaluate "true" as 1 and "false" as 0 on C++, according
- *          to C++ Standard.
- */
-
-/*
- * CPP Version 2.3 pre-release 1 / eval.c
- * 2002/08      kmatsui
- *      Implemented C99-compatible mode of C++ (evaluating #if expression
- *          as long long).
- *      Renamed the several functions using underscore.
- * CPP Version 2.3 release / eval.c
- * 2003/02      kmatsui
- *      Implemented identifier-like operators in C++98.
- *      Created chk_ops().
- */
-
-/*
- * MCPP Version 2.4 prerelease
- * 2003/11      kmatsui
- *      Changed some macro names according to config.h.
- *
- * MCPP Version 2.4 release
- * 2004/02      kmatsui
- *      Updated eval_char() according to the extension of multi-byte
- *          character handling.
- */
-
-/*
- * MCPP Version 2.5
- * 2005/03      kmatsui
- *      Absorbed POST_STANDARD into STANDARD and OLD_PREPROCESSOR into
- *          PRE_STANDARD.
- *      Changed to use only (signed) long in PRE_STANDARD.
- */
-
-/*
- * MCPP Version 2.6
- * 2006/07      kmatsui
- *      Removed pre-C90 compiler settings (no unsigned long, no long double,
- *          no '\a' nor '\v', non-prototype declarations).
- *      Integrated STANDARD and PRE_STANDARD into one executable.
- *      Degraded the diagnostic of #if expression from error to warning, which
- *          only overflows the range of 'long / unsigned long' and does not
- *          overflow the range of 'long long / unsigned long long' in modes
- *          other than C99.
- *      Enabled 'i64' ('ui64', 'i32', 'i16', etc.) suffixes for integer, which
- *          are recognized when COMPILER is MSC or BORLANDC.
- */
-
-/*
  * The routines to evaluate #if expression are placed here.
  * Some routines are used also to evaluate the value of numerical tokens.
  */
@@ -1011,13 +928,12 @@ VAL_SIGN *  eval_num(
     ev.val = value;
     if (erange && (warn_level & 8))
         cwarn( out_of_range, nump, 0L, non_eval);
-    return  & ev;
 #if HAVE_LONG_LONG
-    if (erange_long && ((skip && (warn_level & 8))
+    else if (erange_long && ((skip && (warn_level & 8))
             || (! stdc3 && ! skip && (warn_level & w_level))))
         cwarn( out_of_range_long, nump, 0L, skip ? non_eval : NULLST);
-    return  & ev;
 #endif
+    return  & ev;
 
 range_err:
     cerror( out_of_range, nump, 0L, NULLST);
@@ -1594,7 +1510,7 @@ static expr_t   eval_unsigned(
     case OP_NEG:
         v1 = -v1u;
         if (v1u)
-            overflow( op_name, valpp, v1u);
+            overflow( op_name, valpp, TRUE);
         break;
     case OP_COM:    v1 = ~v1u;          break;
     case OP_NOT:    v1 = !v1u;          break;

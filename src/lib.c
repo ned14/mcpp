@@ -10,13 +10,6 @@
  * Some variation of standard library functions.
  * Some standard functions for the library which has not those or the library
  *      which has only non-conforming ones.
- *
- * 1998/08      First released.                             kmatsui
- * 2003/11      Added strstr() and strcspn().
- *              Uses macros defined by configure.           kmatsui
- * 2006/07      Removed Standard functions (memmove(), memcpy(), memcmp(),
- *                  strstr(), strcspn()).
- *              Removed non-prototype declarations.         kmatsui
  */
 
 #if     HAVE_CONFIG_H
@@ -25,7 +18,7 @@
 #include    "noconfig.H"
 #endif
 
-#if ! HOST_HAVE_GETOPT || HOST_LIB_IS_GLIBC
+#if ! HOST_HAVE_GETOPT || HOST_LIB_IS_GLIBC || HOST_SYSTEM == SYS_MINGW
 
 /*
  * Note: The getopt() of glibc should not be used since the specification

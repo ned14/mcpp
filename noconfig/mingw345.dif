@@ -1,5 +1,5 @@
 *** noconfig.H	2006-08-07 19:04:19.000000000 +0900
---- noconfig.H.cyg1518	2006-08-07 21:54:11.000000000 +0900
+--- noconfig.H.mingw345	2006-08-07 21:56:08.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -13,7 +13,7 @@
    */
   
   /* Define target operating-system.  */
-! #define SYSTEM              SYS_CYGWIN
+! #define SYSTEM              SYS_MINGW
   
   /* Define target compiler.          */
   #ifndef COMPILER
@@ -34,11 +34,11 @@
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
   #define STDC_VERSION        0L      /* 199409L for V.2.9, 0L for V.3.*      */
-! #define CPLUS_INCLUDE_DIR1  "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++"   /* "/usr/include/c++/3.4" */ /* "/usr/include/c++/3.3.2" */  /* "/usr/include/c++/4.0.2" */
-! #define CPLUS_INCLUDE_DIR2  "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++/i686-pc-cygwin"    /* "/usr/include/c++/3.4/backward" */    /* "/usr/include/c++/3.3.2/i386-vine-linux" */  /* "/usr/include/c++/4.0.2/i586-suse-linux" */
-! #define CPLUS_INCLUDE_DIR3  "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++/backward" /* "/usr/include/c++/3.3.2/backward"    */  /* "/usr/include/c++/4.0.2/backward"    */
-! #define C_INCLUDE_DIR1      "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include"  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */  /* "/usr/lib/gcc/i586-suse-linux/4.0.2/include" */
-! #define C_INCLUDE_DIR2      "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include"  /* "/usr/i586-suse-linux/include"   */
+! #define CPLUS_INCLUDE_DIR1  "/mingw/include/c++/3.4.5" /* "/usr/include/c++/3.4" *//* "/usr/include/c++/3.3.2" */  /* "/usr/include/c++/4.0.2" */
+! #define CPLUS_INCLUDE_DIR2  "/mingw/include/c++/3.4.5/mingw32" /* "/usr/include/c++/3.4/backward" */ /* "/usr/include/c++/3.3.2/i386-vine-linux" */  /* "/usr/include/c++/4.0.2/i586-suse-linux" */
+!  #define CPLUS_INCLUDE_DIR3 "/mingw/include/c++/3.4.5/backward" /* "/usr/include/c++/3.3.2/backward"    */  /* "/usr/include/c++/4.0.2/backward"    */
+! #define C_INCLUDE_DIR1  "/mingw/include" /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */  /* "/usr/lib/gcc/i586-suse-linux/4.0.2/include" */
+! #define C_INCLUDE_DIR2  "/mingw/lib/gcc/mingw32/3.4.5/include" /* "/usr/i586-suse-linux/include"   */
   #ifndef ENV_C_INCLUDE_DIR
   #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
   #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"

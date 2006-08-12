@@ -1,4 +1,4 @@
-.TH MCPP "1" "July 2006" "alternative CPP" "Commands for GCC"
+.TH MCPP "1" "August 2006" "alternative CPP" "Commands for GCC"
 .SH NAME
 mcpp \- Matsui CPP, an alternative C preprocessor
 .SH SYNOPSIS
@@ -112,10 +112,14 @@ Enable trigraphs.
 Enable trigraphs.
 .PP
 Options available with -@std (default), -@kr or -@oldprep options:
-.IP \fB-lang-asm\fR
+.IP \fB-lang-asm
 Same as -x assembler-with-cpp.
 .IP "\fB-x assembler-with-cpp"
 Process "assembler" source.
+.PP
+Option available on CygWIN:
+.IP \fB-mno-cygwin
+Change include directory and predefined macros for msvcrt.dll rather than cygwin1.dll.
 .SH PRAGMA
 \fBmcpp\fR has the following #pragma directives.
 .IP "#pragma once"
@@ -142,7 +146,7 @@ Retrieve the macro definition from the stack.
 .IP "#pragma MCPP warning    any message"
 Putout warning "any message".
 .SH "VERSION"
-MCPP V.2.6 (2006/07) for GCC
+MCPP V.2.6.1 (2006/08) for GCC
 .SH "SEE ALSO"
 The full documentation for \fBmcpp\fR are maintained as text files.
 Please see /usr/share/doc/mcpp/*. (or /usr/local/share/doc/mcpp/* depending the installation).

@@ -31,85 +31,6 @@
  *                          S U P P O R T . C
  *                  S u p p o r t   R o u t i n e s
  *
- * Edit History of DECUS CPP / cpp6.c
- * 31-Aug-84 MM         USENET net.sources release
- * 30-May-85            Latest revision
- */
-
-/*
- * CPP Version 2.0 / support.c
- * 1998/08      kmatsui
- *      Renamed cpp6.c support.c.
- *      Created get_unexpandable(), scantoken(), cat_line(), scanop(),
- *          parse_line(), last_is_mbchar(), cnv_digraph(), at_eof(),
- *          xrealloc(), putline(), dumptoken().
- *      Split getline(), read_a_comment() from get().
- *      Extended cfatal(), cerror(), cwarn(), removing cierror(), ciwarn().
- *      Removed save(), cget().
- *      Moved macroid(), catenate(), appendstring() from cpp6.c to expand.c,
- *          lookid(), defendel() from cpp6.c to control.c.
- *      Renamed scanstring() to scanquote(), getmem() to xmalloc().
- *      Revised most of the functions.
- *      Revised line splicing and tokenization.
- */
-
-/*
- * CPP Version 2.1 / support.c
- * 1998/09      kmatsui
- *      Enabled UCN sequence in identifier.
- *      Made implementable multi-byte characters in identifier.
- */
-
-/*
- * CPP Version 2.2 / support.c
- * 1998/11      kmatsui
- *      Updated UCN constraint on C++ according to C++ Standard.
- */
-
-/*
- * CPP Version 2.3 pre-release 1 / support.c
- * 2002/08      kmatsui
- *      Fixed the bug of handling digraphs.
- *      Implemented UCN in pp-number and string-literal.
- *      Renamed the several functions using underscore.
- *
- * CPP Version 2.3 pre-release 2 / support.c
- * 2002/12      kmatsui
- *      Slightly modified.
- *
- * CPP Version 2.3 release / support.c
- * 2003/02      kmatsui
- *      Created id_operator() for C++98 identifier-like operators.
- *      Modified the format of diagnostics (for GCC testsuite).
- */
-
-/*
- * MCPP Version 2.4 prerelease
- * 2003/11      kmatsui
- *      Revised get(), get_file() and do_msg() according to the change of
- *          FILEINFO.
- *
- * MCPP Version 2.4 release
- * 2004/02      kmatsui
- *      Revised scan_token(), scan_quote() and some others according to the new
- *          routine for multi-byte character handling.
- */
-
-/*
- * MCPP Version 2.5
- * 2005/03      kmatsui
- *      Absorbed POST_STANDARD into STANDARD and OLD_PREPROCESSOR into
- *          PRE_STANDARD.
- */
-
-/*
- * MCPP Version 2.6
- * 2006/07      kmatsui
- *      Removed settings for pre-Standard compiler.
- *      Integrated STANDARD and PRE_STANDARD modes into one executable.
- */
-
-/*
  * The common routines used by several source files are placed here.
  */
 
@@ -183,8 +104,8 @@ static void     put_line( char * out, FILE * fp);
 static void     dump_token( int token_type, const char * cp);
                 /* Dump a token and its type    */
 
-static int  in_token = FALSE;   /* For token scanning functions */
-static int  in_string = FALSE;  /* For get() and parse_line()   */
+static int  in_token = FALSE;       /* For token scanning functions */
+static int  in_string = FALSE;      /* For get() and parse_line()   */
 
 
 int     get_unexpandable(
@@ -194,8 +115,9 @@ int     get_unexpandable(
 /*
  * Get the next unexpandable token in the line, expanding macros.
  * Return the token type.  The token is written in work[].
- * Called only from the routines processing #if (#elif, #assert), #line
- * and #include directives.
+ * The once expanded macro is never expanded again.
+ * Called only from the routines processing #if (#elif, #assert), #line and
+ * #include directives in order to diagnose some subtle macro expansions.
  */
 {
     DEFBUF *    defp = NULL;
@@ -208,7 +130,7 @@ int     get_unexpandable(
                 , (token_type
                         = scan_token( c, (workp = work, &workp), work_end))
                     == NAM)                     /* Identifier       */
-            && fp != NULL                       /* In source        */
+            && fp != NULL                       /* In source !      */
             && (defp = is_macro( (char **)NULL)) != NULL) { /* Macro*/
         expand( defp, work, work_end);  /* Expand the macro call    */
         file = unget_string( work, defp->name); /* Stack to re-read */
@@ -263,7 +185,8 @@ int     skip_ws( void)
     do {
         c = get();
     }
-    while (c == ' ' || c == TOK_SEP);   /* COM_SEP is an alias of TOK_SEP   */
+    while (c == ' ' || c == TOK_SEP);
+                                /* COM_SEP is an alias of TOK_SEP   */
     return  c;
 }
 
@@ -593,7 +516,8 @@ escape:
                     break;
                 c = get();
             }
-        } else if (standard && c == ' ' && delim == '>' && infile->fp == NULL) {
+        } else if (mode == POST_STD && c == ' ' && delim == '>'
+                && infile->fp == NULL) {
             continue;   /* Skip space possibly inserted by macro expansion  */
         } else if (c == '\n') {
             break;
@@ -1413,6 +1337,7 @@ not_comment:
             }
             break;
         case '\r':                          /* Vertical white spaces*/
+                /* Note that [CR+LF] is already converted to [LF].  */
         case '\f':
         case '\v':
             if (warn_level & 4)
@@ -1538,8 +1463,15 @@ static char *   get_line(
 /*
  * ANSI (ISO) C: translation phase 1, 2.
  * Get the next logical line from source file.
+ * Convert [CR+LF] to [LF]. 
  */
 {
+#if COMPILER == STAND_ALONE
+#define cr_warn_level 1
+#else
+#define cr_warn_level 2
+#endif
+    static int  cr_converted;
     int     converted = FALSE;
     int     len;                            /* Line length - alpha  */
     char *  ptr;
@@ -1571,6 +1503,15 @@ static char *   get_line(
         }
         if (*(ptr + len - 1) != '\n')   /* Unterminated source line */
             break;
+        if (*(ptr + len - 2) == '\r') {         /* [CR+LF]          */
+            *(ptr + len - 2) = '\n';
+            *(ptr + --len) = EOS;
+            if (! cr_converted && (warn_level & cr_warn_level)) {
+                cwarn( "Converted [CR+LF] to [LF]"  /* _W1_ _W2_    */
+                        , NULLST, 0L, NULLST);
+                cr_converted = TRUE;
+            }
+        }
         if (standard) {
             if (trig_flag)
                 converted = cnv_trigraph( ptr);
@@ -1735,10 +1676,10 @@ static void at_eof(
     const char * const  input
             = infile->parent ? "file" : "input";        /* _E_ _W1_ */
     const char * const  no_newline
-            = "no newline, skipped the line";           /* _E_ _W1_ */
+            = "no newline, supplemented newline";       /* _W1_     */
     const char * const  unterm_com
-            = "unterminated comment, skipped the line";         /* _E_ _W1_ */
-    const char * const  backsl = "\\, skipped the line";        /* _E_ _W1_ */
+            = "unterminated comment, terminated the comment";   /* _W1_     */
+    const char * const  backsl = "\\, deleted the \\";  /* _W1_     */
     const char * const  unterm_asm_format
 = "End of %s with unterminated #asm block started at line %ld"; /* _E_ _W1_ */
     size_t  len;
@@ -1747,21 +1688,23 @@ static void at_eof(
 
     len = strlen( cp);
     if (len && *(cp += (len - 1)) != '\n') {
-        line++;
-        *++cp = '\n';                   /* For diagnostic message   */
+        *++cp = '\n';                       /* Supplement <newline> */
         *++cp = EOS;
-        if (standard)
-            cerror( format, input, 0L, no_newline);
+        if (standard && (warn_level & 1))
+            cwarn( format, input, 0L, no_newline);
         else if (mode == KR && (warn_level & 1))
             cwarn( format, input, 0L, no_newline);
     }
-    if (standard && infile->buffer < infile->bptr)
-        cerror( format, input, 0L, backsl);
+    if (standard && infile->buffer < infile->bptr) {
+        cp += len - 2;
+        *cp++ = '\n';                       /* Delete the \\        */
+        *cp = EOS;
+        if (warn_level & 1)
+            cwarn( format, input, 0L, backsl);
+    }
     if (in_comment) {
-        if (standard)
-            cerror( format, input, 0L, unterm_com);
-        if (mode == KR && (warn_level & 1))
-            cwarn( format, input, 0L, no_newline);
+        if ((standard || mode == KR) && (warn_level & 1))
+            cwarn( format, input, 0L, unterm_com);
     }
 
     if (infile->initif < ifptr) {

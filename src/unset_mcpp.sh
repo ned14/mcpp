@@ -19,22 +19,27 @@ if test x${EXEEXT} != x; then
 else
     cpp_base=${cpp_name}
 fi
+sys_mingw=`echo $1 | grep 'mingw'`
+sys_cygwin=`echo ${inc_dir} | grep 'cygwin'`
 
 echo "  rm -f ${inc_dir}/mcpp_g*_predef_*.h"
 rm -f ${inc_dir}/mcpp_g*_predef_*.h
+if test ${sys_cygwin}; then
+    echo "  rm -f ${inc_dir}/mingw/mcpp_g*_predef_*.h"
+    rm -f ${inc_dir}/mingw/mcpp_g*_predef_*.h
+fi
 
 echo "  cd ${cpp_path}"
 cd ${cpp_path}
 
 sym_link=`ls -l ${cpp_name} | sed 's/^l.*/l/; s/^[^l].*//'`;
-if test x${sym_link} = xl && test -f ${cpp_base}_gnuc${EXEEXT}; then
-    rm -f ${cpp_name}
-    rm -f mcpp.sh
+if (test x${sym_link} = xl || test ${sys_mingw})  \
+        && test -f ${cpp_base}_gnuc${EXEEXT}; then
+    rm -f ${cpp_name} mcpp.sh
     echo "  mv ${cpp_base}_gnuc${EXEEXT} ${cpp_name}"
     mv -f ${cpp_base}_gnuc${EXEEXT} ${cpp_name}
     if test x${cpp_base} = xcc1; then
-        rm -f cc1plus${EXEEXT}
-        rm -f mcpp_plus.sh
+        rm -f cc1plus${EXEEXT} mcpp_plus.sh
         echo "  mv cc1plus_gnuc${EXEEXT} cc1plus${EXEEXT}"
         mv -f cc1plus_gnuc${EXEEXT} cc1plus${EXEEXT}
     fi
@@ -46,8 +51,10 @@ fi
 
 echo "  cd ${gcc_path}"
 cd ${gcc_path}
-c_sh=`readlink ${CC}`
-if test x${c_sh} = x${CC}.sh; then
+if test ! ${sys_mingw}; then
+    c_sh=`readlink ${CC}`
+fi
+if test x${c_sh} = x${CC}.sh || test ${sys_mingw}; then
     if test `grep _proper ${CC}.sh > /dev/null; echo $? = 0`; then
         c_entity=`grep ${gcc_path} ${CC}.sh | sed "s,${gcc_path}/,,"  \
                 | sed 's/_proper.*$//'`
@@ -61,10 +68,12 @@ if test x${c_sh} = x${CC}.sh; then
     fi
     rm -f ${CC}.sh
 fi
-cxx_sh=`readlink ${CXX}`
-if test x${cxx_sh} = x${CXX}.sh; then
+if test ! ${sys_mingw}; then
+    cxx_sh=`readlink ${CXX}`
+fi
+if test x${cxx_sh} = x${CXX}.sh || test ${sys_mingw}; then
     if test `cat ${CXX}.sh | grep _proper > /dev/null; echo $? = 0`; then
-        cxx_entity=`cat ${CXX}.sh | grep ${gcc_path} | sed "s,${gcc_path}/,,"  \
+        cxx_entity=`grep ${gcc_path} ${CXX}.sh | sed "s,${gcc_path}/,,"  \
                 | sed 's/_proper.*$//'`
         rm -f ${cxx_entity}
         echo "  mv ${cxx_entity}_proper${EXEEXT} ${cxx_entity}${EXEEXT}"

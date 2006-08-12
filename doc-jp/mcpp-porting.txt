@@ -44,6 +44,11 @@ V.2.6       2006/07     Integrated STANDARD and PRE_STANDARD modes into
                 compilers and Plan 9 / cpp.
                                                                 kmatsui
 
+V.2.6.1     2006/08     Added porting to MinGW.
+            Revised path-list handling for CygWIN.
+            Revised some other points.
+                                                                kmatsui
+
 
 
 ☆　目次　☆
@@ -58,9 +63,10 @@ V.2.6       2006/07     Integrated STANDARD and PRE_STANDARD modes into
         [3.1.2]     FreeBSD / GCC V.2.*, V.3.*, V.4.*
         [3.1.3]     Linux / GCC V.2.*, V.3.*, V.4.*
         [3.1.4]     CygWIN / GCC V.2.*, V.3.*
-        [3.1.5]     LCC-WIN32 V.3.*
-        [3.1.6]     Visual C++ 2002, 2003, 2005
-        [3.1.7]     Borland C V.4.*, V.5.*
+        [3.1.5]     MinGW / GCC V.3.*
+        [3.1.6]     LCC-WIN32 V.3.*
+        [3.1.7]     Visual C++ 2002, 2003, 2005
+        [3.1.8]     Borland C V.4.*, V.5.*
     [3.2]       DECUS cpp で対応していた処理系
     [3.3]       noconfig.H, configed.H, system.H
     [3.4]       system.c
@@ -267,6 +273,9 @@ pre-C90 の仕様の処理系に移植するための設定は削除されました。MS-DOS 上の
 コンパイラへの移植も削除されました。ソースの書き換えは大幅なものになりま
 した。今後はソースの追加や細部の修正はあっても、大幅な書き換えは発生しな
 い見込みです。
+    [2.17] 2006/08 には MCPP V.2.6.1 がリリースされました。このバージョ
+ンでは、MinGW への移植が追加されました。そのほか、バグ修正といくつかの比
+較的小さい改良がありました。
 
   * 「未踏ソフトウェア創造事業」(Exploratory Software Project) の概要は
     次のところで知ることができる。
@@ -324,7 +333,7 @@ compiler-specific-build を説明します。「GCC 版」「Visual C 用」等と表記
 プトを実行して、config.h というヘッダファイルと Makefile を自動生成する
 方法です。あとは単に make; make install とするだけですみます。configed.H
 というヘッダファイルはこの場合に使われます。しかし、configure は UNIX 系
-のシステムと CygWIN でしか使えません。
+のシステムと CygWIN, MinGW でしか使えません。
   もう１つは各処理系用の差分ファイルを使ってヘッダファイルに変更を加え、
 必要ならさらにヘッダファイルを編集した上で、その処理系専用の makefile を
 使って make する方法です。noconfig.H というヘッダファイルはこの場合に使
@@ -347,6 +356,7 @@ compiler-specific-build を説明します。「GCC 版」「Visual C 用」等と表記
     openSUSE Linux 10.0         GCC V.4.0.2
     CygWIN 1.3.10               GCC V.2.95.3
     CygWIN 1.5.18               GCC V.3.4.4
+    MinGW (MSYS 1.0.11)         GCC V.3.4.5
     WIN32                       Visual C++ 2003, 2005
     WIN32                       Borland C++ V.4.0J, V.5.5J
     WIN32                       LCC-Win32 V.3.2, V.3.8
@@ -429,8 +439,9 @@ CPLUS_INCLUDE_DIR1, CPLUS_INCLUDE_DIR2, CPLUS_INCLUDE_DIR3 に書きます
 えば system.c で設定されるのはいわゆる OS-specific なもの（通常は /usr/
 include）といわゆる site-specific なもの（通常は /usr/local/include）で
 す。Windows では system.c では include directory は何も設定されません。
-Windows では noconfig.H でも include directory は設定せず、環境変数で指
-定するようにしています。
+Windows では noconfig.H でもデフォルトでは include directory は設定され
+ないので、自分で書くか、または環境変数 INCLUDE, CPLUS_INCLUDE で指定する
+必要があります。
   また、必要なら CPU_STD1, CPU_STD2 等で定義される組み込みマクロ名も変更
 します。
 
@@ -445,6 +456,17 @@ tokenization でエラーになることがありますが、そういう処理系では MCPP は
 を見てください。
   添付の makefile については、処理系のバイナリの置かれているディレクトリ
 の設定を必要に応じて書き換えます。
+
+  GCC V.3, V.4 ではプリプロセスがコンパイラ (cc1, cc1plus) に吸収されて
+しまったので、GCC-specific-build の MCPP を使うには、gcc, g++ の呼び出し
+を shell-script に置き換えて、mcpp => cc1, mcpp => cc1plus の順序で実行
+されるようにしなければなりません。添付の makefile では、
+
+    make COMPILER=GNUC
+    make COMPILER=GNUC install
+
+とすると、これが自動的に設定されます。詳細については、mcpp-manual.txt [3.
+9.7] を見てください。
 
         [3.1.2]     FreeBSD / GCC V.2.*, V.3.*, V.4.*
 
@@ -487,10 +509,6 @@ alone-build の MCPP を生成する状態になっています。FreeBSD 5.3 / GCC V.3.
 
 #define STDC_VERSION        0L
 
-  GCC V.3 ではプリプロセスがコンパイラ (cc1, cc1plus) に吸収されてしまっ
-たので、MCPP を使うには、gcc, g++ の呼び出しを shell-script に置き換えて、
-mcpp => cc1, mcpp => cc1plus の順序で実行されるようにしなければなりませ
-ん。その方法については、mcpp-manual.txt [3.9.7] を見てください。
   他の UNIX 系 OS でもコンパイラが GCC であれば、このバージョン表示や、
 include ディレクトリの設定、ＯＳ固有の組み込みマクロの設定、等を変えるだ
 けですむのではないでしょうか（[4.1.1] 参照）。
@@ -537,19 +555,58 @@ directory がかなり異なる点に注意してください。
 使わずに、lib.c のものを使ってください。noconfig.H は Linux ではデフォル
 トで glibc が使われていると判断します。
 
-  GCC 3.*, 4.* については、mcpp-manual.txt [3.9.7] を参照してください。
-
-        [3.1.4]     CygWIN V.1.* / GCC 2.*, 3.*
+        [3.1.4]     CygWIN V.1.* / GCC V.2.*, 3.*
 
   CygWIN V.1.3.10 / GCC V.2.95.3 では noconfig.H に cyg1310.dif にあるよ
 うな変更を加えます。CygWIN V.1.5.18 / GCC V.3.4.4 では cyg1518.dif を使
 います。
-  他の version では、VERSION_MSG, C_INCLUDE_DIR1, CPLUS_INCLUDE_DIR1,
-COMPILER_EXT_VAL, COMPILER_EXT2_VAL, COMPILER_SP3_VAL 等のマクロを変更す
-ることで対応できるでしょう。GCC 3.*, 4.* については、mcpp-manual.txt [3.
-9.7] を参照してください。
+  さらに CYGWIN_ROOT_DIRECTORY というマクロを自分の環境に合わせて修正し
+ます。これは CygWIN の存在する Windows 上のディレクトリを次の形式で定義
+するものです。
 
-        [3.1.5]     LCC-WIN32 V.3.*
+    #define CYGWIN_ROOT_DIRECTORY   "c:/pub/compilers/cygwin"
+
+path-list 中の大文字・小文字は関係ありません。
+
+  他の version でも、VERSION_MSG, CYGWIN_ROOT_DIRECTORY, include
+directory のマクロを変更することで対応できるでしょう。
+
+  CygWIN は Windows 上のシステムですが、UNIX のファイルシステムがシミュ
+レートされているので、MCPP では UNIX 系システムの GCC とほぼ同様に扱いま
+す。Include directories も UNIX 系と同様に組み込まれます。
+
+        [3.1.5]     MinGW / GCC V.3.*
+
+  MinGW / GCC V.3.4.5 では noconfig.H に mingw345.dif のような変更を加え
+ます。
+  さらに MSYS_ROOT_DIRECTORY, MINGW_DIRECTORY という２つのマクロを自分の
+環境に合わせて修正します。これは次のように、それぞれ /, /mingw ディレク
+トリの Windows 上の位置に定義するものです。
+
+    #define MSYS_ROOT_DIRECTORY "C:/Program Files/MSYS/1.0"
+    #define MINGW_DIRECTORY     "C:/Program Files/MinGW"
+
+path-list 中の大文字・小文字は関係ありません。
+  他の version でも、これらのマクロと VERSION_MSG, include directory の
+マクロを変更することで対応できるでしょう。Include directory のマクロ定義
+は "C:/dir/mingw/include" という絶対パスでも、"/mingw/include" という
+MinGW 内のディレクトリでもかまいません。
+
+  MinGW では symbolic link がサポートされていないので、gcc から GCC-
+specific-build の MCPP を起動するのに symbolic link が使えません。その上、
+MinGW / gcc はたとえ cc1 という名前でも shell-script の起動は拒否します。
+そこで、MCPP のコンパイルでは cc1.exe という実行プログラムを生成して、こ
+の中から mcpp,exe または GCC の cc1.exe, cc1plus.exe を呼び出します。こ
+のため、make では次のように mcpp, cc1 の２つのターゲットを指定する必要が
+あります。
+
+    make COMPILER=GNUC mcpp cc1
+
+  MinGW の GCC-specific-build では include directories は MCPP が設定し
+ますが、stand-alone-build では設定されないので、環境変数 INCLUDE,
+CPLUS_INCLUDE で指定する必要があります。
+
+        [3.1.6]     LCC-WIN32 V.3.*
 
   LCC-WIN32 V.3.2, V.3.8 ではそれぞれ lcc32.dif, lcc38.dif のような変更
 を加えます。
@@ -557,7 +614,7 @@ COMPILER_EXT_VAL, COMPILER_EXT2_VAL, COMPILER_SP3_VAL 等のマクロを変更す
   LCC-WIN32 の long long にはかつてはバグがあって使えませんでしたが、少
 なくとも V.3.2 (2003/08) 以降ではちゃんと使えるようになっています。
 
-        [3.1.6]     Visual C++ 2002, 2003, 2005
+        [3.1.7]     Visual C++ 2002, 2003, 2005
 
   Visual C++ 2005, 2003, 2002 ではそれぞれ vc2005.dif, vc2003.dif,
 vc2002.dif のような変更を加えます。もちろん、compiler-specific-build で
@@ -568,7 +625,7 @@ _MSC_VER および _MSC_FULL_VER という組み込みマクロの値をそれぞれ
 COMPILER_EXT_VAL, COMPILER_EXT2_VAL というマクロの設定を変えることで対応
 させます。
 
-        [3.1.7]     Borland C++ V.4.*, V.5.*
+        [3.1.8]     Borland C++ V.4.*, V.5.*
 
   Borland C V.4.0, V.5.5 / bcc32 ではそれぞれ bc40.dif, bc55.dif のよう
 な変更を加えます。
@@ -626,7 +683,7 @@ include ディレクトリ、ヘッダファイルやソースファイルをオープンする時のＯ
 readlink() も使いますが、この２つは OS に依存する関数であり portable に
 書くことができないので、lib.c には含めていません。この２つは Standard C
 にはありませんが、POSIX では規定されています。MCPP の使う低水準関数はこ
-の２つだけです。これらを持たない処理系はないでしょう。
+の２つだけです。これらを持たない処理系はないでしょう。*
   MCPP V.2.5 までは fgets(), memmove(), memcmp(), memcpy(), strstr(),
 strcspn() のソースも用意していましたが、これらの関数が必要な処理系はもは
 やないと思われるので、削除しました。
@@ -635,6 +692,8 @@ strcspn() のソースも用意していましたが、これらの関数が必要な処理系はもは
 す。
   lib.c 中の xyz という関数を使うには、noconfig.H (configed.H) の PART 2
 にある HOST_HAVE_XYZ というマクロを FALSE に定義します。
+
+  * MinGW 版に限って spawnv() も使われる。
 
     [3.6]       標準ヘッダ
 
@@ -850,7 +909,8 @@ make し、make install します。
 最も違うのは long long という型の実装です。Visual C 2002, 2003, 2005 や
 Borland C 5.5 等では __int64 という型になっていて、その値を printf() で
 表示する指定子が VC 2005 以外では j や ll ではなく I64 なので、LL_FORM
-というマクロを "I64" に定義します。
+というマクロを "I64" に定義します。MinGW では long long がありますが、
+printf() の指定子は I64 です。
   stpcpy(), getopt() という関数のない処理系では、それぞれ
 HOST_HAVE_STPCPY, HOST_HAVE_GETOPT を FALSE に定義します。
 
@@ -1119,7 +1179,8 @@ LL_FORM
     数型の値を printf() で表示するための length modifier を文字列リテラ
     ルで定義します。C99 では "j" です。また、C99 では long long の
     length modifier は "ll" (ell-ell) です。Visual C の 2003 までと
-    Borland C 5.5 では __int64 の値を表示する "I64" を使います。
+    Borland C 5.5 では __int64 の値を表示する "I64" を使います。MinGW で
+    も "I64" です。
 
         [4.1.2]     PART 2  ホストシステムの設定
 
@@ -1254,9 +1315,12 @@ NEXP
 BLK_NEST
     #if (#ifdef, #ifndef) section のネストレベルの限度（#if, etc. が何段
     階にネストできるか）を定義します。
+INCLUDE_NEST
+    #include のネストレベルの限度を定義します。#include の無限再帰をチェ
+    ックするためのものです。同時にオープンできるファイルの数に関する OS
+    の制限を超えていてもかまいません。
 NINCLUDE
-    サーチする include directory の最大数を定義します（#include のネスト
-    レベルのことではない。ネストレベルには制限はない）。
+    サーチする include directory の最大数を定義します。
 SBSIZE
     マクロを内部的に hash で分類して記憶する際の hash table の要素数を定
     義します。必ず２のベキ乗でなければなりません。マクロの数より小さくて

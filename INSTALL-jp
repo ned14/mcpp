@@ -9,16 +9,16 @@
     実行時オプションなどの仕様は処理系のいかんによらず一定です。プリプロ
     セスだけすることができますが、処理系の一部として動作することはできま
     せん。
-  2、compiler-specific-build: 特定の処理系のプリプロセッサを代替するため
-    のものです。その処理系に専用の仕様を持ち、その処理系の専用のディレク
-    トリにインストールされます。
+  2、compiler-specific-build: 特定の処理系のプリプロセッサを（もし可能な
+    ら）代替するためのものです。その処理系に専用の仕様を持ち、その処理系
+    の専用のディレクトリにインストールされます。
 
 2、configure と make
 
-  MCPP をコンパイルするには、UNIX 系のシステムおよび CygWIN では
+  MCPP をコンパイルするには、UNIX 系のシステムおよび CygWIN, MinGW では
 configure スクリプトを使うことができます。configure と make は任意のディ
-レクトリで実行できます。以下の説明では mcpp-2.6 ディレクトリのある path
-を ${mcpp-dir} と表記します。
+レクトリで実行できます。以下の説明では mcpp-2.6.1 ディレクトリのある
+path を ${mcpp-dir} と表記します。
 
 2、1、stand-alone-build
 
@@ -139,6 +139,10 @@ mcpp_g*.h というファイルも削除されます。何かのつごうで make install した
   GCC / testsuite の中に検証セットがインストールされていれば、それも
 make uninstall で削除されます。GCC に検証セットを適用するには、手動で検
 証セットをコピーしてください。
+  GCC-specific-build の configure で生成された何本かの Makefile は MCPP
+を uninstall するときに必要なので、そのまま残しておいてください。make
+distclean する場合は、その前に make uninstall を実行してください。手動で
+uninstall するのは少し手間がかかるからです。
 
 2、2、2、処理系が GCC でない場合
 
@@ -184,6 +188,9 @@ CygWIN 等で GCC を使っているので移植がすんでおり、configure で情報を収集
   ソースの移植ができたら、--with-compiler-name=COMPILER というオプション
 を追加して configure し直します。COMPILER は configed.H で定義したそのコ
 ンパイラを表すマクロです。
+  make; make install ができたら、さらに make clean; make とすると、MCPP
+を使って MCPP のリコンパイルが行われます。これが通れば、最低限の移植はで
+きています。
 
 2、2、3、configure の制約
 
@@ -227,6 +234,8 @@ Makefile は各処理系に付属する make を使うように書かれています。
 まいません。
 
 3、2、必要ならさらに noconfig.H, Makefile を修正する
+  差分ファイルでは各種ディレクトリの設定が筆者の環境を元にしているので、
+自分の環境に合わせて修正します。
   使う処理系が差分ファイルのものとはバージョンが違っている場合は、ヘッダ
 ファイル noconfig.H にさらに修正を加えます（noconfig.H そのものおよび
 mcpp-porting.txt [3.1] を参照）。通常使う multi-byte character が日本語
@@ -268,6 +277,9 @@ noconfig.H / Part 1 をターゲット処理系の仕様に合わせ、Part 2 をコンパイ
 す（mcpp-manual.txt [2.10] 参照）。
 
 3、5、テスト
+  Windows では MinGW / GCC-specific-build および CygWIN 以外では include
+directory は設定されないので、INCLUDE, CPLUS_INCLUDE という環境変数で設
+定します。
   Windows では GCC / testsuite は使えないので、test-t, test-c, test-l デ
 ィレクトリにあるテスト用サンプルを直接、プリプロセスして確かめます。tool
 /cpp_test.c を使うと、一部のテストだけですが、自動的に実行できます（cpp-
@@ -291,6 +303,6 @@ MCPP の "pre-preprocess" という機能を使って MCPP をリコンパイルしてみる
 MCPP だけでなく任意のプリプロセッサに適用することができます。その使い方
 については、cpp-test.txt [2.1], [2.2] を参照してください。
 
-2006/07
+2006/08
                                          松井　潔 <kmatsui@t3.rim.or.jp>
 

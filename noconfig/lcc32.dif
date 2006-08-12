@@ -1,7 +1,7 @@
-*** noconfig.H	2006-07-03 00:29:27.000000000 +0900
---- noconfig.H.lcc32	2006-07-03 00:36:56.000000000 +0900
+*** noconfig.H	2006-08-07 19:04:19.000000000 +0900
+--- noconfig.H.lcc32	2006-08-07 21:54:29.000000000 +0900
 ***************
-*** 27,33 ****
+*** 15,21 ****
    */
   
   /* Define target operating-system.  */
@@ -9,7 +9,7 @@
   
   /* Define target compiler.          */
   #ifndef COMPILER
---- 27,33 ----
+--- 15,21 ----
    */
   
   /* Define target operating-system.  */
@@ -18,7 +18,7 @@
   /* Define target compiler.          */
   #ifndef COMPILER
 ***************
-*** 38,48 ****
+*** 26,36 ****
   #define HOST_SYSTEM         SYSTEM
   
   /* Define host compiler.            */
@@ -30,7 +30,7 @@
   #if     0
       "LCC-Win32 V.3.8"
       "Visual C 2005"
---- 38,48 ----
+--- 26,36 ----
   #define HOST_SYSTEM         SYSTEM
   
   /* Define host compiler.            */

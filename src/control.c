@@ -31,71 +31,6 @@
  *                          C O N T R O L . C
  *              P r o c e s s   C o n t r o l   L i n e s
  *
- * Edit history of DECUS CPP / cpp2.c
- * 13-Nov-84    MM      Split from cpp1.c
- * 06-Jun-85    KR      Latest revision
- */
-
-/*
- * CPP Version 2.0 / control.c
- * 1998/08      kmatsui
- *      Renamed cpp2.c control.c.
- *      Moved dodefine(), is_formal(), mtokensave(), stparmscan(), doundef()
- *          from cpp4.c to control.c.
- *      Moved lookid(), defendel(), dump_a_def() from cpp6.c to control.c.
- *      Moved doinclude(), openinclude(), vmsparse()
- *          from cpp2.c to system.c.
- *      Split doline() from control().
- *      Split getparm(), getrepl(), def_stringization() from dodefine().
- *      Split dumprepl() from dump_a_def().
- *      Devided defendel() to install(), undefine(), lookprev().
- *      Removed textput(), charput(), checkparm() from cpp4.c.
- *      Expanded specification of stparmscan().
- *      Revised most of the functions.
- */
-
-/*
- * CPP Version 2.2 / control.c
- * 1998/11      kmatsui
- *      Revised several functions.
- */
-
-/*
- * CPP Version 2.3 pre-release 1 / control.c
- * 2002/08      kmatsui
- *      Revised several functions.
- *      Renamed several functions using underscore.
- *
- * CPP Version 2.3 release / control.c
- * 2003/02      kmatsui
- *      Reinforced checking __VA_ARGS__ identifier in #define line.
- */
-
-/*
- * MCPP Version 2.4 prerelease
- * 2003/11      kmatsui
- *      Changed DEFBUF and FILEINFO structure, and implemented dir/filename
- *          /line information of defined macros.
- *      Created look_and_install().
- *      Revised do_define(), look_id, look_prev(), install() and dump_a_def().
- */
-
-/*
- * MCPP Version 2.5
- * 2005/03      kmatsui
- *      Revised STRING_FORMAL and COMMENT_INVISIBLE so as to follow so-called
- *          "Reiser model" cpp.
- *      Absorbed POST_STANDARD into STANDARD and OLD_PREPROCESSOR into
- *          PRE_STANDARD.
- */
-
-/*
- * MCPP Version 2.6
- * 2006/07      kmatsui
- *      Integrated STANDARD and PRE_STANDARD modes into one executable.
- */
-
-/*
  * The routines to handle directives other than #include and #pragma
  * are placed here.
  */
@@ -155,7 +90,7 @@ static const char * const   no_arg = "No argument";     /* _E_      */
 static const char * const   excess
             = "Excessive token sequence \"%s\"";        /* _E_ _W1_ */
 
-int control( void)
+void    control( void)
 /*
  * Process #directive lines.  Each directive have their own subroutines.
  */
@@ -167,9 +102,10 @@ int control( void)
     const char * const  illeg_dir
             = "Illegal #directive \"%s%.0ld%s\"";       /* _E_ _W8_ */
     const char * const  in_skipped = " (in skipped block)"; /* _W8_ */
+    FILEINFO *  file;
     int     token_type;
-    int     c;
     int     hash;
+    int     c;
     char *  tp;
 
     in_directive = TRUE;
@@ -259,6 +195,7 @@ int control( void)
         }
     }
     macro_line = 0;                         /* Reset error flag     */
+    file = infile;                  /* Remember the current file    */
 
     switch (hash) {
 
@@ -361,8 +298,10 @@ ifdo:
         break;
 
     case L_include:
-        if (do_include( FALSE) == TRUE)
-            newlines = -1;                  /* To clear line number */
+        in_include = TRUE;
+        if (do_include( FALSE) == TRUE && file != infile)
+            newlines = -1;  /* File has been included. Clear blank lines    */
+        in_include = FALSE;
         break;
 
     case L_error:
@@ -394,7 +333,8 @@ ifdo:
         goto  skip_line;    /* To prevent duplicate error message   */
 #if COMPILER == GNUC
     case L_include_next  :
-        newlines = -1;
+        if (file != infile)             /* File has been included   */
+            newlines = -1;
 #endif
     case L_error    :
         if (standard)
@@ -444,7 +384,8 @@ if_nest_err:
 ret:
     in_directive = FALSE;
     keep_comments = cflag && compiling && !no_output;
-    return  (wrong_line ? 0 : ++newlines);
+    if (! wrong_line)
+        newlines++;
 }
 
 static int  do_if( int hash)
@@ -565,8 +506,15 @@ static long do_line( void)
         if (scan_token( c, (workp = work, &workp), work_end) != STR)
             goto  not_fname;
     }
-    *(workp - 1) = EOS;                     /* Ignore right '"'     */
-    save = save_string( &work[ 1]);         /* Ignore left '"'      */
+#if COMPILER == GNUC
+    if (memcmp( workp - 3, "//", 2) == 0) { /* "/cur-dir//"         */
+        save = infile->filename;    /* Do not change the file name  */
+    } else
+#endif
+    {
+        *(workp - 1) = EOS;                 /* Ignore right '"'     */
+        save = save_string( &work[ 1]);     /* Ignore left '"'      */
+    }
 
     if (standard) {
         if (get_unexpandable( skip_ws(), FALSE) != NO_TOKEN) {
@@ -707,8 +655,8 @@ DEFBUF *    do_define(
             } else {                        /* It's known:          */
                 if (ignore_redef)
                     return  defp;
-                    dnargs = (defp->nargs == DEF_NOARGS-1) ? DEF_NOARGS
-                            : defp->nargs;
+                dnargs = (defp->nargs == DEF_NOARGS-1) ? DEF_NOARGS
+                        : defp->nargs;
                 if (dnargs < DEF_NOARGS - 1 /* Standard predefined  */
                         || dnargs == DEF_PRAGMA /* _Pragma() pseudo-macro   */
                         ) {
@@ -898,7 +846,7 @@ static int  get_repl( const char * macroname)
 
     *repl_cur = EOS;
     token_p = NULL;
-    if (STD) {
+    if (mode == STD) {
         c = get();
         unget();
         if (((type[ c] & SPA) == 0) && (nargs < 0) && (warn_level & 1))

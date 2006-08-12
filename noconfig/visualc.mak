@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.6 for Visual C / nmake
-#		2006/05	kmatsui
+#		2006/08	kmatsui
 # You must first edit BINDIR according to your system.
 # To make stand-alone-build of MCPP do:
 #		nmake
@@ -68,7 +68,7 @@ system.H	: noconfig.H
 !else
 $(OBJS) : noconfig.H
 main.obj control.obj eval.obj expand.obj support.obj system.obj mbchar.obj:	\
-	    system.H internal.H
+        system.H internal.H
 !endif
 
 !ifdef PREPROCESSED

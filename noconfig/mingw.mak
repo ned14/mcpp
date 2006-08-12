@@ -1,16 +1,16 @@
-# makefile to compile MCPP version 2.6 for Linux / GCC / GNU make
-#       2006/08     kmatsui
+# makefile to compile MCPP version 2.6.1 for MinGW / GCC / GNU make
+# 2006/08     kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
-# To make stand-alone-build of MCPP:
-#       make
+# To make stand-alone-build of MCPP do:
+#       make; make install
 # To make GCC-specific-build of MCPP:
-#       make COMPILER=GNUC
+#       make COMPILER=GNUC mcpp cc1; make COMPILER=GNUC install
 # To re-compile MCPP using GCC-specific-build of MCPP do:
 #       make COMPILER=GNUC PREPROCESSED=1
 # To link malloc() package of kmatsui do:
 #       make [COMPILER=GNUC] [PREPROCESSED=1] MALLOC=KMMALLOC
-# To compile cpp with C++, rename *.c other than lib.c to *.cc,
+# To compile cpp with C++, rename *.c other than lib.c and preproc.c to *.cc,
 #   and do:
 #       make CPLUS=1
 
@@ -22,13 +22,11 @@
 NAME = mcpp
 
 # CC:   name of gcc executable
-#       e.g. cc, gcc, gcc-2.95.3, i686-pc-linux-gnu-gcc-3.4.3
+#       e.g. gcc, mingw32-gcc
 CC = gcc
 GPP = g++
-CFLAGS = -c -O2 -Wall   # -v
+CFLAGS = -c -O2 -Wall   #-v 
 CPPFLAGS =
-#CPPFLAGS = -Wp,-v,-Q,-W3
-    # for MCPP to output a bit verbose diagnosis to "mcpp.err"
 
 LINKFLAGS = -o $(NAME)
 
@@ -44,32 +42,19 @@ else
 
 ifeq    ($(COMPILER), GNUC)
 CPPOPTS = -DCOMPILER=$(COMPILER)
-# BINDIR:   the directory where cpp0 or cc1 resides
-#BINDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3
-#BINDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2
-BINDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.2
-#BINDIR = /usr/local/libexec/gcc/i686-pc-linux-gnu/3.4.3
-#BINDIR = /usr/lib/gcc/i586-suse-linux/4.0.2
+# BINDIR:   the directory where cc1 resides
+BINDIR = /mingw/libexec/gcc/mingw32/3.4.5
 # INCDIR:   version specific include directory
-#INCDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include
-#INCDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2/include
-INCDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.2/include
-#INCDIR = /usr/local/lib/gcc/i686-pc-linux-gnu/3.4.3/include
-#INCDIR = /usr/lib/gcc/i586-suse-linux/4.0.2/include
+INCDIR = /mingw/lib/gcc/mingw32/3.4.5/include
 # set GCC version
 gcc_maj_ver = 3
-gcc_min_ver = 3
-ifeq ($(gcc_maj_ver), 2)
-cpp_call = $(BINDIR)/cpp0
-else
-cpp_call = $(BINDIR)/cc1
-endif
+gcc_min_ver = 4
+cpp_call = $(BINDIR)/cc1.exe
 endif
 endif
 
 # The directory where 'gcc' (cc) command is located
-GCCDIR = /usr/bin
-#GCCDIR = /usr/local/bin
+GCCDIR = /mingw/bin
 
 CPLUS =
 ifeq	($(CPLUS), 1)
@@ -80,21 +65,26 @@ else
 	preproc = preproc.c
 endif
 
-ifneq	($(MALLOC), )
-ifeq	($(MALLOC), KMMALLOC)
-	MEMLIB = /usr/local/lib/libkmmalloc_debug.a   # -lkmmalloc_debug
-	MEM_MACRO = -D_MEM_DEBUG -DXMALLOC
+ifneq   ($(MALLOC), )
+ifeq    ($(MALLOC), KMMALLOC)
+        MEMLIB = /mingw/lib/libkmmalloc_debug.a   # -lkmmalloc_debug
+        MEM_MACRO = -D_MEM_DEBUG -DXMALLOC
 endif
-	MEM_MACRO += -D$(MALLOC)
+        MEM_MACRO += -D$(MALLOC)
 else
-	MEMLIB =
-	MEM_MACRO =
+        MEMLIB =
+        MEM_MACRO =
 endif
 
 OBJS = main.o control.o eval.o expand.o support.o system.o mbchar.o lib.o
 
 $(NAME): $(OBJS)
-	$(GCC) $(LINKFLAGS) $(OBJS) $(MEMLIB)
+	$(GCC) $(LINKFLAGS) $(OBJS)
+
+ifeq    ($(COMPILER), GNUC)
+cc1: cc1.o
+	$(GCC) cc1.c -o cc1.exe $(MEMLIB)
+endif
 
 PREPROCESSED = 0
 
@@ -103,7 +93,7 @@ CMACRO = -DPREPROCESSED
 # Make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H noconfig.H internal.H
 ifeq    ($(COMPILER), GNUC)
-	$(GCC) -E -Wp,-b  $(CPPFLAGS) $(CPPOPTS) $(MEM_MACRO) -o mcpp.H $(preproc)
+	$(GCC) -v -E -Wp,-b $(CPPFLAGS) $(CPPOPTS) $(MEM_MACRO) -o mcpp.H $(preproc)
 else
 	@echo "Do 'sudo make COMPILER=GNUC install' prior to recompile."
 	@echo "Then, do 'make COMPILER=GNUC PREPROCESSED=1'."
@@ -111,7 +101,7 @@ else
 endif
 $(OBJS) : mcpp.H
 else
-CMACRO = $(MEM_MACRO) $(CPPOPTS)
+CMACRO = $(CPPOPTS) $(MEM_MACRO)
 $(OBJS) : noconfig.H
 main.o control.o eval.o expand.o support.o system.o mbchar.o:   \
         system.H internal.H
@@ -128,19 +118,19 @@ else
 endif
 
 install :
-	install -s $(NAME) $(BINDIR)/$(NAME)
+	install -s -b $(NAME).exe $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
-	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)' \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)'
+	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)' \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)'
 endif
 
 clean	:
-	-rm *.o mcpp mcpp.H mcpp.err
+	-rm *.o mcpp.exe cc1.exe mcpp.H mcpp.err
 
 uninstall:
-	rm -f $(BINDIR)/$(NAME)
+	rm -f $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
-	@./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)'
+	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)'
 endif
 
