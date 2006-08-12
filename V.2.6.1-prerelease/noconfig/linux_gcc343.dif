@@ -1,0 +1,59 @@
+*** noconfig.H	2006-08-07 19:04:19.000000000 +0900
+--- noconfig.H.linux_gcc343	2006-08-08 21:42:07.000000000 +0900
+***************
+*** 15,21 ****
+   */
+  
+  /* Define target operating-system.  */
+! #define SYSTEM              SYS_FREEBSD
+  
+  /* Define target compiler.          */
+  #ifndef COMPILER
+--- 15,21 ----
+   */
+  
+  /* Define target operating-system.  */
+! #define SYSTEM              SYS_LINUX
+  
+  /* Define target compiler.          */
+  #ifndef COMPILER
+***************
+*** 306,315 ****
+  #define TARGET_HAVE_LONG_LONG       TRUE
+  #endif
+  #define STDC_VERSION        0L      /* 199409L for V.2.9, 0L for V.3.*      */
+! #define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.2" */  /* "/usr/include/c++/4.0.2" */
+! #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.2/i386-vine-linux" */  /* "/usr/include/c++/4.0.2/i586-suse-linux" */
+! /* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.2/backward"    */  /* "/usr/include/c++/4.0.2/backward"    */
+! /* #define C_INCLUDE_DIR1   */  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */  /* "/usr/lib/gcc/i586-suse-linux/4.0.2/include" */
+  /* #define C_INCLUDE_DIR2   */  /* "/usr/i586-suse-linux/include"   */
+  #ifndef ENV_C_INCLUDE_DIR
+  #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
+--- 306,315 ----
+  #define TARGET_HAVE_LONG_LONG       TRUE
+  #endif
+  #define STDC_VERSION        0L      /* 199409L for V.2.9, 0L for V.3.*      */
+! #define CPLUS_INCLUDE_DIR1  "/usr/local/include/c++/3.4.3"  /* "/usr/include/c++/3.3.2" */  /* "/usr/include/c++/4.0.2" */
+! #define CPLUS_INCLUDE_DIR2  "/usr/local/include/c++/3.4.3/i686-pc-linux-gnu"    /* "/usr/include/c++/3.4/backward"  */  /* "/usr/include/c++/3.3.2/i386-vine-linux" */  /* "/usr/include/c++/4.0.2/i586-suse-linux" */
+! #define CPLUS_INCLUDE_DIR3  "/usr/local/include/c++/3.4.3/backward" /* "/usr/include/c++/3.3.2/backward"    */  /* "/usr/include/c++/4.0.2/backward"    */
+! #define C_INCLUDE_DIR1      "/usr/local/lib/gcc/i686-pc-linux-gnu/3.4.3/include"    /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */  /* "/usr/lib/gcc/i586-suse-linux/4.0.2/include" */
+  /* #define C_INCLUDE_DIR2   */  /* "/usr/i586-suse-linux/include"   */
+  #ifndef ENV_C_INCLUDE_DIR
+  #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
+***************
+*** 323,329 ****
+  #define COMPILER_SP3        "__WCHAR_TYPE__"
+  #define COMPILER_SP1_VAL    "unsigned int"
+  #define COMPILER_SP2_VAL    "int"
+! #define COMPILER_SP3_VAL    "int"
+      /* SYS_FREEBSD: "int" , SYS_CYGWIN, SYS_MINGW: "short unsigned int"
+          , others: "long int"    */
+  #endif  /* COMPILER_FAMILY == GNUC   */
+--- 323,329 ----
+  #define COMPILER_SP3        "__WCHAR_TYPE__"
+  #define COMPILER_SP1_VAL    "unsigned int"
+  #define COMPILER_SP2_VAL    "int"
+! #define COMPILER_SP3_VAL    "long int"
+      /* SYS_FREEBSD: "int" , SYS_CYGWIN, SYS_MINGW: "short unsigned int"
+          , others: "long int"    */
+  #endif  /* COMPILER_FAMILY == GNUC   */
