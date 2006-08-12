@@ -1,0 +1,2131 @@
+                    M C P P - P O R T I N G . T X T
+                         == How to port MCPP ==
+
+                Kiyoshi Matsui      kmatsui@t3.rim.or.jp
+
+V.2.0   1998/08     First released.
+                                                                kmatsui
+V.2.1   1998/09     Updated according to C99 1998/08 draft.
+                                                                kmatsui
+V.2.2   1998/11     Updated according to C++98 Standard.
+                                                                kmatsui
+V.2.3 prerelease 1      2002/08     Updated according to C99 Standard.
+            Added porting to Linux / GCC, CygWIN and LCC-WIN32.
+            Augmented GCC-compatible features.
+                                                                kmatsui
+V.2.3 prerelease 2      2002/12     Added porting to GCC V.3.2.
+            Revised some wording.
+                                                                kmatsui
+V.2.3 release       2003/02     Finally released.
+                                                                kmatsui
+V.2.3 patch 1       2003/03     Slightly modified.
+                                                                kmatsui
+V.2.4 prerelease    2003/11     Added porting to Visual C++.
+            Created configure script.
+                                                                kmatsui
+V.2.4 release       2004/02     Extended multi-byte character handling.
+            Added porting to Plan 9 / pcc.
+                                                                kmatsui
+V.2.4.1     2004/03     Revised recursive macro expansion, and added -c
+                option.
+                                                                kmatsui
+V.2.5       2005/03     Absorbed POST_STANDARD into STANDARD as an
+                execution time option, absorbed OLD_PREPROCESSOR
+                setting as an execution option of PRE_STANDARD.
+            Renamed most of #pragma __* directives as #pragma MCPP *.
+            Removed documents on older compiler systems (DJGPP,
+                compiler systems on MS-DOS except Borland C 4.0).
+                                                                kmatsui
+V.2.6       2006/07     Integrated STANDARD and PRE_STANDARD modes into
+                one executable, differentiating the modes by the
+                invocation options.
+            Removed compiler-specific behaviors from stand-alone build.
+            Removed configurations for pre-C90 compilers, MS-DOS
+                compilers and Plan 9 / cpp.
+                                                                kmatsui
+
+V.2.6.1     2006/08     Added porting to MinGW.
+            Revised path-list handling for CygWIN.
+            Revised some other points.
+                                                                kmatsui
+
+
+                                Contents
+
+1   Overview
+1.1     High portability
+1.2     Standard mode with highest conformance and other modes
+
+2   History
+
+3   How to port MCPP to each compiler system: Overview
+3.1     Already supported compiler systems
+3.1.1       Commonly required settings
+3.1.2       FreeBSD / GCC V.2.*, V.3.*, V.4.*
+3.1.3       Linux / GCC V.2.*, V.3.*, V.4.*
+3.1.4       CygWIN V.1.* / GCC V.2.*, V.3.*
+3.1.5       MinGW / GCC V.3.*
+3.1.6       LCC-Win32 V.3.*
+3.1.7       Visual C++ 2002, 2003, 2005
+3.1.8       Borland C V.4.*, V.5.*
+3.2     Compiler systems to which DECUS cpp had been ported
+3.3     noconfig.H, configed.H, system.H
+3.4     system.c
+3.5     lib.c
+3.6     Standard headers
+3.7     Makefile and recompile using MCPP
+3.8     Compiler systems which can compile MCPP
+3.9     Host compiler system and target compiler system
+3.10    Unsupported compiler systems
+3.11    Making stand-alone-build
+
+4   How to port MCPP to each compiler system: Details
+4.1     Setting of noconfig.H, configed.H, system.H
+4.1.1       PART 1: Setting of Target system
+4.1.1.1         Predefined macros
+4.1.1.2         Include directories and others
+4.1.1.3         Output format of line number information and others
+4.1.1.4         Settings corresponding to the compiler system's
+                        language specification
+4.1.1.5         Multi-byte character
+4.1.1.6         Target and host system common settings
+4.1.2       PART 2: Setting of Host system
+4.1.3       PART 3: Setting of the MCPP behavior specification
+4.1.3.1         Several behavioral modes of new and old
+4.1.3.2         Specifying the details of the behavioral mode
+4.1.3.3         Specifying translation limits
+4.2     system.c
+4.3     lib.c
+4.extra malloc()
+
+5   Bug reporting and porting report
+5.1     Is this a bug?
+5.2     Check for malloc() related bugs
+5.3     Bug report
+5.4     Porting report
+5.5     Information about configure for other compiler systems besides
+                GCC
+5.6     I will try to port if you send me the data.
+5.7     Please report the test of other compiler systems by the
+                Validation Suite.
+5.8     The feed back for improvement
+
+6   Long way to MCPP
+6.1     Three days to plan and six years to develop
+6.2     V.2.3
+6.3     Selected to "Exploratory Software Project"
+
+
+                              1   Overview
+
+MCPP is a C preprocessor developed by kmatsui (Kiyoshi Matsui) based on
+the DECUS cpp written by Martin Minow, and then rewritten entirely.
+MCPP means Matsui cpp.  This software is supplied as source codes, and
+to use MCPP in any compiler systems, a small amount of compiler-system-
+specific modifications are required before it can be compiled into an
+executable.
+
+This document explains how to port the source to different compiler
+systems.  Please refer to the separate manual called "mcpp-manual.txt"
+for the operating instructions of the generated executable.
+
+All these sources and related documents are provided as free software.
+
+Before going into detail, some of the MCPP features are introduced here.
+(The sections 1.1 and 1.2 are identical with those of mcpp-manual.txt.)
+
+
+1.1     High portability
+
+MCPP is a portable preprocessor, supporting various operating systems,
+including Linux, FreeBSD and Windows.  Its source has a wide portability,
+and can be compiled by any compilers which support Standard C or C++
+(ANSI/ISO C or C++).  The library functions used are only the classic
+ones.
+
+To port MCPP to each compiler system, in many cases, one only needs to
+change some macro definitions in the header files and simply compile it.
+In the worst case, adding several dozen of lines into the source file,
+system.c, would be enough.
+
+To process multi-byte characters (Kanji), it supports Japanese EUC-JP,
+shift-JIS and ISO2022-JP, Chinese GB-2312, Taiwanese Big-5 and Korean
+KSC-5601 (KSX 1001), as well as UTF-8.  For shift-JIS, ISO2022-JP or Big-
+5, MCPP can complement the compiler-proper if it does not recognize them.
+
+
+1.2     Standard C mode with highest conformance and other modes
+
+MCPP has various behavioral modes.  Other than Standard-conforming mode,
+there are K&R 1st mode, "Reiser" cpp mode and what I call post-Standard
+mode.  MCPP has also an execution option for C++ preprocessor.
+
+Different from many existing preprocessors, Standard mode of MCPP has
+the highest conformance to Standards: all of C90, C99 and C++98.  It has
+been developed aiming to become the reference model of the Standard C
+preprocessor.  Those versions of the Standard can be specified by an
+execution option. *
+
+In addition, it provides several useful enhancements: #pragma MCPP debug,
+which traces the process of macro expansion or #if expression evaluation,
+and the header file "pre-preprocessing" facility.
+
+MCPP also provides several useful execution options, such as warning
+level or include directory specification options.
+
+Even if there are any mistakes in the source, MCPP deals suitably with
+accurate plain diagnostic messages without running out of control or
+displaying misguiding error messages.  It also displays warnings for
+portability problems.  The detailed documents are also attached.
+
+In spite of the high quality, MCPP code size and memory usage is
+relatively small.
+
+A disadvantage of MCPP, if any, is slower processing speed.  It takes
+twice time of GCC V.3/cc1, but seeing that its processing speed is
+almost the same as that of Borland C 5.5/cpp32 and that it runs a little
+bit faster when the header file pre-preprocessing facility is used, it
+cannot be described as particularly slow.  MCPP puts an emphasis on
+standard conformance, source portability and operability in a small
+memory space, making this level of processing speed inevitable.
+
+Validation Suite for Standard C Preprocessing, which is used to test the
+extent to which a preprocessor conforms to Standard C, its documentation
+cpp-test.txt, which contains results of applying Validation Suite to
+various preprocessors, are also released with MCPP.  When looking
+through this file, you will notice that so-called Standard-conforming
+preprocessors have so many conformance-related problems.
+
+  * ISO/IEC 9899:1990 (JIS X 3010-1993) had been used as C Standard, but
+    in 1999, ISO/IEC 9899:1999 was adopted as a new Standard.  This
+    document calls the former C90 and latter C99.  The former is
+    generally called ANSI C or C89 because it migrated from ANSI X3.159-
+    1989.  ISO/IEC 9899:1990 plus its Amendment 1995 is sometimes called
+    C95.  C++ Standards are ISO/IEC 14882:1998 and its corrigendum
+    version ISO/IEC 14882:2003.  This document calls both of them C++98.
+
+
+                              2   History
+
+2.1     DECUS cpp was created by Martin Minow, and released in usenet/
+net.sources on May 1984.  Apparently, DECUS is an acronym for
+"DEC User's Society" which is a user group of DEC (Digital Equipment
+Corporation).  DECUS cpp is the C preprocessor written for DEC's C
+compiler systems of those days, such as PDP-11 / RT11, PDP-11 / RSX,
+VAX / VMS, VAX / ULTRIX.  As it had been written well for portability,
+it was quite easy to port to other systems.  Even the original version
+had already been ported to some other UNIX systems besides DEC's.
+
+2.2     I used the distribution No.243, of the C Users' Group, to be the
+base for MCPP.  According to the revision history of this source, the
+original author's final modification was June 1985.  I do not know if
+the author has upgraded it since then.
+
+2.3     After that, some people ported it to some of the compiler
+systems on MS-DOS until December 1988.  This is the version which is
+included in the CUG disc.
+
+2.4     There are also sources in ftp.ora.com/pub/examples/nutshell/
+imake/DECUS-cpp.tar.gz.  The time stamp of this shows Feb 1993, but the
+actual contents are older than CUG's and it is Jan 1985's.  According to
+the README by Martin Minow which was included there, this program is
+stated to be "public domain". (This README also seems to be of 1984 or
+1985.)
+
+2.5     The one ported to Microware C of OS-9/6x09, by Gigo & others,
+had been registered in NIFTY-SERVE / FOS9 / lib 2.
+
+2.6     MCPP V.2 is based on these, and I re-wrote it entirely.  I
+improved the portability further.  In order to completely comply with
+the Standard C, I changed the method of partitioning of source files
+added lots of macros and drastic addition/separation/rewriting/renaming
+of functions and variables has been done.  The size of the source is
+three times that of the original version.  All the documents and the
+Validation Suite are written completely new by me.
+I release these as free software.  I do not have any relationship with
+DECUS.
+The original version does not have a version number, but I refer to them
+as "DECUS cpp" to differentiate them from MCPP.
+
+2.7     For the algorithm of macro expansion for Standard C, the source
+of CPP V.5.3 (Aug 1989, CUG #319) - PDS on MS-DOS by E.Ream, was also
+referred to.  Additionally, I took some hints from the behavior of GCC/
+cpp and J. Roskind's JPCPP document.
+
+2.8     MCPP V.2.0 was released with Validation Suite V.1.0 on NIFTY
+SERVE / FC / LIB2 in August 1998, and also re-distributed on Vector's
+web site.
+
+2.9     MCPP V.2.1 was a revised V.2.0 according to the C99 1998/08
+draft.  In September 1998, this had been uploaded with Validation Suite
+V.1.1 to NIFTY SERVE / FC / LIB2 and at the same time to Vector's web
+site.
+
+2.10    MCPP V.2.2 was an updated V.2.1 according to the C++ Standard
+(ISO/ IEC 14882:1998), which was adopted on July 1998.  With the
+Validation Suite, this had been uploaded to NIFTY SERVE / FC / LIB2 and
+at the same time to Vector's web site in November 1998.
+
+2.11    MCPP V.2.3 was an updated V.2.2 according to C99.  Added porting
+to Linux / GCC 2.95, GCC 3.2, etc., and augmented the compatibility with
+GCC/cpp.  Also, the execution time options are added and some options
+were changed.  In V.2.3, English versions of the documents are also
+created.  In the Validation Suite attached to MCPP, an edition which
+allows automatic testing as a part of GCC / testsuite is added.
+
+2.12    In the middle of development of V.2.3, MCPP with Validation
+Suite V.1.3. was selected for the 2002 "Exploratory Software Project" of
+the Information-technology Promotion Agency, Japan (IPA) by the project
+manager, Yutaka Niibe.  During the period of July 2002 - Feb 2003, the
+development was progressed by the IPA's funding, and based on PM Niibe's
+advice.  The documents are consigned to "HighWell inc." (Tokyo) for
+translation to an English version, and completed with my modifications.
+During this project, "cvs repository" and "ftp site" were prepared.  V.2.
+3 was developed with pre-release 1 in August 2002, pre-release 2 in
+December 2002, and then the released version in February 2003.  Since
+then, V.2.3 patch 1 was released in March 2003. *
+
+2.13    MCPP has continued to be selected as the "Exploratory Software
+Project" for 2003 by the project manager, Hiroshi Ichiji.  During the
+period of June 2003 - Feb 2004, the update to V.2.4. was proceeded with
+the IPA's funding, and based on PM Ichiji's advice.  In this project, V.
+2.4 pre-release was developed in November 2003.  In this version, the
+porting to Visual C++ 2003 is added, and also a configuration script to
+automate 'make' of MCPP was created.  Also, MCPP did not have a clear
+license indication so far, but a BSD style license has been included
+from this version.  Furthermore, the release version was developed in
+February 2004.  In this version, the processing of multi-byte characters
+was enhanced.  The documents were consigned to HighWell for translation
+to an English version, as they were updated from the Japanese version.
+
+2.14    In March 2004, MCPP V.2.4.1 was released.  In this version,
+recursive macro expansion was revised.
+
+2.15    In March 2005, MCPP V.2.5 was released.  In this version, the
+compile time mode named POST_STANDARD was absorbed into STANDARD mode as
+an execution time option, the compile time setting named
+OLD_PREPROCESSOR was absorbed into an execution time option of
+PRE_STANDARD.  Recursive macro expansion was revised again and became
+perfect.  While the portings to GCC V.3.3 and 3.4 were added, most of
+the documents on 16-bits system compilers was removed.
+
+2.16    In July 2006, MCPP V.2.6 was released.  In this version,
+STANDARD and PRE_STANDARD modes are integrated into one executable, all
+the behavioral modes are made to be specified by the execution options.
+The specifications of stand-alone-build became independent on compiler
+systems.  While the portings to new versions of some compiler systems
+are added, the settings for pre-C90 compiler systems and settings for MS-
+DOS compiler systems are removed.  The sources were rewritten in many
+parts.  I think that so much rewriting as this version will not happen
+hereafter, except adding codes and refining details.
+
+2.17    In August 2006, MCPP V.2.6.1 was released.  In this version,
+porting to MinGW was added, some bugs were fixed and some relatively
+small improvements were done.
+
+  * The outline of the "Exploratory Software Project" can be seen at the
+    following site (Japanese only).
+
+        http://www.ipa.go.jp/jinzai/esp/
+
+    MCPP from V.2.3 through V.2.5 had been located at:
+
+        http://www.m17n.org/mcpp/
+
+    In April 2006, MCPP project moved to:
+
+        http://mcpp.sourceforge.net/
+
+    MCPP V.2.2 and Validation Suite V.1.2 are located in the following
+    Vector's web site.  They are in the directory called dos/prog/c, but
+    they are not for MS-DOS exclusively.  Sources are for UNIX, WIN32,
+    MS-DOS.
+
+        http://download.vector.co.jp/pack/dos/prog/c/cpp22src.lzh
+        http://download.vector.co.jp/pack/dos/prog/c/cpp22bin.lzh
+        http://download.vector.co.jp/pack/dos/prog/c/cpp12tst.lzh
+
+        http://download.vector.co.jp/
+    and
+        ftp://ftp.vector.co.jp/
+    seem to be the same.
+
+    The text files in these archive files available at Vector use [CR]+
+    [LF] as a <newline> and encode Kanji in shift-JIS for DOS/Windows.
+    On the other hand, those from V.2.3 through V.2.5 available at
+    SourceForge use [LF] as a <newline> and encode Kanji in EUC-JP for
+    UNIX.  From V.2.6 on two types of archive, .tar.gz file with [LF]/
+    EUC-JP and .zip file with [CR]+[LF]/shift-JIS, are provided.
+
+
+         3   How to port MCPP to each compiler system: Overview
+
+The source of MCPP consists of four header files and eight *.c files.
+The parts which are dependent on OS or compiler system are included in
+the four source files configed.H, noconfig.H, system.H and system.c.
+Either of configed.H or noconfig.H is used depending the compiling
+method, they are never used simultaneously.  There are also a few
+library function sources in lib.c.  When MCPP is compiled by any
+compiler system, these source files need to be modified to match that
+compiler system.
+
+There are two types of MCPP build.  The first is stand-alone-build: the
+preprocessor which behaves on its own not depending on compiler system.
+The invocation options of stand-alone-build are the same across the
+compilers with which MCPP is compiled.  It is quite easy to make a stand-
+alone-build.  It will be explained in 3.11.
+
+Another is compiler-specific-build: the preprocessor to replace the
+resident preprocessor of certain compiler system.  It has some different
+specifications each other according to the compiler system.  The
+following sections from 3.1 through 3.10 explain compiler-specific-
+builds.  "MCPP for GCC", "implemented for Visual C" or such in this
+chapter mean GCC-specific-build, Visual C-specific-build, respectively.
+
+There are two ways to compile MCPP.  The first is to automatically
+generate a header file named config.h and a Makefile by executing the
+'configure' script. After generating them, just run 'make; make install'.
+The header file named configed.H will be used in this way.  However, the
+configure script can only be used in UNIX-like systems and CygWIN or
+MinGW.
+
+Another way is to 'make' using a makefile for each compiler system, with
+the modified/edited (if required) header file by difference files.
+noconfig.H will be used in this case.  Difference files and makefiles
+are in the 'noconfig' directory.  Even for systems which can use the
+configure script, editing header files and makefiles directly allows you
+to control compilation in detail.  However, difference files are only
+available for supported compiler systems.
+
+In this chapter, I explain how to compile MCPP using the difference
+files.  Please refer to the INSTALL file for the configure script.
+
+
+3.1     Already supported compiler systems
+
+The C/C++ compiler systems I could use are the following, and MCPP has
+been ported to all of these.  Therefore, it has been verified that this
+source code can be compiled, and that generated preprocessors run
+correctly.  In any case the CPU used is the x86 type. *
+
+    FreeBSD 5.3                 GCC V.3.4.2
+    Vine Linux 3.2              GCC V.2.95.3, V.3.2, V.3.3.2, V.3.4.3
+    openSUSE Linux 10.0         GCC V.4.0.2
+    CygWIN 1.3.10               GCC V.2.95.3
+    CygWIN 1.5.18               GCC V.3.4.4
+    MinGW (MSYS 1.0.11)         GCC V.3.4.5
+    WIN32                       Visual C++ 2003, 2005
+    WIN32                       Borland C++ V.4.0J, V.5.5J
+    WIN32                       LCC-Win32 V.3.2, V.3.8
+
+Settings are quite easy for creating MCPP executables by these compiler
+systems.  One only needs to change some macro definitions in noconfig.H.
+There is no need to change the system.c.
+
+*.dif files in noconfig directory are difference files for modifying
+noconfig.H, which is by default for FreeBSD 5.3 / GCC 3.4, to use with
+each compiler system.
+
+For Visual C++ 2005, as an example, in the src directory, doing the
+following command modifies these files.
+
+    patch -c < ..\noconfig\vc2005.dif
+
+Patch is a standard UNIX command, and has been ported to Windows or
+other.  Of course, you can directly edit the source file referring the
+difference file without using patch.
+
+Modifications to match your own systems, such as specifying include
+directory have to be done by yourself, apart from the modifications made
+by difference file.
+
+Makefiles for each compiler system which are to compile these modified
+sources, are also attached.  (See sec.3.7)
+
+Copy the makefile into the src directory as:
+
+    copy ..\noconfig\visualc.mak Makefile
+
+All the following operations should be done in the src directory.  These
+are all modifications of noconfig.H unless it is otherwise mentioned.
+
+  *  Although the following system were supported till MCPP V.2.2, I had
+    stopped using them any longer.  In V.2.3, the configurations are
+    left in the source and documents.  V.2.4. does not have these either.
+
+        MS-DOS                          Turbo C V.2.0
+        OS-9/6x09 level 2               Microware C
+
+    The documents on the following compiler systems was removed in V.2.5.
+
+        GO32 / DJGPP V.1.12-M4          GCC V.2.7.1
+        MS-DOS                          LSI C-86 V.3.3 Trial Version
+
+    In V.2.6, the codes for the above two are removed, and codes and
+    documents on the following compiler systems are removed.
+
+        MS-DOS / Borland C 4.0
+        Plan 9 / pcc
+
+
+3.1.1       Commonly required settings
+
+For any of the following compiler systems, in order to make the compiler-
+specific-build, change the macro STAND_ALONE of the line:
+
+#define COMPILER        STAND_ALONE
+
+to the macro for the compiler system, for example:
+
+#define COMPILER        MSC
+
+Next, change the line appropriately:
+
+#define VERSION_MSG     "GCC 3.4"
+
+as:
+
+#define VERSION_MSG     "Visual C 2005"
+
+You can also overwrite the definition of COMPILER by make option as:
+
+    nmake COMPILER=MSC
+    nmake COMPILER=MSC install
+
+If you modify noconfig.H applying the difference file, the compiler-
+specific setting will be also modified for the compiler system, so you
+need not rewrite the definition of COMPILER in the file.  Then, if you
+do make with option defining COMPILER, compiler-specific-build will be
+made, otherwise stand-alone-build will be made.
+
+In case of the default include directories are different from the ones
+in this file, the macros C_INCLUDE_DIR1 and C_INCLUDE_DIR2 should be
+rewritten.  If C++ has its own include directories different from the
+ones in C, these should be written in CPLUS_INCLUDE_DIR1,
+CPLUS_INCLUDE_DIR2 and CPLUS_INCLUDE_DIR3.  (These directories can be
+specified also by environment variables or the -I option at the time of
+execution.)  All of these directories are of compiler-system-specific
+ones.
+
+Include directories are also set in system.c.  In UNIX terms, those set
+by system.c are OS-specific (usually /usr/include) and site specific
+(usually /usr/local/include).  As for Windows, nothing is set for
+include directories in system.c nor in noconfig.H by default, they are
+to be specified by environment variables INCLUDE and CPLUS_INCLUDE.
+
+If required, one must also change built-in macro names defined by the
+macros such as CPU_STD1 or CPU_STD2.
+
+The default setting of multi-byte character encodings is set to EUC-JP
+on UNIX, shift-JIS on Windows.  If required, modify the macro called
+MBCHAR to change the encoding.  The change of multi-byte character
+encoding can be done also by the environment variables, execution
+options and #pragma.
+
+On certain systems, because they do not support encodings such as shift-
+JIS or Big5, the tokenization gets errors when there is the same value
+byte of 0x5c as '\\' within multi-byte characters.  For these systems,
+MCPP needs special setting to compensate for an inability of the
+compiler.  Please refer to sec 4.1.1.5. for this setting.
+
+With regard to the attached makefiles, you may need to rewrite BINDIR,
+which is the setting of the directory where the executables of the
+compiler system are located.
+
+In GCC V.3, V.4, the preprocessor is absorbed into the compiler (ccl,
+cclplus).  So, to use MCPP, you must replace the call of gcc, g++ with
+shell-script and set to execute first MCPP, then cc1 or cc1plus.  The
+attached makefiles set this automatically by doing:
+
+    make COMPILER=GNUC
+    make COMPILER=GNUC install
+
+For the details, please see mcpp-manual.txt sec 3.9.7.
+
+
+3.1.2       FreeBSD / GCC V.2.*, V.3.*, V.4.*
+
+The source is to be compiled by GCC (GNU C) V.3.4 on FreeBSD 5.3 and to
+make MCPP of stand-alone-build.  In order to make the compiler-specific-
+build for FreeBSD 5.3 / GCC V.3.4.*, first change the line:
+
+#define COMPILER    STAND_ALONE
+
+to:
+
+#define COMPILER    GNUC
+
+Then, just complete it by compiling.
+
+For the other version of GCC, modify the version number of the
+VERSION_MSG, and
+
+#define COMPILER_EXT_VAL    "3"
+#define COMPILER_EXT2_VAL   "4"
+#define COMPILER_CPLUS_VAL  "3"
+
+For the first, write major version number of GCC, and for the second,
+write minor version number.  The third is value of the macro __GNUG__,
+which is the same with the second.
+
+If the version of FreeBSD is not 5.*, then change the following values.
+
+#define SYSTEM_EXT_VAL  "5"     /* V.4.*: 4, V.5.*: 5   */
+
+Furthermore, in case of include directories are different from the
+default ones of FreeBSD 5.3, you need to change the following definition.
+
+#define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"
+#define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"
+
+In some cases you may need to set also C_PLUS_INCLUDE_DIR3 and
+C_INCLUDE_DIR1.
+
+If the version of GCC is 2.7-2.95, then change the following macro to
+199409L.
+
+#define STDC_VERSION        0L
+
+Even for other UNIX-like OSes, if the compiler system is GCC, I suspect
+one only needs to change things like these version numbers, the setting
+of include directories or OS specific built-in macros.  (See sec 4.1.1)
+
+
+3.1.3       Linux / GCC V.2.*, V.3.*, V.4.*
+
+To change the setup for GCC on FreeBSD to GCC on Linux, you should
+change the line:
+
+#define SYSTEM      SYS_FREEBSD
+
+to:
+
+#define SYSTEM      SYS_LINUX
+
+and change:
+
+#define COMPILER_SP3_VAL    "int"
+
+to:
+
+#define COMPILER_SP3_VAL    "long int"
+
+Then modify the macros, as on FreeBSD, COMPILER, VERSION_MSG,
+COMPILER_EXT_VAL, COMPILER_EXT2_VAL, COMPILER_CPLUS_VAL,
+CPLUS_INCLUDE_DIR1, CPLUS_INCLUDE_DIR2, C_INCLUDE_DIR1.
+For GCC 2.* modify the value of STDC_VERSION.
+
+You should make sure the include directories by these commands:
+
+    echo '' | gcc -xc -E -v -
+    echo '' | g++ -xc++ -E -v -
+
+The difference files in 'noconfig' directory named 'linux_gcc2953.dif',
+'linux_gcc32.dif', 'linux_gcc332.dif' and 'linux_gcc343.dif' are for
+VineLinux 3.* / GCC V.2.95.3, V.3.2, V.3.3.2 and V.3.4.3, respectively.
+'linux_gcc402.dif' is for openSUSE Linux / GCC V.4.0.2.  For the
+compiler-specific-build, change COMPILER too.  The include directories
+may vary between distributions of Linux.  Also, if another version is
+installed in addition to the system standard version of GCC, it should
+create another include directory for the specific version.  Specify the
+particular directory using the above macros.
+
+The specification of getopt() of glibc is different from the standard
+ones such as POSIX, please use the one in lib.c instead.  I assume glibc
+is used by default for noconfig.H in Linux.
+
+
+3.1.4       CygWIN V.1.* / GCC V.2.*, 3.*
+
+For CygWIN V.1.3.10 / GCC V.2.95.3, add the changes in cyg1310.dif to
+noconfig.H.  For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.
+
+Then, rewrite the macro CYGWIN_ROOT_DIRECTORY to define CygWIN's root
+directory on Windows as:
+
+    #define CYGWIN_ROOT_DIRECTORY   "C:/pub/compilers/cygwin"
+
+The letters in the path-list are case-insensitive.
+
+For other versions, it should be able to be ported by modifying macros
+such as VERSION_MSG, C_INCLUDE_DIR?, CPLUS_INCLUDE_DIR? and
+CYGWIN_ROOT_DIRECTORY.
+
+Although CygWIN is a system on Windows, it simulates UNIX file system.
+Therefore, MCPP treats CygWIN/GCC in almost the same way with UNIX/GCC,
+and presets include directories as MCPP on UNIX.
+
+
+3.1.5       MinGW / GCC V.3.*
+
+For MinGW / GCC V.3.4.5, add the changes in mingw345.dif to noconfig.H.
+Then, rewrite the macro MSYS_ROOT_DIRECTORY and MINGW_DIRECTORY to
+define MSYS's / and /mingw directory on Windows as:
+
+    #define MSYS_ROOT_DIRECTORY "C:/Program Files/MSYS/1.0"
+    #define MINGW_DIRECTORY     "C:/Program Files/MinGW"
+
+The letters in the path-list are case-insensitive.
+
+For other versions, it should be able to be ported by modifying macros
+such as VERSION_MSG, C_INCLUDE_DIR?, CPLUS_INCLUDE_DIR?,
+MSYS_ROOT_DIRECTORY and MINGW_DIRECTORY.  The path-list for the include
+directories may be either of absolute path as "c:/dir/mingw/include" or
+MinGW's own path as "/mingw/include".
+
+Since MinGW does not support symbolic link, GCC-specific-build of MCPP
+cannot be invoked from gcc through symbolic link.  Moreover, MinGW / gcc
+rejects to invoke a shell-script even if it is named cc1.  Therefore,
+the compiling of MCPP generates an executable named cc1.exe instead of
+shell-script.  In execution, gcc invokes this cc1.exe from which mcpp.
+exe or GCC's cc1.exe/cc1plus.exe are invoked.  In order to compile cc1
+as well as mcpp, you should do:
+
+    make COMPILER=GNUC mcpp cc1
+
+Although the include directories are preset on GCC-specific-build, they
+are not set on stand-alone-build, hence you should specify them by the
+environment variables INCLUDE and CPLUS_INCLUDE.
+
+
+3.1.6       LCC-WIN32 V.3.*
+
+In LCC-WIN32 V.3.2 or V.3.8, it needs to be changed as per lcc32.dif,
+lcc38.dif respectively.  In other versions, the VERSION_MSG macro needs
+to be modified.
+
+'long long' of LCC-WIN32 had a bug and was not usable before, but it is
+working, at least, in V.3.2 (Aug, 2003) or later.
+
+
+3.1.7       Visual C++ 2002, 2003, 2005
+
+In Visual C++ 2002, 2003, 2005, it needs modifications as vc2002.dif,
+vc2003.dif, vc2005.dif respectively.  For the compiler-specific-build,
+modify COMPILER or overwrite by the nmake option, of course.
+
+For other versions of Visual C, besides modifying VERSION_MSG macro, the
+values of predefined macros, _MSC_VER and _MSC_FULL_VER, should be
+changed by modifying the definition of COMPILER_EXT_VAL and
+COMPILER_EXT2_VAL respectively.
+
+
+3.1.8       Borland C++ V.4.*, V.5.*
+
+In Borland C V.4.0, V.5.5 / bcc32, it needs to be changed with bc40.dif
+or bc55.dif respectively.
+
+In other versions of Borland C++, besides the VERSION_MSG macro, the
+values of predefined macros, __TURBOC__, __BORLANDC__ and __BCPLUSPLUS__
+should be changed by modifying macros COMPILER_STD2_VAL,
+COMPILER_EXT_VAL and COMPILER_CPLUS_VAL, in noconfig.H.  (Refer Sec 4.1.
+1.1)  If the version can handle digraphs, the definition of
+HAVE_DIGRAPHS needs to be changed.  If the version has __STDC_VERSION__
+macro, change the definition of STDC_VERSION.
+
+For the versions till Borland C 4.*, change the line as:
+
+#define SEARCH_INIT         CURRENT
+
+
+3.2     Compiler systems to which the DECUS cpp had been ported
+
+The DECUS cpp seems to had supported RT-11/DECUS C and RSX/DECUS C on
+PDP-11, VMS/VAX-11C, PDP-11/UNIX and VAX/ULTRIX - some kind of C (pcc?)
+on VAX.  It also seemed to have supported a quite old version of
+Microsoft C and Lattice C on MS-DOS.  I removed these, as I suppose it
+is no longer required and I cannot maintain them.
+
+
+3.3     noconfig.H, configed.H, system.H
+
+system.H includes configed.H when the macro HAVE_CONFIG_H is defined to
+1, otherwise it includes noconfig.H.  PART 1 and PART 2 of the MCPP
+setting are in configed.H and noconfig.H, and PART 3 is in system.H.
+
+In these files, some macros which are required to port to each compiler
+system are defined.  When porting to compiler systems which have not
+been ported to yet, one needs to add from a few lines to a dozen lines
+in Part 1.
+
+Part 1 is the definition dependent on OS and target compilers, Part 2 is
+the definition dependent on host systems, and Part 3 is the definition
+of the MCPP behavior specification.
+
+In configed.H and noconfig.H, the target compiler system is assumed to
+be the same as the host, so PART 2 needs to be modified when it is
+different.
+
+When porting with different configurations from the default, please make
+sure to look through these files.
+
+
+3.4     system.c
+
+system.c absorbs the discrepancies of OS or compiler which cannot be
+absorbed solely by configed.H (noconfig.H) or system.H macros.  To port
+to a new compiler system, adding tens of lines of source into this file
+may be required.
+
+This file includes items such as options for MCPP invocation, usage
+message, include directory, the handling of OS unique directory paths
+when opening header files or source files, processing of #pragma, and
+processing of compiler system unique extension directives.  Most of them
+are setup for the target OS and target systems.
+
+
+3.5     lib.c
+
+Of library functions, C source code for getopt() and stpcpy(), which are
+not in Standard, are written in this file.  Though MCPP uses also getcwd
+() and in UNIXes readlink(), they are not included in lib.c, because
+they are functions dependent on OS, so cannot be written portably.  They
+are only two low-level functions used in MCPP.  Though they are not
+Standard C function, but they are required by POSIX.  Every compiler
+system seems to provide it. *
+Before MCPP V.2.6, also C source code for memmove(), memcmp(), memcpy(),
+strstr() and strcspn() were provided.  They were removed, since compiler
+system without them seems to exist no longer.
+
+Usage of library functions in MCPP does not depend on the specification
+difference on different compiler systems, so those functions of any
+compiler systems will not cause a problem unless there is a bug.
+
+To use the function called xyz in lib.c, the macro HOST_HAVE_XYZ, in
+PART 2 of noconfig.H (configed.H), should be defined to FALSE.
+
+  * On MinGW, spawnv() is used too.
+
+
+3.6     Standard headers
+
+In the source code of MCPP, stdio.h, string.h, stdlib.h, ctype.h, errno.
+h and time.h are included unconditionally.  For UNIX-like systems,
+unistd.h is also included.  There should not be a compiler system which
+does not have these.
+
+
+3.7     Makefile and recompile using MCPP
+
+*.mak are the makefiles for each compiler system, and a detailed setup
+is possible.  'make' itself is assumed to the one which is attached to
+each compiler system or the standard for the system.  For Visual C,
+'nmake' should be used instead of 'make'.
+
+Except for FreeBSD/GCC, modify the noconfig.H as follows: (Assume the
+system is xyz)
+
+    patch -c < ../noconfig/xyz.dif
+
+Then, using an editor, edit macros COMPILER and VERSION_MSG, and edit
+the macros such as C_INCLUDE_DIR? in noconfig.H to suit your own system.
+After copying the corresponding noconfig/xyz.mak to Makefile, and
+setting up the target directory to match your system, run as
+
+    make
+    make install
+    make clean
+
+For other compiler systems, please write the necessary makefile
+referring to these files.  The dependencies of the source files are
+simple:
+
+    main.c,control.c,eval.c,expand.c,support.c,system.c, mbchar.c
+        depend on system.H, internal.H
+    lib.c depends on configed.H (noconfig.H)
+    system.H depends on configed.H (noconfig.H)
+
+    system.H needs to be included before internal.H.
+
+The stack size should be added, to the size which system uses, the
+following size. (NMACWORK, NEXP, RESCAN_LIMIT are macros defined in
+system.H.)
+
+    NMACWORK + (NEXP * 30) + (sizeof (int) * 100)
+        + (sizeof (char *) * 12 * RESCAN_LIMIT)
+
+In systems like Windows, the shell (command processor) does not expand
+wild cards, and it is safe to be compiled not to expand in MCPP either.
+(Unless the -o option is specified, the second argument will be taken as
+the output file.)
+
+To recompile MCPP using MCPP itself, place the executable into the
+location where the preprocessor of the compiler system should be.  For
+instance, in the cases of GCC 2.95, rename the resident cpp0 to
+something like cpp0_gnuc and link cpp0 to whichever cpp you use at the
+time.  Therefore, if mcpp is the preprocessor you are going to use, you
+need to do
+
+    ln -sf mcpp cpp0
+
+For Windows, you need to copy the one you are going to use, to cpp32.exe
+or such. *
+
+You can name the executable of MCPP as:
+
+    make NAME=mcpp
+
+(The same thing needs to be done in BC make requires make -DNAME=mcpp.
+For UCB make, -D can be either added or not.  For GNU make, -D should
+not be added.)
+
+Using the attached makefiles, 'make install' does not do any detailed
+work.  Except for freebsd.mak, linux.mak and cygwin.mak, please do rest
+of the work manually.  Please copy the resident preprocessor into the
+other name beforehand, so as to prevent being deleted by 'make install'.
+
+When you recompile MCPP using the one path compiler such as Visual C or
+Borland C, you should supply the output file of MCPP as the source file
+to the compiler. (For instance, output the preprocessed result of source
+file main.c as main.i, and compile that with cl or bcc32.)
+
+When recompiling using MCPP, if the "pre-preprocess" functionality for
+the header file is used, the preprocess time will be reduced
+dramatically.  When you use the attached makefile, for UCB make, GNU
+make or MS nmake, you run
+
+    make PREPROCESSED=1
+
+for BC make, you run
+
+    make -DPREPROCESSED=1
+
+which automatically pre-preprocesses the header files, next preprocess,
+then compiles.  For LCC-Win32's 'make', 'if' statement cannot be used,
+so you need to edit the makefile and recompile.  The details of the
+modification are in the makefile itself as comments.
+
+In BSD make, GNU make or MS nmake, if you run make with the option
+MALLOC=KMMALLOC, this links the malloc() which I wrote.  About this,
+please refer to 4.extra.  For BC make, the same thing can be done by the
+option -DKMMALLOC.  To link my malloc() with the make of LCC-Win32, you
+need to edit the makefile.
+
+  * In FreeBSD, the directory of preprocessor should be located is /usr/
+    libexec.  See mcpp-manual.txt sec 2.1.
+    In Linux, it should be located in the really deep directory as /usr/
+    lib/gcc-lib/i686-redhat-linux/3.3.2.  In Linux/GCC, according to the
+    distribution or the version, this directory setting in the makefile
+    needs to be modified.  There are various different include
+    directories, for which you need to check.
+    Also, in Linux or FreeBSD, there is /usr/bin/cpp which calls cpp0 or
+    cc1, and gcc also calls cpp0 or cc1.
+    For further information, see mcpp-manual.txt sec 3.9.5 and 3.9.7.
+    In GCC V.3 or V.4, the preprocessor is absorbed in the compiler (ccl,
+    cclplus), so the call of gcc, g++ needs to be replaced with shell-
+    scripts if you want to use MCPP.
+
+
+3.8     Compiler systems which can compile MCPP
+
+Though some configuration is required to port to each compiler system,
+compiling MCPP's source code can be done by any compiler system which
+satisfies C90 specifications. *
+
+MCPP can be compiled by C++ too. (Whether C++ is used is decided by #
+ifdef __cplusplus.)  Compile with the next steps.
+
+  1. Rename all *.c, except lib.c, to *.cc or *.cpp.
+  2. Run 'make'.  When "pre-preprocessing" by using MCPP, add -+ option.
+
+Invoke make using attached *.mak with an option of CPLUS=1 or -DCPLUS=1
+depending on the 'make'.
+There is no merit in compiling with C++, though.
+
+The char type can be either signed or unsigned.
+
+Floating point operation is not necessary.
+
+This source code is written so as not be affected by the minor
+discrepancies of the compiler systems.  Of course, it is necessary to
+avoid the compiler system's own bugs in order to actually compile with
+the compiler system.  This cannot be found out until it has to be done.
+When I was porting to some compiler systems, there were a few cases
+which took me a long time to trace the bug and to find the work around.
+
+  * Up to V.2.5, MCPP source was compilable even by K&R 1st compiler.
+    From V.2.6, it presupposes C90 compiler, because K&R spec is no
+    longer required.  I tidied up the source and this document
+    accordingly.
+
+
+3.9     Host compiler system and target compiler system
+
+There is no need for the compiler system which compiles the MCPP source
+code (host) and the compiler system which will use the generated MCPP
+execution module (target) to be the same.  If these are different,
+select the target by SYSTEM and COMPILER and the host by HOST_SYSTEM and
+HOST_COMPILER within noconfig.H (configed.H).  Also, the definitions in
+PART 1 are the settings for the target, and the ones in PART 2 are for
+the host.  system.c is mainly for the target.  lib.c should be compiled
+using the settings for the host.
+
+However, there are the following limitations.
+
+  1. The host compiler system should be on the same OS as the target
+    compiler system, otherwise a cross-compiler has to be used.
+  2. 'long' ('unsigned long') in the host compiler system has to be an
+    equal or wider range than the one in the target compiler system.
+    This is also the condition required by the Standard.  The same thing
+    can be said for the 'long long' ('unsigned long long') in C99.
+
+By the way, the host and the target stated here are nothing to do with
+the ones in the cross-compiler.  Cross-compiling is the job of the
+compiler itself, and in principle the preprocessor is not concerned
+about that.  When MCPP is ported to a "cross-compiler", this cross-
+compiler is the target compiler system in here.  As for the host
+compiler, you need to use the one which is not the cross-compiler.  When
+MCPP is compiled by a "cross-compiler", the cross-compiler is the host
+compiler system, and the target of the cross-compiler becomes the target
+compiler system.
+
+In MCPP, the character set of the host system, which compiles MCPP, and
+the character set of the target system which uses MCPP, are presumed to
+be ASCII.  Ditto for the character set of the host and cross-compiler
+target.
+
+
+3.10    Unsupported compiler systems
+
+The compiler systems which MCPP does not support are those with special
+character sets or special CPU.
+
+EBCDIC is not supported.
+
+The CPUs for which integer operation is not two's complement are also
+not supported.  If it is not two's complement, it may run incorrectly
+when an overflow has occurred at a #if expression.
+
+
+3.11    Making stand-alone-build
+
+MCPP can be built as a stand alone preprocessor which behaves on its own
+not depending on any compiler systems.  Making a stand-alone-build is
+quite easy, because the only requirement is that the compiler system can
+compile MCPP's source successfully.  The invocation options and other
+specifications of the stand-alone-build are the same across the
+compilers with which MCPP is compiled.  The include directories are not
+preset except /usr/include and /usr/local/include in UNIX-like systems,
+hence you have to specify the rest of them by environment variables or
+by -I option. *
+
+To make a stand-alone-build with GCC, simply do in the mcpp's root
+directory:
+
+    ./configure; make; make install
+
+In this case, the header file configed.H is used.  For further details
+of configuring, see the document INSTALL.
+
+On a system where configure is not applicable, you can patch noconfig.H
+using the certain difference file in noconfig directory, if MCPP has
+already been ported to the compiler system.  No other modification of
+source is needed.  As a makefile, you can copy the corresponding *.mak
+file in noconfig directory, and edit the variable BINDIR to specify the
+installation directory.  Then, in src directory, do 'make' and 'make
+install'.
+
+In case of the version of the compiler differs a little from the already
+ported version, first apply the patch for the nearest version, then edit
+noconfig.H.
+
+For the compiler systems to which MCPP is not yet ported, edit noconfig.
+H and modify or add several macros.  First, define HOST_COMPILER
+appropriately.  Next, for the stand-alone-build, define COMPILER as
+STAND_ALONE, and define VERSION_MSG appropriately.  There is no target
+compiler for the stand-alone-build, so nothing is required in PART 1.
+
+PART 2 depends on the extent to which the host compiler implements the
+Standard's specifications, and also depends on whether the necessary
+functions are provided.  The most often encountered discrepancy among
+the compilers is implementation of 'long long' or its corresponding data
+type.  In Visual C 2002, 2003, 2005 and Borland C 5.5, the type is
+'__int64'.  It's length modifier for printf() is 'I64', not 'j' nor 'll',
+except Visual C 2005.  Hence, define the macro LL_FORM as "I64" for
+these compilers.  On MinGW, the specifier is also "I64", though it has
+long long.
+
+If the compiler's library has not the function stpcpy() or getopt(),
+define HOST_HAVE_STPCPY or HOST_HAVE_GETOPT to FALSE.
+
+Write makefile yourself referring the *.mak files. (Refer sec. 3.7 too.)
+
+  * In MCPP V.2.4 and V.2.5, the specification of the stand-alone-build
+    was a compromise with the compiler's specification.  From V.2.6 on,
+    the specification is its own and independent from the compiler.
+
+
+         4   How to port MCPP to each compiler system: Details
+
+4.1     Setting of noconfig.H, configed.H, system.H
+
+I think you should be able to understand most of what is written in
+these header files if you read them.  I have written lots of comments as
+well.  In case, I write the following note.
+
+noconfig.H (configed.H) contains PART 1 and PART 2 of the settings, and
+PART 3 is in system.H.
+
+First, select the target system (the system for which MCPP is to be
+built) and the host system (the system which compiles MCPP.).
+
+SYSTEM
+    Select the OS which the target compiler will be operated on.  The
+    name of the OS is defined right after this.  Define appropriately
+    for the OS which is not defined.
+COMPILER
+    Select the target compiler system.  The name of the compiler is
+    defined right after this.  Define appropriately for the compiler
+    systems which are not defined.  When COMPILER is defined as
+    STAND_ALONE, stand-alone-build of MCPP will be made, which has no
+    target compiler.  In this case, most of the settings in PART 1 are
+    ignored.
+VERSION_MSG
+    Write the version information of the host compiler as a string
+    literal to be displayed by -v option or by usage().
+HOST_SYSTEM, HOST_COMPILER
+    Select the host OS and the host compiler system.  If these are the
+    same as the target, set as
+
+        #define HOST_SYSTEM     SYSTEM
+        #define HOST_COMPILER   COMPILER
+
+Though there is a certain naming convention for SYSTEM and COMPILER, it
+is easier to see the source code.  Though this is overstating it a bit,
+SYSTEM is only used for the type of path list of include files or to
+know the standard include directory of the OS, so one does not need to
+be concerned with it too much.
+
+
+4.1.1       PART 1: Setting of Target system
+
+4.1.1.1     Predefined macros
+
+CPU_OLD, CPU_STD1, CPU_STD2, SYSTEM_OLD, SYSTEM_STD1, SYSTEM_STD2,
+SYSTEM_EXT, SYSTEM_EXT2, COMPILER_OLD, COMPILER_STD1, COMPILER_STD2,
+COMPILER_EXT, COMPILER_EXT2
+    Specify the unique macro name of the compiler system, which will be
+    pre-defined in MCPP, in a string literal.  Leave undefined any
+    unnecessary ones (should not define to 0 token). *_OLD generate old
+    style macros which do not begin with '_' (underscore), these won't
+    be predefined at MCPP execution time if more than 1 is specified for
+    <n> of the -S<n> option.  In *_STD?, *_EXT and *_EXT2, always
+    specify the macro name beginning with '_'.  *_STD1 starts from __,
+    and *_STD2 starts from __ and end with __.  In SYSTEM_EXT,
+    SYSTEM_EXT2, COMPILER_STD1, COMPILER_STD2, COMPILER_EXT and
+    COMPILER_EXT2, the value of their macros are also specified by
+    SYSTEM_EXT_VAL, SYSTEM_EXT2_VAL, COMPILER_STD1_VAL,
+    COMPILER_STD2_VAL, COMPILER_EXT_VAL and COMPILER_EXT2_VAL,
+    respectively.  This is defined by a string literal which is the
+    integer enclosed by "".  The macro that expands to a 0 token is
+    defined as "".  If nothing is specified, the value of the macro
+    becomes 1.  All other predefined macros (the ones specified by CPU_*,
+    SYSTEM_OLD, SYSTEM_STD1, SYSTEM_STD2, COMPILER_OLD) have a value of
+    1.
+CPU_SP_OLD, CPU_SP_STD
+    Write the compiler system unique special predefined macro name as a
+    string literal. The values of all these macro should be 1.
+SYSTEM_SP_OLD, SYSTEM_SP_STD
+    Write the compiler system unique special predefined macro name as a
+    string literal, and define the values by SYSTEM_SP_OLD_VAL and
+    SYSTEM_SP_STD_VAL.
+COMPILER_SP1, COMPILER_SP2, COMPILER_SP3
+    Write the compiler system unique special predefined macro name as a
+    string literal, and define its values by COMPILER_SP1_VAL,
+    COMPILER_SP2_VAL and COMPILER_SP3_VAL.
+COMPILER_CPLUS, COMPILER_CPLUS_VAL
+    Specify the name and the value of the compiler system's unique
+    predefined macro, which is defined when -+ option (C++ preprocess)
+    is specified, by the string literal as above.  If COMPILER_CPLUS_VAL
+    is not specified, the macro value becomes 1.  The name has to begin
+    with '_'.  If not required, leave COMPILER_CPLUS itself undefined.
+
+There are some other macros predefined according to run-time options.
+Besides, GCC V.3.3 or later predefines many macros, hence MCPP
+installation auto-generates specific 4 header files named mcpp_g*.h for
+those macros.
+
+All the macros predefined by above settings become disabled by the -N
+option.
+
+4.1.1.2     Include directories and others
+
+C_INCLUDE_DIR1, C_INCLUDE_DIR2, CPLUS_INCLUDE_DIR1, CPLUS_INCLUDE_DIR2,
+CPLUS_INCLUDE_DIR3
+    Specify the include directory of the standard header files searched
+    by MCPP.  CPLUS_INCLUDE_DIR? should be set when the include
+    directory of C++ is different from that of C. (When invoking MCPP,
+    this is enabled by the -+ option.)  As /usr/include, /usr/local/
+    include in UNIX are set in system.c, compiler system specific
+    directories should be set in C_INCLUDE_DIR?.
+ENV_C_INCLUDE_DIR, ENV_CPLUS_INCLUDE_DIR
+    Define the environment variable name, with which the include
+    directory for the standard header file searched by MCPP is specified
+    at execution time.
+    ENV_CPLUS_INCLUDE_DIR is the name of the environment variable which
+    specifies the include directory of C++.  Each of them is defined as
+    "INCLUDE", "CPLUS_INCLUDE" as a default.  When implementing in GCC,
+    "C_INCLUDE_PATH" and "CPLUS_INCLUDE_PATH" are defaults.
+    Other search paths are setup in system.c and by the -I option.
+    (About the priority of these, see mcpp-manual.txt sec 4.2.)
+
+ENV_SEP
+    When writing multiple paths in the above environment variable, write
+    separators in the literal constant.  This is ':' of /usr/local/abc/
+    include:/usr/local/xyz/include or ';' of C: BC55/INCLUDE;C:BC55/
+    LOCAL/INCLUDE.
+
+SEARCH_INIT
+    Specify the default rule when searching the include file.  When
+    processing the directive such as #include "../dir/header.h", the
+    rule of which directory should be searched first.  If this is
+    specified to CURRENT, it starts to search the relative path from the
+    current directory of MCPP invocation.  If specified as SOURCE, it
+    starts searching from the directory with the source file (includer).
+    If specified to (CURRENT & SOURCE), it starts searching the relative
+    path from the current directory first, then the directory with the
+    source file.
+
+4.1.1.3     The output format of line number information and others
+
+LINE_PREFIX
+    Specify the format for passing the file name and the line number
+    information from MCPP to the compiler-proper.
+        #line 123 "fname"
+    The format of the above Standard C source code is set as default.
+    Write an alternative sequence into the string literal to replace
+    this "#line " for compilers which use other formats.
+        #123 "fname"
+    If the above is the format, define as "# ".  If it is a peculiar
+    format, which is not any of the above, define the format to match.
+    (In some cases, these may need to be added to sharp() or other
+    functions in main.c)
+    When MCPP is used in the front end of a one path compiler, such as
+    Visual C or Borland C, the output of MCPP has to be the Standard C
+    source code to be able to pass the output to the built-in
+    preprocessor.  Hence, the transfer of the line number has to be the
+    first format.
+
+EMFILE
+    If EMFILE is not the macro for the value of errno, which means
+    "too many open files (for the process)" in <errno.h>, define EMFILE
+    into the macro name (Of course, you can add to <errno.h> itself).
+
+ONE_PASS
+    If the target compiler is the so-called one-path-compiler in which
+    the preprocessor is not separated, then set this to TRUE, otherwise
+    set this to FALSE.  If this is set to TRUE, all the predefined
+    macros of the compiler system will be output enclosed within comment
+    marks by #pragma MCPP put_defines (#put_defines).  This is to
+    prevent duplicate definitions, as it will be preprocessed again if
+    the output of MCPP is passed onto the compiler.
+    Though GCC 3 or 4 integrate preprocessor into its compiler, this
+    macro should be set to FALSE as an independent preprocessor can also
+    be used.
+
+FNAME_FOLD
+    Define this as TRUE for the OS which does not distinguish upper and
+    lower case in file names as Windows, otherwise set this to FALSE.
+
+4.1.1.4  Settings corresponding to the system's language
+                specifications
+
+EXPAND_PRAGMA
+    Set this to TRUE for the compiler which expand macro unless STDC is
+    the argument of #pragma line.  This is set to FALSE in default.  In
+    Visual C, set this to TRUE as the argument of #pragma line is always
+    subject to macro expansion.  In C99, it is implementation-defined
+    whether or not the argument is macro expanded, and in C90 the
+    argument is never expanded.  However, MCPP, if and only it is
+    implemented for Visual C, expand macros even in C90 mode, except the
+    argument of the #pragma line starts with STDC or MCPP.
+
+HAVE_DIGRAPHS
+    Set this to TRUE when the compiler can process digraphs, otherwise
+    set this to FALSE.
+
+STDC
+    This defines the default value of the predefined macro __STDC__ in
+    the target compiler.  If __STDC__ is not defined, set this to 0.
+STDC_VERSION
+    This defines the default value of the predefined macro
+    __STDC_VERSION__ in the target compiler.  If __STDC_VERSION__ is not
+    defined, set to  0L.
+
+CHARBIT, UCHARMAX, LONGMAX, ULONGMAX
+    Write values of CHAR_BIT, UCHAR_MAX, LONG_MAX, ULONG_MAX in <limits.
+    h> of the target compiler system.  It is easy to define even without
+    <limits.h>.
+
+4.1.1.5     Multi-byte characters
+
+The macro called MBCHAR is used to specify the type of encoding for
+multi-byte characters.  In MCPP, all the following encodings are
+implemented at the same time.  MBCHAR only specifies the default
+encoding, that can be changed by environment variables/options/#pragma
+at execution time (Refer mcpp-manual.txt sec 2.3, 2.8, 3.4 for how to
+use).
+
+MBCHAR
+    Define the encoding for multi-byte characters, that is Kanji in
+    Japanese, of the target.
+
+       EUC_JP  : Japanese extended UNIX code (UJIS)
+       SJIS    : Japanese shift-JIS (MS-Kanji)
+       GB2312  : Chinese EUC-like GB2312 (simplified-Chinese)
+       BIGFIVE : Taiwanese Big Five (traditional-Chinese)
+       KSC5601 : Korean EUC-like KSC-5601 (KSX 1001)
+       ISO2022_JP :  International standard ISO-2022-JP1 Japanese
+       UTF8       :  A type of encoding of Unicode, UTF-8
+
+    The first five are all encodings with a character occupying 2-bytes
+    and without shift-states.  Though wchar_t is a 4-byte type in some
+    compiler systems, despite the encoding of multi-byte characters and
+    wide characters being 2-byte, the preprocessor is not concerned with
+    the type of wchar_t.  As multi-byte or wide characters occupy 2-
+    bytes on source code, it processes accordingly.
+
+    ISO-2002-* is the encoding with shift-states.  UTF-8 is used to
+    encode 2-byte Unicode to 1-byte or 3-bytes.  Kanji (Chinese
+    characters) become 3-bytes.
+
+    When MBCHAR is defined to 0, multi-byte character is not processed
+    by default, and the environment variables/options/#pragma can change
+    it at execution time.
+
+SJIS_IS_ESCAPE_FREE
+    Set this to TRUE when the compiler-proper processes shift-JIS.  If
+    the compiler-proper does not process it, then set to FALSE.
+    In Shift-JIS, there are cases where the second byte of Kanji is the
+    value of 0x5c which is the same as '\\'.  If the compiler-proper
+    does not recognize shift-JIS, it interprets it as an escape sequence
+    and gets an error at tokenization.
+    If SJIS_IS_ESCAPE_FREE is set to FALSE, MCPP processes shift-JIS.
+    That is, when 0x5c is the second byte of shift-JIS Kanji within the
+    string literal or character constant at the final MCPP output time,
+    it adds one more 0x5c.  This tentatively makes the English version
+    compiler support characters such as Shift-JIS.
+BIGFIVE_IS_ESCAPE_FREE
+    Same as above, set this to TRUE when the compiler-proper processes
+    Big 5, and set to FALSE if not.
+IS02022_JP_IS_ESCAPE_FREE
+    Same as above, set this to TRUE if the compiler-proper processes ISO-
+    2022-JP and set to FALSE if not.  With ISO-2022-*, there may be the
+    bytes which match not only to '\\', but also to '\'' or '"'.  If
+    ISO2022_JP_IS_ESCAPE_FREE is FALSE, MCPP inserts a 0x5c byte before
+    all bytes matching to '\\', '\'', '"'.
+
+By the way, the behavior of the compiler as regards multi-byte
+characters may vary depending on the environment at execution time.  Set
+these macros to match your environment.  Regarding this, please refer to
+mcpp-manual.txt sec 2.8.
+
+4.1.1.6     Target and host system common settings
+
+The next two are written in PART 2 for convenience.  Set these TRUE when
+both target and host systems have the nominated type, otherwise set to
+FALSE.
+
+HAVE_LONG_LONG
+    Set this to TRUE for the compiler system which has the data type of
+    'long long'.  Set this to TRUE, for compilers such as Visual C or
+    Borland C 5.5, which do not have 'long long' but there are the same
+    size data type  '__int64' and provides length modifier to display
+    the value by printf().
+HAVE_INTMAX_T
+    If the data type called 'intmax_t' is defined, set this to TRUE.
+
+LL_FORM
+    If the systems have 'long long', define the length modifier for
+    displaying the maximum integer type value of the host compiler
+    system in printf().  This is "j" in C99.  Also, the length modifier
+    of 'long long' is "ll" (ell-ell) in C99.  In Visual C 2003 or older
+    and Borland C 5.5, use "I64" to display the value of  '__int64'.
+    Also in MinGW, use "I64".
+
+
+4.1.2       PART 2: Setting of Host system
+
+In noconfig.H and configed.H, the target system is assumed to be the
+same as the host system.  If not, PART 2 needs to be rewritten.
+
+HOST_HAVE_GETOPT, HOST_HAVE_STPCPY
+    If the library of the host system has getopt() and stpcpy(), define
+    each of them to TRUE.  If not, define to FALSE.  For the functions
+    which are set to FALSE, those in lib.c are used.
+
+FILENAMEMAX
+    The value of FILENAME_MAX in <stdio.h> of the host system.  If there
+    is no FILENAME_MAX, it is fine to set this to BUFSIZ.
+
+Also in PART 1, there are a few parts which assume the target is the
+same as the host.  Modify it, if required.  For example, the line using
+the predefined macro of the host compiler as:
+
+    #if _MSC_VER >= 1200
+
+
+4.1.3       PART 3: Setting of the MCPP behavior specification
+
+4.1.3.1         Several behavioral modes of new and old
+
+In system.H, there are macro definitions to specify the behavioral
+specification of MCPP.
+
+There is a variable named 'mode' in MCPP source, and the value of mode
+determines the frame of MCPP behavior, such as macro expansion method,
+available preprocessing directives and predefined macros.  There are
+following 4 modes (4 values of variable 'mode') in MCPP.  The mode of
+MCPP is specified by the run-time options.  Therefore, in compiling MCPP,
+nothing is required to be set concerning these 4 macros.  Nevertheless,
+you must understand the difference of these behavioral modes in order to
+set the other macros correctly.
+
+OLD_PREP
+    "Reiser" model cpp behavior.
+KR
+    K&R 1st specification mode.
+STD
+    Standards (C90, C99, C++98) conforming mode.
+POST_STD
+    Special "post-Standard" mode created by the author, based on the
+    Standards and simplified removing all the irregular specifications.
+
+In this document, I group OLD_PREP and KR into pre-Standard mode, and
+group STD and POST_STD into Standard mode.  For the details of the
+specification of these modes, refer to section 2.1 of mcpp-manual.txt.
+
+
+4.1.3.2         Specifying the details of the behavioral mode
+
+CPLUS
+    When executing as a C++ preprocessor by -+ option, the Standard
+    macro __cplusplus is predefined to this value.  This is 199711L for
+    C++98.  This can be changed at the execution time by -V option.
+
+TFALG_INIT
+    Specify the initial state of the trigraph processing.  The -3 option
+    reverses the state.  If this is set to TRUE, trigraphs are
+    recognized by default, while they become not recognized when invoked
+    by -3 option.  When this is set to FALSE, it is the other way around,
+    trigraphs are not recognized by default, while they become
+    recognized by the -3 option.
+DIGRAPHS_INIT
+    Specify the initial state of digraph processing.  The -2 option
+    reverses the state.  If this is set to TRUE, digraphs are recognized
+    as the default, while it becomes not recognized when invoked by the
+    -2 option.  When this is set to FALSE, it is the other way around,
+    digraphs are not recognized by the default while it becomes
+    recognized by the -2 option.
+    if HAVE_DIGRAPHS == FALSE, MCPP converts digraphs to normal tokens.
+OK_UCN
+    Set this to TRUE for making UCN (universal character name) effective
+    when invoked by -V199901L or -+ options.  Default is set to TRUE.
+OK_MBIDENT
+    Set this to TRUE to be able to use multi-byte characters in
+    identifiers when invoked by -V199901L.  Default is set to FALSE.
+DOLLAR_IN_NAME
+    If this is set to TRUE, '$' within identifiers becomes usable.
+
+expr_t, uexpr_t
+    Typedef to the maximum integer type.  If there are intmax_t,
+    uintmax_t types, define to them.  Else if the compiler systems have
+    long long, unsigned long long, define to them. Else if the compiler
+    systems have __int64, unsigned __int64, define to these.  Else
+    define to long, unsigned long.  Note long long and unsigned long
+    long is required in C99.
+EXPR_MAX
+    Define the maximum value of uexpr_t.
+
+  * UCN is a C++98, C99 specification, notation of Unicode character
+    value by hexadecimal escape sequence beginning with \u or \U. (See
+    mcpp-manual.txt sec 3.7, cpp-test.txt sec 1.8, 3.5).
+
+
+4.1.3.3         Specifying translation limits
+
+RESCAN_LIMIT
+    Defines the limitation of rescan time at macro expansion in Standard
+    mode.  it does not need to be set to too big a value as the rescan
+    time is usually small in Standard mode.
+PRESTD_RESCAN_LIMIT
+    Defines the limitation of rescan time at macro expansion in pre-
+    Standard mode.  An infinite loop can occur by recursive macro
+    expansion, but this limitation can stop that.
+NBUFF
+    Define the maximum length +1 of the logical line (the line spliced
+    deleting \ at the end of physical line of source code).  The line
+    after the comment converted to a space (it can spread out to
+    multiple logical lines depending on comments) has to be within this
+    length, too.
+NMACWORK
+    Define the internal buffer size of macro expansion.  Hence, the
+    result of expanding macros within one logical line (when macro call
+    spreads out to multiple lines, the result of expansion), has to be
+    within this size.  This is also used for the maximum length for
+    memorizing the replacement list of one macro definition internally.
+NWORK
+    Defines the maximum length for output line of MCPP.  This cannot be
+    more than the maximum length +1 of what the compiler-proper can
+    accept.  Also, this cannot be more than the value of NBUFF and
+    MNACWORK.  When the line length after the macro expansion exceeds
+    this, in the case of NWORK < NMACWORK, MCPP divides that to the
+    lines of length less than this value, then outputs.  The length of
+    string literal has to be within the range of NWORK-2.  (The length
+    of the string literal is not the number of elements of the char
+    array, but the length of the string literal token in the source code
+    including " on both sides.  For example, \n is counted as 2 bytes.
+    'L' prefix is also counted for wide string literals.)
+IDMAX
+    Defines the maximum length of an identifier.  A name longer than
+    this value is not an error, but is cut down to this length.
+NMACPARS
+    Defines the maximum number of arguments of function-like macros.
+    This cannot be bigger than UCHARMAX.
+NEXP
+    Defines the limit of the nest level bound by parentheses in #if
+    expression (in reality, the nest level is not directly decided by
+    this.  Specifically, the number of constant tokens within an
+    expression can be used up to two times of this, and the number of
+    operator tokens that can be used is three times this value, counting
+    a pair of parentheses as 2).
+BLK_NEST
+    Defines the limit of the nest level of #if (#ifdef, #ifndef)
+    sections (how many levels #if and so on can be nested).
+INCLUDE_NEST
+    Define the limit of nest level of #include.  This prevents infinite
+    recursion of #includes.  This can exceed the limit imposed by OS on
+    number of simultaneously opened files.
+NINCLUDE
+    Define the maximum number of the include directories to be searched.
+SBSIZE
+    Defines the number of elements for the hash table when macros are
+    internally classified by a hash and are stored.  This has to be a
+    power of 2.  It operates correctly when the number is much smaller
+    than the number of macros, but the process is slightly quicker when
+    this is set to be bigger.
+
+The specification becomes better with bigger sizes for each, but the
+bigger the size of NWORK, NBUFF, NMACWORK or SBSIZE thus uses more
+memory.  Other than the buffer, the actual memory consumption increases
+with the number of macro definitions.  (Specifically, this is not the
+actual number of macro definitions themselves, but the total of each
+macro definition length, which is a problem.  The internal format of
+macro definitions are written as 'struct defbuf' in internal.H)
+
+NMACWORK, NEXP and RESCAN_LIMIT consumes stack.
+
+Other settings do not need much memory, but it may be meaningless in
+real processing if the values are set to over the default ones within
+system.H.
+
+The minimal limitations of translation limits required by C90 or C99 are
+written towards to the end of system.H.  The translation limits of the
+C++98 are also written, but this is not the required specification,
+unlike the C Standards.
+
+
+4.2     system.c
+
+Some settings, mainly for the target compiler systems, are written here.
+
+PATH_DELIM
+    Defines path-delimiter of OS.  PATH_DELIM must not be '\\' (for the
+    program's convenience).  This is set to '/' for Windows.  Of course,
+    you can use '\\' in user program, but this converts to '/'
+    internally.
+OBJEXT
+    Defines the suffix of the object file, generated by the compiler, in
+    a string literal.  These are "o" for compilers on UNIXes or "obj"
+    for compilers on Windows.  This is to be used for the output of the
+    dependency lines for the makefile when one of the -M* option is
+    specified.
+
+do_options()
+    The invocation options are implemented.  When port this to compiler
+    system to which MCPP hasn't been ported yet, you may need to add
+    some lines to match the compiler driver of the system.  When you add
+    to do_options(), you also need to add to set_opt_list() and usage()
+    correspondingly.
+    do_options() calls getopt(), so you have to decide whether the
+    option character is with or without arguments.  As a basic rule, the
+    options like -P and -P- cannot be implemented simultaneously.  (If
+    this is necessary for compatibility with the compiler system's
+    resident preprocessor, this can be done.  Refer to the
+    implementation of -M option.)  Also, for the longer options such as
+    -trigraphs, you have to implement by 't' as an option character and
+    'rigraphs' as an argument.
+set_opt_list()
+    Sets option characters of MCPP.
+usage()
+    Usage message.  The options are classified by modes and written in
+    alphabetical order.
+set_sys_dirs()
+    Sets the include directory.  Besides the compiler-specific
+    directories specified in noconfig.H (configed.H) by the macros,
+    C_INCLUDE_DIR? or CPLUS_INCLUDE_DIR?, /usr/include, /usr/local/
+    include on UNIX OS are also set in this.  (The include directories
+    specified by environment variables, of which names are defined in
+    noconfig.H or configed.H by the macros ENV_C_INCLUDE_DIR,
+    ENV_CPLUS_INCLUDE_DIR, are setup in set_env_dirs()).
+
+do_pragma()
+    The processing of #pragma is implemented.  #pragma sub-directive,
+    which MCPP does not process, is passed to the compiler-proper as is.
+    Those which MCPP processes by itself, such as '#pragma MCPP debug',
+    are processed by the functions called from this function.  The sub-
+    directives which MCPP processes by itself begin principally with the
+    name of 'MCPP'.  '#pragma MCPP *' lines themselves are not outputted.
+    Also, '#pragma once' line is not outputted.  On the other hand,
+    '#pragma __setlocale' line is outputted.  In Standard C, the
+    extension directive of individual compiler systems has to be
+    implemented as #pragma sub-directive.
+do_old()
+    If you require the preprocessing directives which don't conform to
+    Standard C (the ones which are not #pragma sub-directives such as #
+    assert, #asm, #endasm, #include_next, #warning, #put_defines, #debug),
+    add the function which processes that and call from here. (However,
+    for GCC, #include_next, #warning can also be used in STD mode).
+
+
+4.3     lib.c
+
+Source code for some library functions, which some compiler systems may
+not have or have a problem in using, are written here.  As each of them
+are enclosed with #if ! HOST_HAVE_XYZ -- #endif, this XYZ function is
+used when HOST_HAVE_XYZ == FALSE.
+
+
+4.extra malloc()
+
+"kmmalloc -- malloc() with debugging functions" is a portable source of
+malloc(), free(), realloc() and calloc() which I wrote.  I wrote this to
+improve the memory efficiency and debugging convenience.  I also attach
+the debug routine.  Unexpected bugs can be caught if this is linked. *1,
+*2
+
+The reason why I provide -DKMMALLOC -D_MEM_DEBUG -DXMALLOC options in
+noconfig/*.mak, is to link my malloc() which has debug routines.  If the
+MCPP, linked with this, exits with error number EFREEP, EFREEBLK,
+EALLOCBLK, EFREEWRT or ETRAILWRT, it indicates a MCPP bug.
+
+Since the malloc() of Visual C is fairly slow, you may want to avoid
+using them. *2
+
+If you define any of BSD_MALLOC, DB_MALLOC or MALLOC_DBG to 1 and
+compile MCPP, with each debugging malloc() will be used, not my malloc().
+In any case, to use the malloc() other than system library, you have to
+make the library before you compile.  About this, please see the
+document of kmmalloc.  (This document is written in Japanese only, sorry.)
+
+  *1 kmmalloc is at the following location.  The document is written in
+    Japanese only.
+        http://download.vector.co.jp/pack/dos/prog/c/kmmalloc-2.5.1.lzh
+  *2 In CygWIN, my malloc() is not used as other malloc() are not
+    allowed to be used by the library structure.  As with Visual C 2005,
+    the matter is the same.
+
+
+                  5   Bug reporting and porting report
+
+5.1     Is this a bug?
+
+"The Validation Suite for the Standard C conformance of preprocessing"
+is also made public with MCPP.  I tried to make this be able to verify
+all the specifications of Standard C preprocessing.  Of course, MCPP is
+checked by this suite.  They were also compiled by all the above
+mentioned compiler systems and verified.  Therefore, I don't think there
+are much bugs or wrong specifications, but there may have been some left.
+When porting to new compiler systems never ported before, it may be that
+there are some bugs of the compiler systems.
+
+If you find unusual behavior, please contact me.  Please check the
+following points.
+
+  1. For STD mode, use the Validation Suite first to make sure your
+    understanding of the Standard is correct.  For the system with which
+    GCC / testsuite can be used, automatic testing can be done by
+    executing the 'configure' script with options first then executing
+    'make check'.
+  2. Check the document to make sure there are no mistakes in porting
+    your MCPP.
+  3. Extract the sample source to reproduce the bug.
+  4. Trace the behavior of MCPP by enclosing the place where you get the
+    bug with  #pragma MCPP debug <args> and #pragma MCPP end_debug.
+    Increase these <args> and trace in detail.
+
+If the diagnostic message of "Bug: ..." is displayed, that is definitely
+a bug of the MCPP or compiler systems (more like MCPP).  Even if the
+MCPP goes out of control by processing jumbled "source", that is also a
+bug.
+
+Of course, MCPP of modes other than STD behave "incorrectly" in the
+Validation Suite, as that is the specification.  (Even that should not
+run uncontrollably).  Please see sec 4.1.3 for details of the
+specifications.
+
+
+5.2     Check for malloc() related bugs
+
+There is a library called kmmalloc which I wrote, with functions such as
+malloc(). (Refer 4.extra)
+
+If MCPP is linked to my malloc() and exits out with the error number 120-
+124 (or 2120-2124 for some compilers), that is definitely the MCPP or
+compiler bug.  (Possibly the library function's.)  Also, if you write,
+
+    #pragma MCPP debug memory
+
+somewhere in the sample source used in the test, the information for the
+heap memory will be output at that location and at the end.  If the
+error message "Heap error: ..." is shown there, then that is also the
+MCPP or compiler system's bug.
+
+If any bugs are found, please repeat the test by enclosing each part of
+the sample source by #if 0 and #endif, and mark out where the bug is.
+
+
+5.3     Bug report
+
+Please attach the following data for the bug report.
+
+    1. The compiler system to which MCPP has been ported.
+    2. Porting method (the configuration of noconfig.H, etc.)
+    3. Sample source to reproduce the problem.
+    4. The results.
+
+
+5.4     Porting report
+
+I tried to write MCPP to be able to be ported relatively easily to any
+compiler system.  However, I only have a small number of the compiler
+systems.  Porting to other compiler systems will require adding some
+source code.  I am looking forward to hearing about the porting reports
+to those compiler systems.  I would like to feedback the reports into
+source.
+
+Please include the following data in the porting report.
+
+  1. Compiler system.
+  2. The configuration of noconfig.H (configed.H), system.H and system.c.
+    Possibly the difference file with the original is best, but just a
+    note is fine for a simple one.
+
+For the compiler-specific-build, to check whether it has been ported
+correctly, it may be easiest replacing the preprocessor first and then
+re-compiling MCPP itself by using the pre-preprocess functionality.
+
+Furthermore, use the Validation Suite for STD mode.  However, this
+requires lots of effort when repeating the debug since there are so many
+files.  During the debug, at first, compile 'n_std.c' to see if this
+compiles and executes correctly.  Some compiler drivers attached to the
+system may not have the option to pass to the MCPP, please refer to sec
+2.1 of mcpp-manual.txt for that.  Alternatively, you can first
+preprocess with MCPP, then pass the output to the compiler.
+
+If it failed, check manually where the problem is by using the sample
+n_std.t.  If this is a success, check e_std.t, m_*.t, unspcs.t, warns.t
+and misc.t.  In "post-Standard" mode, n_post.t and e_post.t should be
+used.
+
+Process these with mcpp -QCz23 option (except -3 for post-Standard).  If
+MCPP is compiled with STDC == 0, add -S1 -V199409L option as well.  As
+the comments will also be outputted by the -C option, you should be able
+to see that the process result is the expected one or not.
+As the diagnostic messages are output to the file called mcpp.err by the
+-Q option, read it using a pager or similar.  -z option omits the output
+of the header files.
+Digraph and trigraph becomes valid by -2 or -3.  -S1 and -V199409L sets
+__STDC__ to 1 and __STDC_VERSION__ to 199409L.
+
+To test C99 compatibility, check n_std99.t, e_std99.t with -V199901L
+option.
+
+If you use the program cpp_test.c in the Validation Suite, you can run
+the sample test of n_*.c, i_*.c automatically.  (This is just to check
+yes and no, and this doesn't tell the details.  Also, other tests such
+as e_*.?, u_*.?, unspcs.?, warns.? are not included.  To test MCPP
+itself, it is quicker to compile n_std.c.)
+
+Validation Suite has testcases for GCC / testsuite.  Therefore, when
+MCPP is ported to one of the versions of GCC, MCPP's automatic test can
+be done by replacing the preprocessor of GCC to MCPP, if GCC / testsuite
+is installed.  About this, please see sec 2.2.3 of cpp-test.txt, sec 3.9.
+5, 3.9.7 of mcpp-manual.txt.
+
+
+5.5 Information for the Configure Script of other compiler systems
+            than GCC
+
+MCPP provides the configure script available in UNIX-like systems.
+However, I do not have any idea for other compiler systems besides GCC
+in UNIX systems, so some options need to be specified to configure.
+
+Someone who is using these compiler systems should know or be able to
+check about details of specifying these options.  If you know, please
+let me know.  I would like to do further work with the configure script.
+
+Please refer INSTALL for the configure script.
+
+
+5.6     I will try to port if you send me the data.
+
+When you can't port successfully, please let me know what is happening.
+If you attach the following data, I may be able to return the ported
+source.
+
+In environments where the configure can be used, you can find out lots
+of data through its use.
+
+By the way, from MCPP V.2.6 onward, pre-C90 compiler system is excluded
+from supporting.
+
+  1. OS and the format of the path list. (I only know UNIX, DOS/Windows
+    and OS-9.)
+  2. The compiler system and its version.
+  3. The basic character set is ASCII or not.  The encoding of multi-
+    byte characters (Kanji characters) is shift JIS or EUC-JP or
+    something else.  If the encoding includes the codes such as
+    <backslash> in the multi-byte character like Shift-JIS, whether the
+    compiler-proper recognizes this or not.
+  4. The shell (command processor) is case sensitive or not.
+  5. The file name is case sensitive or not.
+  6. The execution options which one wants to implement.  The option
+    passed from the compiler driver.  The options when running by
+    preprocessor alone.  (One that cannot be implemented by getopt() is
+    impossible.)
+  7. Whether the preprocessor is separated or built-in in the compiler.
+  8. The predefined macros of the compiler system and their values.  How
+    it goes for C++.  (Distinguish between the macro passed from
+    compiler driver by some options such as -D or the predefined macros
+    of the preprocessor itself.)
+  9. Is there the data type long long?  If there is long long, what is
+    its length modifier for printf().  If there isn't long long, is
+    there the same size type?
+  10. If there is <limits.h>, the value of CHAR_BIT, UCHAR_MAX, LONG_MAX,
+    ULONG_MAX.  If there isn't a <limits.h>, the value equivalents to
+    these four.  (If 1 byte is 8 bits, it should be the same as the
+    default values of system.H.)
+  11. If there is FILENAME_MAX in <stdio.h>, its value.
+  12. The argument of #pragma line is subject to the macro expansion?
+  13. What kind of name should be used for the environment variables to
+    specify the include directory.  What separator should be used for
+    writing the multiple path in the environment variables.
+  14. Include directory for standard use.  The rule when searching the
+    header file by #include.
+  15. Is any necessary function missing from libraries?
+  16. Does the compiler proper recognize digraphs?
+  17. '$' needs to be used in an identifier?
+  18. Are there #asm and #endasm?  How about the passing format of the
+    block enclosed by these directives to the compiler proper?  What are
+    the other non-standard directives?
+  19. Which #pragma sub-directive should be processed by preprocessor?
+  20. How long is maximum length to be received by the compiler proper?
+    (You can find out by compiling test_l/l_37_8.c in the Validation
+    Suite.)
+  21. How many bytes can be identified for the identifier in the
+    compiler proper?
+  22. After compiling, what is the suffix of "object file" before the
+    link? (equivalent to .o of the compiler systems on UNIX or .obj of
+    the systems on Windows.)
+  23. The result of the following sample t_line.c processed only by the
+    preprocessor.  (Use separated preprocessor or specify the output
+    after preprocessing by option.)  This is to see the method of
+    passing the line number and file name information to the compiler
+    proper.  As the contents of <stdio.h> are too long, it is enough
+    with the first 10-20 lines and the last 10-20 lines.
+    Also, for the compiler systems, which the processed results of #line
+    1000 does not become #line 1000 "t_line.c", but other formats such
+    as #1000 "t_line.c", modify this to #line 1000 "t_line.c" and pass
+    through to the compiler proper.  Once it has been passed, check to
+    see if this can be recognized or not.  (If it does not error out by
+    #line 1000 "t_line.c", it should have an error message in the line
+    of the "error line;".  Check to see how the line number displays in
+    the error message.)
+
+/* t_line.c */
+#include    <stdio.h>
+
+#line 1000
+
+    error line;
+
+main(void)
+{
+    return  0;
+}
+
+If the host compiler and the target compiler are different, I need all
+the above data for both systems.
+
+To look at it like this, there are so many things to check, but
+practically, most of the compiler systems should have common
+characteristics with the ones already successfully ported, so it should
+not have too many problems to port for just running.  The
+implementations of the execution options, #pragma and the non-standard
+specification will be the relatively time consuming ones.  These can be
+done gradually after porting just to be able to run.  The only annoying
+aspects are when one gets caught by compiler bugs.
+
+
+5.7     Please report the test of other compiler systems by the
+                Validation Suite.
+
+The Validation Suite results of preprocessors for the compiler systems I
+have are summarized in cpp-test.txt sec 5.
+
+Please let me know the result of testing with other compiler systems.
+It may be a bit of effort, as there are so many items.
+
+The test by cpp_test.c does not take long, please send me this.  In case
+of GCC, the automatic test can be done by the Validation Suite.
+
+
+5.8     The feedback for improvement
+
+Besides reporting bugs, please send me feedback for anything, such as
+the handiness of MCPP, diagnostic messages, source code, Validation
+Suite, my interpretation of Standard C or the document writing method.
+
+This preprocessor was created as a hobby, but it was the result of
+having devoted six and a half years, with lots of ideas even up until V.
+2.0.  I want to make this the best, as much as I can, after such a work.
+About the C preprocessor, I think I have done almost everything
+meaningful, except testing and porting to the compiler systems I don't
+have.  I would like to improve it if there are any problems that exist.
+
+The code of Martin Minow was very clear, viceless and easy to understand,
+and I learned a lot by just reading this source code.
+
+The people who are interested in this field may be very limited, but I
+am looking forward the feedback and the information.
+
+Please send the information and the feedback to "Open Discussion Forum"
+at:
+
+    http://mcpp.sourceforge.net/
+
+or by e-mail.
+
+
+                          6   Long way to MCPP
+
+6.1     Three days to plan and six years to develop
+
+When I started messing about with DECUS cpp in Jan 1992, I had never
+even dreamed to take this long a stretch.  I just thought I would change
+it a bit in the new years break.
+
+Once I started, I realized I had to read the source properly and it took
+me about two months to read through.  I did it because the source was
+worth reading as well.  Then I revised some of the specification to
+adapt to C90.  It was as planned till this point.
+
+Then, I realized I did not really know the preprocessor specification of
+C90 precisely.  When I read P. J. Plauger & Jim Brodie "Standard C"
+(1989), the function-like macro expansion methods turned my prejudice
+around completely.  (A Japanese translation version of this part was
+miss-translated.)  So I bought a copy of Standard C and I repeatedly
+read those difficult sentences related to preprocessing.  As a result, I
+found the preprocessing of C90 is different in many points from the
+traditional one.  The addition of #, ## operators are only a small part
+of them.
+
+Significantly, I puzzled my brain about the function-like macro
+expansion routine.  I thought it over for 2-3 weeks consulting the cpp
+source of E. Ream, and then I wrote the new macro expansion routine for
+C90.  I have never used my brain so hard as for thinking the algorithm
+of the program.  That was April, 1992.
+
+Well, I thought I was over the hump and that the cpp playing was
+finished, but it took almost a further six years since then.  There were
+not many problems that made me suffer during the rest.  Nevertheless, it
+took so long.  That was partly because I got bored thinking and couldn't
+concentrate on messing around with cpp.  But that wasn't all.  I did the
+following things.
+
+  1. Made the specification clearer.  In Standard mode, completely
+    adapted to the standard.
+  2. Re-structured the program/data structures to focus on the Standard
+    C mode.
+  3. Changed the style of the source to improve portability.
+  4. To do debugging.  Dealt with bugs or imperfections of the compiler
+    systems.
+  5. Created the test programs which is the Validation Suite.
+  6. Tested other compiler systems.
+  7. Wrote documentation.
+  8. As I bought a new PC in July 1997, I spent the time for the
+    installation and learning of WindowsNT/95, X Window System and their
+    software.  While doing that, C99-1997/11 draft had been released and
+    it required adaptation to this.
+
+In this list, the documentation took a long time.  Especially the last
+four years, the time changing the source was only a little bit while
+most of the time was dominated by writing the documentation.  Due to
+that, the documentation became such a volume, but the time taken was not
+only because of the volume.  When I was writing the documents, the
+uncertain parts of the specification kept coming up.  Each time I re-
+read the Standards, I revised the source code.  The length of time
+revising the source was not a lot, but the number of times revising the
+source was a lot.  Not only the preprocess specifications, but I also
+read well whole of the Standard including the Rationale of ANSI C.  It's
+like I learned C90 by creating the preprocessor.  Also, I could
+understand the problems of the C90 standard through this.
+
+At first, I wrote a few test programs as samples.  However, I found
+unexpected bugs each time I wrote samples and tested on MCPP.  Then I
+decided to write the Validation Suite which would test every
+specification of the C90 preprocess.  The problems of C90 became obvious
+by writing this Validation Suite.  To comply to the irregular parts of
+C90 was such trouble and a bit meaningless for myself, but I am sure
+there were more meaningful things.
+
+What I learned through this work are the following things.
+
+  1. The program specification cannot be definite until finishing off
+    the detailed document.
+  2. The debugging of the program cannot be completed until completion
+    of the samples which test every specification.
+
+This thinking is a sort of perfectionism.  Things in the world mostly
+cannot be achieved by perfectionism, and software is not an exception.
+Nevertheless, there are some areas for which perfectionism has a very
+important role.  The language processing systems may be one of them.
+
+I can say that I could spend so many years, through and through, because
+this was my hobby.  But six and half years was too long.  I kept
+thinking about who would be going to use this after I spent so many
+years to create a perfect program.  I think this must be the limit of
+the size for making a program as a hobby.
+
+Anyway, as I have already done MCPP, I will keep maintaining it.
+Therefore, could everyone please send me feedback, bug reports or
+porting reports.
+
+
+6.2     V.2.3
+
+After releasing MCPP V.2.0, I updated to V.2.1, V.2.2 and then V.2.3.
+These updates were adapting to C99 or officially approved ISO / C++,
+increasing the supported systems or fixing bugs.
+
+I could update quite easily until V.2.2.  It only took three months from
+V.2.0 to V.2.2.  In contrast, it took nearly four years from V.2.2 to V.
+2.3.  The main reason was that I became busy and didn't have enough time
+to spend.  I cut down my working days to 4 days a week after turning to
+60 years of age in July 2000, then I went back to playing with cpp again.
+
+V.2.3 not only took time but took quite a lot of work as well.  When I
+ported to GCC V.2.9x, I found out that I had to modify a lot to keep the
+compatibility with GCC/cpp.  I added many options and implemented the
+extended specifications.  Also I eased restrictions of the Standard by
+downgrading some errors to warnings or removing the highly frequent
+warnings from the default warning class.
+
+Lots of those modifications are backward ones and were not enjoyable.
+Especially, maintaining both the C99 specification and the part of the
+"traditional" specification earlier than C90 was very much against my
+will.  Unfortunately, this is a reality of the open source world, I had
+to meet to certain expectations.
+
+By relaxing the restrictions of the standard, I think MCPP became easier
+to use also for the other compiler systems, in replacing the system
+resident preprocessor.
+
+
+6.3     Selected to "Exploratory Software Project"
+
+During the update to V.2.3, MCPP and Validation Suite was selected to
+2002 "Exploratory Software Project" of Information-technology Promotion
+Agency, Japan (IPA).  I found out about this project by chance and I
+entered.  Then, the project manager Yutaka Niibe selected me.  That is
+how the development went from July 2002 to Feb 2003 by IPA's funding and
+based on PM Niibe's advice.  The translation of the documents is also
+taken by HighWell.
+
+Though this was relatively small software, it became a kind of my life
+work after spending so much time.  I had confidence with the quality,
+but I was disappointed without having an opportunity to be known to the
+world.  Finally, the opportunity was given.  To accomplish this project,
+I cut down my job to three days a week.
+
+These were the things that I had intended to do in this project.
+
+  1. Create English version of the documents.  By using these, release
+    MCPP and Validation Suite to the international sites.  In the
+    current situation of most C compiler systems being made outside
+    Japan, it is vital to have English versions of the documents to
+    spread and get evaluations for this.
+  2. Increase the compiler systems to support, especially the major
+    commercial compiler systems, as well as the later versions of the
+    compiler systems which have already been supported.
+
+Then, Project Manager Niibe proposed the following points:
+
+  1. Support GCC 3.x and make the Validation Suite to be able to be used
+    in testsuite of GCC.
+  2. Make everything public during the development.
+
+As I wanted to do these things too, I gratefully added these points to
+the project.
+
+Actually, however, my project had delay after delay for various reasons.
+First, I was hit by a disc crash.  Whenever I did new things, it took a
+long time as I had to use new software never used before.  It was also
+the first time to compile GCC from the source, but also I had got a few
+problems.  The updating of massive volumes of documents and the review
+and the correction of English version also took a considerable time.
+Furthermore, my mother was admitted to hospital.  As a result, a part of
+the project, such as the support of the commercial compiler systems, had
+to be given up at the end.
+
+As I had always done the way which is like digging a hole deeper and
+deeper, it took a long time when I had to try to widen the hole.  When
+an amateur-programmer digs deeper into the matter, this is the only way
+to do it.  Nevertheless, to make the result to go out into the world,
+the hole had to be widened to some extent.
+
+During the process of widening up the hole, I managed to learn some new
+software and to be in the frontline of development while receiving the
+advice and the encouragements from Project Manager Niibe.  Also, I was
+delighted to see my documents coming back in a flowing English.  Though
+being pressed for time was a painful thing, each experience was fresh
+and fun.
+
+This "Exploratory Software Project" did not finish there.  Project
+Manager Ichiji also selected MCPP as a continual project for year 2003.
+This is how I started to do some unfinished tasks from the previous year,
+and also some areas which I did not have experience of before.
+
+This time, my six year old PC experienced some troubles, and there were
+also further troubles during the upgrade of the hardware and OS.  It
+also took time to learn the new software, and of course, the development
+was getting behind schedule.  The condition of my mother, who had been
+out of hospital and in relatively good condition, became worse along
+with getting closer to the end of the project.  This was also a source
+of my anxiety. (My mother died in February, 2004.)  However, thanks to
+Project Manager Ichiji setting the due date to a reasonable timeframe, I
+could work the tasks through thoroughly without rushing.
+
+I accomplished tasks such as the porting to Visual C++, the creation of
+the configure script and supporting the various multi-byte character
+encodings.  I also managed to do the clean-up of the source code which,
+though inconspicuous, can not be ignored by myself as the author.  The
+time consuming work of updating the Japanese and English documents was
+accomplished with the co-operation of HighWell.
+
+With these achievements, I was evaluated as one of the "super-creator"s
+of software by PM Ichiji!  Though it may be overestimation for my
+ability, I think it is MCPP development over years that was recognized,
+and I am very glad.
+
+I think MCPP has become the world's best quality C/C++ preprocessor,
+thanks to the "Exploratory Software Project" which took nearly two years.
+As a middle-aged amateur-programmer, I am satisfied with myself having
+done my best.
+
+I am keeping on updates of MCPP even after the project.  Many tasks are
+still to be done.  To achieve the remaining tasks and to make MCPP
+widely known, I will continue to proceed steadily.
+
+                                                                   [eof]
