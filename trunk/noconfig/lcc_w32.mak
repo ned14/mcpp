@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.6 for LCC-Win32 / LCC make
-#       2006/05 kmatsui
+#       2006/08 kmatsui
 # You must first edit BINDIR according to your system.
 # To compile MCPP do:
 #		make

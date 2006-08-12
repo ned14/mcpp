@@ -1,120 +1,85 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
+2006/08/12  kmatsui
+        * V.2.6.1
+        * Enabled automatic conversion from [CR+LF] to [LF].  (support.c)
+        * Set the limit of #include nesting to INCLUDE_NEST (default:
+        256) in order to prevent infinitely recursive #includes.
+        (system.H, system.c)
+        * Revised white space handling in <header with spaces.h> style
+        header-name which is defined by macro.  (system.c)
+        * Enabled -fworking-directory option for GCC-specific-build.
+        created put_info().  (system.c)
+        * Fixed a bug of macro definition.  (lib.c)
+        * Fixed a bug of '#pragma once' failure.  (by Greg Kress).
+        (system.c)
+        * Fixed some other minor bugs in sources.
+        * Revised path-list handling on CygWIN.  Enabled -mno-cygwin
+        option for CygWIN GCC-specific-build.  (configure.ac, noconfig.H,
+        system.c)
+        * Added porting to MinGW.  Created cc1.c to be invoked from GCC
+        and to invoke mcpp or GCC's cc1/cc1plus from it, because MinGW
+        GCC rejects to invoke a shell-script even if it is named cc1 and
+        because MinGW does not support symbolic link.  (configure.ac,
+        src/Makefile.am, configed.H, noconfig.H, system.c)
+        * Fixed bugs in some noconfig/*.mak.
+        * Moved changelogs from the source files to ChangeLog and
+        ChangeLog.old.
+
 2006/07/15  kmatsui
         * V.2.6
         * Integrated STANDARD mode and PRE_STANDARD mode into one
         executable, differentiating the modes by the execution time
-        options.
-        * Changed --enable-maintainer-mode option of configure to --
-        enable-replace-cpp option which generates compiler-specific-
-        build of mcpp.
+        options.  (all the sources)
+        * Absorbed DEBUG, DEBUG_EVAL, OK_MAKE into default, OK_DIGRAPHS,
+        OK_PRAGMA_OP into default of STD and POST_STD mode, OK_TRIGRAPHS
+        into default of STD mode, OK_SIZE into default of KR and
+        OLD_PREP modes.  (all the sources)
+        * Changed --enable-maintainer-mode option of configure to
+        --enable-replace-cpp option which generates compiler-specific-
+        build of mcpp.  (configure.ac, src/Makefile.am)
         * Made stand-alone-build independent on any compiler-systems.
-        * Revised #pragma once and handling of include directories list,
-        judging a identity of directory and file by absolute path, and
-        dereferencing symbolic linked file.
+        (configure.ac, configed.H, noconfig.H, system.c)
+        * Revised '#pragma once' and handling of include directories
+        list, judging a identity of directory and file by converting it
+        to absolute path, and dereferencing symbolic linked file.
+        (system.c)
         * Revised #line output and its related problem at the end of an
-        included file.
+        included file.  (internal.H, support.c)
         * Added portings to GCC V.4.0, CygWIN 1.5.18, Visual C++ 2005
-        and LCC-Win32 V.3.8.
-        * Removed support for pre-C90 compilers, MS-DOS and Plan 9.
+        and LCC-Win32 V.3.8.  (noconfig.H, system.c)
+        * Added some options for Visual C++.  (system.c)
+        * Removed settings for pre-C90 compiler (string concatenation by
+        preprocessor, '\a' and '\v' handling, no unsigned long #if, no
+        Standard library functions, non-prototype declarations, no #
+        pragma).  (all the sources)
+        * Removed settings for MS-DOS compiler, DJGPP and Plan9.  (*.H,
+        system.c, mbchar.c)
+        * Removed the implementation of post_preproc() for pre-Standard
+        compiler.  Removed conv_esc(), is_last_esc(), conv2oct().
+        Removed HAVE_C_BACKSLASH_A and CONCAT_STRINGS macros.  (main.c)
+        * Degraded the diagnostic of #if expression from error to
+        warning, which only overflows the range of 'long / unsigned
+        long' and does not overflow the range of 'long long / unsigned
+        long long' in modes other than C99.  (eval.c)
+        * Enabled 'i64' ('ui64', 'i32', 'i16', etc.) suffixes for
+        integer, which are recognized when COMPILER is MSC or BORLANDC.
+        (eval.c)
+        * Renamed functions and some variables, created expand_init(),
+        according to integration of STANDARD and PRE_STANDARD modes.
+        (expand.c)
+        * Removed '#pragma MCPP include_next'.  (system.c)
+        * Created init_msc_macro(), parse_warn_level(), chk_opts(),
+        init_predefines(), init_std_defines(), do_prestd_directive().
+        Removed set_cplus(), mem_model().  (system.c)
+        * Removed Standard functions (memmove(), memcpy(), memcmp(),
+        strstr(), strcspn()).  (lib.c)
+        * Changed default setting to FreeBSD 5.* / stand-alone / GCC 3.4.
+        (noconfig.H)
         * Renamed 'doc' directory as 'doc-jp' and renamed 'doc_eng' as
         'doc'.
         * Removed some manuscript files of mcpp-summary.pdf from the
         distribution.
         * Validation Suite: Revised a few testcases.
         * Updated all the documents accordingly.
-
-2005/03/19  kmatsui
-        * V.2.5
-        * Revised judgment of GCC version and include directories in
-        configure script.
-        * Absorbed POST_STANDARD mode into STANDARD as an execution time
-        option, absorbed OLD_PREPROCESSOR mode as an execution time
-        option of PRE_STANDARD.
-        * Renamed most of #pragma __* directives as #pragma MCPP *.
-        * Revised the Standard mode macro expansion routine using GCC 3.
-        2 testsuite and Wave 1.0 testcases.
-        * Added porting to GCC V.3.3 and 3.4.  Changed some options
-        accordingly (changed -c to -@compat, changed -m to -e, removed -
-        E, added -finput-charset=).
-        * Revised the old-preprocessor mode to follow "Reiser cpp model".
-        * Removed documents on older preprocessors (DJGPP, compiler
-        systems on MS-DOS except Borland C).
-        * Provided man page.
-        * Renamed the documents.
-        * Validation Suite: Moved tests of multi-byte character encoding
-        to quality matters.
-        * Validation Suite: Changed points allocation of the test items.
-        * Validation Suite: Added a few testcases for macro expansion.
-        * Updated Japanese and English documents.
-
-2004/03/20  kmatsui
-        * V.2.4.1
-        * Revised recursive macro expansion, and added -c option.
-        * Revised some testcases in cpp-test/test-t directory.
-
-2004/02/25  kmatsui
-        * V.2.4 release.
-        * Extended multi-byte character handling.  Created mbchar.c.
-        Implemented #pragma __setlocale, -m <encoding> option and
-        enabled environment variable LC_ALL, LC_CTYPE and LANG.
-        * Added porting to Plan 9 / pcc.
-        * Updated Japanese documents.
-        * Updated English documents which were translated by Highwell,
-        inc. ltd. from the Japanese documents.
-
-2003/11/28  kmatsui
-        * V.2.4 prerelease.
-        * Created configure.ac and Makeile.am.  Re-organized header
-        files accordingly.
-        * Diagnostics on macro expansion or macro redefinition were made
-        to show the original macro definition and its location.
-        * Implemented -MF, -MT, -MP, -MQ options for GCC-3-compatibility.
-        * Added porting to Visual C++ .net.
-        * Updated test-reports on LCC-Win32 and ucpp.
-        * Removed the oldest settings on VMS, DEC C, etc.
-        * Updated the Japanese documents. (The English documents are not
-        yet updated.)
-
-2003/03/29  kmatsui
-        * V.2.3 patch 1.
-        * Debugged the modes other than STANDARD.
-
-2003/02/28  kmatsui
-        * V.2.3 release.
-        * Created the edition of Validation Suite for GCC / testsuite.
-        * -j option (GCC-compatible diagnostic format) added for testsuite.
-        * Created the document named mcpp-summary.pdf.
-        * Updated documents.
-        * Released English version of documents which were translated by
-        Highwell, inc. ltd. from the Japanese documents and revised by
-        kmatsui.
-
-2002/12/16  kmatsui
-        * V.2.3 prerelease 2.
-        * Port to GCC 3.2.
-        * Fixed the bug of #include_next.
-        * GCC-compatible options (-I-, etc.) added.
-        * Updated documents.  Renamed the documents.
-
-2002/08/26  kmatsui
-        * V.2.3 prerelease 1.
-        * Updated according to C99 (ISO/IEC 9899:1999).
-        * Implemented many GCC-compatible options.
-        * Port to Linux / GCC 2.95.3, LCC-Win32, Borland C 5.5.
-        * Updated the documents.
-        * Registered to CVS repository at m17n.org by NIIBE Yutaka
-        <gniibe@fsij.org>.
-
-1998/11     kmatsui
-        * V.2.2
-        * Updated according to C++98 (ISO/IEC 14882:1998)
-
-1998/09     kmatsui
-        * V.2.1
-        * Updated according to the C99 1998/08 draft.
-
-1998/08     kmatsui (Kiyoshi Matsui <kmatsui@t3.rim.or.jp>)
-        * V.2.0
-        * First release of MCPP at nifty-serve and vector/software-pack
 

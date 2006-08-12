@@ -37,48 +37,9 @@
  *
  * Note:  MCPP assumes the system implement the Ascii character set.
  * If this is not the case, you will have to do some editing here and there.
- *
- * 1984/05 - 1985/06    CPP / cppdef.h
- *              Created and released on USENET.             by Martin Minow
- *
- * 1998/08      CPP Version 2.0 / system.H
- *              Re-written and renamed from cppdef.h.           by kmatsui
- * 1998/09      CPP Version 2.1 / system.H
- *              Updated according to C99-1998/08 draft.         by kmatsui
- * 1998/11      CPP Version 2.2 / system.H
- *              Updated according to C++ Standard (ISO/IEC 14882).
- *                                                              by kmatsui
- * 2002/08      CPP Version 2.3 pre-release 1 / system.H
- *              Updated according to C99 (ISO/IEC 9899:1999).   by kmatsui
- * 2002/12      CPP Version 2.3 pre-release 2 / system.H
- *              Slightly modified.                              by kmatsui
- * 2003/02      CPP Version 2.3 release / system.H
- *              Changed macros of include directory.            by kmatsui
- * 2003/11      MCPP Version 2.4 pre-release / system.H
- *              Uses 'configure'd config.h when available.
- *              Added implementation for Visual C.
- *              Removed CON_NOEXPAND and CON_EXPAND modes, renamed CON_FALSE
- *                  mode as PRE_STANDARD.
- *              Removed settings on VMS, DEC C and OS-9/09.     by kmatsui
- * 2004/02      MCPP Version 2.4 release / system.H
- *              Extended multi-byte character handling.         by kmatsui
- * 2005/03      MCPP Version 2.5 / system.H
- *              Absorbed POST_STANDARD mode into STANDARD mode and made
- *                  available through -@post option.
- *              Made OLD_PREPROCESSOR configuration available through -@old
- *                  option in PRE_STANDARD mode.                by kmatsui
- * 2006/07      MCPP Version 2.6 / system.H
- *              Integrated STANDARD and PRE_STANDARD modes into one executable,
- *                  differentiating by execution time options.
- *              Removed settings for 16 bits system.
- *              Rearranged according to changes of noconfig.H and configed.H.
- *                                                              by kmatsui
  */
 
 #define SYSTEM_H
-
-#define TRUE                1
-#define FALSE               0
 
 #if     HAVE_CONFIG_H
 #include    "configed.H"
@@ -245,7 +206,7 @@ typedef long            expr_t;
 #endif  /* HAVE_LONG_LONG   */
 #endif  /* HAVE_INTMAX_T    */
 
-#if     HAVE_INTMAX
+#if     HAVE_INTMAX_T
 #define EXPR_MAX            UINTMAX_MAX
 #elif   HAVE_LONG_LONG
 #if     (HOST_COMPILER == MSC && _MSC_VER < 1400) || HOST_COMPILER == BORLANDC
@@ -308,6 +269,9 @@ typedef long            expr_t;
 #endif
 #ifndef BLK_NEST
 #define BLK_NEST            0x100
+#endif
+#ifndef INCLUDE_NEST
+#define INCLUDE_NEST        0x100
 #endif
 #ifndef NINCLUDE
 #define NINCLUDE            0x40

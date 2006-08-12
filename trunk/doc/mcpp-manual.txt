@@ -48,6 +48,10 @@ V.2.6           2006/07     Integrated STANDARD and PRE_STANDARD
                 Removed #pragma MCPP include_next.
                                                                 kmatsui
 
+V.2.6.1         2006/08     Added porting to MinGW.
+                Revised some subtle points.
+                                                                kmatsui
+
 
                                 Contents
 
@@ -854,8 +858,8 @@ located under an appropriate name.  Before copying MCPP, be sure to
 change the name of compiler-system-specific one so that it may not be
 overwritten.
 
-For settings on Linux, FreeBSD, or CygWIN, see 3.9.5.  For settings in
-GCC 3.*, 4.*, see also 3.9.7.
+For settings on Linux, FreeBSD, or CygWIN see 3.9.5.  For settings in
+GCC 3.*, 4.*, see also 3.9.7. and 3.9.7.1.  For MinGW, see 3.9.7.1.
 
 Possibly the compiler driver cannot pass some options to MCPP in a
 normal manner.  However, GCC provides the -Wp almighty option to allow
@@ -962,6 +966,9 @@ The followings are available across the modes.
 -finput-charset=<encoding>
     Same as -e <encoding>.  Note that GCC convert the <encoding> to UTF-
     8 by this option, whereas MCPP does not convert any encoding.
+-fworking-directory
+    Emit a special #line as the second line of preprocessor's output to
+    convey the current working directory.
 -I-
     Switch the specification of the -I <directory> before and after this
     option; directories specified with the -I options before -I- are
@@ -1031,6 +1038,13 @@ build.
 
 -traditional, -traditional-cpp
     Same as -@old.
+
+The next option is available on CygWIN GCC-specific-build.
+
+-mno-cygwin
+    Alter the include directory from /usr/include to /usr/include/mingw,
+    and alter the predefined macros from the ones for cygwin1.dll to the
+    ones for msvcrt.dll.
 
 MCPP neither makes the following options an error nor does anything
 about them (It sometime issues a warning.)
@@ -1544,7 +1558,7 @@ Windows is not case sensitive.  Therefore, "/DIR1/header.h" and
 are regarded as the same on Windows, but distinct on UNIX-like systems.
 A directory is memorized after converting to absolute path, and a
 symbolic linked file in UNIX systems is memorized after dereferencing.
-So, the identical files are determined always correctly.
+So, the identical files are determined always correctly. [1], [2]
 
 I borrowed the idea of #pragma once from GCC V.1.*/cpp.  GCC V.2.*, and
 V.3.* still has this functionality but it is regarded as obsolete.  The
@@ -1582,10 +1596,22 @@ definitions such as NULL, size_t, and ptrdiff_t are defined in the
 and even with <stdio.h>.  Other system headers define macros, such as
 __need___FILE, and then #include <stdio.h>.  Each time they do so,
 definitions such as FILE may be defined in <stdio.h>.  #pragma once can
-not be used in such header files. [1]
+not be used in such header files. [3]
 
 Note:
-[1] This is applied at least to Linux/GCC 2.9x, 3.* and 4.*/glibc 2.1, 2.
+[1] On CygWIN, / and /usr are the same directory in real, and supposing
+/ is C:/dir/cygwin on Windows, /cygdrive/c/dir/cygwin is the same as /.
+MCPP treats these directories as the same, converting the path-list to
+the format of /cygdrive/c/dir/cygwin/dir-list/file.
+
+[2] On MinGW, /bin and /usr/bin are the same directory in real, also
+/lib and /usr/lib are the same.  Supposing / is C:/dir/msys/1.0, /c/dir/
+msys/1.0 is the same as /, and supposing /mingw is C:/dir/mingw, /c/dir/
+mingw is the same with /mingw.  MCPP treats each of these as the same
+directories, converting the path-list to the format of c:/dir/msys/1.0/
+dir-list/file or c:/dir/mingw/dir-list/file.
+
+[3] This is applied at least to Linux/GCC 2.9x, 3.* and 4.*/glibc 2.1, 2.
 2 and 2.3.  FreeBSD 4, 5 has much simpler system headers because it does
 not use glibc.
 
@@ -1669,7 +1695,8 @@ and start searching header.h from the next directory of search path.
 
     #include_next  <header.h>
 
-CygWIN ignores the distinctions of alphabetical case of header names.
+CygWIN and MinGW ignores the distinctions of alphabetical case of header
+names.
 
 The following code outputs 'any message' to stderr as a warning message:
 
@@ -2885,17 +2912,17 @@ following procedure:
 
 2:  To sort warning messages, enter the following command:
 
-    grep warning `find . -name mcpp.err` | sort -k4 -u | less
+    grep warning `find . -name mcpp.err` | sort -k3 -u | less
 
 3.  To find all the source lines causing a warning, enter the following
 command:
 
-    grep warning `find . -name mcpp.err` | sort -k4 | uniq | less
+    grep warning `find . -name mcpp.err` | sort -k3 | uniq | less
 
 4.  To find a particular type of warnings, enter the following command,
 for example:
 
-    grep 'warning: Replacement' `find . -name mcpp.err` | sort -k4   \
+    grep 'warning: Replacement' `find . -name mcpp.err` | sort -k3   \
         | uniq | less
 
 After you get an overall idea of what source lines are causing what
@@ -3281,7 +3308,7 @@ invoking of cpp0 by MCPP.  To use MCPP with GCC 3.3 or later, it is
 necessary to divide invoking of cc1 to MCPP and cc1.  src/set_mcpp.sh
 will write shell-scripts for this purpose in the GCC libexec directory
 on MCPP installation.  The 'make install' command will also get GCC
-predefined macros using -dM option and set those for MCPP.
+predefined macros using -dM option and set those for MCPP. [1], [2]
 
 In addition, GCC 3.4 changed processing of multi-byte characters.  Its
 document says as:
@@ -3301,7 +3328,7 @@ especially in the Western people who do not use multi-byte characters.
 It seems that this trend has reached to GCC.
 
 What is worse, GCC 3.4 or later does not implement their specification
-sufficiently.  In actual, it behaves as: [1]
+sufficiently.  In actual, it behaves as: [3]
 
   1. As for EUC-JP, GB2312 and KSC-5601, it converts these encodings to
     UTF-8 correctly with -finput-charset option, and it passes them as
@@ -3323,7 +3350,7 @@ which has the same value with <backslash>, '"' or '\'', when the
 encoding is one of BIG-5, shift-JIS or ISO2022-JP, in order to
 complement GCC's inability.  However, it does not convert the encoding
 to UTF-8.  MCPP also treats -finput-charset as the same option as -e.  I
-adopted these specifications because: [2], [3]
+adopted these specifications because: [4], [5]
 
   1. As for shift-JIS, ISO2022-JP and Big5, the encoding converted to
     UTF-8 cannot be converted back correctly even on GCC V.4.1.  If the
@@ -3337,13 +3364,25 @@ adopted these specifications because: [2], [3]
     the near future.
 
 Note:
-[1] On GCC in my FreeBSD 5.3, multi-byte character conversion to UTF-8
+[1] MinGW does not support symbolic link.  Though the 'ln -s' command
+exists, it does not link but only copy.  Moreover, MinGW's GCC rejects
+to invoke a shell-script even if it is named cc1.  To cope with this,
+MCPP's MinGW GCC-specific-build generates a binary executable named cc1.
+exe (copied also to cc1plus.exe) which invokes mcpp.exe or GCC's cc1.exe
+/cc1plus.exe.
+
+[2] CygWIN / GCC has -mno-cygwin option which alters system include
+directory and alters GCC's predefined macros.  MCPP V.2.6.1 onward,
+CygWIN GCC-specific-build supports this option and generates two sets of
+header files for the predefined macros.
+
+[3] On GCC in my FreeBSD 5.3, multi-byte character conversion to UTF-8
 does not work at all, though libiconv is linked.
 
-[2] When you pass the output of MCPP to cc1, you should not specify
+[4] When you pass the output of MCPP to cc1, you should not specify
 -fexec-charset option as well as -finput-charset option.
 
-[3] MCPP V.2.5 did not supplement <backslash> for GCC V.3.4.  Since
+[5] MCPP V.2.5 did not supplement <backslash> for GCC V.3.4.  Since
 GCC's behavior was not stable, I have waited to see where it settles
 down.  However, it is still not stable on V.4.1, hence I reverted the
 MCPP specification of V.2.6 to that of V.2.4, that is it supplements
@@ -3580,7 +3619,7 @@ here and there to get vain results.
 
 3.9.8.4     Workarounds for the Present
 
-The problems are summarized as below: [1], [2]
+The problems are summarized as below: [1], [2], [3]
 
   1. /usr/include lacks Standard C headers float.h, iso646.h, stdarg.h,
     stdbool.h and stddef.h which is necessary to make Linux system
@@ -3625,7 +3664,7 @@ nor uses GCC specific include directories.
     include/limits.h is enough for non-GCC preprocessor.
   3. float.h is useless for other preprocessor, such as DBL_MAX_EXP is
     defined to __DBL_MAX_EXP__.  If required, you must write the header
-    referring to the internal setting of GCC or some other source. [3]
+    referring to the internal setting of GCC or some other source. [4]
   4. Do not set GCC specific include directory in C include directories
     list by environment variable.
   5. Set C++ include directories by environment variable CPLUS_INCLUDE
@@ -3656,7 +3695,12 @@ version-specific include directory.  Most of the headers in the
 directory are redundant.  However, the headers in /usr/include remain
 unchanged.
 
-[3] It can be written as follows referring to GCC's setting:
+[3] On MinGW, though the include directories and their precedence differ
+from the other systems, the behavior of GCC on #include_next is the same,
+and also some Standard headers are not in the standard include directory
+/mingw/include but in its version-specific-directory.
+
+[4] It can be written as follows referring to GCC's setting:
 
 /* float.h  */ 
 
@@ -3919,16 +3963,14 @@ resulting from macro expansion in source code.
 
 2. If source code contains a header file name in the <filename> format,
 MCPP regards it as a header-name and removes the < and > at the both
-ends to construct a filename.
+ends to construct a filename.  This can be applied to a <filename>
+format sequence resulting from macro expansion.  The spaces in the macro
+are retained squeezing multiple spaces into one space.
 
-3. If source code contains a macro and it is expanded to <filename>,
-MCPP removes the < and > at the both ends, as well as all the spaces, to
-construct a filename.
-
-4. In any case, MCPP converts \ to /, although both of "\" and "/" can
+3. In any case, MCPP converts \ to /, although both of "\" and "/" can
 be used as path delimiters on Windows.
 
-5. On Windows, all the uppercased letters in file names are converted
+4. On Windows, all the uppercased letters in file names are converted
 into lowercased letters.
 
 
@@ -4181,6 +4223,7 @@ DIFfiles and makefiles are for the following compiler systems:
     VineLinux 3.2-x86:  GCC V.2.95, V.3.2, V.3.3, V.3.4
     openSUSE Linux 10.0:    GCC V.4.0
     CygWIN 1.3.10 (GCC V.2.95), 1.5.18 (GCC 3.4)
+    MinGW & MSYS (GCC 3.4)
     WIN32:  LCC-Win32 V.3.2, V.3.8
     WIN32:  Visual C++ 2002, 2003, 2005
     WIN32:  Borland C++ V.4.0, V.5.5
@@ -4208,6 +4251,7 @@ The translation limits are set as follows.
     RESCAN_LIMIT (Maximum number of nested levels of macro rescans) : 64
     IDMAX (Valid length of identifier)                          : 1024
     NINCLUDE (Maximum number of include directories)            : 64
+    INCLUDE_NEST(Maximum number of #include nest level)         : 256
     NBUFF (Maximum length of a source line after converting a comment
         into a space and line splicing)                         : 65536
     NWORK (Maximum length of an output line)                    : 65536
@@ -4216,24 +4260,23 @@ The translation limits are set as follows.
 This macro differs on OS regardless of build types.
 
     MBCHAR (Default encoding of multibyte character)
-        Linux, FreeBSD  : EUC-JP
-        WIN32, CygWIN   : SJIS
+        Linux, FreeBSD              : EUC-JP
+        WIN32, CygWIN, MinGW        : SJIS
 
 The settings of the macros below are different among compiler systems.
 
     STDC_VERSION (Initial value of __STDC_VERSION__)
-        GCC 2   : 199409L
-        Others  : 0L
+        Stand-alone, GCC 2          : 199409L
+        Others                      : 0L
     HAVE_DIGRAPHS   (Is digraphs output as it is?)
-        GCC and Visual C    : TRUE
-        Others  : FALSE
+        Stand-alone, GCC and Visual C    : TRUE
+        Others                      : FALSE
     EXPAND_PRAGMA   (Is a #pragma line macro-expanded in C99?)
-        Visual C: TRUE
-        Others  : FALSE
+        Visual C                    : TRUE
+        Others                      : FALSE
 
-No restrictions are imposed on the number of nested levels of #include,
-which means it can exceed the limit imposed by OS of the number of
-simultaneously opened files.
+The number of nested levels of #include can exceed the limit imposed by
+OS of the number of simultaneously opened files.
 
 GCC 2.7-2.95 defines __STDC_VERSION__ to 199409L.  However, in GCC V.3.*,
 V.4.*, __STDC_VERSION__ is no longer predefined by default and is now
@@ -4336,6 +4379,12 @@ put_defines, the following built-in macros are displayed:
                 __MCPP (=2), __GNUC__ (=3), __GNUC_MINOR__ (=4),
                 __SIZE_TYPE__ (=unsigned int), __PTRDIFF_TYPE__ (=int),
                 __WCHAR_TYPE__ (=short unsigned int)
+    MinGW / Stand-alone:    __i386__, __MINGW__, __MINGW32__,
+                __MCPP (=2)
+    MinGW / GCC 3.4.2:      __i386__, __MINGW__, __MINGW32__,
+                __MCPP (=2), __GNUC__ (=3), __GNUC_MINOR__ (=2),
+                __SIZE_TYPE__ (=unsigned int), __PTRDIFF_TYPE__ (=int),
+                __WCHAR_TYPE__ (=short unsigned int)
     Win32 / Stand-alone:    __i386__, __WIN32__, _WIN32,  WIN32,
                 __FLAT__, __MCPP (=2)
     LCC-Win32:  __i386__, __WIN32__, WIN32, _WIN32, __FLAT__,
@@ -4377,8 +4426,8 @@ predefined macros other than the above ones.  These GCC-specific
 predefined macros are written in mcpp_g*.h header files, which is
 generated by installation of MCPP.
 
-Since FreeBSD, Linux, CygWIN / GCC and LCC-Win32 have a type long long,
-an #if expression is evaluated in long long or unsigned long long.
+Since FreeBSD, Linux, CygWIN, MinGW / GCC and LCC-Win32 have a type long
+long, an #if expression is evaluated in long long or unsigned long long.
 Visual C and Borland C 5.5 do not have a "long long" type but __int64
 and unsigned __int64 instead.  These types are used.  In Borland C 4.0,
 which has not long long nor __int64, it is evaluated in long or unsigned
@@ -4495,9 +4544,9 @@ Warnings other than Class 1 or 2 are rather specific to MCPP.
 MCPP has various types of diagnostic messages.  For example, STD mode
 provides the following types of diagnostics for each level and class.
 
-    fatal error     : 19 types
-    error           : 75 types
-    warning class 1 : 42 types
+    fatal error     : 20 types
+    error           : 72 types
+    warning class 1 : 46 types
     warning class 2 : 14 types
     warning class 4 : 15 types
     warning class 8 : 31 types
@@ -4619,6 +4668,10 @@ More than BLK_NEST nesting of #if (#ifdef) sections
     (In real message, the macro name BLK_NEST is replaced with an actual
     numerical value. This is applied to all the messages below with a
     macro name embedded.)  Divide the #if section.
+
+More than INCLUDE_NEST nesting of #include
+    The depth of nested #included has exceeded INCLUDE_NEST.  Probably
+    the #includes are in infinite recursion.
 
 Too many include directories "dir"
     The number of include directories specified has exceeded NINCLUDE.
@@ -4776,31 +4829,20 @@ Illegal multi-byte character sequence "XY"
 5.4.2   Unterminated Source File Related Errors
 
 This section covers messages issued when a source file ends with an
-unterminated line, comment, #if section or macro invocation.  If the
-file (not included file) marks the end of input, the message "End of
-input", not "End of file", is issued.
+unterminated #if section or macro invocation.  If the file (not included
+file) marks the end of input, the message "End of input", not
+"End of file", is issued.
 
 These diagnostic messages are issued as an error or warning, depending
 on MCPP modes.
 
 Standard mode issues these messages as error, in which case MCPP skips
-the line or macro invocation in question and restores relationship
-between paired directives in a #if section to that of when the file is
-initially included.
+the macro invocation in question and restores relationship between
+paired directives in a #if section to that of when the file is initially
+included.
 
-On the other hand, pre-Standard mode does not check a source file that
-ends with \.  On other cases, pre-Standard mode issues warnings.
-OLDPREP mode does not even issue warning except on unterminated macro
-call.
-
-End of file with no newline, skipped the line
-    A file must be terminated with a newline.
-
-End of file with , skipped the line
-    A file must not be terminated with <backslash><newline>.
-
-End of file with unterminated comment, skipped the line
-    A comment is not terminated.
+On the other hand, pre-Standard mode issues warnings.  OLDPREP mode does
+not even issue warning except on unterminated macro call.
 
 End of file within #if (#ifdef) section started at line 123
     #if (#ifdef or #ifndef) on the line 123 does not have a
@@ -5359,6 +5401,12 @@ success.  MCPP invoked with the -W0 option does not issue a warning.
 
 5.5.1   Character, Token and Comment Related Warnings
 
+Converted [CR+LF] to [LF]
+    Converted the newline code from [CR+LF] to [LF].  This warning is
+    issued when the source files for Windows are compiled on UNIX-like
+    systems.  This warning is issued only once, on warning level of
+    class 1 in stand-alone-build and class 2 in compiler-specific-build.
+
 Illegal control character 0x1b in quotation
     A string literal, character constant or header name has a control
     code other than a white space character, which may cause an error in
@@ -5435,15 +5483,26 @@ Unterminated string literal, catenated to the next line
 
 5.5.2   Unterminated Source File Related Warnings
 
+On unterminated line or comments, the following messages are issued.
+OLDPREP mode does not issue warning.
+
+End of file with no newline, supplemented newline
+    A file must be terminated with a newline.  MCPP supplemented
+    <newline>.
+
+End of file with , deleted the \
+    A file must not be terminated with <backslash><newline>.  MCPP
+    deleted the <backslash>.
+
+End of file with unterminated comment, terminated the comment
+    A comment is not terminated.  MCPP terminated the comment.
+
 The following warning messages are issued in pre-Standard mode.  Pre-
 Standard mode ignores these warnings to continue processing until it
 reaches the end of input, causing many unexpected results.  Standard
 mode issues an error.  OLDPREP mode does not issue even warning, except
 on unterminated macro.
 
-End of file with no newline, skipped the line
-End of file with \, skipped the line
-End of file with unterminated comment, skipped the line
 End of file within #if (#ifdef) section starting from line 123
 End of file within macro invocation starting from line 123
 End of file with unterminated #asm block starting from line 123
@@ -5546,7 +5605,7 @@ The following warnings are issued only in pre-Standard mode.  Standard
 mode regards them as errors.
 
 Not in a #if (#ifdef) section in a source file
-    Line number "0x123" isn't a decimal digit sequence.
+Line number "0x123" isn't a decimal digit sequence
 
 KR mode issues the following warning.  Standard mode issues the same
 warning only to #pragma once, #pragma MCPP put_defines, #pragma MCPP
@@ -5723,22 +5782,27 @@ Line number 32769 is out of range
 This section covers warnings to code that does not contains a bug but
 causes a portability problem.
 
-MCPP evaluate #if expression by long long / unsigned long long even if
-in C90 or C++98, and issues a warning on the value outside of long /
-unsigned long in C90 and in C++98.  Also LL suffix in other than C99
-mode gets a warning as well as i64 suffix of compiler-specific-builds
-for Visual C and Borland C.  These warnings are of class 1 in stand-
-alone-build and class 2 in compiler-specific-build.
+Converted [CR+LF] to [LF]
+    Converted the newline code from [CR+LF] to [LF].  This warning is
+    issued on warning level of class 1 in stand-alone-build and class 2
+    in compiler-specific-build.
 
-Constant "123456789012" is out of range of (unsigned) long
-Integer character constant 'abcde' is out of range of unsigned long
-Wide character constant L'abc' is out of range of unsigned long
-Result of "op" is out of range of (unsigned) long
-LL suffix is used in other than C99 mode "123LL"
-I64 suffix is used in other than C99 mode "123i64"
-Shift count "40" is larger than bit count of long
+    MCPP evaluate #if expression by long long / unsigned long long even
+    if in C90 or C++98, and issues a warning on the value outside of
+    long / unsigned long in C90 and in C++98.  Also LL suffix in other
+    than C99 mode gets a warning as well as i64 suffix of compiler-
+    specific-builds for Visual C and Borland C.  These warnings are of
+    class 1 in stand-alone-build and class 2 in compiler-specific-build.
 
-Only the Standard mode issues the following five warnings:
+    Constant "123456789012" is out of range of (unsigned) long
+    Integer character constant 'abcde' is out of range of unsigned long
+    Wide character constant L'abc' is out of range of unsigned long
+    Result of "op" is out of range of (unsigned) long
+    LL suffix is used in other than C99 mode "123LL"
+    I64 suffix is used in other than C99 mode "123i64"
+    Shift count "40" is larger than bit count of long
+
+    Only the Standard mode issues the following five warnings:
 
 Parsed "//" as comment
     A text from // to the end of the line is interpreted as a comment.
@@ -5891,19 +5955,17 @@ The following warnings are excluded from class 1 and 2 because they are
 issued too frequently.
 
 Converted 0x0c to a space
-    [FF], [VT], [CR] (other than '\n'), and [LF] (other than '\n') in
-    source code as token separators are converted into a space character.
-    How to deal with these token separators located on a directive line
-    is undefined in Standard C.  If they are located in comments, string
-    literals, or character constants, MCPP does not convert them. (Of
-    course, MCPP can do so, but I do not want MCPP to impose a greater
-    restriction on a character set used since it essentially depends on
-    the compiler-proper.)  On the other hand, [TAB] as a token separator
-    is converted into a space character, but no warning is issued
-    because it does not affect compilation at all. ([TAB] means nothing
-    but a space to both of preprocessor and compiler-proper.)
-    [CR] are found in a source file taken from Windows to UNIX.  You
-    must first convert the newline code of the file, then compile it.
+    [FF], [VT], [CR] (other than in [CR][LF] sequence) in source code as
+    token separators are converted into a space character.  How to deal
+    with these token separators located on a directive line is undefined
+    in Standard C.  If they are located in comments, string literals, or
+    character constants, MCPP does not convert them. (Of course, MCPP
+    can do so, but I do not want MCPP to impose a greater restriction on
+    a character set used since it essentially depends on the compiler-
+    proper.)  On the other hand, [TAB] as a token separator is converted
+    into a space character, but no warning is issued because it does not
+    affect compilation at all. ([TAB] means nothing but a space to both
+    of preprocessor and compiler-proper.)
     [FF] are found sometimes in actual source to indicate "end of page".
     This is not a recommendable style.
 
@@ -6110,6 +6172,7 @@ Constant "1234567890123456789012" is out of range
                                     [5.4.6]                   [5.8]
 Constant "123456789012" is out of range of (unsigned) long
                                             [5.5.4][5.6]      [5.8]
+Converted [CR+LF] to [LF]                   [5.5.1][5.6]
 Converted 0x0c to a space                               [5.7]
 Converted \ to /                                  [5.6]
 Division by zero                    [5.4.6]                   [5.8]
@@ -6117,12 +6180,11 @@ Duplicate parameter names "a"       [5.4.7]
 Empty argument in macro call "MACRO( a, ,"        [5.6]
 Empty character constant ''         [5.4.1]
 Empty parameter                     [5.4.7]
-End of file with \, skipped the line
-                                    [5.4.2] [5.5.2]
-End of file with unterminated comment, skipped the line
-                                    [5.4.2] [5.5.2]
-End of file with no newline, skipped the line
-                                    [5.4.2] [5.5.2]
+End of file with \, deleted the \           [5.5.2]
+End of file with unterminated comment, terminated the comment
+                                            [5.5.2]
+End of file with no newline, supplemented the newline
+                                            [5.5.2]
 End of file with unterminated #asm block started at line 123
                                     [5.4.2] [5.5.2]
 End of file within #if (#ifdef) section started at line 123
@@ -6190,6 +6252,8 @@ Missing "," or ")" in parameter list "(a,b"
 More than BLK_NEST nesting of #if (#ifdef) sections
                             [5.3.3]
 More than 8 nesting of #if (#ifdef) sections            [5.7] [5.8]
+More than INCLUDE_NEST nesting of #include
+                            [5.3.3]
 More than 8 nesting of #include                         [5.7]
 More than 32 nesting of parens in #if expression        [5.7]
 More than NEXP*2-1 constants stacked at "12"

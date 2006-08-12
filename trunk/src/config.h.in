@@ -60,6 +60,9 @@
 /* Define the cpu-specific-predefined-macro. */
 #undef CPU_STD2
 
+/* Define root directory of CYGWIN. */
+#undef CYGWIN_ROOT_DIRECTORY
+
 /* Define compiler-specific C include directory 1. */
 #undef C_INCLUDE_DIR1
 
@@ -140,6 +143,12 @@
 
 /* Define printf length modifier for the longest integer. */
 #undef LL_FORM
+
+/* Define /mingw directory. */
+#undef MINGW_DIRECTORY
+
+/* Define root directory of MSYS. */
+#undef MSYS_ROOT_DIRECTORY
 
 /* Define the suffix of object file. */
 #undef OBJEXT

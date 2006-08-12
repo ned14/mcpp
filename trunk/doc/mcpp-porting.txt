@@ -44,6 +44,11 @@ V.2.6       2006/07     Integrated STANDARD and PRE_STANDARD modes into
                 compilers and Plan 9 / cpp.
                                                                 kmatsui
 
+V.2.6.1     2006/08     Added porting to MinGW.
+            Revised path-list handling for CygWIN.
+            Revised some other points.
+                                                                kmatsui
+
 
                                 Contents
 
@@ -59,9 +64,10 @@ V.2.6       2006/07     Integrated STANDARD and PRE_STANDARD modes into
 3.1.2       FreeBSD / GCC V.2.*, V.3.*, V.4.*
 3.1.3       Linux / GCC V.2.*, V.3.*, V.4.*
 3.1.4       CygWIN V.1.* / GCC V.2.*, V.3.*
-3.1.5       LCC-Win32 V.3.*
-3.1.6       Visual C++ 2002, 2003, 2005
-3.1.7       Borland C V.4.*, V.5.*
+3.1.5       MinGW / GCC V.3.*
+3.1.6       LCC-Win32 V.3.*
+3.1.7       Visual C++ 2002, 2003, 2005
+3.1.8       Borland C V.4.*, V.5.*
 3.2     Compiler systems to which DECUS cpp had been ported
 3.3     noconfig.H, configed.H, system.H
 3.4     system.c
@@ -313,6 +319,10 @@ DOS compiler systems are removed.  The sources were rewritten in many
 parts.  I think that so much rewriting as this version will not happen
 hereafter, except adding codes and refining details.
 
+2.17    In August 2006, MCPP V.2.6.1 was released.  In this version,
+porting to MinGW was added, some bugs were fixed and some relatively
+small improvements were done.
+
   * The outline of the "Exploratory Software Project" can be seen at the
     following site (Japanese only).
 
@@ -376,7 +386,8 @@ There are two ways to compile MCPP.  The first is to automatically
 generate a header file named config.h and a Makefile by executing the
 'configure' script. After generating them, just run 'make; make install'.
 The header file named configed.H will be used in this way.  However, the
-configure script can only be used in UNIX-like systems and CygWIN.
+configure script can only be used in UNIX-like systems and CygWIN or
+MinGW.
 
 Another way is to 'make' using a makefile for each compiler system, with
 the modified/edited (if required) header file by difference files.
@@ -402,6 +413,7 @@ correctly.  In any case the CPU used is the x86 type. *
     openSUSE Linux 10.0         GCC V.4.0.2
     CygWIN 1.3.10               GCC V.2.95.3
     CygWIN 1.5.18               GCC V.3.4.4
+    MinGW (MSYS 1.0.11)         GCC V.3.4.5
     WIN32                       Visual C++ 2003, 2005
     WIN32                       Borland C++ V.4.0J, V.5.5J
     WIN32                       LCC-Win32 V.3.2, V.3.8
@@ -498,8 +510,8 @@ ones.
 Include directories are also set in system.c.  In UNIX terms, those set
 by system.c are OS-specific (usually /usr/include) and site specific
 (usually /usr/local/include).  As for Windows, nothing is set for
-include directories in system.c nor in noconfig.H, they are to be
-specified by environment variables.
+include directories in system.c nor in noconfig.H by default, they are
+to be specified by environment variables INCLUDE and CPLUS_INCLUDE.
 
 If required, one must also change built-in macro names defined by the
 macros such as CPU_STD1 or CPU_STD2.
@@ -519,6 +531,16 @@ compiler.  Please refer to sec 4.1.1.5. for this setting.
 With regard to the attached makefiles, you may need to rewrite BINDIR,
 which is the setting of the directory where the executables of the
 compiler system are located.
+
+In GCC V.3, V.4, the preprocessor is absorbed into the compiler (ccl,
+cclplus).  So, to use MCPP, you must replace the call of gcc, g++ with
+shell-script and set to execute first MCPP, then cc1 or cc1plus.  The
+attached makefiles set this automatically by doing:
+
+    make COMPILER=GNUC
+    make COMPILER=GNUC install
+
+For the details, please see mcpp-manual.txt sec 3.9.7.
 
 
 3.1.2       FreeBSD / GCC V.2.*, V.3.*, V.4.*
@@ -563,11 +585,6 @@ If the version of GCC is 2.7-2.95, then change the following macro to
 199409L.
 
 #define STDC_VERSION        0L
-
-In GCC V.3, the preprocessor is absorbed into the compiler (ccl, cclplus).
-So, to use MCPP, you must replace the call of gcc, g++ with shell-script
-and set to execute first MCPP, then cc1 or cc1plus.  For the way of
-doing this, please see mcpp-manual.txt sec 3.9.7.
 
 Even for other UNIX-like OSes, if the compiler system is GCC, I suspect
 one only needs to change things like these version numbers, the setting
@@ -617,24 +634,61 @@ The specification of getopt() of glibc is different from the standard
 ones such as POSIX, please use the one in lib.c instead.  I assume glibc
 is used by default for noconfig.H in Linux.
 
-About how to use MCPP on GCC 3 or 4, refer to section 3.9.7 of mcpp-
-manual.txt.
 
-
-3.1.4       CygWIN V.1.* / GCC 2.*, 3.*
+3.1.4       CygWIN V.1.* / GCC V.2.*, 3.*
 
 For CygWIN V.1.3.10 / GCC V.2.95.3, add the changes in cyg1310.dif to
 noconfig.H.  For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.
 
+Then, rewrite the macro CYGWIN_ROOT_DIRECTORY to define CygWIN's root
+directory on Windows as:
+
+    #define CYGWIN_ROOT_DIRECTORY   "C:/pub/compilers/cygwin"
+
+The letters in the path-list are case-insensitive.
+
 For other versions, it should be able to be ported by modifying macros
-such as VERSION_MSG, C_INCLUDE_DIR1, CPLUS_INCLUDE_DIR1,
-COMPILER_EXT_VAL, COMPILER_EXT2_VAL, COMPILER_SP3_VAL.
+such as VERSION_MSG, C_INCLUDE_DIR?, CPLUS_INCLUDE_DIR? and
+CYGWIN_ROOT_DIRECTORY.
 
-About how to use MCPP on GCC 3 or 4, refer to section 3.9.7 of mcpp-
-manual.txt.
+Although CygWIN is a system on Windows, it simulates UNIX file system.
+Therefore, MCPP treats CygWIN/GCC in almost the same way with UNIX/GCC,
+and presets include directories as MCPP on UNIX.
 
 
-3.1.5       LCC-WIN32 V.3.*
+3.1.5       MinGW / GCC V.3.*
+
+For MinGW / GCC V.3.4.5, add the changes in mingw345.dif to noconfig.H.
+Then, rewrite the macro MSYS_ROOT_DIRECTORY and MINGW_DIRECTORY to
+define MSYS's / and /mingw directory on Windows as:
+
+    #define MSYS_ROOT_DIRECTORY "C:/Program Files/MSYS/1.0"
+    #define MINGW_DIRECTORY     "C:/Program Files/MinGW"
+
+The letters in the path-list are case-insensitive.
+
+For other versions, it should be able to be ported by modifying macros
+such as VERSION_MSG, C_INCLUDE_DIR?, CPLUS_INCLUDE_DIR?,
+MSYS_ROOT_DIRECTORY and MINGW_DIRECTORY.  The path-list for the include
+directories may be either of absolute path as "c:/dir/mingw/include" or
+MinGW's own path as "/mingw/include".
+
+Since MinGW does not support symbolic link, GCC-specific-build of MCPP
+cannot be invoked from gcc through symbolic link.  Moreover, MinGW / gcc
+rejects to invoke a shell-script even if it is named cc1.  Therefore,
+the compiling of MCPP generates an executable named cc1.exe instead of
+shell-script.  In execution, gcc invokes this cc1.exe from which mcpp.
+exe or GCC's cc1.exe/cc1plus.exe are invoked.  In order to compile cc1
+as well as mcpp, you should do:
+
+    make COMPILER=GNUC mcpp cc1
+
+Although the include directories are preset on GCC-specific-build, they
+are not set on stand-alone-build, hence you should specify them by the
+environment variables INCLUDE and CPLUS_INCLUDE.
+
+
+3.1.6       LCC-WIN32 V.3.*
 
 In LCC-WIN32 V.3.2 or V.3.8, it needs to be changed as per lcc32.dif,
 lcc38.dif respectively.  In other versions, the VERSION_MSG macro needs
@@ -644,7 +698,7 @@ to be modified.
 working, at least, in V.3.2 (Aug, 2003) or later.
 
 
-3.1.6       Visual C++ 2002, 2003, 2005
+3.1.7       Visual C++ 2002, 2003, 2005
 
 In Visual C++ 2002, 2003, 2005, it needs modifications as vc2002.dif,
 vc2003.dif, vc2005.dif respectively.  For the compiler-specific-build,
@@ -656,7 +710,7 @@ changed by modifying the definition of COMPILER_EXT_VAL and
 COMPILER_EXT2_VAL respectively.
 
 
-3.1.7       Borland C++ V.4.*, V.5.*
+3.1.8       Borland C++ V.4.*, V.5.*
 
 In Borland C V.4.0, V.5.5 / bcc32, it needs to be changed with bc40.dif
 or bc55.dif respectively.
@@ -728,7 +782,7 @@ not in Standard, are written in this file.  Though MCPP uses also getcwd
 they are functions dependent on OS, so cannot be written portably.  They
 are only two low-level functions used in MCPP.  Though they are not
 Standard C function, but they are required by POSIX.  Every compiler
-system seems to provide it.
+system seems to provide it. *
 Before MCPP V.2.6, also C source code for memmove(), memcmp(), memcpy(),
 strstr() and strcspn() were provided.  They were removed, since compiler
 system without them seems to exist no longer.
@@ -739,6 +793,8 @@ compiler systems will not cause a problem unless there is a bug.
 
 To use the function called xyz in lib.c, the macro HOST_HAVE_XYZ, in
 PART 2 of noconfig.H (configed.H), should be defined to FALSE.
+
+  * On MinGW, spawnv() is used too.
 
 
 3.6     Standard headers
@@ -986,7 +1042,8 @@ the compilers is implementation of 'long long' or its corresponding data
 type.  In Visual C 2002, 2003, 2005 and Borland C 5.5, the type is
 '__int64'.  It's length modifier for printf() is 'I64', not 'j' nor 'll',
 except Visual C 2005.  Hence, define the macro LL_FORM as "I64" for
-these compilers.
+these compilers.  On MinGW, the specifier is also "I64", though it has
+long long.
 
 If the compiler's library has not the function stpcpy() or getopt(),
 define HOST_HAVE_STPCPY or HOST_HAVE_GETOPT to FALSE.
@@ -1284,6 +1341,7 @@ LL_FORM
     system in printf().  This is "j" in C99.  Also, the length modifier
     of 'long long' is "ll" (ell-ell) in C99.  In Visual C 2003 or older
     and Borland C 5.5, use "I64" to display the value of  '__int64'.
+    Also in MinGW, use "I64".
 
 
 4.1.2       PART 2: Setting of Host system
@@ -1434,10 +1492,12 @@ NEXP
 BLK_NEST
     Defines the limit of the nest level of #if (#ifdef, #ifndef)
     sections (how many levels #if and so on can be nested).
+INCLUDE_NEST
+    Define the limit of nest level of #include.  This prevents infinite
+    recursion of #includes.  This can exceed the limit imposed by OS on
+    number of simultaneously opened files.
 NINCLUDE
     Define the maximum number of the include directories to be searched.
-    (Does not mean the nest level of #includes.  There is no limitation
-    to the nest level).
 SBSIZE
     Defines the number of elements for the hash table when macros are
     internally classified by a hash and are stored.  This has to be a

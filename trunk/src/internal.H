@@ -32,38 +32,6 @@
  *      I n t e r n a l   D e f i n i t i o n s   f o r   M C P P
  *
  * In general, definitions in this file should not be changed by implementor.
- *
- * 1984/05 - 1985/06    DECUS CPP / cpp.h
- *              Created and released on USENET.         by Martin Minow
- *
- * 1998/08      CPP Version 2.0 / internal.H
- *              Re-written and renamed from cpp.h.      by kmatsui
- * 1998/09      CPP Version 2.1 / internal.H
- *              Updated according to C99-1998/08 draft. by kmatsui
- * 1998/11      CPP Version 2.2 / internal.H
- *              Slightly modified.                      by kmatsui
- * 2002/08      CPP Version 2.3 pre-release 1 / internal.H
- *              Slightly modified.                      by kmatsui
- * 2002/12      CPP Version 2.3 pre-release 2 / internal.H
- *              Slightly modified.                      by kmatsui
- * 2003/02      CPP Version 2.3 release / internal.H
- *              Slightly modified.                      by kmatsui
- * 2003/11      MCPP Version 2.4 pre-release / internal.H
- *              Changed DEFBUF and FILEINFO.  Reorganized some functions and
- *              variables.                              by kmatsui
- * 2004/02      MCPP Version 2.4 release / internal.H
- *              Extended multi-byte character handling. by kmatsui
- * 2004/03      MCPP Version 2.4.1 / internal.H
- *              Added -c option                         by kmatsui
- * 2005/03      MCPP Version 2.5 / internal.H
- *              Absorbed POST_STANDARD into STANDARD and OLD_PREPROCESSOR
- *                  into PRE_STANDARD.                  by kmatsui
- * 2006/07      MCPP Version 2.6 / internal.H
- *              Integrated STANDARD and PRE_STANDARD modes into one executable.
- *              Removed non-prototype declarations.
- *              Absorbed DEBUG, DEBUG_EVAL, OK_MAKE, OK_TRIGRAPHS,
- *                  OK_DIGRAPHS, OK_TRIGRAPHS, OK_PRAGMA_OP into default.
- *                                                      by kmatsui
  */
 
 #ifndef SYSTEM_H
@@ -337,6 +305,7 @@ extern int      no_output;          /* Don't output included file   */
 extern int      in_directive;       /* In process of #directive     */
 extern int      in_define;          /* In #define line              */
 extern int      in_getarg;          /* Collecting arguments of macro*/
+extern int      in_include;         /* In #include line             */
 extern int      compat_mode;        /* Compatible macro recursion   */
 extern long     macro_line;         /* Line number of macro call    */
 extern int      openum;             /* Number of operator or punct. */
@@ -374,7 +343,7 @@ extern void     undef_a_predef( const char * name);
                 /* Remove a non-standard predef */
 
 /* control.c    */
-extern int      control( void);
+extern void     control( void);
                 /* Process #directive lines     */
 extern DEFBUF * do_define( int ignore_redef);
                 /* Do #define directive         */
@@ -479,6 +448,8 @@ extern void     add_file( FILE * fp, const char * filename);
                 /* Chain the included file      */
 extern void     conv_case( char * name, char * lim, int upper);
                 /* Convert to upper/lower case  */
+extern void     put_info( void);
+                /* Putout compiler-specific info*/
 extern void     do_pragma( void);
                 /* Process #pragma directive    */
 extern void     put_asm( void);

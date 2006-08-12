@@ -2,24 +2,12 @@
  * noconfig.H
  * Configurations for MCPP not using config.h.
  *
- * 2003/11  Created.                                        by kmatsui
- *
- * 2004/02  Extended multi-byte character handling.
- *          Added configuration for Plan 9 / pcc.           by kmatsui
- *
- * 2005/03  Changed default setting to FreeBSD 5.* / GCC 3.4.
- *                                                          by kmatsui
- * 2006/07  Created settings for stand-alone (compiler-independent) build.
- *          Removed settings for pre-C90 compiler, rearranged using #elif
- *              directive.
- *          Removed settings for MS-DOS compilers.
- *          Removed configurations for OS-9, DJGPP and Plan 9.
- *          Changed default setting to FreeBSD 5.* / stand-alone / GCC 3.4.
- *                                                          by kmatsui
- *
  * WARNING: These are default settings.  To configure for your system, you
  *      must edit this file here and there.
  */
+
+#define TRUE                1
+#define FALSE               0
 
 /*
  *  'Target' means the O.S. and the compiler to which cpp is implemented.
@@ -67,6 +55,7 @@
 #define SYS_MAC             0x6000
 #define SYS_WIN             0x7000
 #define SYS_WIN32           0x7400  /* (SYS_WIN32 & 0xF000) == SYS_WIN      */
+#define SYS_MINGW           0x7C00  /* (SYS_MINGW & 0xF000) == SYS_WIN      */
 
 /* COMPILER */
 #define COMPILER_UNKNOWN    0
@@ -196,7 +185,18 @@
 #define SYSTEM_EXT2         "__CYGWIN32__"
 #define MBCHAR              SJIS
 #define FNAME_FOLD          TRUE
+#define CYGWIN_ROOT_DIRECTORY   "c:/pub/compilers/cygwin"
 #endif  /* SYSTEM == SYS_CYGWIN */
+
+#if     SYSTEM == SYS_MINGW
+#define SYSTEM_EXT          "__MINGW__"
+#define SYSTEM_EXT2         "__MINGW32__"
+#define MSYS_ROOT_DIRECTORY "c:/pub/compilers/msys/1.0"
+#define MINGW_DIRECTORY     "c:/pub/compilers/mingw"
+#if     COMPILER == GNUC
+#define SJIS_IS_ESCAPE_FREE FALSE
+#endif
+#endif  /* SYSTEM == SYS_MINGW  */
 
 #if     SYS_FAMILY == SYS_UNIX
 #ifndef MBCHAR
@@ -324,7 +324,7 @@
 #define COMPILER_SP1_VAL    "unsigned int"
 #define COMPILER_SP2_VAL    "int"
 #define COMPILER_SP3_VAL    "int"
-    /* SYS_FREEBSD: "int" , SYS_CYGWIN: "short unsigned int"
+    /* SYS_FREEBSD: "int" , SYS_CYGWIN, SYS_MINGW: "short unsigned int"
         , others: "long int"    */
 #endif  /* COMPILER_FAMILY == GNUC   */
 
@@ -529,7 +529,9 @@
  * Both of target COMPILER and HOST_COMPILER should have long long.
  */
 #if     HAVE_LONG_LONG
-#if     HOST_COMPILER == BORLANDC || (HOST_COMPILER == MSC && _MSC_VER < 1400)
+#if     HOST_COMPILER == BORLANDC   \
+        || (HOST_COMPILER == MSC && _MSC_VER < 1400)    \
+        || HOST_SYSTEM == SYS_MINGW
 #define LL_FORM             "I64"   /* Format specifier for __int64 */
 #endif
 #ifndef LL_FORM

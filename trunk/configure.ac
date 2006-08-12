@@ -1,10 +1,10 @@
-dnl configure.ac for MCPP   2003/11, 2006/07  kmatsui
+dnl configure.ac for MCPP   2003/11, 2006/08  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
 dnl To cross-compile you must edit here and there of this file.
 
-AC_INIT( mcpp, 2.6, kmatsui@t3.rim.or.jp)
+AC_INIT( mcpp, 2.6.1, kmatsui@t3.rim.or.jp)
 AC_CONFIG_SRCDIR( src/main.c)
 AM_CONFIG_HEADER( src/config.h)
 AC_CONFIG_AUX_DIR( config)
@@ -38,9 +38,13 @@ linux*)
 freebsd*)
     AC_DEFINE( [HOST_SYSTEM], [SYS_FREEBSD])
     ;;
-cygwin* | mingw*)
+cygwin*)
     AC_DEFINE( [HOST_SYSTEM], [SYS_CYGWIN])
     ac_c_define_HOST_SYSTEM=[SYS_CYGWIN]
+    ;;
+mingw*)
+    AC_DEFINE( [HOST_SYSTEM], [SYS_MINGW])
+    ac_c_define_HOST_SYSTEM=[SYS_MINGW]
     ;;
 *)
     AC_MSG_WARN( [Unsupported host OS, assuming to be an UNIX variant])
@@ -55,8 +59,11 @@ linux*)
 freebsd*)
     AC_DEFINE( [SYSTEM], [SYS_FREEBSD])
     ;;
-cygwin* | mingw*)
+cygwin*)
     AC_DEFINE( [SYSTEM], [SYS_CYGWIN])
+    ;;
+mingw*)
+    AC_DEFINE( [SYSTEM], [SYS_MINGW])
     ;;
 *)
     AC_MSG_WARN( Unsupported target OS, assuming to be an UNIX variant)
@@ -141,19 +148,21 @@ int main( void)
 
 if test x${ac_cv_type_intmax_t} = xyes; then
     AC_CHECK_MOD_LL( [intmax_t], [j], [#include <stdint.h>])
-    if test x$ac_c_define_HOST_SYSTEM = xSYS_CYGWIN; then
+    if test x${ac_c_define_HOST_SYSTEM} = xSYS_CYGWIN \
+            || test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW; then
         sleep 1         # wait for cleanup
     fi
 fi
 
 if test x${ac_cv_type_long_long} = xyes; then
-    for modifier in ll q L
+    for modifier in ll I64 q L
     do
         AC_CHECK_MOD_LL( [long long], ${modifier})
         if test x${ac_cv_c_printf_modifier+set} = xset; then
             break
         fi
-        if test x$ac_c_define_HOST_SYSTEM = xSYS_CYGWIN; then
+        if test x${ac_c_define_HOST_SYSTEM} = xSYS_CYGWIN \
+                || test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW; then
             sleep 1         # wait for cleanup
         fi
     done
@@ -228,6 +237,46 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
     )
     if test x${gcc_cv_glibc} = xyes; then
         AC_DEFINE( [LIB_IS_GLIBC], 1, [Define if the library is glibc.])
+    fi
+
+    if test x${ac_c_define_HOST_SYSTEM} = xSYS_CYGWIN; then
+        AC_CACHE_CHECK( the root directory,
+            ac_cv_cygwin_root,
+            [ac_cv_cygwin_root=`mount | grep ' on / ' | sed 's, on / .*,,' | tr '\\\' '/'`]
+        )
+        AC_DEFINE_UNQUOTED( [CYGWIN_ROOT_DIRECTORY], "${ac_cv_cygwin_root}",
+            [Define root directory of CYGWIN.])
+    fi
+    if test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW; then
+        AC_CACHE_CHECK( the root directory,
+            ac_cv_msys_root,
+            cw=`pwd`
+            cd /
+            cat > getcwd.c <<\_EOF
+#include <stdio.h>
+#include <unistd.h>
+int main( int argc, char ** argv)
+{   char    buf@<:@ FILENAME_MAX@:>@;
+    getcwd( buf, FILENAME_MAX);
+    puts( buf);
+    return 0;
+}
+_EOF
+            ${CC} getcwd.c
+            [ac_cv_msys_root=`./a.exe | tr '\\\', '/'`]
+            ## redundant \ to work around MinGW's problem
+        )
+        AC_CACHE_CHECK( the /mingw directory,
+            ac_cv_mingw_dir,
+            cd /mingw
+            [ac_cv_mingw_dir=`/a.exe | tr '\\\', '/'`]
+        )
+        rm -f /getcwd.c /a.exe
+        cd ${cw}
+        AC_DEFINE_UNQUOTED( [MSYS_ROOT_DIRECTORY], "${ac_cv_msys_root}",
+            [Define root directory of MSYS.])
+        AC_DEFINE_UNQUOTED( [MINGW_DIRECTORY], "${ac_cv_mingw_dir}",
+            [Define /mingw directory.])
     fi
 
 else    # not gcc
@@ -321,6 +370,8 @@ AC_DEFUN( [AC_C_INCLUDE_PREF], [
 
 AC_CACHE_CHECK( include preference - relative to current or source directory,
     ac_cv_c_include_pref,
+    mkdir mcpp-tmp
+    cd mcpp-tmp
     mkdir dir ../next ../next/dir
     echo '#include "dir/what.h"'    > ../next/header.h
     echo '#include "next.h"'        >> ../next/header.h
@@ -339,8 +390,10 @@ AC_CACHE_CHECK( include preference - relative to current or source directory,
             AC_MSG_ERROR( Failed to include header file.)
         fi
     fi
-    rm -rf dir ../next
-    if test x$ac_c_define_HOST_SYSTEM = xSYS_CYGWIN; then
+    cd ..
+    rm -rf mcpp-tmp next
+    if test x$ac_c_define_HOST_SYSTEM = xSYS_CYGWIN \
+            || test x$ac_c_define_HOST_SYSTEM = xSYS_MINGW; then
         sleep 1         # wait for cleanup
     fi
 )
@@ -521,10 +574,14 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
 
     export LANG=${lang_save}
 
-    if test x${c_include_dir1+set} = xset; then
-        inc_dir=${c_include_dir1}
+    if test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW; then
+        inc_dir=${c_include_dir2}
     else
-        inc_dir=/usr/local/include
+        if test x${c_include_dir1+set} = xset; then
+            inc_dir=${c_include_dir1}
+        else
+            inc_dir=/usr/local/include
+        fi
     fi
 
     AC_SUBST( [inc_dir])
@@ -645,10 +702,10 @@ AC_ARG_WITH( [gcc-testsuite-dir],
 )
 AC_SUBST( [gcc_testsuite_dir])
 AM_CONDITIONAL( [GNUC], test x${ac_cv_c_compiler_gnu} = xyes)
-AM_CONDITIONAL( [REPLACE_CPP], test x${enable_replace_cpp} = xyes)
 
+AM_CONDITIONAL( [REPLACE_CPP], test x${enable_replace_cpp} = xyes)
+AM_CONDITIONAL( [MINGW], test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW)
 
 dnl Final output.
 
 AC_OUTPUT( Makefile src/Makefile tests/Makefile)
-

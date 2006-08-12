@@ -30,81 +30,7 @@
 /*
  *                          E X P A N D . C
  *                  M a c r o   E x p a n s i o n
- */
-
-/*
- * CPP Version 2.0 / expand.c
- * 1998/08      kmatsui
- *      Split from cpp4.c and cpp6.c (support.c).
- *      Created Standard conforming mode of macro expansion.
- *      Created is_macro(), squeeze_ws(), skip_macro()
- *              as common routines,
- *          expand(), replace(), def_special(), prescan(), catenate(),
- *          stringize(), substitute(), rescan(), disable_repl(),
- *          enable_repl(), is_able_repl()
- *              for MODE >= STANDARD,
- *          expand(), conv_st_quote()
- *              for MODE < STANDARD.
- *      Split expcollect() into collect_args() and get_an_arg().
- *      Renamed macroid() to rescan(), expand() to replace(), expstuff() to
- *          substitute()    for MODE < STANDARD.
- *          dumpparm() to dump_args().
- *      Revised most of the functions.
- */
-
-/*
- * CPP Version 2.2 / expand.c
- * 1998/11      kmatsui
- *      Revised several functions.
- */
-
-/*
- * CPP Version 2.3 pre-release 1 / expand.c
- * 2002/08      kmatsui
- *      Fixed the bug of 0-parameter function-like macro.
- *      Modified re-examination of macro of the same name.
- *      Renamed several functions using underscore.
  *
- * CPP Version 2.3 pre-release 2 / expand.c
- * 2002/12      kmatsui
- *      Fixed the bug of rescan() warning innocent macro call.
- */
-
-/*
- * MCPP Version 2.4 prerelease
- * 2003/11      kmatsui
- *      Revised def_special() and collect_args() according to the change of
- *          FILEINFO.
- *      Removed CON_NOEXPAND and CON_EXPAND modes of macro expansion, removed
- *          append_string(), catenate() and conv_st_quote() in pre-STANDARD
- *          modes accordingly.
- *
- * MCPP Version 2.4.1
- * 2004/03      kmatsui
- *      Added compat_mode (compatible mode to GCC's expansion of recursive
- *          macro).
- */
-
-/* MCPP Version 2.5
- * 2005/03      kmatsui
- *      Revised handling of token separator in STANDARD mode.
- *      Revised "blue painting" of the same name macro.
- *      Revised debugging information.
- *      Split is_macro_call() from is_macro().
- *      Absorbed POST_STANDARD into STANDARD and OLD_PREPROCESSOR into
- *          PRE_STANDARD.
- */
-
-/*
- * MCPP Version 2.6
- * 2006/07      kmatsui
- *      Removed non-prototype declarations.
- *      Integrated STANDARD and PRE_STANDARD modes into one executable,
- *          renamed functions and some variables accordingly, created
- *          expand_init().
- */
-
-/*
  * The macro expansion routines are placed here.
  */
 
@@ -292,9 +218,11 @@ static char *   expand_std(
             if (c == IN_SRC)
                 continue;                   /* Skip IN_SRC          */
             else if (c == TOK_SEP) {
-                if (c1 == ' ')
+                if (c1 == ' ' || in_include)
                     continue;
-                c = ' ';
+                    /* Skip separator just after ' ' and in #include line   */
+                else
+                    c = ' ';
             }
         }
         c1 = c;
@@ -493,11 +421,11 @@ static int  prescan(
     if (mode == POST_STD) {
         file = unget_string( defp->repl, defp->name);
     } else {
-        *out++ = TOK_SEP;                       /* Wrap replacement     */
-        workp = work;                           /*  text with token     */
-        workp = stpcpy( workp, defp->repl);     /*   separators to      */
-        *workp++ = TOK_SEP;                     /*    prevent unintended*/
-        *workp = EOS;                           /*     token merging.   */
+        *out++ = TOK_SEP;                   /* Wrap replacement     */
+        workp = work;                       /*  text with token     */
+        workp = stpcpy( workp, defp->repl); /*   separators to      */
+        *workp++ = TOK_SEP;                 /*    prevent unintended*/
+        *workp = EOS;                       /*     token merging.   */
         file = unget_string( work, defp->name);
     }
 
@@ -712,12 +640,8 @@ static char *   stringize(
             *out_p++ = ' ';
             continue;
         }
-        if (mode == STD) {
-            if (c == TOK_SEP)
-                continue;                   /* Skip inserted separ  */
-            else if (c == IN_SRC)
-                continue;                   /* Skip in-src magic    */
-        }
+        if (mode == STD && (c == TOK_SEP || c == IN_SRC))
+            continue;   /* Skip inserted separator and in-src magic */
         if (c == '\\')
             stray_bsl = TRUE;               /* May cause a trouble  */
         token_type = scan_token( c, (workp = work, &workp), work_end);
@@ -875,8 +799,8 @@ static char *   rescan(
             if (is_macro_call( inner, &out_p)
                     && ((mode == POST_STD && is_able_repl( inner))
                         || (mode == STD
-                            && ((is_able = is_able_repl( inner)) == YES)
-                                || (is_able == READ_OVER && c == IN_SRC)))) {
+                            && (((is_able = is_able_repl( inner)) == YES)
+                                || (is_able == READ_OVER && c == IN_SRC))))) {
                                             /* Really a macro call  */
                 if ((out_p = replace( inner, tp, out_end, outer, file))
                         == NULL)            /* Error of macro call  */
@@ -1026,6 +950,7 @@ static char *   expand_prestd(
     if (setjmp( jump) == 1) {
         skip_macro();
         mp = macrobuf;
+        *mp = EOS;
         macro_line = MACRO_ERROR;
         goto  err_end;
     }
@@ -1083,8 +1008,12 @@ exp_end:
     while (macrobuf < mp && *(mp - 1) == ' ')
         mp--;                           /* Remove trailing blank    */
     macro_line = 0;
-err_end:
     *mp = EOS;
+    if (mp - macrobuf > out_end - out) {
+        cerror( macbuf_overflow, defp->name, 0L, macrobuf);
+        macro_line = MACRO_ERROR;
+    }
+err_end:
     out_p = stpcpy( out, macrobuf);
     if (debug & EXPAND) {
         dump_string( "expand_prestd exit", out);
@@ -1494,7 +1423,7 @@ static int  squeeze_ws(
  * White spaces are ' ' ('\t', '\r', '\v', '\f' converted to ' ' by get()),
  * and '\n' unless in_directive is set.
  * COM_SEP is skipped.  TOK_SEPs are squeezed to one TOK_SEP.
- * If white spaces are found and out is not NULL, write a space to *out and
+ * If white spaces are found and 'out' is not NULL, write a space to *out and
  * increment *out.
  * Return the next character.
  */
@@ -1526,7 +1455,7 @@ static int  squeeze_ws(
     if (out) {
         if (space)              /* Write a space to output pointer  */
             *(*out)++ = ' ';    /*   and increment the pointer.     */
-        else if (tsep)
+        if (tsep)
             *(*out)++ = TOK_SEP;
     }
     if (mode == POST_STD && file != infile) {

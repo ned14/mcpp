@@ -30,35 +30,7 @@
 /*
  *                          M B C H A R . C
  *      C h a r a c t e r    h a n d l i n g    R o u t i n e s
- */
-
-/*
- * MCPP Version 2.4
- * 2004/02      kmatsui
- *      Created.  Moved type[] from system.c.
- *      Created type_*[] tables for various encodings of multi-byte character.
- *      Created encoding_name[][] table.
- *      Created mb_init(), mb_read_2byte(), mb_read_iso2022_jp(),
- *          mb_read_utf8(), mb_eval(), set_encoding(), search_encoding() and
- *          strip_bar().
- */
-
-/*
- * MCPP Version 2.5
- * 2005/03      kmatsui
- *      Changed type[] according to the change of magic characters assignment.
- *      Absorbed POST_STANDARD into STANDARD and OLD_PREPROCESSOR into
- *          PRE_STANDARD.
- */
-
-/*
- * MCPP Version 2.6
- * 2006/07      kmatsui
- *      Removed non-prototype declarations.
- *      Removed settings for MS-DOS compilers.
- */
-
-/*
+ *
  * Character handling and multi-byte character handling routines are
  * placed here.
  */

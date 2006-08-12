@@ -30,285 +30,7 @@
 /*
  *                              M A I N . C
  *                  M C P P   M a i n   P r o g r a m
- */
-
-/*
- * Edit history of DECUS CPP (MM: Martin Minow)
- * 21-May-84    MM      "Field test" release
- * 11-Jul-84    MM      "Official" first release (that's what I thought!)
- * 31-Aug-84    MM      USENET net.sources release.
- *  7-Dec-84    MM      Stuff in Nov 12 Draft Standard
- * 07-Jun-85    KR      Latest revision
- */
-
-/*
- * CPP Version 2.0
- * 1998/08      Re-written according to ISO 9899:1990 and it's Amendment 1,
- *      Corrigendum 1, 2.               by kmatsui (kmatsui@t3.rim.or.jp)
  *
- *      Implemented translation phases precisely.       (support.c)
- *      Revised tokenization according to the Standard and Amendment1.
- *                                                      (support.c & others)
- *      Implemented the pre-defined macros __STDC__, __STDC_VERSION__,
- *          __TIME__, and revised __DATE__.  Made these standard macros can't
- *          be undefined nor redefined.                 (main.c)
- *      Implemented _Pragma() operator.                 (main.c & others)
- *      Revised some non-standard pre-defined macros.   (main.c)
- *      Implemented #error directive.  The error message is output to the
- *          stderr.                                     (control.c)
- *      Implemented #pragma __once directive, -i option and -M* option,
- *          imported from GCC.                          (control.c & others)
- *      Implemented #pragma __put_defines, #pragma __debug directives and the
- *          old style directives corresponding to them. (system.c & others)
- *      Made #pragma lines to be output with warning to the stderr for the
- *          compiler which can't recognize the directive.       (system.c)
- *      Made #line argument to be subject to macro expansion.
- *                                                      (control.c, support.c)
- *      Reinforced the test of #define syntax.          (control.c)
- *      Created Standard conforming mode of macro-expansion (including the
- *          processing of #, ## operators).  The Standard mode of expansion is
- *          very different from the pre-Standard modes. (expand.c)
- *      Created "post-Standard" mode of preprocessing, which is a simplified
- *          version of Standard mode.                   (all files)
- *      Simplified CON_FALSE mode corresponding to K&R 1st. specifications.
- *          CON_NOEXPAND, CON_EXPAND modes of the original version are
- *          retained (after revision).  (main.c, control.c eval.c, expand.c)
- *      Revised # operator so as to inserts \ before \ or " in stringized
- *          arguments (except in MBCHAR) in Standard mode.      (expand.c)
- *      Changed the type of #if expression from int to long / unsigned long.
- *          Reinforced expression evaluation.           (eval.c)
- *      Implemented wide character constant, multi-character character
- *          constant, and revised multi-byte character constant in #if
- *          expression.                                 (eval.c)
- *      Revised the handling of MBCHAR in string literal and character
- *          constant.                   (support.c, expand.c, eval.c, main.c)
- *      Supplemented the optional phase for the pre-Standard compiler-proper
- *          to concatenate adjacent string literals, convert '\a' and '\v' to
- *          octals, convert digraphs.                   (main.c)
- *      Implemented the features of C99-1997/11 draft except Unicode-related
- *          features (_Pragma operator, variable arguments of macro, //
- *          comments, long long of #if expression, p+ of pp-number)
- *                                                      (all files)
- *      Supplemented the C++ preprocessor option.       (support.c, system.c)
- *      Refined error checks and diagnostic messages.   (all files)
- *      Implemented -M* option.                         (main.c, system.c)
- *      Updated MS-DOS memory model option.             (system.c)
- *      Revised command line options.                   (system.c)
- *      Made the source files compilable by C++ as well as C.   (all files)
- *      Re-organized and re-written the source files to be portable to many
- *           systems.                                   (all files)
- *
- *      See "cpp_20.man", "cpp_20.doc" and "cpp_test.doc" for details.
- *      (2004/11    Those documents are later renamed as "mcpp-manual.txt"
- *          , "mcpp-porting.txt" and "cpp-test.txt".)
- *
- *      Dependencies among the source files are as follows:
- *          main.c, control.c, eval.c, expand.c, support.c and system.c
- *              depend on system.H and internal.H
- *              system.H should be included prior to internal.H.
- *          lib.c depends on system.H.
- *          lib.c is provided for the library which has not the particular
- *              functions.
- *      You should add to stack size
- *              NMACWORK + (NEXP * 30) + (sizeof (int) * 100)
- *          and for MODE == STANDARD
- *              (sizeof (char *) * 12 * RESCAN_LIMIT)
- *          other than the size needed by the system.
- */
-
-/*
- * CPP Version 2.1
- * 1998/09      kmatsui
- *      Updated C99 features according to 1998/08 draft (including UCN,
- *          optional multi-byte-character in identifier, type of #if
- *          expression in integer of maximum size and concatenation of
- *          wide-character-string-literal and character-string-literal).
- *                                              (main.c, eval.c, support.c)
- */
-
-/*
- * CPP Version 2.2
- * 1998/11      kmatsui
- *      Updated according to C++ Standard (ISO/IEC 14882:1998).
- *                                                      (eval.c, support.c)
- *      Fixed the bug of interaction of predefined non-standard macro with
- *          -D option.              (main.c, control.c, expand.c, system.c)
- */
-
-/*
- * CPP Version 2.3 pre-release 1
- * 2002/08      kmatsui
- *      Updated according to C99 (ISO/IEC 9899:1999).
- *      Added compatibility mode of C++ to C99.         (system.c, expand.c)
- *      Increased the class of warnings from four (OR of 1, 2, 4, 8) to
- *          five (OR of 1, 2, 4, 8, 16).
- *      Changed some errors to warnings.
- *      Changed some options on invoking.               (system.c)
- *      Added the options for compatibility to GCC.     (system.c, support.c)
- *      Added implementation for Linux, Cygwin / GCC, LCC-Win32.
- *                                          (system.H, control.c, system.c)
- *      Fixed a few bugs.                   (control.c, expand.c, support.c)
- *      Renamed functions and some variables using underscore to separate
- *          the two words.                  (internal.H, all the *.c files)
- *
- * CPP Version 2.3 pre-release 2
- * 2002/12      kmatsui
- *      Added implementation for GCC 3.2.               (system.H, system.c)
- *      Fixed a few bugs.                               (system.c, expand.c)
- *
- * CPP Version 2.3 release
- * 2003/02      kmatsui
- *      Implemented identifier-like operators in C++98.
- *                                          (eval.c, control.c, support.c)
- *      Reinforced checking of __VA_ARGS__.             (control.c)
- *      Enabled interspersed options between filename arguments on
- *          invocation.                                 (system.c)
- *      Renamed #pragma __debug and #pragma __warning to #pragma __debug_cpp
- *          and #pragma __warning_cpp.                  (system.c)
- *      Renamed macros for include directory.           (system.H, system.c)
- *
- * CPP Version 2.3 patch 1
- * 2003/03      kmatsui
- *      Revised the MODEs other than STANDARD.          (system.c)
- */
-
-/*
- * MCPP Version 2.4 prerelease
- * 2003/11      kmatsui
- *      Renamed CPP as MCPP (This is not the name of executable).
- *      Created configure script to MAKE automatically.  Accordingly,
- *          reorganized system.H, created configed.H and unconfig.H, and
- *          changed some macro names.
- *      Implemented dirname/filename/line information of defined macros,
- *      changed DEFBUF and FILEINFO structure, reorganized some functions and
- *          variables.                  (other than system.H, eval.c lib.c)
- *      Added #pragma __push_macro, #pragma __pop_macro, #pragma __preprocess,
- *          #pragma __preprocessed.                     (system.c)
- *      Added implementation for Visual C++             (system.H, system.c)
- *      Removed settings on VMS, VAX C, DEC C and OS-9/09.
- *                                                      (system.H, system.c)
- *      Removed CON_NOEXPAND and CON_EXPAND modes.  Renamed CON_FALSE mode as
- *          PRE_STANDARD.                               (all the files)
- *
- * MCPP Version 2.4 release
- * 2004/02      kmatsui
- *      Implemented handling of multi-byte character encodings other than
- *          2-byte encodings.  Made various encodings available
- *          simultaneously.  Created mbchar.c.  Added #pragma __setlocale.
- *          Added -m <encoding> option.  Enabled environment variable LC_ALL,
- *          LC_CTYPE and LANG to specify the encoding.  (all the files)
- *      Added implementation for Plan 9 / pcc.          (noconfig.H, system.c)
- *
- * MCPP Version 2.4.1
- * 2004/03      kmatsui
- *      Added -c option (compatible mode to GCC expansion of recursive
- *          macro).                                     (expand.c, system.c)
- */
-
-/*
- * MCPP Version 2.5
- * 2005/03      kmatsui
- *      Absorbed POST_STANDARD into STANDARD as an execution time mode
- *          (POST_STD mode).                            (all the files)
- *      Absorbed OLD_PREPROCESSOR into PRE_STANDARD as an execution time
- *          mode (OLD_PREP mode).                       (all the files)
- *      Revised STD mode macro expansion routine using GCC 3.2 testsuite
- *          and Wave 1.0 testcases.                     (expand.c)
- *      Revised OLD_PREP mode to follow "Reiser cpp model".   (control.c)
- *      Removed FOLD_CASE settings.                     (system.c)
- *      Renamed most of #pragma __* as #pragma MCPP *.  (system.c)
- *      Updated to cope with GCC V.3.3 and 3.4, and changed some options.
- *                                                      (system.c)
- */
-
-/*
- * MCPP Version 2.6
- * 2006/07      kmatsui
- *      Integrated STANDARD and PRE_STANDARD modes into one executable,
- *          differentiating the modes by execution time options.
- *      Removed settings for pre-C90 compiler (string concatenation by
- *          preprocessor, '\a' and '\v' handling, no unsigned long #if, no
- *          Standard library functions, non-prototype declarations,
- *          no #pragma).                                (all files)
- *      Removed settings for MS-DOS compiler.   (*.H, system.c, mbchar.c)
- *      Absorbed DEBUG, DEBUG_EVAL, OK_MAKE into default, OK_DIGRAPHS,
- *          OK_PRAGMA_OP into default of STD and POST_STD mode, OK_TRIGRAPHS
- *          into default of STD mode, OK_SIZE into default of KR and OLD_PREP
- *          modes.                                      (all files)
- *      Added stand-alone mcpp setting.                 (header files)
- */
-
-/*
- * CPP Version 2.0 / main.c
- * 1998/08      kmatsui
- *      Renamed cpp1.c main.c.
- *      Created do_pragma_op(), de_stringize(), devide_line(), putout(),
- *          putline(), post_preproc(), conv_esc(), conv2oct(), is_last_esc(),
- *          esc_mbchar(), conv_a_digraph().
- *      Removed output().
- *      Moved sharp() from cpp1.c to system.c,
- *          addfile(), openfile(), initdefines(), unpredefine()
- *              from cpp3.c to main.c,
- *      Revised most of the functions and variables.
- */
-
-/*
- * CPP Version 2.1 / main.c
- * 1998/09      kmatsui
- *      Revised several functions.
- */
-
-/*
- * CPP Version 2.2 / main.c
- * 1998/11      kmatsui
- *      Created undef_a_predef().
- *      Revised several functions.
- */
-
-/*
- * CPP Version 2.3 pre-release 1 / main.c
- * 2002/08      kmatsui
- *      Implemented __STDC_HOSTED__ pre-defined macro.
- *      Added "stdc3" variable for the -V option.
- *      Added "lang_asm" variable for the -a (-lang-asm,
- *          -x assembler-with-cpp) option.
- *      Renamed several functions using underscore.
- *
- * CPP Version 2.3 release / main.c
- * 2003/02      kmatsui
- */
-
-/*
- * MCPP Version 2.4 prerelease / main.c
- * 2003/11      kmatsui
- *      Moved open_file() and add_file() from main.c to system.c.
- *      Added the following variables for dir/filename information:
- *          null, inc_dirp, cur_fname, cur_fullname[].
- *      Revised main(), cur_file() and init_defines().
- *      Changed predefined macro __decus_cpp as __MCPP.
- *
- * MCPP Version 2.4 release / main.c
- * 2004/02      kmatsui
- *      Added the following variables for multi-byte character handling.
- *          mbchar, mbstart, mbmask, bsl_in_mbchar, bsl_need_escape.
- *      Changed some macros and updated esc_mbchar().
- */
-
-/*
- * MCPP Version 2.5 / main.c
- * 2005/03      kmatsui
- *      Absorbed POST_STANDARD into STANDARD and OLD_PREPROCESSOR into
- *          PRE_STANDARD.
- */
-
-/*
- * MCPP Version 2.6 / main.c
- * 2006/07      kmatsui
- *      Removed pre-C90 compiler settings.
- *      Removed conv_esc(), is_last_esc(), conv2oct().
- */
-
-/*
  * The main routine and it's supplementary routines are placed here.
  * The post-preprocessing routines are also placed here.
  */
@@ -407,6 +129,7 @@
     int     in_directive = FALSE;   /* TRUE scanning control line   */
     int     in_define = FALSE;      /* TRUE scanning #define line   */
     int     in_getarg;              /* TRUE collecting macro arguments      */
+    int     in_include;             /* TRUE scanning #include line  */
     long    in_asm = 0L;    /* Starting line of #asm - #endasm block*/
 
 /*
@@ -856,6 +579,7 @@ static void mcpp_main( void)
     if (! no_output) {  /* Explicitly output a #line at the start of cpp    */
         line++;
         sharp();
+        put_info();                         /* -fworking-directory  */
         line--;
     }
     keep_comments = cflag && !no_output;
@@ -883,11 +607,11 @@ static void mcpp_main( void)
             if (mode == OLD_PREP && c == COM_SEP)
                  c = get();                 /* Skip 0-length comment*/
             if (c == '#') {                 /* Is 1st non-space '#' */
-                newlines = control();       /* Do a #directive      */
+                control();                  /* Do a #directive      */
             } else if (mode == STD && dig_flag && c == '%') {
                     /* In POST_STD digraphs are already converted   */
                 if (get() == ':') {         /* '%:' i.e. '#'        */
-                    newlines = control();   /* Do a #directive      */
+                    control();              /* Do a #directive      */
                 } else {
                     unget();
                     if (! compiling) {
@@ -1177,7 +901,7 @@ static void put_a_line(
 /*
  *      Routines to  P O S T - P R E P R O C E S S
  *
- * 1998/08      created     kmatsui     (revised 1998/09, 2004/02)
+ * 1998/08      created     kmatsui     (revised 1998/09, 2004/02, 2006/07)
  *    Supplementary phase for the older compiler-propers.
  *      1. Convert digraphs to usual tokens.
  *      2. Convert '\a' and '\v' to octal escape sequences.
@@ -1202,26 +926,6 @@ static void put_a_line(
  *  and wide string literal is an error.)
  *      4. '\\' of the second byte of SJIS (BIGFIVE or ISO2022_JP) is doubled
  *  if bsl_need_escape == TRUE.
- */
-
-/*
- * 1998/09      kmatsui
- *      Updated post_preproc() to concatenate wide-character-string and
- *          multibyte-character-string generating a wide-character-string.
- */
-
-/*
- * 2004/02      kmatsui
- *      Changed some macros and updated esc_mbchar() according to the
- *          extension of multi-byte character handling.
- */
-
-
-/*
- * 2006/07      kmatsui
- *      Removed the implementation of post_preproc() for pre-Standard compiler.
- *      Removed conv_esc(), is_last_esc(), conv2oct().
- *      Removed HAVE_C_BACKSLASH_A and CONCAT_STRINGS macros.
  */
 
 #if HAVE_DIGRAPHS && MBCHAR_IS_ESCAPE_FREE
