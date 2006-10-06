@@ -164,7 +164,7 @@ static int      included( const char * filename);
                 /* The file has been once included? */
 static void     push_or_pop( int direction);
                 /* Push or pop a macro definition   */
-static void     do_prestd_directive( void);
+static int      do_prestd_directive( void);
                 /* Process pre-Standard directives  */
 static void     do_preprocessed( void);
                 /* Process preprocessed file        */
@@ -3256,8 +3256,8 @@ void    do_old( void)
     }
 #endif
 
-    if (! standard)
-        do_prestd_directive();
+    if (! standard && do_prestd_directive())
+        return;
 
     if (compiling) {
         if (lang_asm) {                     /* "Assembler" source   */
@@ -3275,7 +3275,7 @@ void    do_old( void)
     return;
 }
 
-static void do_prestd_directive( void)
+static int  do_prestd_directive( void)
 /*
  * Process directives for pre-Standard mode.
  */
@@ -3283,68 +3283,70 @@ static void do_prestd_directive( void)
 #if COMPILER != GNUC
     if (str_eq( identifier, "assert")) {    /* #assert              */
         if (! compiling)                    /* Only validity check  */
-            return;
+            return  TRUE;
         if (eval() == 0L) {                 /* Assert expression    */
             cerror( "Preprocessing assertion failed"        /* _E_  */
                     , NULLST, 0L, NULLST);
             skip_nl();
             unget();
         }
-        return;
+        return  TRUE;
     } else
 #endif
     if (str_eq( identifier, "put_defines")) {
         if (! compiling)                    /* Only validity check  */
-            return;
+            return  TRUE;
         if (mode != OLD_PREP && ! is_junk())
             dump_def( dDflag, TRUE);        /* #put_defines         */
         skip_nl();
         unget();
-        return;
+        return  TRUE;
     } else if (str_eq( identifier, "preprocess")) {
         if (! compiling)                    /* Only validity check  */
-            return;
+            return  TRUE;
         if (mode != OLD_PREP && ! is_junk())
         /* Just putout the directive for the succeding preprocessor */
             fputs( "#preprocessed\n", fp_out);
         skip_nl();
         unget();
-        return;
+        return  TRUE;
     } else if (str_eq( identifier, "preprocessed")) {
         if (! compiling)                    /* Only validity check  */
-            return;
+            return  TRUE;
         if (mode != OLD_PREP && ! is_junk()) {
             skip_nl();
             do_preprocessed();              /* #preprocessed        */
-            return;
+            return  TRUE;
         }
         skip_nl();
         unget();
-        return;
+        return  TRUE;
     }
 
     if (str_eq( identifier, "debug")) {     /* #debug <args>        */
         if (! compiling)                    /* Only validity check  */
-            return;
+            return  TRUE;
         do_debug( TRUE);
-        return;
+        return  TRUE;
     } else if (str_eq( identifier, "end_debug")) {
         if (! compiling)
-            return;
+            return  TRUE;
         do_debug( FALSE);                   /* #end_debug <args>    */
-        return;
+        return  TRUE;
     }
 
     if (str_eq( identifier, "asm")) {       /* #asm                 */
         do_asm( TRUE);
-        return;
+        return  TRUE;
     }
     if (str_eq( identifier, "endasm")) {    /* #endasm              */
         do_asm( FALSE);
         skip_nl();                          /* Skip comments, etc.  */
         unget();
-        return;
+        return  TRUE;
     }
+
+    return  FALSE;                          /* Unknown directive    */
 }
 
 static void do_preprocessed( void)

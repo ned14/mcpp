@@ -168,13 +168,13 @@ void    control( void)
      */
     if (! compiling) {                      /* Not compiling now    */
         switch (hash) {
-        case L_else :                       /* Test the #if's nest, */
-        case L_elif :                       /*   if 0, compile.     */
+        case L_elif :
             if (! standard) {
                 if (warn_level & 8)
                     do_old();               /* Unknown directive    */
                 goto  skip_line;            /* Skip the line        */
             }   /* Else fall through    */
+        case L_else :       /* Test the #if's nest, if 0, compile   */
         case L_endif:                       /* Un-nest #if          */
             break;
         case L_if   :                       /* These can't turn     */
