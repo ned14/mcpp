@@ -932,11 +932,13 @@ Version:
                 break;
             }
 #endif
-            warn_level |= parse_warn_level( optarg, opt);
-            if (warn_level > 31 || warn_level < 0)
-                usage( opt);
-            if (warn_level == 0)
-                warn_level = 0xFF;          /* Remember this option */
+            if (isdigit( *optarg)) {
+                warn_level |= parse_warn_level( optarg, opt);
+                if (warn_level > 31 || warn_level < 0)
+                    usage( opt);
+                if (warn_level == 0)
+                    warn_level = 0xFF;      /* Remember this option */
+            }
             /* Else ignore the option   */
             break;
 
@@ -1439,7 +1441,7 @@ static void     chk_opts(
             trig_flag = FALSE;
     }
     if (incompat) {
-        fputs( "Incompatible options are specified.", fp_err);
+        fputs( "Incompatible options are specified.\n", fp_err);
         usage( '?');
     }
 
@@ -2386,36 +2388,41 @@ int     do_include(
 {
     const char * const  no_name = "No header name";         /* _E_  */
     char    header[ FILENAMEMAX + 16];
-    char    *hp;
-    int     c;
     int     token_type;
     char *  fname;
     int     delim;                          /* " or <, >            */
 
-    if ((c = skip_ws()) == '\n') {          /* No argument          */
+    if ((delim = skip_ws()) == '\n') {          /* No argument          */
         cerror( no_name, NULLST, 0L, NULLST);
         return  FALSE;
     }
     fname = infile->bptr - 1;       /* Current token for diagnosis  */
 
-    hp = header;
-    while (get_unexpandable( c, FALSE) != NO_TOKEN) {
-                                /* Expand any macros in the line    */
-        if (header + FILENAMEMAX < hp + (int) (workp - work))
-            cfatal( toolong_fname, header, 0L, work);
-        hp = stpcpy( hp, work);
-        while ((c = get()) == ' ')
-            *hp++ = ' ';
+    if (standard && type[ delim] & LET) {   /* Maybe a macro        */
+        char    *hp;
+        int     c;
+
+        hp = header;
+        c = delim;
+        while (get_unexpandable( c, FALSE) != NO_TOKEN) {
+                                    /* Expand any macros in the line    */
+            if (header + FILENAMEMAX < hp + (int) (workp - work))
+                cfatal( toolong_fname, header, 0L, work);
+            hp = stpcpy( hp, work);
+            while ((c = get()) == ' ')
+                *hp++ = ' ';
+        }
+        *hp = EOS;                              /* Ensure to terminate  */
+        if (macro_line == MACRO_ERROR)          /* Unterminated macro   */
+            return  FALSE;                      /*   already diagnosed. */
+        unget_string( header, NULLST);          /* To re-read           */
+        delim = skip_ws();
+        if (delim == '\n') {
+            cerror( no_name, NULLST, 0L, NULLST);       /* Expanded to  */
+            return  FALSE;                              /*   0 token.   */
+        }
     }
-    *hp = EOS;                              /* Ensure to terminate  */
-    if (macro_line == MACRO_ERROR)          /* Unterminated macro   */
-        return  FALSE;                      /*   already diagnosed. */
-    unget_string( header, NULLST);          /* To re-read           */
-    delim = skip_ws();
-    if (delim == '\n') {
-        cerror( no_name, NULLST, 0L, NULLST);       /* Expanded to  */
-        return  FALSE;                              /*   0 token.   */
-    }
+
     token_type = scan_token( delim, (workp = work, &workp)
             , work + FILENAMEMAX);
     if (token_type == STR)                  /* String literal form  */
@@ -2733,7 +2740,7 @@ void    add_file(
 
     if (include_nest >= INCLUDE_NEST)   /* Probably recursive #include      */
         cfatal( too_many_include_nest, NULLST, (long) INCLUDE_NEST, NULLST);
-    if (standard && (warn_level & 4) && include_nest == inc_nest_min)
+    if (standard && (warn_level & 4) && include_nest == inc_nest_min + 1)
         cwarn( too_many_include_nest , NULLST , (long) inc_nest_min , NULLST);
     include_nest++;
 }
@@ -3539,7 +3546,7 @@ static void dump_path( void)
     const char *    inc_dir;
     const char *    dir = "./";
 
-    fputs( "Include paths are as follow --\n", fp_debug);
+    fputs( "Include paths are as follows --\n", fp_debug);
     for (incptr = incdir; incptr < incend; incptr++) {
         inc_dir = *incptr;
         if (*inc_dir == '\0')
