@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.6 for LCC-Win32 / LCC make
-#       2006/08 kmatsui
+#       2006/11 kmatsui
 # You must first edit BINDIR according to your system.
 # To compile MCPP do:
 #		make
@@ -26,8 +26,15 @@ BINDIR = \PUBLIC\BIN
 MEMLIB =
 MEM_MACRO =
 
-OBJS = main.obj control.obj eval.obj expand.obj support.obj system.obj  \
+OBJS = main.obj directive.obj eval.obj expand.obj support.obj system.obj  \
     mbchar.obj lib.obj
+
+# To use mcpp as a subroutine from testmain.c,
+# uncomment the following 4 lines.
+#OBJS = main.obj directive.obj eval.obj expand.obj support.obj system.obj  \
+    mbchar.obj lib.obj testmain.obj
+#CFLAGS = -A -DMCPP_LIB
+#NAME = testmain.exe
 
 $(NAME) : $(OBJS)
 	lcclnk $(LINKFLAGS) *.obj $(MEMLIB)
@@ -35,7 +42,7 @@ $(NAME) : $(OBJS)
 PREPROCESSED = 0
 CMACRO = $(MEM_MACRO)
 $(OBJS) : noconfig.H
-main.obj control.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
+main.obj directive.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
         system.H internal.H
 # To make MCPP using MCPP itself, comment out the above 4 lines and
 #		uncomment the next 5 lines.
@@ -58,7 +65,7 @@ install :
 
 clean	:
 	-del *.obj
-	-del *.exe
+	-del $(NAME)
 	-del mcpp.H
 	-del _*.c
 

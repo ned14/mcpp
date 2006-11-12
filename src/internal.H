@@ -308,6 +308,8 @@ extern int      in_getarg;          /* Collecting arguments of macro*/
 extern int      in_include;         /* In #include line             */
 extern int      compat_mode;        /* Compatible macro recursion   */
 extern long     macro_line;         /* Line number of macro call    */
+extern char *   macro_name;         /* Currently expanding macro    */
+extern int      exp_mac_ind;        /* Index into expanding_macro[] */
 extern int      openum;             /* Number of operator or punct. */
 extern IFINFO *     ifptr;          /* -> current ifstack item      */
 extern FILEINFO *   infile;         /* Current input file or macro  */
@@ -333,6 +335,7 @@ extern char     work[];
         /* Temporary buffer for directive line and macro expansion  */
 extern int      debug;              /* Debug class                  */
 extern long     in_asm;             /* In #asm - #endasm block      */
+extern jmp_buf  error_exit;         /* Exit on fatal error          */
 
 /* main.c   */
 extern void     sharp( void);
@@ -342,8 +345,8 @@ extern void     un_predefine( int clearall);
 extern void     undef_a_predef( const char * name);
                 /* Remove a non-standard predef */
 
-/* control.c    */
-extern void     control( void);
+/* directive.c  */
+extern void     directive( void);
                 /* Process #directive lines     */
 extern DEFBUF * do_define( int ignore_redef);
                 /* Do #define directive         */
@@ -446,6 +449,8 @@ extern int      do_include( int next);
                 /* Process #include directive   */
 extern void     add_file( FILE * fp, const char * filename);
                 /* Chain the included file      */
+extern void     cur_file( void);
+                /* Output current source fname  */
 extern void     conv_case( char * name, char * lim, int upper);
                 /* Convert to upper/lower case  */
 extern void     put_info( void);
@@ -460,4 +465,25 @@ extern void     at_end( void);
                 /* Do the final commands        */
 extern void     print_heap( void);
                 /* Print blocks of heap memory  */
+
+#if MCPP_LIB    /* Setting to use mcpp as a subroutine  */
+/* directive.c  */
+extern void     clear_symtable( void);
+                /* Free all macro definitions   */
+extern void     clear_filelist( void);
+                /* Free filename and directory list     */
+/* The following 5 functions are to Initialize static variables.    */
+/* directive.c  */
+extern void     init_directive( void);
+/* eval.c   */
+extern void     init_eval( void);
+/* support.c    */
+extern void     init_support( void);
+/* system.c */
+extern void     init_system( void);
+#if NEED_GETOPT
+/* lib.c    */
+extern void     init_lib( void);
+#endif
+#endif
 

@@ -1,11 +1,11 @@
 # makefile to compile MCPP version 2.6 for Borland C / BC make
-#       2006/08 kmatsui
+#       2006/11 kmatsui
 # You must first edit BINDIR according to your system.
-# To make stand-alone-build of MCPP do:
+# To make compiler-independent-build of MCPP do:
 #       make
-# To make Visual-C-specific-build of MCPP do:
+# To make Borland-C-specific-build of MCPP do:
 #       make -DCOMPILER=BORLANDC
-# To re-compile MCPP using Visual-C-specific-build of MCPP do:
+# To re-compile MCPP using Borland-C-specific-build of MCPP do:
 #       make -DCOMPILER=BORLANDC -DPREPROCESSED
 # To link kmmalloc V.2.5.1 (malloc() package of kmatsui) or later do:
 #       make [-DPREPROCESSED] -DKMMALLOC
@@ -52,8 +52,16 @@ MEM_MACRO =
 MEM_LIB =
 !endif
 
-OBJS = main.obj control.obj eval.obj expand.obj support.obj system.obj  \
+OBJS = main.obj directive.obj eval.obj expand.obj support.obj system.obj  \
         mbchar.obj lib.obj
+
+!if		$d( MCPP_LIB)
+# MCPP_LIB is specified:
+# use mcpp as a subroutine from testmain.c
+OBJS = $(OBJS) testmain.obj
+CFLAGS = $(CFLAGS) -DMCPP_LIB=1
+NAME = testmain
+!endif
 
 $(NAME).exe : $(OBJS)
 	$(CC) $(LINKFLAGS) $(OBJS) $(MEMLIB)
@@ -64,7 +72,7 @@ mcpp.H  : system.H noconfig.H internal.H
 	$(NAME) $(CPPFLAGS) $(CPP_LANG) $(MEM_MACRO) $(preproc) mcpp.H
 $(OBJS) : mcpp.H
 !else
-main.obj control.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
+main.obj directive.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
         system.H internal.H noconfig.H
 lib.obj : noconfig.H
 !endif

@@ -40,8 +40,6 @@ n_30:   Macro call crossing lines.
 n_32:   Escape sequence in char-const.  
 n_37:   Translation limits.             
 i_32.3: Character constant in #if.      
-i_33:   Wide character constant in #if. 
-i_34:   Multi-byte character constant.  
 i_35:   Multi-character character const.
 i_35.3: Multi-character wide character. 
 

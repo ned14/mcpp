@@ -18,7 +18,7 @@
 #include    "noconfig.H"
 #endif
 
-#if ! HOST_HAVE_GETOPT || HOST_LIB_IS_GLIBC || HOST_SYSTEM == SYS_MINGW
+#if NEED_GETOPT
 
 /*
  * Note: The getopt() of glibc should not be used since the specification
@@ -39,6 +39,14 @@ int     optind = 1;
 int     opterr = 1;
 int     optopt;
 char *  optarg;
+
+#if MCPP_LIB
+void    init_lib( void)
+{
+    optind = 1;
+    opterr = 1;
+}
+#endif
 
 int     getopt(
     int         argc,

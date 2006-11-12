@@ -140,7 +140,7 @@ static int          skip = 0;   /* 3-way signal of skipping expr*/
 static const char * const   non_eval
         = " (in non-evaluated sub-expression)";             /* _W8_ */
 
-#if HAVE_LONG_LONG && COMPILER == STAND_ALONE
+#if HAVE_LONG_LONG && COMPILER == INDEPENDENT
     static int  w_level = 1;    /* warn_level at overflow of long   */
 #else
     static int  w_level = 2;
@@ -263,10 +263,22 @@ static const SIZES  size_table[] = {
 #define is_unary(op)    (FIRST_UNOP  <= op && op <= LAST_UNOP)
 
 
+#if MCPP_LIB
+void    init_eval( void)
+{
+    skip = 0;
+#if HAVE_LONG_LONG && COMPILER == INDEPENDENT
+    w_level = 1;
+#else
+    w_level = 2;
+#endif
+}
+#endif
+
 expr_t  eval( void)
 /*
  * Evaluate a #if expression.  Straight-forward operator precedence.
- * This is called from control() on encountering an #if statement.
+ * This is called from directive() on encountering an #if statement.
  * It calls the following routines:
  * eval_lex()   Lexical analyser -- returns the type and value of
  *              the next input token.
@@ -617,7 +629,7 @@ static int  do_sizeof( void)
     int     warn = ! skip || (warn_level & 8);
     int     type_end = FALSE;
     int     typecode = 0;
-    int     token_type;
+    int     token_type = NO_TOKEN;
     const SIZES *   sizp = NULL;
 
     if (get_unexpandable( skip_ws(), warn) != OPE || openum != OP_LPA)
@@ -920,9 +932,11 @@ VAL_SIGN *  eval_num(
             ev.sign = UNSIGNED;
         else
             ev.sign = (value >= 0L);
+#if HAVE_LONG_LONG
     } else {
         if (value > LONGMAX)
             erange_long = TRUE;
+#endif
     }
 
     ev.val = value;
@@ -1498,7 +1512,7 @@ static expr_t   eval_unsigned(
         = "Bug: Illegal operator \"%s\" in eval_unsigned()";    /* _F_  */
     const char *    op_name = opname[ op];
     VAL_SIGN *      valp = *valpp;
-    uexpr_t     v1;
+    uexpr_t     v1 = 0;
     int     chk;        /* Flag of overflow in unsigned long long   */
     int     minus;      /* Big integer converted from signed long   */
 

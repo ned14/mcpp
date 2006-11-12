@@ -1,11 +1,11 @@
-# makefile to compile MCPP version 2.6.1 for MinGW / GCC / GNU make
-# 2006/08     kmatsui
+# makefile to compile MCPP version 2.6.* for MinGW / GCC / GNU make
+#   2006/11   kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
-# To make stand-alone-build of MCPP do:
+# To make compiler-independent-build of MCPP do:
 #       make; make install
 # To make GCC-specific-build of MCPP:
-#       make COMPILER=GNUC mcpp cc1; make COMPILER=GNUC install
+#       make COMPILER=GNUC; make COMPILER=GNUC install
 # To re-compile MCPP using GCC-specific-build of MCPP do:
 #       make COMPILER=GNUC PREPROCESSED=1
 # To link malloc() package of kmatsui do:
@@ -14,9 +14,10 @@
 #   and do:
 #       make CPLUS=1
 
-# COMPILER: Specify whether make a stand-alone-build or GCC-specific-build
-# stand-alone-build:    empty
-# compiler-specific-build:  GNUC
+# COMPILER:
+#   Specify whether make a compiler-independent-build or GCC-specific-build
+# compiler-independent-build:   empty
+# compiler-specific-build:      GNUC
 
 # NAME: name of mcpp executable
 NAME = mcpp
@@ -31,7 +32,7 @@ CPPFLAGS =
 LINKFLAGS = -o $(NAME)
 
 ifeq    ($(COMPILER), )
-# stand-alone-build
+# compiler-independent-build
 CPPOPTS =
 # BINDIR:   /usr/bin or /usr/local/bin
 BINDIR = /usr/local/bin
@@ -76,13 +77,21 @@ else
         MEM_MACRO =
 endif
 
-OBJS = main.o control.o eval.o expand.o support.o system.o mbchar.o lib.o
+OBJS = main.o directive.o eval.o expand.o support.o system.o mbchar.o lib.o
+
+ifeq    ($(COMPILER), )
+ifeq    ($(MCPP_LIB), 1)
+# compiler-independent-build and MCPP_LIB is specified:
+# use mcpp as a subroutine from testmain.c
+OBJS += testmain.o
+CFLAGS += -DMCPP_LIB
+NAME = testmain
+endif
+endif
 
 $(NAME): $(OBJS)
 	$(GCC) $(LINKFLAGS) $(OBJS)
-
 ifeq    ($(COMPILER), GNUC)
-cc1: cc1.o
 	$(GCC) cc1.c -o cc1.exe $(MEMLIB)
 endif
 
@@ -103,7 +112,7 @@ $(OBJS) : mcpp.H
 else
 CMACRO = $(CPPOPTS) $(MEM_MACRO)
 $(OBJS) : noconfig.H
-main.o control.o eval.o expand.o support.o system.o mbchar.o:   \
+main.o directive.o eval.o expand.o support.o system.o mbchar.o:   \
         system.H internal.H
 endif
 
@@ -125,7 +134,7 @@ ifeq    ($(COMPILER), GNUC)
 endif
 
 clean	:
-	-rm *.o mcpp.exe cc1.exe mcpp.H mcpp.err
+	-rm *.o $(NAME).exe cc1.exe mcpp.H mcpp.err
 
 uninstall:
 	rm -f $(BINDIR)/$(NAME).exe

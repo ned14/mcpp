@@ -142,7 +142,6 @@ static DEFBUF * is_macro_call(
 #define READ_OVER   2
             /* Still "blue-painted", yet has read over repl-list    */
 
-static char *       macro_name;     /* Name of the macro to expand  */
 static struct {
     const DEFBUF *  def;            /* Macro definition             */
     int             read_over;      /* Has read over repl-list      */
@@ -235,7 +234,8 @@ exp_end:
     if (debug & EXPAND)
         dump_string( "expand_std exit", out);
     free( macro_name);
-
+    macro_name = NULL;
+    exp_mac_ind = 0;        /* Clear the information for diagnostic */
     return  out_p;
 }
 
@@ -404,7 +404,7 @@ static int  prescan(
  */
 {
     FILEINFO *  file;
-    char *      prev_token;         /* Preceding token              */
+    char *      prev_token = NULL;  /* Preceding token              */
     int         c;                  /* Value of a character         */
     /*
      * The replacement lists are --
@@ -484,7 +484,7 @@ static char *   catenate(
  */
 {
     FILEINFO *      file;
-    char *  prev_prev_token;
+    char *  prev_prev_token = NULL;
     const char *    invalid_token
     = "Not a valid preprocessing token \"%s\"";     /* _E_ _W2_     */
     const char *    argp;           /* Pointer to an actual argument*/
@@ -578,8 +578,7 @@ static char *   catenate(
         scan_token( c, (workp = work, &workp), work_end);
         infile->fp = NULL;
         if (*infile->bptr != EOS) {         /* More than a token    */
-            if (lang_asm || compat_mode) {
-                                /* Assembler source or compat_mode  */
+            if (lang_asm) {                 /* Assembler source     */
                 if (warn_level & 2)
                     cwarn( invalid_token, prev_token, 0L, NULLST);
             } else {
@@ -757,7 +756,7 @@ static char *   rescan(
  * compat_mode also does not use IN_SRC.
  */
 {
-    char *  cur_cp;
+    char *  cur_cp = NULL;
     char *  tp = NULL;              /* Temporary pointer into buffer*/
     char *  out_p = out;            /* Current output pointer       */
     FILEINFO *  file;       /* Input sequences stacked on a "file"  */
@@ -835,9 +834,6 @@ static char *   rescan(
                         cwarn(
 "Replacement text \"%s\" of macro %.0ld\"%s\" involved subsequent text" /* _W1_ */
                             , in, 0L, outer->name);
-                        if (! no_source_line)
-                            dump_a_def( "    macro", outer, FALSE, FALSE, TRUE
-                                    , fp_err);
                     }
                 }
             }                       /* Else remove RT_END           */
@@ -946,6 +942,7 @@ static char *   expand_prestd(
 
     macro_line = line;                      /* Line number for diag.*/
     unget_string( identifier, identifier);  /* To re-read           */
+    macro_name = save_string( identifier);
     rescan_level = 0;
     if (setjmp( jump) == 1) {
         skip_macro();
@@ -1018,6 +1015,9 @@ err_end:
     if (debug & EXPAND) {
         dump_string( "expand_prestd exit", out);
     }
+    free( macro_name);
+    macro_name = NULL;
+    exp_mac_ind = 0;
     return  out_p;
 }
 
@@ -1202,7 +1202,7 @@ static int  collect_args(
     const char *    name = defp->name;
     char *  argp = arglist[ 0];         /* Pointer to an argument   */
     char *  arg_end;                    /* End of arguments buffer  */
-    char *  valid_argp;                 /* End of valid arguments   */
+    char *  valid_argp = NULL;          /* End of valid arguments   */
     char *  sequence;           /* Token sequence for diagnostics   */
     char *  seq;                /* Current pointer into 'sequence'  */
     char *  seq_end;                            /* Limit of buffer  */
@@ -1244,8 +1244,11 @@ static int  collect_args(
             if (! more_to_come)         /* Zero argument            */
                 break;                  /* Else fall through        */
         case ',':                       /* Empty argument           */
-            if (warn_level & 2)
+            if (warn_level & 2) {
                 cwarn( empty_arg, sequence, 0L, NULLST);
+                if (! no_source_line)
+                    dump_a_def( "    macro", defp, FALSE, FALSE, TRUE, fp_err);
+            }
             if (standard && var_arg && nargs == args - 1) {
                 /* Variable arguments begin with an empty argument  */
                 c = get_an_arg( c, &argp, arg_end, &seq, 1);
@@ -1297,8 +1300,11 @@ static int  collect_args(
     }                                   /* Collected all arguments  */
 
     if (nargs == 0 && args == 1) {      /* Only and empty argument  */
-        if (warn_level & 1)
+        if (warn_level & 2) {
             cwarn( empty_arg, sequence, 0L, NULLST);
+            if (! no_source_line)
+                dump_a_def( "    macro", defp, FALSE, FALSE, TRUE, fp_err);
+        }
     } else if (nargs != args) {         /* Wrong number of arguments*/
         if (mode != OLD_PREP || (warn_level & 1)) {
             if (((standard && var_arg && (nargs == args -1))

@@ -1,30 +1,45 @@
   ここでは、MCPP のソースをコンパイルして実行プログラムを生成する方法を
-説明します。詳細はさらに mcpp-porting.txt を見てください。
+説明します。詳細はさらに mcpp-porting.html を見てください。
 
 1、実行プログラムの種類
 
-  MCPP の実行プログラムには次の２種類あります。
+  MCPP の実行プログラムは build する方法に応じて何種類かあります。Build
+する方法には次の２つの次元があります。
 
-  1、stand-alone-build: 処理系からは独立して単体で動くプリプロセッサです。
+    1. stand-alone-build vs subroutine-build
+    2. compiler-independent-build vs compiler-specific-build
+
+stand-alone-build: １つのコマンドとして単体で動くプリプロセッサです。処
+    理系のコンパイラ・ドライバから呼び出されるものもあります。
+subroutine-build: 他のメインプログラムの中からサブルーチンとして（必要な
+    ら繰り返し）呼び出されるものです。
+
+compiler-independent-build: 処理系からは独立して動くプリプロセッサです。
     実行時オプションなどの仕様は処理系のいかんによらず一定です。プリプロ
     セスだけすることができますが、処理系の一部として動作することはできま
     せん。
-  2、compiler-specific-build: 特定の処理系のプリプロセッサを（もし可能な
-    ら）代替するためのものです。その処理系に専用の仕様を持ち、その処理系
-    の専用のディレクトリにインストールされます。
+    これを V.2.6, V.2.6.1 では stand-alone-build と呼んでいました。V.2.6.
+    2 で subroutine-build ができたのに伴って、呼称を変更しました。
+compiler-specific-build: 特定の処理系のプリプロセッサを（もし可能なら）
+    代替するためのものです。その処理系に専用の仕様を持ち、その処理系の専
+    用のディレクトリにインストールされます。
+
+Subroutine-build についてはここでは説明は略します。mcpp-porting.html 3.
+12 を見てください。以下はすべて stand-alone-build についての説明です。
 
 2、configure と make
 
   MCPP をコンパイルするには、UNIX 系のシステムおよび CygWIN, MinGW では
 configure スクリプトを使うことができます。configure と make は任意のディ
-レクトリで実行できます。以下の説明では mcpp-2.6.1 ディレクトリのある
+レクトリで実行できます。以下の説明では mcpp-2.6.2 ディレクトリのある
 path を ${mcpp-dir} と表記します。
 
-2、1、stand-alone-build
+2、1、compiler-independent-build
 
     ${mcpp-dir}/configure; make; make install
 
-とすると、stand-alone 版の実行プログラムが生成されてインストールされます。
+とすると、compiler-independent 版の実行プログラムが生成されてインストー
+ルされます。一部のドキュメントもインストールされます。
 
     ${mcpp-dir}/configure --prefix=/usr; make; make install
 
@@ -77,10 +92,10 @@ local' の部分が 'DIR' に置き換わる）。バイナリ・パッケージを作るにはこの
 とすると、compiler-specific 版の実行プログラムが生成されて、その処理系の
 専用のディレクトリにインストールされます。
   make install-strip, make install-data, make uninstall, make uninstall-
-data は stand-alone-build と同じです。configure の --prefix オプションも
-同じですが、これは実行プログラムのインストールディレクトリには関係しませ
-ん。また、make での DESTDIR オプションも、実行プログラムのインストールに
-は関係しません。
+data は compiler-independent-build と同じです。configure の --prefix オ
+プションも同じですが、これは実行プログラムのインストールディレクトリには
+関係しません。また、make での DESTDIR オプションも、実行プログラムのイン
+ストールには関係しません。
 
   ただし、GCC 以外の処理系では先に移植作業を行い、configure でさらにいく
 つかのオプションを指定しないと、適切なコンパイルとインストールがされませ
@@ -95,7 +110,7 @@ pc-linux-gnu/VERSION 等）に実行プログラムがインストールされます。これは
 gcc の呼び出す cpp0 (cc1) が置かれているディレクトリです。make install
 は GCC / cpp0 (cc1) を保存した上で、gcc, g++ から mcpp が呼び出されるよ
 うに適切な設定をします。この設定は GCC が V.2.* であるか V.3.*, 4.* であ
-るかによって違っています（mcpp-manual.txt [3.9.5], [3.9.7] を参照のこと）。
+るかによって違っています（mcpp-manual.html 3.9.5, 3.9.7 を参照のこと）。
 
 2、2、1、2、make check
   MCPP の検証セットには GCC の testsuite に対応した edition があります。
@@ -128,7 +143,7 @@ GCC が V.2.* であるかそれとも V.3.*, 4.* であるかに応じて必要な設定がさ
 mcpp が呼び出されるようにしておかないと testsuite が mcpp に適用できない
 からです。また、このため --enable-replace-cpp オプションも必要です。
   Testsuite 版検証セットは MCPP だけでなく、GCC V.2.95 以降の cpp0 (cc1)
-にも適用することができます（cpp-test.txt [2.2.3] 参照）。
+にも適用することができます（cpp-test.html 3.2.3 参照）。
 
 2、2、1、3、make uninstall
   make uninstall とすると、MCPP の実行プログラムは削除されます。gcc,
@@ -182,7 +197,7 @@ CygWIN 等で GCC を使っているので移植がすんでおり、configure で情報を収集
 等の実装です。中でもしばしば使われる実行時オプションで MCPP と異なるもの
 があれば、最低限、その実装が必要です。そのためには、configed.H でそのコ
 ンパイラを表すマクロを定義した上で、system.c にコードを書き加えます
-（mcpp-porting.txt のことに [4.2] を参照）。
+（mcpp-porting.html のことに 4.2 を参照）。
 
 2、2、2、3、オプションを追加して configure しなおす
   ソースの移植ができたら、--with-compiler-name=COMPILER というオプション
@@ -211,10 +226,10 @@ configure ではこの両者を同時に調べることができません。そのため、ターゲッ
 
 3、Windows 上の処理系での make
 
-  Windows 上の処理系は CygWIN 以外は configure の対象にならないので、ソ
-ースを修正して make することが必要です。すでに移植ずみの処理系については
-差分ファイルを用意してあるので、これを使ってパッチをあてることができます。
-差分ファイルを使う場合の手順を以下に説明します。
+  Windows 上の処理系は CygWIN, MinGW 以外は configure の対象にならないの
+で、ソースを修正して make することが必要です。すでに移植ずみの処理系につ
+いては差分ファイルを用意してあるので、これを使ってパッチをあてることがで
+きます。差分ファイルを使う場合の手順を以下に説明します。
   また、configure の対象になる処理系でも、ヘッダファイルや makefile を直
 接、編集することできめのこまかい制御をすることができます。
 
@@ -238,28 +253,32 @@ Makefile は各処理系に付属する make を使うように書かれています。
 自分の環境に合わせて修正します。
   使う処理系が差分ファイルのものとはバージョンが違っている場合は、ヘッダ
 ファイル noconfig.H にさらに修正を加えます（noconfig.H そのものおよび
-mcpp-porting.txt [3.1] を参照）。通常使う multi-byte character が日本語
-ではない場合も同様に、nocongig.H の MBCHAR というマクロの定義を書き換え
-ます。
+mcpp-porting.html 3.1 を参照）。通常使う multi-byte character が日本語で
+はない場合も同様に、nocongig.H の MBCHAR というマクロの定義を書き換えま
+す。
   また、実行プログラムをインストールするディレクトリを Makefile の
 BINDIR という変数に書きます。Visual C 用の Makefile では次の行の # を削
 除して、install ターゲットを有効にしてください。
 
     #install :
 
-3、3、stand-alone-build
-  これで  make して make install すると、stand-alone 版の実行プログラム
-が生成されてインストールされます（Visual C++ では make ではなく nmake を
-使う）。
+3、3、compiler-independent-build
+  これで  make して make install すると、compiler-independent 版の実行プ
+ログラムが生成されてインストールされます（Visual C++ では make ではなく
+nmake を使う）。
 
 3、4、compiler-specific-build
   compiler-specific 版を生成するためには、まず Makefile の BINDIR をその
 処理系の実行プログラムの置かれているディレクトリに書き換えます。そして、
-noconfig.H の次の行の 'STAND_ALONE' をそのコンパイラを表すマクロに書き換
-えて、'make' し 'make install' します。'COMPILER' は make のオプションで
-上書きすることもできるので、noconfig.H は必ずしも書き換える必要はありま
-せん。例えば、Visual C では 'nmake COMPILER=MSC' として 'nmake COMPILER=
-MSC install' します。Borland C では 'make -DCOMPILER=BORLANDC' として
+noconfig.H の次の行の 'INDEPENDENT' をそのコンパイラを表すマクロに書き換
+えて、'make' し 'make install' します。
+
+    #define COMPILER    INDEPENDENT
+
+'COMPILER' は make のオプションで上書きすることもできるので、noconfig.H
+は必ずしも書き換える必要はありません。例えば、Visual C では
+'nmake COMPILER=MSC' として 'nmake COMPILER=MSC install' します。Borland
+C では 'make -DCOMPILER=BORLANDC' として
 'make -DCOMPILER=BORLANDC install' します。
 
   もし、ターゲット処理系とコンパイルする処理系とが違っている場合は、
@@ -274,7 +293,7 @@ noconfig.H / Part 1 をターゲット処理系の仕様に合わせ、Part 2 をコンパイ
 て MCPP をリコンパイルする設定が書いてあるので、それを参考にしてください。
   Visual C++ ではそうした makefile を使って、IDE で「メイクファイルプロ
 ジェクト」を作成すると、IDE のソースレベルデバッグ等の機能がすべて使えま
-す（mcpp-manual.txt [2.10] 参照）。
+す（mcpp-manual.html 2.10 参照）。
 
 3、5、テスト
   Windows では MinGW / GCC-specific-build および CygWIN 以外では include
@@ -283,11 +302,11 @@ directory は設定されないので、INCLUDE, CPLUS_INCLUDE という環境変数で設
   Windows では GCC / testsuite は使えないので、test-t, test-c, test-l デ
 ィレクトリにあるテスト用サンプルを直接、プリプロセスして確かめます。tool
 /cpp_test.c を使うと、一部のテストだけですが、自動的に実行できます（cpp-
-test.txt [2.2.2] 参照）。
+test.html 3.2.2 参照）。
   compiler-specific-build では、MCPP 自身をプリプロセッサとして使って、
 MCPP の "pre-preprocess" という機能を使って MCPP をリコンパイルしてみる
 と、その処理系でとりあえず使えるようになったかどうかを確かめることができ
-ます（mcpp-porting.txt [3.7] 参照）。
+ます（mcpp-porting.html 3.7 参照）。
 
 4、移植のための情報をお寄せください
 
@@ -301,8 +320,8 @@ MCPP の "pre-preprocess" という機能を使って MCPP をリコンパイルしてみる
   MCPP には「検証セット」というものが付属しています。これは C/C++ プリプ
 ロセッサについて 265 項目にわたる徹底的なテストと評価をするものです。
 MCPP だけでなく任意のプリプロセッサに適用することができます。その使い方
-については、cpp-test.txt [2.1], [2.2] を参照してください。
+については、cpp-test.html 3.1, 3.2 を参照してください。
 
-2006/08
+2006/11
                                          松井　潔 <kmatsui@t3.rim.or.jp>
 

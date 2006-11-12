@@ -28,16 +28,19 @@ Information-technology Promotion Agency (IPA), Japan, in year 2002 and
 2003.  With its achievements, the author was evaluated as one of the
 highest rank programmers.
 
+The sources and documents of MCPP are found at:
+
+    http://mcpp.sourceforge.net/
+
 Please read mcpp-summary.pdf for the overview of MCPP and Validation
 Suite.
 
-Please read INSTALL for how to install MCPP on your system.
+Please read INSTALL (INSTALL-jp) for how to install MCPP on your system.
 
 All the files except mcpp-summary.pdf are normal text files.  In the
 .tar.gz file, newline of the text files are [LF], and encoding of
-Japanese documents in 'doc-jp' directory is EUC-JP.  In the .zip file,
-newline of the text files are [CR][LF], and encoding of documents in
-'doc-jp' directory is shift-JIS.
+INSTALL-jp is EUC-JP.  In the .zip file, newline of the text files are
+[CR][LF], and encoding of INSTALL-jp is shift-JIS.
 
 I would like to hear from many C programmers for reviews, comments and
 the interest to participate in development.

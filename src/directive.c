@@ -28,8 +28,8 @@
  */
 
 /*
- *                          C O N T R O L . C
- *              P r o c e s s   C o n t r o l   L i n e s
+ *                          D I R E C T I V E . C
+ *              P r o c e s s   D i r e c t i v e  L i n e s
  *
  * The routines to handle directives other than #include and #pragma
  * are placed here.
@@ -90,7 +90,7 @@ static const char * const   no_arg = "No argument";     /* _E_      */
 static const char * const   excess
             = "Excessive token sequence \"%s\"";        /* _E_ _W1_ */
 
-void    control( void)
+void    directive( void)
 /*
  * Process #directive lines.  Each directive have their own subroutines.
  */
@@ -164,7 +164,7 @@ void    control( void)
     }
 
     /*
-     * hash is set to a unique value corresponding to the control directive.
+     * hash is set to a unique value corresponding to the directive.
      */
     if (! compiling) {                      /* Not compiling now    */
         switch (hash) {
@@ -348,7 +348,7 @@ ifdo:
     default :               /* L_else, L_endif, L_undef, etc.       */
         if (mode == OLD_PREP) {
         /*
-         * Ignore the rest of the #control line so you can write
+         * Ignore the rest of the #directive line so you can write
          *          #if     foo
          *          #endif  foo
          */
@@ -537,7 +537,7 @@ static long do_line( void)
     }
 
     infile->filename = save;                /* New file name        */
-                                /* Do not free() infile->filename   */
+    /* Do not free() infile->filename, this is not always malloc()ed one.   */
     return  (long) valp->val;               /* New line number      */
 
 no_num:
@@ -583,9 +583,9 @@ DEFBUF *    do_define(
     int     ignore_redef        /* Do not redefine   */
 )
 /*
- * Called from control() when a #define is scanned or called from do_options()
- *      when a -D option is scanned.  This module parses formal parameters
- *      by get_parm() and the replacement text by get_repl().
+ * Called from directive() when a #define is scanned or called from
+ *      do_options() when a -D option is scanned.  This module parses formal
+ *      parameters by get_parm() and the replacement text by get_repl().
  *
  * There is some special case code to distinguish
  *      #define foo     bar     --  object-like macro
@@ -627,7 +627,7 @@ DEFBUF *    do_define(
     DEFBUF **   prevp;      /* -> Pointer to previous def in list   */
     int     c;
     int     redefined;                      /* TRUE if redefined    */
-    int     dnargs;                         /* defp->nargs          */
+    int     dnargs = 0;                     /* defp->nargs          */
     int     cmp;                    /* Result of name comparison    */
 
     repl_base = repl_list;
@@ -947,7 +947,7 @@ static int  get_repl( const char * macroname)
         }
     }
 
-    unget();                                /* For control check    */
+    unget();                                /* For syntax check     */
     if (standard) {
         if (token_p && *token_p == CAT) {
             cerror( "No token after ##", NULLST, 0L, NULLST);       /* _E_  */
@@ -1085,7 +1085,7 @@ static char *   str_parm_scan( char * string_end)
 static void do_undef( void)
 /*
  * Remove the symbol from the defined list.
- * Called from control().
+ * Called from directive().
  */
 {
     DEFBUF *    defp;
@@ -1133,7 +1133,15 @@ static void do_undef( void)
 
 /* Symbol table queue headers.  */
 static DEFBUF *     symtab[ SBSIZE];
-static long         num_of_macro;
+static long         num_of_macro = 0;
+
+#if MCPP_LIB
+void    init_directive( void)
+/* Initialize static variables. */
+{
+    num_of_macro = 0;
+}
+#endif
 
 DEFBUF *    look_id( const char * name)
 /*
@@ -1292,8 +1300,10 @@ int undefine(
     return  TRUE;
 }
 
-static void
-dump_repl( const DEFBUF * dp, FILE * fp)
+static void dump_repl( 
+    const DEFBUF *  dp,
+    FILE *  fp
+)
 /*
  * Dump replacement text.
  */
@@ -1452,18 +1462,39 @@ void    dump_def(
  */
 {
     DEFBUF *    dp;
-    DEFBUF **   syp;
+    DEFBUF **   symp;
 
     sharp();            /* Report the current source file & line    */
     if (comment)
         fputs( "/* Currently defined macros. */\n", fp_out);
-    for (syp = symtab; syp < &symtab[ SBSIZE]; syp++) {
-        if ((dp = *syp) != NULL) {
+    for (symp = symtab; symp < &symtab[ SBSIZE]; symp++) {
+        if ((dp = *symp) != NULL) {
             do {
                 dump_a_def( NULLST, dp, FALSE, dDflag, comment, fp_out);
             } while ((dp = dp->link) != NULL);
         }
     }
-    wrong_line = TRUE;               /* Line number is out of sync   */
+    wrong_line = TRUE;               /* Line number is out of sync  */
 }
+
+#if MCPP_LIB
+void    clear_symtable( void)
+/*
+ * Free all the macro definitions.
+ */
+{
+    DEFBUF *    next;
+    DEFBUF *    dp;
+    DEFBUF **   symp;
+
+    for (symp = symtab; symp < &symtab[ SBSIZE]; symp++) {
+        for (next = *symp; next != NULL; ) {
+            dp = next;
+            next = dp->link;
+            free( dp);                      /* Free the symbol      */
+        }
+        *symp = NULL;
+    }
+}
+#endif
 

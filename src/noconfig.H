@@ -19,7 +19,7 @@
 
 /* Define target compiler.          */
 #ifndef COMPILER
-#define COMPILER            STAND_ALONE /* defaults to stand-alone-build    */
+#define COMPILER            INDEPENDENT /* compiler-independent-build   */
 #endif
 
 /* Define host operating-system.    */
@@ -32,7 +32,7 @@
 /* "MCPP V.2.* (200y/mm) compiled by " precedes VERSION_MSG */
 #define VERSION_MSG         "GCC 3.4"
 #if     0
-    "LCC-Win32 V.3.8"
+    "LCC-Win32 2006-03"
     "Visual C 2005"
     "Visual C 2003"
     "BCC V.5.5"
@@ -64,7 +64,7 @@
 #define WIN_SYMANTECC       0x7470  /* Symantec for Windows         */
 #define LCC                 0x74C0  /* LCC-Win32    */
 #define GNUC                0x00E0  /* GNU C (GCC)  */
-#define STAND_ALONE         0xFFFF  /* No target compiler, stand-alone build*/
+#define INDEPENDENT         0xFFFF  /* No target, compiler-independent build*/
 
 #define SYS_FAMILY          (SYSTEM & 0xF000)
 #define COMPILER_FAMILY     (COMPILER & 0xF0)
@@ -328,8 +328,8 @@
         , others: "long int"    */
 #endif  /* COMPILER_FAMILY == GNUC   */
 
-#if     COMPILER == STAND_ALONE
-/* specifications of stand-alone build  */
+#if     COMPILER == INDEPENDENT
+/* specifications of compiler-independent build  */
 #define LINE_PREFIX         "#line "
 #define STD_LINE_PREFIX     TRUE    /* Output #line by C source format      */
 #define HAVE_DIGRAPHS       TRUE    /* Output digraphs as it is     */
@@ -572,6 +572,13 @@
 #include    "string.h"
 #include    "stdlib.h"
 #include    "time.h"
+#include    "setjmp.h"
+
+#if     ! HOST_HAVE_GETOPT || HOST_LIB_IS_GLIBC || HOST_SYSTEM == SYS_MINGW
+#define NEED_GETOPT     TRUE
+#else
+#define NEED_GETOPT     FALSE
+#endif
 
 #if     ! (HOST_LIB_IS_GLIBC && COMPILER == GNUC && __cplusplus)
         /* Avoid conflict with glibc's declaration in C++.  */
