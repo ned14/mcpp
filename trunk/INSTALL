@@ -1,33 +1,49 @@
 This file explains how to generate executables by compiling the MCPP
-source.  For further details, please refer to mcpp-porting.txt.
+source.  For further details, please refer to mcpp-porting.html.
 
-1. Two types of MCPP executables
+1. Types of MCPP executables
 
-There are two types of MCPP executables:
+There are several types of MCPP executable corresponding to its building
+methods.  The building methods of MCPP have following two axis:
 
-  1. stand-alone-build:  The preprocessor which behaves on its own not
-    depending on any compiler system.  The invocation options, for
+    1. stand-alone-build vs subroutine-build
+    2. compiler-independent-build vs compiler-specific-build
+
+stand-alone-build:  The preprocessor which is invoked as a command.
+    Some of this type is invoked by compiler-driver.
+subroutine-build:  The preprocessor to be called as a subroutine
+    (repeatedly, if required) from other main program.
+
+compiler-independent-build:  The preprocessor which behaves on its own
+    not depending on any compiler system.  The invocation options, for
     example, are the same across the compilers with which MCPP is
     compiled.  Although it can preprocess source files, it cannot behave
     as an integrated part of the compiler system.
-  2. compiler-specific-build:  The preprocessor to replace (if possible)
-    the resident preprocessor of certain compiler system.  It has some
-    specifications for the compiler system only and is installed in the
-    compiler-system-specific directory.
+    While V.2.6 and V.2.6.1 called this as 'stand-alone-build', V.2.6.2
+    changed the name according to the creation of subroutine-build.
+compiler-specific-build:  The preprocessor to replace (if possible) the
+    resident preprocessor of certain compiler system.  It has some
+    specifications for the compiler system only and is installed into
+    the compiler-system-specific directory.
+
+This document does not explain subroutine-build.  As for it, please
+refer to mcpp-porting.html 3.12.  All the explanations below are of
+stand-alone-build.
 
 2. Configure and make
 
 To compile MCPP, the configure script can be used on UNIX-like systems
 and CygWIN, MinGW.  You can do configure and make in any directory.  In
-this document ${mcpp-dir} represents the path of 'mcpp-2.6.1' directory.
+this document ${mcpp-dir} represents the path of 'mcpp-2.6.2' directory.
 
-2.1. The stand-alone-build
+2.1. The compiler-independent-build
 
 If you type the commands as:
 
     ${mcpp-dir}/configure; make; make install
 
-the stand-alone executable will be generated and installed.
+the compiler-independent executable will be generated and installed.
+Also a few document files will be installed.
 
     ${mcpp-dir}/configure --prefix=/usr; make; make install
 
@@ -81,8 +97,8 @@ install it into the compiler-specific directory.
     ${mcpp-dir}/configure --enable-replace-cpp; make; make install
 
 'make install', 'make install-strip', 'make install-data', 'make
-uninstall', 'make uninstall-data' are the same as stand-alone-build.
-'--prefix' option of configure is also the same, though this is
+uninstall', 'make uninstall-data' are the same as compiler-independent-
+build.  '--prefix' option of configure is also the same, though this is
 irrelevant to the installation directory of the executable.  'DESTDIR'
 option of make has also no relevance to the executable's installation.
 
@@ -104,7 +120,7 @@ i686-pc-linux-gnu/VERSION).  This is the directory where cpp (cc1),
 which is called by gcc, is located.  'make install' saves GCC / cpp0
 (cc1) and setups gcc and g++ command appropriately to call mcpp.  This
 setting is different depending on GCC being V.2.* or V.3.*-4.*. (Refer
-section 3.9.5 and 3.9.7 of mcpp-manual.txt).
+section 3.9.5 and 3.9.7 of mcpp-manual.html).
 
 2.1.1.2. make check
 
@@ -137,8 +153,8 @@ mcpp is called from gcc.  Due to this, the option '--enable-replace-cpp'
 is also required.
 
 The testsuite edition of Validation Suite can also be applied to cpp0
-(cc1) of GCC V.2.95 and later, not only for MCPP.  (Refer cpp-test.txt
-section 2.2.3).
+(cc1) of GCC V.2.95 and later, not only for MCPP.  (Refer cpp-test.html
+section 3.2.3).
 
 2.2.1.3. make uninstall
 
@@ -204,7 +220,7 @@ implementation of #pragma directives.  Especially, when there are some
 execution time options which are used frequently but different from MCPP,
 they at least need to be implemented.  In order to do that, define the
 macro to designate the compiler in configed.H, and write some codes in
-system.c. (Refer mcpp-porting.txt 4.2).
+system.c. (Refer mcpp-porting.html 4.2).
 
 2.2.2.3. Re-configure by adding an option
 
@@ -239,11 +255,11 @@ cross-compiler, so he is not sure.
 
 3. 'make' on the Windows compiler systems
 
-Since all compiler systems on Windows other than CygWIN are not subject
-to the 'configure', they need a bit of modification of the source in
-order to do 'make'.  As there are difference files for already ported
-systems, a patch can be applied by using them.  The procedure for the
-use of the difference files is explained below.
+Since all compiler systems on Windows other than CygWIN and MinGW are
+not subject to the 'configure', they need a bit of modification of the
+source in order to do 'make'.  As there are difference files for already
+ported systems, a patch can be applied by using them.  The procedure for
+the use of the difference files is explained below.
 
 Even the systems subject to the 'configure' can also be controlled in
 detail by editing the makefile and header files directly.
@@ -273,7 +289,7 @@ the environment of the author, hence you must modify them.
 
 If the version of the compiler system is different from that of the
 difference file, modify the header file noconfig.H.  (See noconfig.H
-itself and mcpp-porting.txt 3.1).  Similarly, if the multi-byte
+itself and mcpp-porting.html 3.1).  Similarly, if the multi-byte
 character for normal use is not Japanese, change the macro definition
 MBCHAR in noconfig.H.
 
@@ -283,10 +299,10 @@ remove '#' of this line and make 'install' target effective.
 
     #install :
 
-3.3. Stand-alone-build
+3.3. Compiler-independent-build
 
-Now, you can do 'make' and 'make install' successfully for the stand-
-alone executable. (For Visual C, use 'nmake' instead of 'make').
+Now, you can do 'make' and 'make install' successfully for the compiler-
+independent executable. (For Visual C, use 'nmake' instead of 'make').
 
 3.4. Compiler-specific-build
 
@@ -294,9 +310,9 @@ To make the compiler-specific-build, rewrite BINDIR in the Makefile to
 the directory in which the executables of the compiler system are
 located.  Then, rewrite this line in noconfig.H:
 
-    #define COMPILER    STAND_ALONE
+    #define COMPILER    INDEPENDENT
 
-Replace 'STAND_ALONE' with the macro to designate the compiler.  Then do
+Replace 'INDEPENDENT' with the macro to designate the compiler.  Then do
 'make' and 'make install'.  'COMPILER' can be overwritten also by make
 option, hence the file can be left as it is.  For example, in Visual C,
 'nmake COMPLIER=MSC' and 'nmake COMPILER=MSC install' or in Borland C,
@@ -318,7 +334,7 @@ settings used to recompile MCPP using MCPP itself.
 
 In Visual C++, if you create "makefile project" by IDE using the
 attached makefile, all the functions of IDE, such as source level debug,
-become available. (Refer mcpp-manual.txt 2.10)
+become available. (Refer mcpp-manual.html 2.10)
 
 3.5. Test
 
@@ -329,12 +345,13 @@ environment variable INCLUDE and CPLUS_INCLUDE.
 GCC / testsuite cannot be used in Windows, MCPP needs to be checked
 directly by preprocessing the test samples in test-t, test-c and test-l
 directories.  If you use tool/cpp_test.c, it can test some parts
-automatically. (Refer cpp-test.txt 2.2.2).
+automatically. (Refer cpp-test.html 3.2.2).
 
 For the compiler-specific-build of MCPP, if you re-compile MCPP with the
 "pre-preprocess" functionality of MCPP, by using MCPP itself as the
 preprocessor of the compiler system, you can check whether it has been
-ported successfully for the compiler system. (Refer mcpp-porting.txt 3.7)
+ported successfully for the compiler system. (Refer mcpp-porting.html 3.
+7)
 
 4. Please send me the information for porting.
 
@@ -349,9 +366,9 @@ ac.
 
 MCPP provides "Validation Suite" which tests and evaluates C/C++
 preprocessor comprehensively.  Validation Suite has 265 items and can be
-applied to any preprocessor as well as MCPP.  Refer to 2.1 and 2.2 of
-cpp-test.txt.
+applied to any preprocessor as well as MCPP.  Refer to 3.1 and 3.2 of
+cpp-test.html.
 
-August, 2006
+November, 2006
 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
 

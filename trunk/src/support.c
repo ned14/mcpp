@@ -104,9 +104,21 @@ static void     put_line( char * out, FILE * fp);
 static void     dump_token( int token_type, const char * cp);
                 /* Dump a token and its type    */
 
+#define EXP_MAC_IND_MAX     8
+/* Information of current expanding macros for diagnostic   */
+static const char * expanding_macro[ EXP_MAC_IND_MAX];
+
 static int  in_token = FALSE;       /* For token scanning functions */
 static int  in_string = FALSE;      /* For get() and parse_line()   */
 
+
+#if MCPP_LIB
+void    init_support( void)
+{
+    in_token = FALSE;
+    in_string = FALSE;
+}
+#endif
 
 int     get_unexpandable(
     int     c,                              /* First of token       */
@@ -1148,10 +1160,6 @@ int     id_operator(
     return  0;
 }
 
-/*
- *                      G E T
- */
-
 int     get( void)
 /*
  * Return the next character from a macro or the current file.
@@ -1237,9 +1245,11 @@ int     get( void)
      * input from the parent file/macro, if any.
      */
     infile = file->parent;                  /* Unwind file chain    */
-    if (infile == NULL)                     /* If at end of input,  */
-        return  CHAR_EOF;                   /*   return end of file.*/
     free( file->buffer);                    /* Free buffer          */
+    if (infile == NULL) {                   /* If at end of input,  */
+        free( file);
+        return  CHAR_EOF;                   /*   return end of file.*/
+    }
     if (file->fp) {                         /* Source file included */
         char *  cp;
         fclose( file->fp);                  /* Close finished file  */
@@ -1261,6 +1271,13 @@ int     get( void)
         sharp();                            /* Need a #line now     */
         line--;
         newlines = 0;                       /* Clear the blank lines*/
+    } else if (file->filename && macro_name) {  /* Expanding macro  */
+        if (exp_mac_ind < EXP_MAC_IND_MAX - 1)
+            exp_mac_ind++;
+        else
+            exp_mac_ind = 1;
+        /* Remember used macro name for diagnostic  */
+        expanding_macro[ exp_mac_ind] = file->filename;
     }
     free( file);                            /* Free file space      */
     return  get();                          /* Get from the parent  */
@@ -1466,7 +1483,7 @@ static char *   get_line(
  * Convert [CR+LF] to [LF]. 
  */
 {
-#if COMPILER == STAND_ALONE
+#if COMPILER == INDEPENDENT
 #define cr_warn_level 1
 #else
 #define cr_warn_level 2
@@ -1906,6 +1923,7 @@ static void do_msg(
  */
 {
     FILEINFO *  file;
+    DEFBUF *    defp;
     int         i;
     size_t      slen;
     const char *    arg_s[ 2];
@@ -1913,6 +1931,7 @@ static void do_msg(
     char *      tp;
     const char *    sp;
     int         c;
+    int         ind;
 
     fflush( fp_out);                /* Synchronize output and diagnostics   */
     arg_s[ 0] = arg1;  arg_s[ 1] = arg3;
@@ -1963,6 +1982,7 @@ static void do_msg(
         *tp = EOS;
     }
 
+    /* Print diagnostic */
     file = infile;
     while (file != NULL && (file->fp == NULL || file->fp == (FILE *)-1))
         file = file->parent;                        /* Skip macro   */
@@ -1975,6 +1995,7 @@ static void do_msg(
     if (no_source_line)
         goto  free_arg;
 
+    /* Print source line, includers and expanding macros    */
     file = infile;
     if (file != NULL && file->fp != NULL) {
         if (mode == OLD_PREP) {
@@ -1986,23 +2007,21 @@ static void do_msg(
         }
         file = file->parent;
     }
-
     while (file != NULL) {                  /* Print #includes, too */
         if (file->fp == NULL) {             /* Macro                */
             if (file->filename) {
-                DEFBUF *    defp;
                 defp = look_id( file->filename);
-                dump_a_def( "    in macro", defp, FALSE, FALSE, TRUE, fp_err);
+                dump_a_def( "    macro", defp, FALSE, FALSE, TRUE, fp_err);
             }
         } else {                            /* Source file          */
             if (file->buffer[ 0] == '\0')
                 strcpy( file->buffer, "\n");
             if (mode != OLD_PREP) {
                 fprintf( fp_err, "    from %s%s: %ld:    %s",
-                    *(file->dirp),              /* Include directory    */
-                    file->filename,             /* Current file name    */
-                    file->line,                 /* Current line number  */
-                    file->buffer);              /* The source line      */
+                    *(file->dirp),          /* Include directory    */
+                    file->filename,         /* Current file name    */
+                    file->line,             /* Current line number  */
+                    file->buffer);          /* The source line      */
             } else {
                 fprintf( fp_err, "    from %s%s: %ld:    ",
                     *(file->dirp), file->filename, file->line);
@@ -2011,6 +2030,28 @@ static void do_msg(
         }
         file = file->parent;
     }
+
+    /* Additional information of macro definitions  */
+    for (ind = 1; ind <= exp_mac_ind; ind++) {
+        int         ind_done;
+        FILEINFO    *file;
+
+        for (ind_done = 1; ind_done < ind; ind_done++)
+            if (str_eq( expanding_macro[ ind], expanding_macro[ ind_done]))
+                break;                      /* Already reported     */
+        if (ind_done < ind)
+            continue;
+        for (file = infile; file; file = file->parent)
+            if (file->fp == NULL && file->filename
+                    && str_eq( expanding_macro[ ind], file->filename))
+                break;                      /* Already reported     */
+        if (file)
+            continue;
+        if ((defp = look_id( expanding_macro[ ind])) != NULL)
+            dump_a_def( "    macro", defp, FALSE, FALSE, TRUE, fp_err);
+            /* Macro already read over  */
+    }
+
 free_arg:
     for (i = 0; i < 2; i++)
         free( arg_t[ i]);
@@ -2027,7 +2068,7 @@ void    cfatal(
  */
 {
     do_msg( "fatal error", format, arg1, arg2, arg3);
-    exit( IO_ERROR);
+    longjmp( error_exit, -1);
 }
 
 void    cerror(

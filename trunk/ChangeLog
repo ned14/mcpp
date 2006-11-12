@@ -1,5 +1,39 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
+2006/11/12  kmatsui
+        * V.2.6.2
+        * Renamed control.c as directive.c and renamed control() as
+        directive().
+        * Fixed a bug of #else handling in pre-Standard modes.
+        (directive.c)
+        * Fixed a bug of mcpp specific directives such as #debug or #
+        put_defines in pre-Standard modes.  (system.c)
+        * Fixed a bug of warning options for GCC-specific builds.
+        (system.c)
+        * Fixed a bug of macro expansion timing in #include directive
+        line.  (system.c)
+        * Revised some other minor points, moved cur_file() from main.c
+        to system.c.  (main.c, eval.c, system.c)
+        * Revised diagnostic messages for some macro expansions.
+        (internal.H, expand.c, support.c)
+        * Fixed a bug of nested includes with relative paths.  (thanks
+        to Leo Savernik).  (system.c)
+        * Fixed memory leaks in routines related to normalizing path-
+        list.  (by Juergen Mueller).  (system.c)
+        * Added MCPP_LIB setting to use mcpp as a subroutine from other
+        main program.  Created init_main(), init_directive(), init_eval(),
+        init_support(), init_system(), init_lib(), clear_filelist() and
+        clear_symtable().  Created testmain.c as a sample source.  (all
+        were contributed by Juergen Mueller and slightly modified by
+        kmatsui).  (internal.H, main.c, directive.c, eval.c, expand.c,
+        support.c, system.c, lib.c)
+        * Changed the macro STAND_ALONE to INDEPENDENT.
+        * Changed the terminology of building methods in the documents.
+        (INSTALL, mcpp-porting.html, mcpp-manual.html)
+        * Rewrote and converted the text files in 'doc' and 'doc-jp'
+        directories into html files.
+        * Updated and corrected many points of the documents.
+
 2006/08/12  kmatsui
         * V.2.6.1
         * Enabled automatic conversion from [CR+LF] to [LF].  (support.c)
@@ -37,17 +71,19 @@ ChangeLog of MCPP and its accompanying Validation Suite
         OLD_PREP modes.  (all the sources)
         * Changed --enable-maintainer-mode option of configure to
         --enable-replace-cpp option which generates compiler-specific-
-        build of mcpp.  (configure.ac, src/Makefile.am)
-        * Made stand-alone-build independent on any compiler-systems.
-        (configure.ac, configed.H, noconfig.H, system.c)
+        build of mcpp.  Made compiler-specific-build installed only into
+        a compiler-specific-directory.  (configure.ac, src/Makefile.am)
+        * Made stand-alone-build independent from any compiler-systems.
+        It no longer requires GCC-specific header files.  (configure.ac,
+        configed.H, noconfig.H, system.c)
         * Revised '#pragma once' and handling of include directories
         list, judging a identity of directory and file by converting it
         to absolute path, and dereferencing symbolic linked file.
         (system.c)
         * Revised #line output and its related problem at the end of an
-        included file.  (internal.H, support.c)
+        included file.  (thanks to Jay Prakash).  (internal.H, support.c)
         * Added portings to GCC V.4.0, CygWIN 1.5.18, Visual C++ 2005
-        and LCC-Win32 V.3.8.  (noconfig.H, system.c)
+        and LCC-Win32 2006-03.  (noconfig.H, system.c)
         * Added some options for Visual C++.  (system.c)
         * Removed settings for pre-C90 compiler (string concatenation by
         preprocessor, '\a' and '\v' handling, no unsigned long #if, no
@@ -74,8 +110,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         Removed set_cplus(), mem_model().  (system.c)
         * Removed Standard functions (memmove(), memcpy(), memcmp(),
         strstr(), strcspn()).  (lib.c)
-        * Changed default setting to FreeBSD 5.* / stand-alone / GCC 3.4.
-        (noconfig.H)
+        * Changed default setting of noconfig.H to FreeBSD 5.* / stand-
+        alone / GCC 3.4.  (noconfig.H)
         * Renamed 'doc' directory as 'doc-jp' and renamed 'doc_eng' as
         'doc'.
         * Removed some manuscript files of mcpp-summary.pdf from the

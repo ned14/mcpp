@@ -1,7 +1,7 @@
 # makefile to compile MCPP version 2.6 for Visual C / nmake
-#		2006/08	kmatsui
+#		2006/11 kmatsui
 # You must first edit BINDIR according to your system.
-# To make stand-alone-build of MCPP do:
+# To make compiler-independent-build of MCPP do:
 #		nmake
 # To make Visual-C-specific-build of MCPP do:
 #		nmake COMPILER=MSC
@@ -30,7 +30,7 @@ CPPFLAGS = $(CPPFLAGS) -DCOMPILER=MSC
 #	for Visual C 2005
 BINDIR = "$(VCINSTALLDIR)"\bin
 !else
-# stand-alone-build: use compiler-independent directory
+# compiler-independent-build: use compiler-independent directory
 BINDIR = \PUBLIC\bin
 !endif
 
@@ -50,8 +50,16 @@ MEM_MACRO =
 MEMLIB =
 !endif
 
-OBJS = main.obj control.obj eval.obj expand.obj support.obj system.obj	\
+OBJS = main.obj directive.obj eval.obj expand.obj support.obj system.obj	\
 	mbchar.obj lib.obj
+
+!ifdef  MCPP_LIB
+# MCPP_LIB is specified:
+# use mcpp as a subroutine from testmain.c
+OBJS = $(OBJS) testmain.obj
+CFLAGS = $(CFLAGS) -DMCPP_LIB
+NAME = testmain
+!endif
 
 $(NAME).exe : $(OBJS)
 	$(CC) $(LINKFLAGS) $(OBJS) $(MEMLIB)
@@ -67,7 +75,7 @@ $(OBJS) : mcpp.H
 system.H	: noconfig.H
 !else
 $(OBJS) : noconfig.H
-main.obj control.obj eval.obj expand.obj support.obj system.obj mbchar.obj:	\
+main.obj directive.obj eval.obj expand.obj support.obj system.obj mbchar.obj:	\
         system.H internal.H
 !endif
 

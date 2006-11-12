@@ -62,7 +62,7 @@ am__cc1_SOURCES_DIST = cc1.c
 @GNUC_TRUE@@MINGW_TRUE@@REPLACE_CPP_TRUE@	cc1.$(OBJEXT)
 cc1_OBJECTS = $(am_cc1_OBJECTS)
 cc1_LDADD = $(LDADD)
-am_mcpp_OBJECTS = main.$(OBJEXT) control.$(OBJEXT) eval.$(OBJEXT) \
+am_mcpp_OBJECTS = main.$(OBJEXT) directive.$(OBJEXT) eval.$(OBJEXT) \
 	expand.$(OBJEXT) mbchar.$(OBJEXT) support.$(OBJEXT) \
 	system.$(OBJEXT) lib.$(OBJEXT)
 mcpp_OBJECTS = $(am_mcpp_OBJECTS)
@@ -171,7 +171,7 @@ target_alias = @target_alias@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
-mcpp_SOURCES = system.H configed.H internal.H main.c control.c eval.c expand.c mbchar.c support.c system.c lib.c
+mcpp_SOURCES = system.H configed.H internal.H main.c directive.c eval.c expand.c mbchar.c support.c system.c lib.c
 @GNUC_TRUE@@MINGW_TRUE@@REPLACE_CPP_TRUE@cc1_SOURCES = cc1.c
 @GNUC_TRUE@@MINGW_TRUE@@REPLACE_CPP_TRUE@cc1dir = $(bindir)
 all: config.h
@@ -397,10 +397,8 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@GNUC_FALSE@install-exec-hook:
-@REPLACE_CPP_FALSE@install-exec-hook:
-@GNUC_FALSE@uninstall-hook:
-@REPLACE_CPP_FALSE@uninstall-hook:
+@GNUC_FALSE@@REPLACE_CPP_TRUE@install-exec-hook:
+@GNUC_FALSE@@REPLACE_CPP_TRUE@uninstall-hook:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-cc1PROGRAMS clean-generic \
@@ -468,15 +466,36 @@ uninstall-am: uninstall-binPROGRAMS uninstall-cc1PROGRAMS \
 	uninstall-cc1PROGRAMS uninstall-hook uninstall-info-am
 
 
-main.o control.o eval.o expand.o mbohar.o support.o system.o    : system.H internal.H
+main.o directive.o eval.o expand.o mbohar.o support.o system.o    : system.H internal.H
 lib.o       :   configed.H
 system.H    :   configed.H
 
 @GNUC_TRUE@@REPLACE_CPP_TRUE@install-exec-hook:
 @GNUC_TRUE@@REPLACE_CPP_TRUE@	@if test x"$(gcc_path)" = x""; then	exit 1; fi
 @GNUC_TRUE@@REPLACE_CPP_TRUE@	@$(srcdir)/set_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver) '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)' '$(inc_dir)'
+@GNUC_TRUE@@REPLACE_CPP_TRUE@	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/share/doc/mcpp"
+@GNUC_TRUE@@REPLACE_CPP_TRUE@	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/man/man1"
+@GNUC_TRUE@@REPLACE_CPP_TRUE@	cp -pf $(top_srcdir)/LICENSE $(top_srcdir)/README	\
+@GNUC_TRUE@@REPLACE_CPP_TRUE@            $(DESTDIR)$(prefix)/share/doc/mcpp
+@GNUC_TRUE@@REPLACE_CPP_TRUE@	gzip -c $(top_srcdir)/mcpp-gcc.1 >   \
+@GNUC_TRUE@@REPLACE_CPP_TRUE@            $(DESTDIR)$(prefix)/man/man1/mcpp-gcc.1.gz
 @GNUC_TRUE@@REPLACE_CPP_TRUE@uninstall-hook:
 @GNUC_TRUE@@REPLACE_CPP_TRUE@	@$(srcdir)/unset_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver) '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)' '$(inc_dir)'
+@GNUC_TRUE@@REPLACE_CPP_TRUE@	rm -f $(DESTDIR)$(prefix)/share/doc/mcpp/LICENSE
+@GNUC_TRUE@@REPLACE_CPP_TRUE@	rm -f $(DESTDIR)$(prefix)/share/doc/mcpp/README
+@GNUC_TRUE@@REPLACE_CPP_TRUE@	rm -f $(DESTDIR)$(prefix)/man/man1/mcpp-gcc.1.gz
+
+@REPLACE_CPP_FALSE@install-exec-hook:
+@REPLACE_CPP_FALSE@	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/share/doc/mcpp"
+@REPLACE_CPP_FALSE@	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/man/man1"
+@REPLACE_CPP_FALSE@	cp -pf $(top_srcdir)/LICENSE $(top_srcdir)/README	\
+@REPLACE_CPP_FALSE@            $(DESTDIR)$(prefix)/share/doc/mcpp
+@REPLACE_CPP_FALSE@	gzip -c $(top_srcdir)/mcpp.1 >   \
+@REPLACE_CPP_FALSE@            $(DESTDIR)$(prefix)/man/man1/mcpp.1.gz
+@REPLACE_CPP_FALSE@uninstall-hook:
+@REPLACE_CPP_FALSE@	rm -f $(DESTDIR)$(prefix)/share/doc/mcpp/LICENSE
+@REPLACE_CPP_FALSE@	rm -f $(DESTDIR)$(prefix)/share/doc/mcpp/README
+@REPLACE_CPP_FALSE@	rm -f $(DESTDIR)$(prefix)/man/man1/mcpp.1.gz
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
