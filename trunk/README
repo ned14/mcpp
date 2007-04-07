@@ -4,8 +4,8 @@ MCPP is a C/C++ preprocessor with the following features:
 
   1. Implements all of C90, C99 and C++98 features.  It has the highest
     conformance.
-  2. Accompanies a validation suite to test comprehensively the C/C++
-    preprocessor.  When it is applied to the existing preprocessors,
+  2. Accompanies a validation suite to test the C/C++ preprocessors
+    comprehensively.  When it is applied to the existing preprocessors,
     MCPP shows outstanding result.
   3. Has a variety of accurate diagnostic messages.  This allows
     examination of most preprocessing problems of source, like potential
@@ -15,10 +15,12 @@ MCPP is a C/C++ preprocessor with the following features:
     China, Taiwan and Korea.
   6. Highly portable.  Supports many compiler systems on UNIX-like
     systems and Windows.  It can replace resident preprocessor of the
-    compiler system.
+    compiler system.  It can also behave independently from any compiler
+    systems.  Moreover, it can be built as a subroutine from any other
+    main program, too.
   7. Preprocessors of various behavior specifications can be generated
     from the source.
-  8. Is free software.
+  8. Is an open source software released under BSD-style-license.
   9. Full documentations in Japanese and English are attached.
 
 MCPP is probably the best C preprocessor in the world.
@@ -35,7 +37,9 @@ The sources and documents of MCPP are found at:
 Please read mcpp-summary.pdf for the overview of MCPP and Validation
 Suite.
 
-Please read INSTALL (INSTALL-jp) for how to install MCPP on your system.
+Please read INSTALL (INSTALL-jp) for how to install MCPP on your system
+from the source.  Refer to the above web page for installation of the
+binary packages of MCPP.
 
 All the files except mcpp-summary.pdf are normal text files.  In the
 .tar.gz file, newline of the text files are [LF], and encoding of

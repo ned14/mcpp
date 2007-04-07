@@ -24,14 +24,14 @@ compiler-specific-build: 特定の処理系のプリプロセッサを（もし可能なら）
     代替するためのものです。その処理系に専用の仕様を持ち、その処理系の専
     用のディレクトリにインストールされます。
 
-Subroutine-build についてはここでは説明は略します。mcpp-porting.html 3.
+  Subroutine-build についてはここでは説明は略します。mcpp-porting.html 3.
 12 を見てください。以下はすべて stand-alone-build についての説明です。
 
 2、configure と make
 
   MCPP をコンパイルするには、UNIX 系のシステムおよび CygWIN, MinGW では
 configure スクリプトを使うことができます。configure と make は任意のディ
-レクトリで実行できます。以下の説明では mcpp-2.6.2 ディレクトリのある
+レクトリで実行できます。以下の説明では mcpp-2.6.3 ディレクトリのある
 path を ${mcpp-dir} と表記します。
 
 2、1、compiler-independent-build
@@ -56,34 +56,37 @@ path を ${mcpp-dir} と表記します。
 
     make install-strip
 
-とします。また、ドキュメントと検証セットをインストールするには、
-
-    make install-data
-
 とします。
 
     make uninstall
 
 とすると、mcpp の実行プログラムは削除されます。
 
-    make uninstall-data
+  make (un)install では DESTDIR=DIR というオプションを指定すると、DIR 以
+下のディレクトリにインストールされます。例えば、
 
-とすると、ドキュメントと検証セットが削除されます。
+    make DESTDIR=/tmp/mcpp install
 
-  make (un)install* では DESTDIR=DIR というオプションを指定すると、DIR
-以下のディレクトリにインストールされます。例えば、
+とすると、/tmp/mcpp/usr/local/bin/ に mcpp がインストールされます（存在
+しないディレクトリは作成される。configure で --prefix=DIR オプションを指
+定していると '/usr/local' の部分が 'DIR' に置き換わる）。バイナリ・パッ
+ケージを作るにはこの方法を使います。
 
-    make DESTDIR=/tmp install
+  GCC 4.1 以降には -fstack-protector (-fstack-protector-all) というオプ
+ションがありますが、configure または make で CFLAGS+=-fstack-protector
+というオプションを指定することでこれを有効にすることができます。これは
+GCC-specific-build でも同様です。
 
-とすると、/tmp/usr/local/bin/ に mcpp がインストールされます（存在しない
-ディレクトリは作成される）。
+  なお、MCPP V.2.6.2 までの make には install-data, uninstall-data とい
+うターゲットがありましたが、V.2.6.3 から廃止しました。ソースからインスト
+ールする場合は、ドキュメントと検証セットをわざわざ別ディレクトリにコピー
+する必要はないと思われるからです。しかし、compiler-independent-build で
+は make install で最小限のドキュメントがインストールされるようにしました。
+これはバイナリ・パッケージを作るつごうに合わせたものです。
 
-    make DESTDIR=/tmp install-data
-
-とすると、/tmp/usr/local/share/doc/mcpp/ 等にドキュメントがインストール
-されます（configure で --prefix=DIR オプションを指定していると '/usr/
-local' の部分が 'DIR' に置き換わる）。バイナリ・パッケージを作るにはこの
-方法を使います。
+  Linux や CygWIN ではシステムの標準ヘッダに欠陥があるので、compiler-
+independent-build の mcpp ではその対策が必要です。この問題については
+mcpp-manual.html 3.9.9 を見てください。
 
 2、2、compiler-specific-build
 
@@ -91,11 +94,10 @@ local' の部分が 'DIR' に置き換わる）。バイナリ・パッケージを作るにはこの
 
 とすると、compiler-specific 版の実行プログラムが生成されて、その処理系の
 専用のディレクトリにインストールされます。
-  make install-strip, make install-data, make uninstall, make uninstall-
-data は compiler-independent-build と同じです。configure の --prefix オ
-プションも同じですが、これは実行プログラムのインストールディレクトリには
-関係しません。また、make での DESTDIR オプションも、実行プログラムのイン
-ストールには関係しません。
+  make install-strip, make uninstall は compiler-independent-build と同
+じです。configure の --prefix オプションも同じですが、これは実行プログラ
+ムのインストールディレクトリには関係しません。また、make での DESTDIR オ
+プションも、実行プログラムのインストールには関係しません。
 
   ただし、GCC 以外の処理系では先に移植作業を行い、configure でさらにいく
 つかのオプションを指定しないと、適切なコンパイルとインストールがされませ
@@ -276,10 +278,10 @@ noconfig.H の次の行の 'INDEPENDENT' をそのコンパイラを表すマクロに書き換
     #define COMPILER    INDEPENDENT
 
 'COMPILER' は make のオプションで上書きすることもできるので、noconfig.H
-は必ずしも書き換える必要はありません。例えば、Visual C では
-'nmake COMPILER=MSC' として 'nmake COMPILER=MSC install' します。Borland
-C では 'make -DCOMPILER=BORLANDC' として
-'make -DCOMPILER=BORLANDC install' します。
+は必ずしも書き換える必要はありません。例えば、Visual C では 'nmake
+COMPILER=MSC' として 'nmake COMPILER=MSC install' します。Borland C では
+'make -DCOMPILER=BORLANDC' として 'make -DCOMPILER=BORLANDC install' し
+ます。
 
   もし、ターゲット処理系とコンパイルする処理系とが違っている場合は、
 noconfig.H / Part 1 をターゲット処理系の仕様に合わせ、Part 2 をコンパイ
@@ -297,8 +299,8 @@ noconfig.H / Part 1 をターゲット処理系の仕様に合わせ、Part 2 をコンパイ
 
 3、5、テスト
   Windows では MinGW / GCC-specific-build および CygWIN 以外では include
-directory は設定されないので、INCLUDE, CPLUS_INCLUDE という環境変数で設
-定します。
+directory は設定されないので、INCLUDE という環境変数で設定します（必要な
+ら CPLUS_INCLUDE も）。
   Windows では GCC / testsuite は使えないので、test-t, test-c, test-l デ
 ィレクトリにあるテスト用サンプルを直接、プリプロセスして確かめます。tool
 /cpp_test.c を使うと、一部のテストだけですが、自動的に実行できます（cpp-
@@ -322,6 +324,6 @@ MCPP の "pre-preprocess" という機能を使って MCPP をリコンパイルしてみる
 MCPP だけでなく任意のプリプロセッサに適用することができます。その使い方
 については、cpp-test.html 3.1, 3.2 を参照してください。
 
-2006/11
+2007/04
                                          松井　潔 <kmatsui@t3.rim.or.jp>
 

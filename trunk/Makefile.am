@@ -3,11 +3,15 @@
 AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = src
+
+if ! MCPP_LIB
 if REPLACE_CPP
 SUBDIRS += tests .
 man_page = mcpp-gcc
 else
 man_page = mcpp
+endif
+man1_MANS = $(man_page).1
 endif
 
 EXTRA_DIST = $(top_srcdir)/LICENSE $(top_srcdir)/INSTALL*   \
@@ -15,25 +19,27 @@ EXTRA_DIST = $(top_srcdir)/LICENSE $(top_srcdir)/INSTALL*   \
   $(top_srcdir)/mcpp.1 $(top_srcdir)/mcpp-gcc.1 $(top_srcdir)/config/mb_*   \
   $(top_srcdir)/src/preproc.c $(top_srcdir)/src/noconfig.H  \
   $(top_srcdir)/src/cc1.c $(top_srcdir)/src/*set_mcpp.sh 	\
-  $(top_srcdir)/src/testmain.c	\
+  $(top_srcdir)/src/testmain.c $(top_srcdir)/src/mcpp_lib.def	\
   $(top_srcdir)/tests/*_test.sh $(top_srcdir)/noconfig  \
   $(top_srcdir)/cpp-test $(top_srcdir)/test-t    \
   $(top_srcdir)/test-c $(top_srcdir)/test-l $(top_srcdir)/tool  \
   $(top_srcdir)/doc $(top_srcdir)/doc-jp
 
-install-data:
-	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/share/doc/mcpp"
-	cp -Rpf $(top_srcdir)/cpp-test \
-            $(top_srcdir)/test-t $(top_srcdir)/test-c $(top_srcdir)/test-l  \
-            $(top_srcdir)/tool $(top_srcdir)/doc $(top_srcdir)/doc-jp   \
-            $(DESTDIR)$(prefix)/share/doc/mcpp
+if ! REPLACE_CPP 
+if ! MCPP_LIB
 
-uninstall-data:
-	rm -r -f $(DESTDIR)$(prefix)/share/doc/mcpp/cpp-test
-	rm -r -f $(DESTDIR)$(prefix)/share/doc/mcpp/test-t
-	rm -r -f $(DESTDIR)$(prefix)/share/doc/mcpp/test-c
-	rm -r -f $(DESTDIR)$(prefix)/share/doc/mcpp/test-l
-	rm -r -f $(DESTDIR)$(prefix)/share/doc/mcpp/tool
-	rm -r -f $(DESTDIR)$(prefix)/share/doc/mcpp/doc
-	rm -r -f $(DESTDIR)$(prefix)/share/doc/mcpp/doc-jp
+install-exec-hook:
+	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/share/doc/mcpp/doc"
+	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/share/doc/mcpp/doc-jp"
+	cp -pf $(top_srcdir)/LICENSE $(top_srcdir)/README $(top_srcdir)/NEWS \
+            $(DESTDIR)$(prefix)/share/doc/mcpp
+	cp -pf $(top_srcdir)/doc/mcpp-manual.html   \
+            $(DESTDIR)$(prefix)/share/doc/mcpp/doc
+	cp -pf $(top_srcdir)/doc-jp/mcpp-manual.html   \
+            $(DESTDIR)$(prefix)/share/doc/mcpp/doc-jp
+uninstall-hook:
+	rm -rf $(DESTDIR)$(prefix)/share/doc/mcpp
+
+endif
+endif
 

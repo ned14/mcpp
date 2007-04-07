@@ -1,10 +1,10 @@
-dnl configure.ac for MCPP   2003/11, 2006/11  kmatsui
+dnl configure.ac for MCPP   2003/11, 2007/03  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
 dnl To cross-compile you must edit here and there of this file.
 
-AC_INIT( mcpp, 2.6.2, kmatsui@t3.rim.or.jp)
+AC_INIT( mcpp, 2.6.3, kmatsui@t3.rim.or.jp)
 AC_CONFIG_SRCDIR( src/main.c)
 AM_CONFIG_HEADER( src/config.h)
 AC_CONFIG_AUX_DIR( config)
@@ -17,6 +17,8 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_EGREP
+AC_LIBTOOL_WIN32_DLL
+AC_PROG_LIBTOOL
 
 dnl WARNING: Configure must check the characteristics of target compiler.
 dnl MCPP may modify the behavior of the target compiler-system.
@@ -339,6 +341,12 @@ mcpp_AC_C_PREDEF( [COMPILER], [OLD])
 
 fi
 
+## --enable-mcpplib option
+AC_ARG_ENABLE( mcpplib,
+    AC_HELP_STRING( [--enable-mcpplib],
+        [Build libmcpp rather than stand-alone mcpp])
+)
+
 ## --enable-replace-cpp option
 AC_ARG_ENABLE( replace-cpp,
     AC_HELP_STRING( [--enable-replace-cpp],
@@ -347,6 +355,15 @@ AC_ARG_ENABLE( replace-cpp,
     AC_DEFINE( [COMPILER], [INDEPENDENT], [Specify compiler-independent-build.])
             ## else define COMPILER as INDEPENDENT
 )
+
+if test x${enable_mcpplib} = xyes; then           ## mcpplib mode
+    AC_DEFINE( [MCPP_LIB], 1, [Define if build libmcpp])
+    if test x${enable_replace_cpp} = xyes; then
+        AC_MSG_WARN( Ignores enable-replace-cpp option)
+        [enable_replace_cpp=no]
+    fi
+
+else
 
 if test x${enable_replace_cpp} = xyes; then         ## replace-cpp mode
 
@@ -681,6 +698,7 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
 fi ## gcc
 
 fi ## replace-cpp mode
+fi ## build-cpp mode or replace-cpp mode
 
 AC_ARG_WITH( [gcc-testsuite-dir],
     AC_HELP_STRING( [--with-gcc-testsuite-dir=directory],
@@ -703,6 +721,7 @@ AC_ARG_WITH( [gcc-testsuite-dir],
 AC_SUBST( [gcc_testsuite_dir])
 AM_CONDITIONAL( [GNUC], test x${ac_cv_c_compiler_gnu} = xyes)
 
+AM_CONDITIONAL( [MCPP_LIB], test x${enable_mcpplib} = xyes)
 AM_CONDITIONAL( [REPLACE_CPP], test x${enable_replace_cpp} = xyes)
 AM_CONDITIONAL( [MINGW], test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW)
 
