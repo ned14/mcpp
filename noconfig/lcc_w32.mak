@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.6 for LCC-Win32 / LCC make
-#       2006/11 kmatsui
+# makefile to compile MCPP version 2.6.3 for LCC-Win32 / LCC make
+#		2007/03 kmatsui
 # You must first edit BINDIR according to your system.
 # To compile MCPP do:
 #		make
@@ -7,17 +7,19 @@
 #		make
 # To link malloc() package of kmatsui, edit this makefile and do:
 #		make
+# To make subroutine-build of MCPP, edit this makefile and do:
+#		make
 
 NAME = mcpp.exe
 CC = lcc
 CFLAGS = -A
 LINKFLAGS = -s -o $(NAME)
 #BINDIR = \PUBLIC\COMPILERS\LCC\bin
-    # Adjust for your system
+	# Adjust for your system
 BINDIR = \PUBLIC\BIN
 
 #CPPOPTS= -DCOMPILER=LCC
-    # LCC-specific-build
+	# LCC-specific-build
 
 # To link kmatsui's malloc()
 #MEMLIB = kmmalloc_debug.lib
@@ -27,14 +29,7 @@ MEMLIB =
 MEM_MACRO =
 
 OBJS = main.obj directive.obj eval.obj expand.obj support.obj system.obj  \
-    mbchar.obj lib.obj
-
-# To use mcpp as a subroutine from testmain.c,
-# uncomment the following 4 lines.
-#OBJS = main.obj directive.obj eval.obj expand.obj support.obj system.obj  \
-    mbchar.obj lib.obj testmain.obj
-#CFLAGS = -A -DMCPP_LIB
-#NAME = testmain.exe
+	mbchar.obj lib.obj
 
 $(NAME) : $(OBJS)
 	lcclnk $(LINKFLAGS) *.obj $(MEMLIB)
@@ -43,7 +38,7 @@ PREPROCESSED = 0
 CMACRO = $(MEM_MACRO)
 $(OBJS) : noconfig.H
 main.obj directive.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
-        system.H internal.H
+		system.H internal.H
 # To make MCPP using MCPP itself, comment out the above 4 lines and
 #		uncomment the next 5 lines.
 #PREPROCESSED = 1
@@ -64,8 +59,40 @@ install :
 	copy $(NAME) $(BINDIR)\$(NAME)
 
 clean	:
-	-del *.obj
-	-del $(NAME)
-	-del mcpp.H
-	-del _*.c
+	-del *.obj *.exe mcpp.H *.lib *.dll *.exp _*.c
 
+LIBDIR = \PUBLIC\COMPILERS\LCC\lib
+# For subroutine-build, uncomment the following line.
+#CFLAGS = -A -DMCPP_LIB=1 -DDLL_EXPORT $(MEM_MACRO)
+DLL_VER = 0
+
+mcpplib: mcpplib_lib mcpplib_dll
+
+mcpplib_lib:	$(OBJS)
+	# lcclib does not work if the output file already exists.
+	-del mcpp.lib
+	lcclib -out:mcpp.lib $(OBJS)
+
+mcpplib_dll:	$(OBJS)
+	lcclnk -dll -S $(OBJS) $(MEMLIB) mcpp_lib.def
+
+mcpplib_install:
+	copy mcpp.lib $(LIBDIR)
+	copy mcpp$(DLL_VER).lib $(LIBDIR)
+	copy mcpp$(DLL_VER).dll $(BINDIR)
+
+mcpplib_uninstall:
+	del $(LIBDIR)\mcpp.lib $(LIBDIR)\mcpp$(DLL_VER).lib \
+            $(BINDIR)\mcpp$(DLL_VER).dll
+
+# To use mcpp as a subroutine from testmain.c, uncomment the following lines.
+#NAME = testmain
+# To output to memory buffer, uncomment the next line.
+#CFLAGS = -A -DMCPP_LIB -DOUT2MEM -DDLL_IMPORT
+#LINKFLAGS = -o $(NAME).exe $(NAME).obj mcpp$(DLL_VER).lib $(MEMLIB)
+#$(NAME)	:	$(NAME).obj
+#	lcclnk $(LINKFLAGS)
+#$(NAME)_install	:
+#	copy $(NAME).exe $(BINDIR)
+#$(NAME)_uninstall	:
+#	del $(BINDIR)\$(NAME).exe

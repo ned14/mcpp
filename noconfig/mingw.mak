@@ -1,18 +1,29 @@
-# makefile to compile MCPP version 2.6.* for MinGW / GCC / GNU make
-#   2006/11   kmatsui
+# makefile to compile MCPP version 2.6.3 for MinGW / GCC / GNU make
+#   2007/03   kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
-#       make; make install
+#       make 
+#       make install
 # To make GCC-specific-build of MCPP:
-#       make COMPILER=GNUC; make COMPILER=GNUC install
+#       make COMPILER=GNUC
+#       make COMPILER=GNUC install
 # To re-compile MCPP using GCC-specific-build of MCPP do:
 #       make COMPILER=GNUC PREPROCESSED=1
+#       make COMPILER=GNUC PREPROCESSED=1 install
 # To link malloc() package of kmatsui do:
 #       make [COMPILER=GNUC] [PREPROCESSED=1] MALLOC=KMMALLOC
+#       make [COMPILER=GNUC] [PREPROCESSED=1] MALLOC=KMMALLOC install
+# To make libmcpp (subroutine build of mcpp):
+#       make MCPP_LIB=1 mcpplib
+#       make MCPP_LIB=1 mcpplib_install
+# To make testmain using libmcpp (add 'DLL_IMPORT=1' to link against DLL):
+#       make MCPP_LIB=1 [OUT2MEM=1] testmain
+#       make MCPP_LIB=1 [OUT2MEM=1] testmain_install
 # To compile cpp with C++, rename *.c other than lib.c and preproc.c to *.cc,
 #   and do:
 #       make CPLUS=1
+#       make CPLUS=1 install
 
 # COMPILER:
 #   Specify whether make a compiler-independent-build or GCC-specific-build
@@ -54,6 +65,8 @@ cpp_call = $(BINDIR)/cc1.exe
 endif
 endif
 
+LIBDIR = /usr/local/lib
+
 # The directory where 'gcc' (cc) command is located
 GCCDIR = /mingw/bin
 
@@ -68,31 +81,20 @@ endif
 
 ifneq   ($(MALLOC), )
 ifeq    ($(MALLOC), KMMALLOC)
-        MEMLIB = /mingw/lib/libkmmalloc_debug.a   # -lkmmalloc_debug
+        LINKFLAGS += -lkmmalloc_debug
         MEM_MACRO = -D_MEM_DEBUG -DXMALLOC
 endif
         MEM_MACRO += -D$(MALLOC)
 else
-        MEMLIB =
         MEM_MACRO =
 endif
 
 OBJS = main.o directive.o eval.o expand.o support.o system.o mbchar.o lib.o
 
-ifeq    ($(COMPILER), )
-ifeq    ($(MCPP_LIB), 1)
-# compiler-independent-build and MCPP_LIB is specified:
-# use mcpp as a subroutine from testmain.c
-OBJS += testmain.o
-CFLAGS += -DMCPP_LIB
-NAME = testmain
-endif
-endif
-
 $(NAME): $(OBJS)
-	$(GCC) $(LINKFLAGS) $(OBJS)
+	$(GCC) $(OBJS) $(LINKFLAGS)
 ifeq    ($(COMPILER), GNUC)
-	$(GCC) cc1.c -o cc1.exe $(MEMLIB)
+	$(GCC) cc1.c -o cc1.exe
 endif
 
 PREPROCESSED = 0
@@ -134,7 +136,7 @@ ifeq    ($(COMPILER), GNUC)
 endif
 
 clean	:
-	-rm *.o $(NAME).exe cc1.exe mcpp.H mcpp.err
+	-rm *.o *.so *.exe cc1.exe mcpp.H mcpp.err libmcpp.*
 
 uninstall:
 	rm -f $(BINDIR)/$(NAME).exe
@@ -143,3 +145,55 @@ ifeq    ($(COMPILER), GNUC)
             '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)'
 endif
 
+ifeq    ($(COMPILER), )
+ifeq    ($(MCPP_LIB), 1)
+# compiler-independent-build and MCPP_LIB is specified:
+CFLAGS += -DMCPP_LIB
+
+mcpplib :   mcpplib_a mcpplib_dll
+
+mcpplib_a:  $(OBJS)
+	ar -rv libmcpp.a $(OBJS)
+
+# DLL
+DLL_VER = 0
+SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so lib.so
+.SUFFIXES: .so
+.c.so   :
+	$(GCC) $(CFLAGS) $(MEM_MACRO) -DDLL_EXPORT -c -o$*.so $*.c
+        # -fPIC is not necessary for MinGW
+mcpplib_dll: $(SOBJS)
+	gcc -shared $(SOBJS) -olibmcpp-$(DLL_VER).dll -Wl,--enable-auto-image-base,--out-implib,libmcpp.dll.a
+
+mcpplib_install:
+	cp libmcpp.a libmcpp.dll.a $(LIBDIR)
+	cp libmcpp-$(DLL_VER).dll $(BINDIR)
+	ranlib $(LIBDIR)/libmcpp.a
+mcpplib_uninstall:
+	rm -f $(LIBDIR)/libmcpp.a $(LIBDIR)/libmcpp.dll.a $(BINDIR)/libmcpp-$(DLL_VER).dll
+
+# use mcpp as a subroutine from testmain.c
+NAME = testmain
+ifeq    ($(OUT2MEM), 1)
+# output to memory buffer
+CFLAGS += -DOUT2MEM
+endif
+LINKFLAGS = $(NAME).o -o$(NAME).exe
+ifeq    ($(DLL_IMPORT), 1)
+LINKFLAGS += $(LIBDIR)/libmcpp.dll.a
+CFLAGS += -DDLL_IMPORT
+else
+LINKFLAGS += $(LIBDIR)/libmcpp.a
+endif
+ifeq    ($(MALLOC), KMMALLOC)
+    LINKFLAGS += -lkmmalloc_debug
+endif
+$(NAME) :   $(NAME).o
+	$(GCC) $(LINKFLAGS)
+$(NAME)_install :
+	install -s $(NAME).exe $(BINDIR)/$(NAME).exe
+$(NAME)_uninstall   :
+	rm -f $(BINDIR)/$(NAME).exe
+
+endif
+endif
