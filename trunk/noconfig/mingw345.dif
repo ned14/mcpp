@@ -1,5 +1,5 @@
-*** noconfig.H	2006-11-05 15:06:15.000000000 +0900
---- noconfig.H.mingw345	2006-11-07 01:01:15.000000000 +0900
+*** noconfig.H	2007-01-30 00:29:12.000000000 +0900
+--- noconfig.H.mingw345	2007-01-30 00:51:43.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -21,24 +21,24 @@
 *** 306,316 ****
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
-  #define STDC_VERSION        0L      /* 199409L for V.2.9, 0L for V.3.*      */
-! #define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.2" */  /* "/usr/include/c++/4.0.2" */
-! #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.2/i386-vine-linux" */  /* "/usr/include/c++/4.0.2/i586-suse-linux" */
-! /* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.2/backward"    */  /* "/usr/include/c++/4.0.2/backward"    */
-! /* #define C_INCLUDE_DIR1   */  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */  /* "/usr/lib/gcc/i586-suse-linux/4.0.2/include" */
-! /* #define C_INCLUDE_DIR2   */  /* "/usr/i586-suse-linux/include"   */
+  #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */
+! #define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.6" */  /* "/usr/local/include/c++/4.1.1" */
+! #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/local/include/c++/4.1.1/i686-pc-linux-gnu" */
+! /* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/local/include/c++/4.1.1/backward"    */
+! /* #define C_INCLUDE_DIR1   */  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include" */
+! /* #define C_INCLUDE_DIR2   */
   #ifndef ENV_C_INCLUDE_DIR
   #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
   #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"
 --- 306,316 ----
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
-  #define STDC_VERSION        0L      /* 199409L for V.2.9, 0L for V.3.*      */
-! #define CPLUS_INCLUDE_DIR1  "/mingw/include/c++/3.4.5" /* "/usr/include/c++/3.4" *//* "/usr/include/c++/3.3.2" */  /* "/usr/include/c++/4.0.2" */
-! #define CPLUS_INCLUDE_DIR2  "/mingw/include/c++/3.4.5/mingw32" /* "/usr/include/c++/3.4/backward" */ /* "/usr/include/c++/3.3.2/i386-vine-linux" */  /* "/usr/include/c++/4.0.2/i586-suse-linux" */
-!  #define CPLUS_INCLUDE_DIR3 "/mingw/include/c++/3.4.5/backward" /* "/usr/include/c++/3.3.2/backward"    */  /* "/usr/include/c++/4.0.2/backward"    */
-! #define C_INCLUDE_DIR1  "/mingw/include" /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */  /* "/usr/lib/gcc/i586-suse-linux/4.0.2/include" */
-! #define C_INCLUDE_DIR2  "/mingw/lib/gcc/mingw32/3.4.5/include" /* "/usr/i586-suse-linux/include"   */
+  #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */
+! #define CPLUS_INCLUDE_DIR1  "/mingw/include/c++/3.4.5" /* "/usr/include/c++/3.4" */ /* "/usr/include/c++/3.3.6" */  /* "/usr/local/include/c++/4.1.1" */
+! #define CPLUS_INCLUDE_DIR2  "/mingw/include/c++/3.4.5/mingw32" /* "/usr/include/c++/3.4/backward" */ /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/local/include/c++/4.1.1/i686-pc-linux-gnu" */
+! #define CPLUS_INCLUDE_DIR3  "/mingw/include/c++/3.4.5/backward" /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/local/include/c++/4.1.1/backward"    */
+! #define C_INCLUDE_DIR1      "/mingw/include" /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include" */
+! #define C_INCLUDE_DIR2      "/mingw/lib/gcc/mingw32/3.4.5/include"
   #ifndef ENV_C_INCLUDE_DIR
   #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
   #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"
