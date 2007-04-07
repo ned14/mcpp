@@ -1,4 +1,4 @@
-.TH MCPP "1" "November 2006" "alternative CPP" "User Commands"
+.TH MCPP "1" "April 2007" "alternative CPP" "User Commands"
 .SH NAME
 mcpp \- Matsui CPP, an alternative C preprocessor
 .SH SYNOPSIS
@@ -7,7 +7,7 @@ mcpp [\fIoptions\fP] [\fI<infile>\fP [\fI<outfile>\fP]]
 \fBmcpp\fR is a C/C++ preprocessor with the highest conformance which implements C90, C99 and C++98. 
 \fBmcpp\fR has plentiful diagnostics and many #pragmas. 
 It is useful to check portability of your program, and also useful to debug complicated macro.
-This is a man-page for \fBmcpp\fR of stand-alone-build.
+This is a man-page for \fBmcpp\fR of compiler-independent-build.
 .SH OPTIONS
 \fBmcpp\fR expects two file names as arguments, \fI<infile>\fR and
 \&\fI<outfile>\fR.  If not specified, \fI<infile>\fR defaults to standard input
@@ -111,8 +111,8 @@ Retrieve the macro definition from the stack.
 .IP "#pragma MCPP warning    any message"
 Putout warning "any message".
 .SH "VERSION"
-MCPP V.2.6.2 (2006/11) stand-alone-build
+MCPP V.2.6.3 (2007/04) compiler-independent-build
 .SH "SEE ALSO"
 Do 'man mcpp-gcc' for \fBmcpp\fR of GCC-specific-build.
 The full documentation for \fBmcpp\fR are maintained as html files.
-Please see /usr/share/doc/mcpp/*. (or /usr/local/share/doc/mcpp/* depending the installation).
+Please see mcpp-manual.html.

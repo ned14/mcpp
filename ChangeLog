@@ -1,5 +1,54 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
+2007/04/07  kmatsui
+        * V.2.6.3
+        * Fixed a bug of some #line directive handling which wrongly
+        affected #include path.  Added a new member for real file name
+        to struct FILEINFO, and made #line directive does not affect
+        real file name.  (internal.H, main.c, support.c, system.c)
+        * Enabled dereferencing of symbolic linked directory (as well as
+        file) of #include path-list and include directory.  Split
+        deref_syml() from norm_path().  (system.c)
+        * Revised again diagnostic messages for some macro expansions.
+        (internal.H, expand.c, support.c)
+        * Relaxed token checking and syntax checking in lang_asm mode.
+        (expand,c, support.c)
+        * Implemented GCC3-spec variadic macro for GCC-specific-build.
+        (internal.H, directive.c, expand.c)
+        * Added some predefined macro for GCC-specific-build.  (system.c)
+        * Revised output routines abstracting output device, and
+        implementing optional memory buffer output when built with
+        MCPP_LIB macro.  Created mcpp_lib.h, mcpp_lib_fputs(),
+        mcpp_lib_fputc(), mcpp_lib_fprintf(), mcpp_use_mem_buffers(),
+        mcpp_get_mem_buffer(), mcpp_set_out_func(),
+        mcpp_reset_def_out_func(), mem_putc(), mem_puts(),
+        append_to_buffer(), function pointers mcpp_fputs, mcpp_fputc,
+        mcpp_fprintf and some macros.  (All were contributed by Greg
+        Kress and slightly modified by kmatsui) (internal.H, main.c,
+        directive.c, eval.c, expand.c, mbchar.c, support.c, system.c,
+        lib.c, mcpp_lib.h)
+        * Renamed some global names in order to lessen the possibility
+        of name collisions in subroutine-build.  Renamed the variables
+        mode, cplus, line, debug, type[] and work[] to mcpp_mode,
+        cplus_val, src_line, mcpp_debug, char_type[] and work_buf[]
+        respectively.  Renamed the functions install(), eval(), expand(),
+        get() and unget() to install_macro(), eval_if(), expand_macro(),
+        get_ch() and unget_ch() respectively.  (internal.H, main.c,
+        directive.c, eval.c, expand.c, mbchar.c, support.c, system.c)
+        * Added 'mcpplib' target to make subroutine (library) build in
+        configure.ac and noconfig/*.mak.
+        * Revised some other minor points.  (all sources)
+        * Changed default setting of noconfig.H to that of FreeBSD 6.* /
+        stand-alone / GCC 3.4.  (noconfig.H)
+        * Added documentation on source checking of glibc 2.4.  (mcpp-
+        manual.html)
+        * Abolished 'install-data' and 'uninstall-data' targets of
+        configured makefile.  On the other hand, made 'install' target
+        install also mcpp-manual.html.
+        * Provided stand-alone-and-compiler-independent-build binary
+        packages .pkg, .rpm, .deb, .zip and their corresponding source
+        packages.
+
 2006/11/12  kmatsui
         * V.2.6.2
         * Renamed control.c as directive.c and renamed control() as
@@ -8,7 +57,7 @@ ChangeLog of MCPP and its accompanying Validation Suite
         (directive.c)
         * Fixed a bug of mcpp specific directives such as #debug or #
         put_defines in pre-Standard modes.  (system.c)
-        * Fixed a bug of warning options for GCC-specific builds.
+        * Fixed a bug of warning options for GCC-specific-builds.
         (system.c)
         * Fixed a bug of macro expansion timing in #include directive
         line.  (system.c)
