@@ -11,7 +11,7 @@
 <h3>== Validation Suite for Standard C Conformance of Preprocessing ==</h3>
 </div>
 <div align="right">
-<h4>for V.1.5.2 (2006/11)<br>
+<h4>for V.1.5.3 (2007/04)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -20,7 +20,7 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 
 <h4><dl><dt><a name="toc.1" href="#1">1.  Standard C and Validation Suite</a>
 <dd><a name="toc.1.1" href="#1.1">1.1. History</a>
-<dd><a name="toc.1.2" href="#1.2">1.2. Standards</a>
+<dd><a name="toc.1.2" href="#1.2">1.2. The Standards</a>
 <dd><a name="toc.1.3" href="#1.3">1.3. Notations in this document</a>
 <br>
 <br>
@@ -47,7 +47,7 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.2.7.4" href="#2.7.4">2.7.4. Parameter Name at Function-like Macro Re-definition</a>
 <dd><a name="toc.2.7.5" href="#2.7.5">2.7.5. Unpredictable Evaluation of Character Constant in #if Expression</a>
 <dd><a name="toc.2.7.6" href="#2.7.6">2.7.6. Non-Function-like Rescanning of Function-like Macro</a>
-<dd><a name="toc.2.7.7" href="#2.7.7">2.7.7. C90 Corrigendum 1 and Amendment 1</a>
+<dd><a name="toc.2.7.7" href="#2.7.7">2.7.7. C90 Corrigendum 1, 2 and Amendment 1</a>
 <dd><a name="toc.2.7.8" href="#2.7.8">2.7.8. Redundant Specifications</a></dl>
 <dd><a name="toc.2.8" href="#2.8">2.8. Preprocessing Specification in C99</a>
 <dd><a name="toc.2.9" href="#2.9">2.9. Toward Clear Preprocessing Specifications</a>
@@ -63,10 +63,10 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.3.2.3.2" href="#3.2.3.2">3.2.3.2. Installation to TestSuite and Testing</a>
 <dd><a name="toc.3.2.3.3" href="#3.2.3.3">3.2.3.3. <b>mcpp</b> Automatic Testing</a>
 <dd><a name="toc.3.2.3.4" href="#3.2.3.4">3.2.3.4. TestSuite and Validation Suite</a></dl></dl>
-<dd><a name="toc.3.3" href="#3.3">3.3. Violations of syntax rules or Constraints and Diagnostic Messages</a>
+<dd><a name="toc.3.3" href="#3.3">3.3. Violation of syntax rules or Constraints and Diagnostic Messages</a>
 <dd><dl><dt><a name="toc.3.4" href="#3.4">3.4. Details</a>
 <dd><a name="toc.3.4.1" href="#3.4.1">3.4.1. Trigraphs</a>
-<dd><a name="toc.3.4.2" href="#3.4.2">3.4.2. Line Splicing by <backslash><newline></a>
+<dd><a name="toc.3.4.2" href="#3.4.2">3.4.2. Line Splicing by &lt;backslash&gt;&lt;newline&gt;</a>
 <dd><a name="toc.3.4.3" href="#3.4.3">3.4.3. Comments</a>
 <dd><a name="toc.3.4.4" href="#3.4.4">3.4.4. Special Tokens (digraphs) and Characters (UCN)</a>
 <dd><a name="toc.3.4.5" href="#3.4.5">3.4.5. Spaces and Tabs on a Preprocessing Directive Line</a>
@@ -134,7 +134,7 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 
 <h1><a name="1" href="#toc.1">1.  Standard C and Validation Suite</a></h1>
 <p>I completely rewrote DECUS cpp by Martin Minow to create a portable C preprocessor called <b>mcpp</b> V.2.  <b>mcpp</b> stands for 'Matsui cpp'.  This preprocessor is provided as source code and can be ported for various compiler systems by modifying some macros in header files on compilation.  In addition, execution programs has various behavioral modes such as Standard C (ISO/ANSI/JIS C) and others.  Among those modes, the Standard C mode literally implements strict Standard C preprocessing.</p>
-<p>While implementing this preprocessor, I also created a testing tool called "Validation Suite for Standard C Conformance of Preprocessing".  This suite also covers C++.  This document explains the Validation Suite.  The Validation Suite is open to the public as free software along with this documentation.</p>
+<p>While implementing this preprocessor, I also created a testing tool called "Validation Suite for Standard C Conformance of Preprocessing".  This suite also covers C++.  This document explains the Validation Suite.  The Validation Suite is open to the public as an open-source-software along with this documentation under the BSD-style-license.</p>
 <br>
 
 <h2><a name="1.1" href="#toc.1.1">1.1. History</a></h2>
@@ -144,7 +144,7 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <p>V.1.3 supports the official C99 release and is an update to V.1.2.  In addition, behavioral test samples were rewritten so that they can be used by the GCC / testsuite.</p>
 <p>V.1.3, while it was under development, was adopted as the year 2002's "Exploratory Software Project" at the Information-technology Promotion Agency, Japan (IPA) by Yutaka Niibe Project Manager.  From July, 2002 to February, 2003, the development continued under the grants-in-aid from IPA and Niibe PM's advice.  The English version of the document was created under my supervision with the translation work outsourced to Highwell, Inc.  In 2003/02, <b>mcpp</b> V.2.3 and Validation Suite V.1.3 were released on m17n.org.</p>
 <p>In addition, <b>mcpp</b> and Validation Suite were adopted as the year 2003's "Exploratory Software Project" by Hiroshi Ichiji Project Manager.  This allowed an update to V.2.4 and V.1.4. *1</p>
-<p><b>mcpp</b> and Validation Suite have been kept on updating after the project.  V.2.5 and V.1.5 were released in March, 2005.  Validation Suite V.1.5 changed allocation of points and some other matters.  In July 2006, <b>mcpp</b> V.2.6 and Validation Suite V.1.5.1 are released.  Validation Suite V.1.5.1 updated the test result of the preprocessors.  In November, 2006, <b>mcpp</b> V.2.6.2 and Validation Suite V.1.5.2 were released.</p>
+<p><b>mcpp</b> and Validation Suite have been kept on updating after the project.  V.2.5 and V.1.5 were released in March, 2005.  Validation Suite V.1.5 changed allocation of points and some other matters.  In July 2006, <b>mcpp</b> V.2.6 and Validation Suite V.1.5.1 are released.  Validation Suite V.1.5.1 updated the test result of the preprocessors.  In November, 2006, <b>mcpp</b> V.2.6.2 and Validation Suite V.1.5.2 were released.  In April, 2007 <b>mcpp</b> V.2.6.3 and Validation Suite V.1.5.3 were released.  V.1.5.2 and V.1.5.3 of Validation Suite have no substantial change other than small updates of this document.</p>
 <p>Note:</p>
 <p>*1 The overview of the Exploratory Software Project can be found below (in Japanese only).</p>
 <blockquote>
@@ -158,13 +158,12 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <blockquote>
 <p><a href="http://mcpp.sourceforge.net/">http://mcpp.sourceforge.net/</a></p>
 </blockquote>
-<p><b>mcpp</b> V.2.2 and Validation Suite V.1.2 are located in the following Vector's web site.  They are in the directory called dos/prog/c, but they are not for MS-DOS exclusively.  Sources are for UNIX, WIN32, MS-DOS.</p>
+<p><b>mcpp</b> V.2.2 and Validation Suite V.1.2 are located in the following Vector's web site.  They are in the directory called dos/prog/c, but they are not for MS-DOS exclusively.  Sources are for UNIX, WIN32, MS-DOS.  The documents are Japanese only.</p>
 <blockquote>
-<p><a href="http://download.vector.co.jp/pack/dos/prog/c/cpp22src.lzh">http://download.vector.co.jp/pack/dos/prog/c/cpp22src.lzh</a><br>
-<a href="http://download.vector.co.jp/pack/dos/prog/c/cpp22bin.lzh">http://download.vector.co.jp/pack/dos/prog/c/cpp22bin.lzh</a><br>
-<a href="http://download.vector.co.jp/pack/dos/prog/c/cpp12tst.lzh">http://download.vector.co.jp/pack/dos/prog/c/cpp12tst.lzh</a></p>
+<a href="http://www.vector.co.jp/soft/dos/prog/se081188.html">http://www.vector.co.jp/soft/dos/prog/se081188.html</a><br>
+<a href="http://www.vector.co.jp/soft/dos/prog/se081189.html">http://www.vector.co.jp/soft/dos/prog/se081189.html</a><br>
+<a href="http://www.vector.co.jp/soft/dos/prog/se081186.html">http://www.vector.co.jp/soft/dos/prog/se081186.html</a><br>
 </blockquote>
-<p>http://download.vector.co.jp/ and ftp://ftp.vector.co.jp/ seem to be the same.</p>
 <p>The text files in these archive files available at Vector use [CR]+[LF] as a &lt;newline&gt; and encode Kanji in shift-JIS for DOS/Windows.  On the other hand, those from V.2.3 through V.2.5 available at SourceForge use [LF] as a &lt;newline&gt; and encode Kanji in EUC-JP for UNIX.  From V.2.6 on two types of archive, .tar.gz file with [LF]/EUC-JP and .zip file with [CR]+[LF]/shift-JIS, are provided.</p>
 <br>
 
@@ -254,7 +253,7 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <li>Link.<br>
 </ol>
 <p>Needless to say, these steps do not actually have to be in separate phases as long as they are processed to lead the same result.</p>
-<p>Among these phases, phase 1 to 4 or to 6 belong to the range of preprocessing.  It is usually handled up to phase 4 since token separators such as &lt;newline&gt; need to be retained if a preprocessor is an independent program and outputs the preprocessing result as an intermediate file (if escape sequences such as \n are converted in phase 5,  they cannot be distinguished from &lt;newline&gt; and other token separators.)  This Validation Suite also tests up to phase 4. *3</p>
+<p>Among these phases, phase 1 to 4 or to 6 belong to the range of preprocessing.  It is usually handled up to phase 4 since token separators such as &lt;newline&gt; need to be retained if a preprocessor is an independent program and outputs the preprocessing result as an intermediate file (if escape sequences such as \n are converted in phase 5,  they cannot be distinguished from &lt;newline&gt; and other token separators.)  This Validation Suite also tests up to phase 4.</p>
 <p>Note:</p>
 <pre>
 *1 C90 5.1.1.2 Translation phases
@@ -666,7 +665,7 @@ quirk2( a, b);
 <p>Also, the specification of macro expansion in C++ Standard is same as C90 without an equivalent of Corrigendum 1 in C90 nor the specification added in Annex J.1 of C99.</p>
 <p>*3  Even with this decision, FUNC2( x, y) in the previous example will be FUNC1 (x, y) in argument expansion if this is in the argument of another macro call and again expanded into ((x) + (y)) at the original macro rescanning.  In other words, the final expansion results differ depending whether in an argument or not so.  However, this is another level of problem and not an inconvenience.</p>
 
-<h3><a name="2.7.7" href="#toc.2.7.7">2.7.7. C90 Corrigendum 1, 2, Amendment 1</a></h3>
+<h3><a name="2.7.7" href="#toc.2.7.7">2.7.7. C90 Corrigendum 1, 2 and Amendment 1</a></h3>
 <p>With respect to ISO/IEC 9899:1990, Corrigendum 1 was released in 1994, Amendment 1 in 1995, and finally Corrigendum 2 in 1996.</p>
 <p>Corrigendum 1 contains trivial corrections in wording mostly but only 2 impacts preprocessing.  One is regarding macro rescanning of 2.7.6 described above.</p>
 <p>Another is a specification extremely special regarding the case that a macro name in macro definition includes $ and others.</p>
@@ -869,17 +868,17 @@ success
 <p>Each of test-t and test-c directories contain 2 kinds of samples, big files with multiple pieces put together and small files divided into pieces.  If a preprocessor conforms to Standard C well, only big files with multiple pieces put together are necessary to test n_*.  However, if the level of conformance is not high, a preprocessor will fall into confusion in the middle with these files and the rest of the items cannot be tested.  Therefore, small pieces of files are also provided.  Since the number of files gets too large and it is a lot of trouble to do testing if I divide the pieces into too many files, I made a reasonable compromise.  Depending on the implementation, even these small pieces of files cannot be processed till the end.  In such event, please divide the sample into even smaller pieces to continue testing.</p>
 <p>As the #error directive terminates a process depending on implementations, samples testing #error are not included in big files with pieces put together.  The #include error also often terminates a process, it is not included in big files with pieces put together.</p>
 
-<h4><a name="3.2.1.1" href="#toc.3.2.1.1">3.2.1.1. Viewing the preprocessing result directly</a></h4>
+<h4>3.2.1.1. Viewing the preprocessing result directly</h4>
 <p>The *.t samples are used in case a preprocessor is an independent program or that a compiler has an option to output the text after preprocessing.  By checking the result of preprocessing these files directly, you can compare if they match correct results written in comments.  Since it is possible to view preprocessing results directly, it is possible to make more accurate judgment this way as long as implementations permit.</p>
 <p>Many *.c programs include the "defs.h" header.  As 2 kinds of assert macro definitions are written in "defs.h", set 0 to 1 in #if 0 for any of these.  The first one only includes &lt;assert.h&gt;.  The second one is the assert macro which does not abort on an assertion failure.  This, of course, is not a correct assert macro, but more convenient in this test.</p>
 <p>In multi-byte character processing, behavioral specifications of implementations may differ depending on the runtime environment, thus testing m_* requires attention (refer to 
 <a href="#4.1">4.1</a>.)</p>
 
-<h4><a name="3.2.1.3" href="#toc.3.2.1.3">3.2.1.3. Target item to test</a></h4>
+<h4>3.2.1.2. Target item to test</h4>
 <p>This type of testing has a difficult issue since testing an item may be caught by another failure in an implementation.  For example, if &lt;limits.h&gt; has an error and is included to test #if, it is not clear whether &lt;limits.h&gt; or #if is tested.  The test which compiles and execute *.c files are more troublesome than one for preprocessing *.t files.  If the last result is wrong, it will make it appear that there is some sort of error in the implementation, but not necessarily in the item tested.</p>
 <p>I tried to contrive ways to aim the target item in this Validation Suite.  However, there is a restriction that the Validation Suite itself must be portable.  In addition, in order to test an item, the correct implementation of other language specification must be assumed.  Therefore, the preprocessing item used as this "assumption" is implicitly tested in areas other than the test item that was targeted for the item.  Please note such implicit allocation of points also exist in the "allocation of points" which will be described next.  It may not be possible to judge whether the sample failed in the test item that it really targeted or by another factor in case an implementation fails a sample process without looking at another test.</p>
 
-<h4><a name="3.2.1.4" href="#toc.3.2.1.4">3.2.1.4. Scoring</a></h4>
+<h4>3.2.1.3. Scoring</h4>
 <p>Each test item is set by each allocation of points.  Marking criteria are also written.  Standard C does not have subsets, therefore unless all items match specifications, an implementation cannot be said to be Standard C conforming, strictly speaking.  In reality, there are not many such implementations and we cannot help using the measure of Standard C conformance level to evaluate implementations.  In addition, as there are large differences in the importance of items, counting the number of passed items will not do, rather a weighting depending on the importance must be applied.</p>
 <p>However, this weighting does not have objective criteria, of course.  The marking of this Validation Suite was decided by myself and does not have a grounded base.  Still, it will be a guideline in evaluating compliance levels for implementations objectively.</p>
 <p>n_*, i_*, e_*, and d_* are tests related to Standard conformance and marking for these is in 2 point unit in general.  In testing outside of Standards and quality evaluation, marking for q_* is in 2 point and the rest is in 1 point units.  Where a diagnostic message should be displayed, no points will be scored in case it is wide of the mark although it is displayed.  A partial score may be given to a diagnostic message not absolutely incorrect but rather off the point.  An implementation is free to issue diagnostics on correct program if it correctly processes the program, however, wrong diagnostics will be subject to subtraction.</p>
@@ -1001,15 +1000,15 @@ runtest --tool gcc --srcdir /usr/local/gcc-3.4.3-src/gcc/testsuite cpp-test.exp
 <p>On the other hand, my Validation Suite was originally written by myself only in order to debug my preprocessor and rewritten so that the entire preprocessing specifications are tested.  Many samples are organized systematically on the whole.</p>
 <p>It will have considerable meaning to add these systematic testcases to GCC / testsuite.</p>
 <p>Also, my testsuite edition of Validation Suite is written so that it can test three preprocessors, GCC 2.9x / cpp, GCC 3.x, 4.x / cc1 (cc1plus), and <b>mcpp</b>.  In other words, the use of the regular expression facility in DejaGnu and Tcl can absorb the implementation differences in preprocessing output spacing and diagnostic messages. *1</p>
-<p>Below are the results of applying the testsuite edition of the Validation Suite to these three preprocessors (tested in October, 2006).</p>
-<p>Below is the case where the preprocessor is replaced by <b>mcpp</b> V.2.6.2 in GCC 3.3.2.</p>
+<p>Below are the results of applying the testsuite edition of the Validation Suite to these three preprocessors (tested <b>mcpp</b> in March, 2007, others in October, 2006).</p>
+<p>Below is the case where the preprocessor is replaced by <b>mcpp</b> V.2.6.3 in GCC 4.1.1.</p>
 <pre style="color:navy">
             === gcc Summary ===
 
 # of expected passes            264
 # of unexpected failures        1
 # of expected failures          4
-/usr/bin/gcc version 3.3.2
+/usr/local/bin/gcc version 4.1.1
 </pre>
 <p>There is one failure due to a lack of the universal-character-name &lt;=&gt; multi-byte character conversion implementation in C++98.</p>
 <p>Here is the GCC 3.2 / cc1 case.</p>
@@ -1049,7 +1048,7 @@ gcc version 2.95.3 20010315 (release)
 <p>*1 This makes dg script in my testcases difficult to read with frequent use of \ and symbols.  The regular expression processing in DejaGnu and Tcl has a considerable number of peculiarities and flaws requiring ingenuity to perform all the automatic testing achieved on multiple compiler systems.  Currently, however, runtime options used in testcases for those compiler systems must be common.</p>
 <br>
 
-<h2><a name="3.3" href="#toc.3.3">3.3. Violations of syntax rules or Constraints and Diagnostic Messages</a></h2>
+<h2><a name="3.3" href="#toc.3.3">3.3. Violation of syntax rules or Constraints and Diagnostic Messages</a></h2>
 <p>Standard C implementations must certainly process correct source correctly, but they also must issue diagnostic messages for erroneous source.  Standard C also contains portions where behavior specifications are up to the implementation or not defined.  They are as below in summary. *1</p>
 <ol>
 <li>Correct programs and data whose outcomes are the same in every implementation.<br>
@@ -1339,7 +1338,7 @@ gcc version 2.95.3 20010315 (release)
 <p>This is not so interesting, but the #error line argument is optional and it does not have to exist.</p>
 <p>Scoring: 2.</p>
 
-<h3><a name="3.4.9" href="#toc.3.4.9">3.4.9. #pragma, _Pragma()</a></h3>
+<h3><a name="3.4.9" href="#toc.3.4.9">3.4.9. #pragma, _Pragma() operator</a></h3>
 <p>#pragma was also introduced in Standard C.  Extended directives which are unique to an implementation are all supposed to be implemented by #pragma sub-directives. *1</p>
 <p>Note:</p>
 <pre>
@@ -2990,7 +2989,7 @@ q.4.* are regarding documents.</p>
 <p>Scoring: 4.</p>
 
 <h4>q.2.7. Other options</h4>
-<p>There are other helpful options in preprocessing.  Having too many options makes things complicated, however, there are some that are convenient.  The option not to output the line number information (-P in most cases) is relatively common and it seems to be used for the purposes other than C language.  There are some which output without deleting comments.  Depending on command processors of OS, there are cases where implementations need to implement redirection of diagnostic messages.  In addition, so-called one pass compilers in which preprocessing is not an independent program should have an option to specify the output after preprocessing.</p>
+<p>There are other helpful options in preprocessing.  Having too many options makes things complicated, however, there are some that are convenient.  The option not to output the line number information (-P in most cases) is relatively common and it seems to be used for the purposes other than C language.  There are some which output without deleting comments.  Depending on command processors of OS, there are cases where implementations need to implement redirection of diagnostic messages.  In addition, so-called one-pass compilers in which preprocessing is not an independent program should have an option to specify the output after preprocessing.</p>
 <p>The option to identify C90 (C95), C99, and C++ is obviously necessary.  Furthermore, the option to achieve the compatibility between C99 and C++ (making C++ preprocessing closer to C99's) is helpful.</p>
 <p>There is an option to output source file dependency relations in order to generate a Makefile.</p>
 <p>Scoring: 10.</p>
@@ -3357,7 +3356,7 @@ assert( -255 &lt; UCHAR_MAX);
 </pre>
 <p>*5  C99 added standard headers called &lt;stdint.h&gt; and &lt;inttypes.h&gt; in order to absorb the differences in integer types by implementations.  These typedef some type names other than the long and short names since the number of integer types increased due to the arrival of 64 bit systems and the corresponding relations became confusing.  However, there are 26 kinds of these type names, 42 kinds of macros representing the maximum and minimum values corresponding to these, 56 kinds of macros converted into the format specifier of corresponding fprintf(), and 56 kinds of macros converted into the format specifier of fscanf() similarly.  Although there is no much load on implementations, too much complexity gives the impression of terminal symptoms.</p>
 
-<h4><a name="5.1.3.1" href="#toc.5.1.3.1">5.1.3.1. INT_MIN</a></h4>
+<h4>5.1.3.1. INT_MIN</h4>
 <p>Among all macros in &lt;limits.h&gt;, the most confusing ones are <tt>INT_MIN</tt> and <tt>LONG_MIN</tt> in the system with the internal representation of 2's complement.  Especially, the <tt>INT_MIN</tt> in the implementation where int is 16 bit and long is 32 bit shows all the problems above.  These are specially covered in separate sections.</p>
 <p>In this case, it is understood that the range of int is [-32768,32767].  Additionally, there are no problems by having <tt>INT_MAX</tt> as 32767 or 0x7FFF in any implementation.  However, I see an example where <tt>INT_MIN</tt> is defined as below.</p>
 <pre style="color:navy">
@@ -3480,7 +3479,7 @@ Number: OS          / Compiler System       / Execution program (version)
     C95:    cpp
 </pre>
 <blockquote>
-DECUS cpp original version by Martin Minow (June 1985.)  It was ported to some systems such as various DEC systems, UNIX, and MS-DOS at that time, but what I used in this test was modified by kmatsui and compiled on Linux / GCC.  Macros were rewritten so that translation limits clear as many specifications as possible.
+DECUS cpp original version by Martin Minow (June 1985.)  It was ported to some systems such as various DEC systems, UNIX, and MS-DOS at that time, but what used in this test was modified by kmatsui and compiled on Linux / GCC.  Macros were rewritten so that translation limits clear as many specifications as possible.
 </blockquote>
 <pre>
 2   :   FreeBSD 2.2.7   / GCC V.2.7.2.1     / cpp (V.2.0)
@@ -3495,7 +3494,7 @@ DECUS cpp original version by Martin Minow (June 1985.)  It was ported to some s
     C++:    cpp -23+ -S199711L -W15
 </pre>
 <blockquote>
-Free software by kmatsui (August, 1998.)  Called <b>mcpp</b>.  Rewrite of DECUS cpp.
+Open-source-software by kmatsui (August, 1998.)  Called <b>mcpp</b>.  Rewrite of DECUS cpp.
 I have compiled with GCC V.3.3 on Linux and used the executable for this test.
 </blockquote>
 
@@ -3541,7 +3540,7 @@ Compiled from the source by kmatsui.  Configured with --enable-c-mbchar option.
     C99:    ucpp -wa
 </pre>
 <blockquote>
-Free software by Thomas Pornin (January, 2003.)  A portable compiler-independent preprocessor.
+Open-source-software by Thomas Pornin (January, 2003.)  A portable compiler-independent preprocessor.
 </blockquote>
 
 <pre>
@@ -3562,7 +3561,7 @@ Since the -E option does not process comments and &lt;backslash&gt;&lt;newline&g
     C++:    lcc -A -E
 </pre>
 <blockquote>
-An integrated development environment which Jacob Navia wrote based on free software by C. W. Fraser &amp; Dave Hanson (August, 2003.)  The preprocessing part is based on source originally written for Plan9 by Dennis Ritchie.
+An integrated development environment which Jacob Navia wrote based on open-source-software by C. W. Fraser &amp; Dave Hanson (August, 2003.)  The preprocessing part is based on source originally written for Plan9 by Dennis Ritchie.
 </blockquote>
 
 <pre>
@@ -3572,7 +3571,7 @@ An integrated development environment which Jacob Navia wrote based on free soft
     C++:    wave
 </pre>
 <blockquote>
-Free software by Hartmut Kaiser (January, 2004.)  Compiler-independent preprocessor.  Implemented using the C++ library called "Boost preprocessor library" by Paul Mensonides et al.
+Open-source-software by Hartmut Kaiser (January, 2004.)  Compiler-independent preprocessor.  Implemented using the C++ library called "Boost preprocessor library" by Paul Mensonides et al.
 </blockquote>
 
 <pre>
@@ -3593,9 +3592,7 @@ Free software by Hartmut Kaiser (January, 2004.)  Compiler-independent preproces
     C99:    gcc -E -std=c99 -$ -Wall
     C++:    g++ -E -std=c++98 -$ -Wall
 </pre>
-<blockquote>
-Compiled by kmatsui with GCC V.3.3.2.
-</blockquote>
+
 <pre>
 12 :   WIN32        / Visual C++ 2005       / cl
     C95:    cl -Za -E -Wall -Tc
@@ -3623,15 +3620,15 @@ LCC-Win32 2006-03 (March, 2006.)
     C99:    gcc -E -std=c99 -$ -Wall
     C++:    g++ -E -std=c++98 -$ -Wall
 
-15 :    FreeBSD, Linux, CygWIN   / GCC 2.95-4.0
-    WIN32  / Visual C 2003-2005, BCC, LCC-Win32 / mcpp (V.2.6.2)
+15 :    FreeBSD, Linux, CygWIN   / GCC 2.95-4.1
+    WIN32  / Visual C 2003-2005, BCC, LCC-Win32 / mcpp (V.2.6.3)
     C95:    mcpp -23 (-S1 -V199409L) -W31
             gcc -ansi -Wp,-2,-W31
     C99:    mcpp -23 (-S1) -V199901L -W31
     C++:    mcpp -23+ -V199711L -W31
 </pre>
 <blockquote>
-<b>mcpp</b> V.2.6.2 (November, 2006.)
+<b>mcpp</b> V.2.6.3 (April, 2007.)
 </blockquote>
 <br>
 
@@ -3643,7 +3640,7 @@ LCC-Win32 2006-03 (March, 2006.)
                 U   P   5   2   3   p   0   0   e   P   3   0   0   4   P
                 S   2   5   9   2   1   0   3   1   2   4   0   6   1   2
                 C   0   C   5       3   3   0   0   4   3   5   0   1   6
-                P       P   3               8   0               3       2
+                P       P   3               8   0               3       3
                 P       P                                                
 
         max     1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -3970,7 +3967,7 @@ gtotal  960   483 857 646 769 840 760 712 661 649 926 846 738 665 848 928
                 U   P   5   2   3   p   0   0   e   P   3   0   0   4   P
                 S   2   5   9   2   1   0   3   1   2   4   0   6   1   2
                 C   0   C   5       3   3   0   0   4   3   5   0   1   6
-                P       P   3               8   0               3       2    
+                P       P   3               8   0               3       3    
                 P       P                                                
 
         max     1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -3988,7 +3985,7 @@ gtotal  960   483 857 646 769 840 760 712 661 649 926 846 738 665 848 928
 <blockquote>
 <p>The C90 conformance level is relatively high and troublesome shift-JIS is respectably supported. Documents are well provided. Although e_* usually issues diagnostic messages, most of them are hasty and the quality is not good.</p>
 <p>"Quality other than Standards" is poor and there are no special extension features. Not many diagnostic messages are issued for undefined parts and the program runs away sometimes. Supporting Standards only seems to be the best it could do.</p>
-<p>Different from Turbo C, the speed is no longer fast. Merits in one path compiler seem to have disappeared and only demerits seem to have remained. I wonder how long Borland continue this style.</p>
+<p>Different from Turbo C, the speed is no longer fast. Merits in one-pass compiler seem to have disappeared and only demerits seem to have remained. I wonder how long Borland continue this style.</p>
 </blockquote>
 
 <p>4 : Linux, CygWIN / GCC V.2.95.3 / cpp0</p>
@@ -4043,7 +4040,7 @@ gtotal  960   483 857 646 769 840 760 712 661 649 926 846 738 665 848 928
 
 <p>2 : FreeBSD, DJGPP, WIN32, MS-DOS, OS-9/09 / / <b>mcpp</b> (V.2.0)<br>
 10 : FreeBSD, Linux, CygWIN, WIN32, MS-DOS / / <b>mcpp</b> (V.2.4)<br>
-15 : FreeBSD, Linux, CygWIN, WIN32 / / <b>mcpp</b> (V.2.6.2)</p>
+15 : FreeBSD, Linux, CygWIN, WIN32 / / <b>mcpp</b> (V.2.6.3)</p>
 <blockquote>
 <p>Since I created and tested this myself, the conformance level is the best, of course. It should be the world's most accurate preprocessor. The plentifulness and accuracy of diagnostic messages and the detailed documentation is also the best. Useful options and #pragma directives are provided. The C99 specification is fully supported in V.2.3 and later.</p>
 <p>The portability of source is also the best. Only problem is there are not many ports, so I would appreciate your contribution.</p>
