@@ -84,6 +84,9 @@
 /* Define if digraphs are available. */
 #undef HAVE_DIGRAPHS
 
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
 /* Define to 1 if you have the `getopt' function. */
 #undef HAVE_GETOPT
 
@@ -99,7 +102,7 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
-/* Define to 1 if you have the <stdint.h> header file. */
+/* Define to 1 if you have the <stdint.h */
 #undef HAVE_STDINT_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
@@ -120,7 +123,7 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
-/* Define to 1 if you have the <unistd.h> header file. */
+/* Define to 1 if you have the <unistd.h */
 #undef HAVE_UNISTD_H
 
 /* Define the host compiler name. */
@@ -143,6 +146,9 @@
 
 /* Define printf length modifier for the longest integer. */
 #undef LL_FORM
+
+/* Define if build libmcpp */
+#undef MCPP_LIB
 
 /* Define /mingw directory. */
 #undef MINGW_DIRECTORY

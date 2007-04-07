@@ -172,7 +172,7 @@
 
 #if     SYSTEM == SYS_FREEBSD
 #define SYSTEM_EXT          "__FreeBSD__"
-#define SYSTEM_EXT_VAL      "5"     /* V.4.*: 4, V.5.*: 5   */
+#define SYSTEM_EXT_VAL      "6"     /* V.5.*: 5, V.6.*:6    */
 #endif
 
 #if     SYSTEM == SYS_LINUX
@@ -293,11 +293,11 @@
 #if     COMPILER_FAMILY == GNUC
 #define CMP_NAME            "GCC"
 #define COMPILER_EXT        "__GNUC__"
-#define COMPILER_EXT_VAL    "3"     /* "2" for V.2.*, "3" for V.3.* */
+#define COMPILER_EXT_VAL    "3"     /* "3" for V.3.* "4" for V.4.*  */
 #define COMPILER_EXT2       "__GNUC_MINOR__"
-#define COMPILER_EXT2_VAL   "4"     /* "95" for V.2.95, "3" for V.3.3   */
+#define COMPILER_EXT2_VAL   "4"     /* "4" for V.3.4, "1" for V.4.1 */
 #define COMPILER_CPLUS      "__GNUG__"
-#define COMPILER_CPLUS_VAL  "3"     /* "2" for V.2.*, "3" for V.3.* */
+#define COMPILER_CPLUS_VAL  "3"     /* "3" for V.3.*, "4" for V.4.* */
 #define LINE_PREFIX         "# "
 #ifndef HAVE_DIGRAPHS
 #define HAVE_DIGRAPHS       TRUE
@@ -305,12 +305,12 @@
 #ifndef TARGET_HAVE_LONG_LONG
 #define TARGET_HAVE_LONG_LONG       TRUE
 #endif
-#define STDC_VERSION        0L      /* 199409L for V.2.9, 0L for V.3.*      */
-#define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.2" */  /* "/usr/include/c++/4.0.2" */
-#define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.2/i386-vine-linux" */  /* "/usr/include/c++/4.0.2/i586-suse-linux" */
-/* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.2/backward"    */  /* "/usr/include/c++/4.0.2/backward"    */
-/* #define C_INCLUDE_DIR1   */  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include" */  /* "/usr/lib/gcc/i586-suse-linux/4.0.2/include" */
-/* #define C_INCLUDE_DIR2   */  /* "/usr/i586-suse-linux/include"   */
+#define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */
+#define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.6" */  /* "/usr/local/include/c++/4.1.1" */
+#define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/local/include/c++/4.1.1/i686-pc-linux-gnu" */
+/* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/local/include/c++/4.1.1/backward"    */
+/* #define C_INCLUDE_DIR1   */  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include" */
+/* #define C_INCLUDE_DIR2   */
 #ifndef ENV_C_INCLUDE_DIR
 #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
 #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"

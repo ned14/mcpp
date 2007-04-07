@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2006 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2007 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -56,7 +56,7 @@
 #define DOL     000
 #endif
 
-short *     type;       /* Pointer to one of the following type_*[].    */
+short *     char_type;  /* Pointer to one of the following type_*[].    */
 
 #define EJ1     0x100   /* 1st byte of EUC_JP   */
 #define EJ2     0x200   /* 2nd byte of EUC_JP   */
@@ -354,10 +354,10 @@ const char *    set_encoding(
 
     if (strlen( name) >= NAMLEN) {
         if ((env || pragma) && (warn_level & 1)) {
-            cwarn( too_long, name, 0L, NULLST);
+            cwarn( too_long, name, 0L, NULL);
         } else {
-            fprintf( fp_err, too_long, name);
-            fputc( '\n', fp_err);
+            mcpp_fprintf( ERR, too_long, name);
+            mcpp_fputc( '\n', ERR);
         }
     }
     strcpy( norm, name);
@@ -387,10 +387,10 @@ const char *    set_encoding(
     }
     if (loc == NULL) {
         if ((env || pragma) && (warn_level & 1)) {
-            cwarn( unknown_encoding, name, 0L, NULLST);
+            cwarn( unknown_encoding, name, 0L, NULL);
         } else {                        /* -m option            */
-            fprintf( fp_err, unknown_encoding, name);
-            fputc( '\n', fp_err);
+            mcpp_fprintf( ERR, unknown_encoding, name);
+            mcpp_fputc( '\n', ERR);
         }
     } else {
         mb_init();                      /* Re-initialize        */
@@ -451,7 +451,7 @@ static void strip_bar(
 void    mb_init( void)
 /*
  * Initialize multi-byte character settings.
- * First called prior to setting the 'mode'.
+ * First called prior to setting the 'mcpp_mode'.
  * Will be called again each time the multibyte character encoding is changed.
  */
 {
@@ -465,23 +465,23 @@ void    mb_init( void)
     case EUC_JP     :
     case GB2312     :
     case KSC5601    :
-        type = type_euc;
+        char_type = type_euc;
         bsl_in_mbchar = FALSE;
         mb_read = mb_read_2byte;
         break;
     case SJIS   :
     case BIGFIVE    :
-        type = type_bsl;
+        char_type = type_bsl;
         bsl_in_mbchar = TRUE;
         mb_read = mb_read_2byte;
         break;
     case ISO2022_JP :
-        type = type_iso2022_jp;
+        char_type = type_iso2022_jp;
         bsl_in_mbchar = TRUE;
         mb_read = mb_read_iso2022_jp;
         break;
     case UTF8   :
-        type = type_utf8;
+        char_type = type_utf8;
         bsl_in_mbchar = FALSE;
         mb_read = mb_read_utf8;
         break;
@@ -555,14 +555,14 @@ void    mb_init( void)
 
     /*
      * Modify magic characters in character type table.
-     * type[] table should be rewritten in accordance with the 'mode'
+     * char_type[] table should be rewritten in accordance with the 'mcpp_mode'
      * whenever the encoding is changed.
      */
-    if (mode) {                     /* If mode is already set       */
-        type[ DEF_MAGIC] = standard ? LET : 0;
-        type[ IN_SRC] = (mode == STD) ? LET : 0;
-        type[ TOK_SEP] = (mode == STD || mode == OLD_PREP) ? SPA: 0;
-                                    /* TOK_SEP equals to COM_SEP    */
+    if (mcpp_mode) {                /* If mcpp_mode is already set  */
+        char_type[ DEF_MAGIC] = standard ? LET : 0;
+        char_type[ IN_SRC] = (mcpp_mode == STD) ? LET : 0;
+        char_type[ TOK_SEP] = (mcpp_mode == STD || mcpp_mode == OLD_PREP)
+                ? SPA: 0;           /* TOK_SEP equals to COM_SEP    */
     }
 }
 
@@ -581,12 +581,12 @@ static size_t   mb_read_2byte(
     char *  out_p = *out_pp;
 
     do {
-        if (! (type[ (*out_p++ = *in_p++) & UCHARMAX] & mb2)) {
+        if (! (char_type[ (*out_p++ = *in_p++) & UCHARMAX] & mb2)) {
             error = TRUE;
             break;
         }
         len++;
-    } while (type[ (*out_p++ = *in_p++) & UCHARMAX] & mbstart);
+    } while (char_type[ (*out_p++ = *in_p++) & UCHARMAX] & mbstart);
     *in_pp = --in_p;
     *(--out_p) = EOS;
     *out_pp = out_p;
@@ -611,12 +611,12 @@ static size_t   mb_read_iso2022_jp(
     do {
 
         *out_p++ = c2 = *in_p++;
-        if (! (type[ c2 & UCHARMAX] & IS2)) {
+        if (! (char_type[ c2 & UCHARMAX] & IS2)) {
             error = TRUE;
             break;
         }
         *out_p++ = c3 = *in_p++;
-        if (! (type[ c3 & UCHARMAX] & IS3)) {
+        if (! (char_type[ c3 & UCHARMAX] & IS3)) {
             error = TRUE;
             break;
         }
@@ -628,7 +628,7 @@ static size_t   mb_read_iso2022_jp(
                 break;
             case 0x28   :
                 *out_p++ = c4 = *in_p++;
-                if (! (type[ c4 & UCHARMAX] & IS4))
+                if (! (char_type[ c4 & UCHARMAX] & IS4))
                     error = TRUE;
                 /* else:    0x1b 0x24 0x28 0x44:    JIS X 0212  */
                 break;
@@ -649,8 +649,8 @@ static size_t   mb_read_iso2022_jp(
         if (error)
             break;
 
-        while (type[ c1 = *out_p++ = (*in_p++ & UCHARMAX)] & IJP) {
-            if (! (type[ *out_p++ = (*in_p++ & UCHARMAX)] & IJP)) {
+        while (char_type[ c1 = *out_p++ = (*in_p++ & UCHARMAX)] & IJP) {
+            if (! (char_type[ *out_p++ = (*in_p++ & UCHARMAX)] & IJP)) {
                 error = TRUE;
                 break;
             }
@@ -659,7 +659,7 @@ static size_t   mb_read_iso2022_jp(
         if (error)
             break;
 
-    } while (type[ c1] & IS1);      /* 0x1b:    start of shift-sequence */
+    } while (char_type[ c1] & IS1);     /* 0x1b:    start of shift-sequence */
 
     *in_pp = --in_p;
     *(--out_p) = EOS;
@@ -684,14 +684,14 @@ static size_t   mb_read_utf8(
 
     do {
         *out_p++ = c2 = *in_p++;
-        if (type[ c1 & UCHARMAX] & U2_1) {      /* 2-byte character */
-            if (! (type[ c2 & UCHARMAX] & U2_2)) {
+        if (char_type[ c1 & UCHARMAX] & U2_1) {         /* 2-byte character */
+            if (! (char_type[ c2 & UCHARMAX] & U2_2)) {
                 error = TRUE;
                 break;
             }
         } else {
-            if (type[ c2 & UCHARMAX] & U3_2) {  /* 3-byte character */
-                if (! (type[ (*out_p++ = *in_p++) & UCHARMAX] & U3_3)) {
+            if (char_type[ c2 & UCHARMAX] & U3_2) {     /* 3-byte character */
+                if (! (char_type[ (*out_p++ = *in_p++) & UCHARMAX] & U3_3)) {
                     error = TRUE;
                     break;
                 }
@@ -701,7 +701,7 @@ static size_t   mb_read_utf8(
             }
         }
         len++;
-    } while (type[ (*out_p++ = c1 = *in_p++) & UCHARMAX] & mbstart);
+    } while (char_type[ (*out_p++ = c1 = *in_p++) & UCHARMAX] & mbstart);
                         /* Start of the next multi-byte character   */
 
     *in_pp = --in_p;
@@ -734,9 +734,10 @@ uexpr_t     mb_eval(
         val += *seq++ & UCHARMAX;       /* Evaluate the 2-byte sequence */
         break;
     case ISO2022_JP :
-        if (type[ c = *seq++ & UCHARMAX] & IS1) {   /* Skip shift-sequence  */
-            if (type[ c = *seq++ & UCHARMAX] & IS2) {
-                if (type[ c1 = *seq++ & UCHARMAX] & IS3) {
+        if (char_type[ c = *seq++ & UCHARMAX] & IS1) {
+                                                /* Skip shift-sequence  */
+            if (char_type[ c = *seq++ & UCHARMAX] & IS2) {
+                if (char_type[ c1 = *seq++ & UCHARMAX] & IS3) {
                     if (c1 == 0x28)
                         seq++;
                     if (c == 0x28 && c1 == 0x42) {  /* Shift-out sequence   */
@@ -750,7 +751,7 @@ uexpr_t     mb_eval(
         val = (c << 8) + (*seq++ & UCHARMAX);       /* Evaluate the 2-byte  */
         break;
     case UTF8   :       /* Evaluate the sequence of 2 or 3 bytes as it is   */
-        if (type[ c = *seq++ & UCHARMAX] & U2_1) {
+        if (char_type[ c = *seq++ & UCHARMAX] & U2_1) {
             val = (c << 8) + (*seq++ & UCHARMAX);
         } else {
             val = (c << 8) + (*seq++ & UCHARMAX);

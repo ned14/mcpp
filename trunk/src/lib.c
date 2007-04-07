@@ -20,6 +20,9 @@
 
 #if NEED_GETOPT
 
+#include "system.H"
+#include "internal.H"
+
 /*
  * Note: The getopt() of glibc should not be used since the specification
  *  differs from the standard one.
@@ -29,10 +32,10 @@
 /* Based on the public-domain-software released by AT&T.    */
 
 #define OPTERR( s, c)   if (opterr) {   \
-    fputs( argv[0], stderr);    \
-    fputs( s, stderr);          \
-    putc( c, stderr);           \
-    putc( '\n', stderr);        \
+    mcpp_fputs( argv[0], ERR);  \
+    mcpp_fputs( s, ERR);        \
+    mcpp_fputc( c, ERR);        \
+    mcpp_fputc( '\n', ERR);     \
     }
 
 int     optind = 1;

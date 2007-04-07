@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2006 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2007 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -38,13 +38,16 @@
     #error "system.H" must be included prior to "internal.H"
 #endif
 
+#include "mcpp_lib.h"   /* External interface when used as library  */
+
 #define EOS             '\0'        /* End of string                */
-#define CHAR_EOF        0           /* Returned by get() on eof     */
-#define NULLST          ((char *) NULL)     /* Pointer to nowhere   */
+#define CHAR_EOF        0           /* Returned by get_ch() on eof  */
 
 #define VA_ARGS         (UCHARMAX + 1)      /* Signal of variable arguments */
-#define DEF_PRAGMA      (-1 - VA_ARGS)      /* _Pragma() pseudo-macro       */
-#define DEF_NOARGS      (-2 - VA_ARGS)      /* #define foo vs #define foo() */
+#define GVA_ARGS        (VA_ARGS * 2)       /* GCC3-specific variable args  */
+#define AVA_ARGS        (VA_ARGS | GVA_ARGS)/* Any variable arguments       */
+#define DEF_PRAGMA      (-1 - AVA_ARGS)     /* _Pragma() pseudo-macro       */
+#define DEF_NOARGS      (-2 - AVA_ARGS)     /* #define foo vs #define foo() */
 
 /*
  * The following may need to change if the host system doesn't use ASCII.
@@ -207,8 +210,15 @@ typedef struct fileinfo {
         struct fileinfo *   parent; /* Link to includer             */
         struct ifinfo *     initif; /* Initial ifstack (return there on EOF)*/
         const char **   dirp;       /* Include directory the file resides   */
-        const char *    filename;   /* File/macro name              */
+        const char *    real_fname; /* Real file name               */
+        char *          filename;   /* File/macro name (maybe changed)      */
         char *          buffer;     /* Buffer of current input line */
+#if MCPP_LIB
+        /* Save output functions during push/pop of #includes   */
+        int (* last_fputc)  ( int c, OUTDEST od);
+        int (* last_fputs)  ( const char * s, OUTDEST od);
+        int (* last_fprintf)( OUTDEST od, const char * format, ...);
+#endif
 } FILEINFO;
 
 /*
@@ -229,6 +239,12 @@ typedef struct ifinfo {
 
 #define compiling       ifstack[0].stat
 
+#define FP2DEST(fp) \
+    (fp == fp_out) ? OUT : \
+    ((fp == fp_err) ? ERR : \
+    ((fp == fp_debug) ? DBG : \
+    (-1)))
+
 /* VAL_SIGN structure stores information about evaluated number.    */
 typedef struct val_sign {
         expr_t          val;        /* Value                        */
@@ -248,8 +264,8 @@ typedef struct val_sign {
  * Used only in POST_STD mode.
  */
 #define NO_SEP          0   /* No separator is inserted             */
-#define INSERT_SEP      1   /* Next get() shall insert a separator  */
-#define INSERTED_SEP    2   /* Last get() has Inserted a separator  */
+#define INSERT_SEP      1   /* Next get_ch() insert a separator     */
+#define INSERTED_SEP    2   /* Last get_ch() Inserted a separator   */
 
 #define str_eq(s1, s2)  (strcmp(s1, s2) == 0)
 
@@ -267,7 +283,7 @@ typedef struct val_sign {
 /*
  * Externs
  */
-extern int      mode;               /* Mode of preprocessing        */
+extern int      mcpp_mode;          /* Mode of preprocessing        */
 extern int      cflag;              /* -C option (keep comments)    */
 extern int      zflag;  /* -Z option (no-output of included file)   */
 extern int      pflag;              /* -P option (no #line output)  */
@@ -276,10 +292,10 @@ extern int      trig_flag;          /* -3 option (toggle trigraphs) */
 extern int      dig_flag;           /* -2 option (toggle digraphs)  */
 extern int      stdc_val;           /* Value of __STDC__            */
 extern long     stdc_ver;           /* Value of __STDC_VERSION__    */
-extern long     cplus;              /* Value of __cplusplus for C++ */
-extern int      stdc2;              /* cplus || stdc_ver >= 199901L */
-extern int      stdc3;      /* (stdc_ver or cplus) >= 199901L       */
-extern int      standard;           /* mode is STD or POST_STD      */
+extern long     cplus_val;          /* Value of __cplusplus for C++ */
+extern int      stdc2;      /* cplus_val or stdc_ver >= 199901L     */
+extern int      stdc3;      /* (stdc_ver or cplus_val) >= 199901L   */
+extern int      standard;           /* mcpp_mode is STD or POST_STD */
 extern long     str_len_min;        /* Least maxmum of string len.  */
 extern size_t   id_len_min;         /* Least maximum of ident len.  */
 extern int      n_mac_pars_min;     /* Least maximum of num of pars.*/
@@ -293,7 +309,7 @@ extern int      lang_asm;           /* -a option (assembler source) */
 extern int      std_line_prefix;    /* #line in C source style      */
 extern int      warn_level;         /* Level of warning             */
 extern int      errors;             /* Error counter                */
-extern long     line;               /* Current source line number   */
+extern long     src_line;           /* Current source line number   */
 extern int      wrong_line;         /* Force #line to compiler      */
 extern int      newlines;           /* Count of blank lines         */
 extern int      keep_comments;      /* Don't remove comments        */
@@ -325,17 +341,17 @@ extern int      mbmask;             /* Char type other than mbchar  */
 extern int      mbstart;            /* 1st byte of mbchar (or shift)*/
 extern int      bsl_in_mbchar;      /* 2nd byte of mbchar has '\\'  */
 extern int      bsl_need_escape;/* '\\' in mbchar should be escaped */
+extern int      mcpp_debug;         /* Class of debug information   */
+extern long     in_asm;             /* In #asm - #endasm block      */
+extern jmp_buf  error_exit;         /* Exit on fatal error          */
 extern char *   workp;              /* Free space in work[]         */
 extern char * const     work_end;   /* End of work[] buffer         */
 extern char     identifier[];       /* Lastly scanned name          */
-extern short *  type;               /* Character classifier         */
+extern short *  char_type;          /* Character classifier         */
 extern IFINFO   ifstack[];          /* Information of #if nesting   */
 extern char     cur_fullname[];     /* Full name of current source  */
-extern char     work[];
+extern char     work_buf[];
         /* Temporary buffer for directive line and macro expansion  */
-extern int      debug;              /* Debug class                  */
-extern long     in_asm;             /* In #asm - #endasm block      */
-extern jmp_buf  error_exit;         /* Exit on fatal error          */
 
 /* main.c   */
 extern void     sharp( void);
@@ -357,8 +373,8 @@ extern DEFBUF **    look_prev( const char * name, int * cmp);
 extern DEFBUF * look_and_install( const char * name, int numargs
         , const char * parmnames, const char * repl);
                 /* Look and insert macro def.   */
-extern DEFBUF * install( const char * name, int numargs, const char * parmnames
-        , const char * repl, DEFBUF ** prevp, int cmp);
+extern DEFBUF * install_macro( const char * name, int numargs
+        , const char * parmnames, const char * repl, DEFBUF ** prevp, int cmp);
                 /* Install to symbol table      */
 extern int      undefine( const char * name);
                 /* Delete from symbol table     */
@@ -369,21 +385,21 @@ extern void     dump_def( int dDflag, int comment);
                 /* Dump current macro defs      */
 
 /* eval.c   */
-extern expr_t   eval( void);
+extern expr_t   eval_if( void);
                 /* Evaluate #if expression      */
 extern VAL_SIGN *   eval_num( const char * nump);
                 /* Evaluate preprocessing number*/
 
 /* expand.c */
-extern char *   (*expand)( DEFBUF * defp, char * out, char * out_end);
+extern char *   (* expand_macro)( DEFBUF * defp, char * out, char * out_end);
                 /* Expand a macro completely    */
 extern void     expand_init( void);
-                /* Initialize expand() function */
+                /* Initialize expand_macro()    */
 extern DEFBUF * is_macro( char ** cp);
                 /* The sequence is a macro call?*/
 
 /* mbchar.c     */
-extern size_t   (*mb_read)( int c1, char ** in_pp, char ** out_pp);
+extern size_t   (* mb_read)( int c1, char ** in_pp, char ** out_pp);
                 /* Read mbchar sequence         */
 extern const char *     set_encoding( char * name, char * env, int pragma);
                 /* Multi-byte char encoding     */
@@ -405,13 +421,15 @@ extern char *   scan_quote( int delim, char * out, char * out_end, int diag);
                 /* Scan a quoted literal        */
 extern int      id_operator( const char * name);
                 /* Check identifier-like ops    */
-extern int      get( void);
+extern void     expanding( const char * name);
+                /* Save macro name expanding    */
+extern int      get_ch( void);
                 /* Get the next char from input */
 extern int      cnv_trigraph( char * in);
                 /* Do trigraph replacement      */
 extern int      cnv_digraph( char * in);
                 /* Convert digraphs to usual tok*/
-extern void     unget( void);
+extern void     unget_ch( void);
                 /* Push back the char to input  */
 extern FILEINFO *   unget_string( const char * text, const char * name);
                 /* Push back the string to input*/
@@ -436,6 +454,10 @@ extern void     dump_string( const char * why, const char * text);
                 /* Dump text readably           */
 extern void     dump_unget( const char * why);
                 /* Dump all ungotten junk       */
+/* Support for alternate output mechanisms (e.g. memory buffers) */
+extern int      (* mcpp_fputc)( int c, OUTDEST od),
+                (* mcpp_fputs)( const char * s, OUTDEST od),
+                (* mcpp_fprintf)( OUTDEST od, const char *format, ...);
 
 /* system.c */
 extern void     do_options( int argc, char ** argv, char ** in_pp
