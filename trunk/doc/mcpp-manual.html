@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.6.3 (2007/04)<br>
+<h4>for V.2.6.4 (2007/05)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -2584,9 +2584,13 @@ In pre-Standard mode, an integer constant token is evaluated within the range of
 <br>
 
 <h2><a name="4.7" href="#toc.4.7">4.7. How to Handle White-Space Sequence</a></h2>
-<p><b>mcpp</b> compresses a white-space sequence, excluding &lt;newline&gt;, as a token separator into one space character during tokenization in the translation phase 3. It also deletes a white-space sequence at the end of a line.  A white-space sequence at the beginning of a line is deleted in <i>POSTSTD</i> mode, and squeezed to one space in other modes.</p>
+<p><b>mcpp</b> compresses a white-space sequence, excluding &lt;newline&gt;, as a token separator into one space character during tokenization in the translation phase 3. It also deletes a white-space sequence at the end of a line.</p>
+<p>A white-space sequence at the beginning of a line is deleted in <i>POSTSTD</i> mode, and putout as they are in other modes.  The latter is special treatment for convenience of human reading. *1</p>
 <p>This compression and deletion occurs during the intermediate phase.  The next phase 4 involves macro expansion and preprocess-directive-line processing.  Macro expansion may sometimes produce several space characters before and after the macro.  Of course, the number of space characters does not affect compilation results.</p>
 <p>Standard C says that whether implementation compresses a white-space sequence into one space character during the translation phase 3 is implementation-defined, but you usually do not have to worry about this.  &lt;Vertical-tab&gt; or &lt;form-feed&gt; in a preprocessor directive line may adversely affect portability, since this is undefined in Standard C.  <b>mcpp</b> converts it to one space character.</p>
+<p>Note:</p>
+<p>*1 Upto V.2.6.3 <b>mcpp</b> squeezed line top white spaces into one space.
+In V.2.6.4, it changed the behavior.</p>
 <br>
 
 <h2><a name="4.8" href="#toc.4.8">4.8. Default Specifications for <b>mcpp</b> Executables</a></h2>

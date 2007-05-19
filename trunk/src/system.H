@@ -47,6 +47,11 @@
 #include    "noconfig.H"
 #endif
 
+/* Some system has a wrong definition of UCHAR_MAX.  See cpp-test.html#5.1.3 */
+#if     UCHARMAX < -255
+#error  "The definition of UCHARMAX (possibly UCHAR_MAX too) is wrong.  Define it as signed int value as 255, not as unsigned value as 255U."
+#endif
+
 /*
  *      PART 1 and PART 2 are defined in the above header files.
  */

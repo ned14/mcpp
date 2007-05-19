@@ -1,14 +1,14 @@
-# makefile to compile MCPP version 2.6.3 for LCC-Win32 / LCC make
-#		2007/03 kmatsui
+# makefile to compile MCPP version 2.6.3 and later for LCC-Win32 / LCC make
+#       2007/05 kmatsui
 # You must first edit BINDIR according to your system.
 # To compile MCPP do:
-#		make
+#       make
 # To re-compile MCPP using compiled MCPP, edit this makefile and do:
-#		make
+#       make
 # To link malloc() package of kmatsui, edit this makefile and do:
-#		make
+#       make
 # To make subroutine-build of MCPP, edit this makefile and do:
-#		make
+#       make
 
 NAME = mcpp.exe
 CC = lcc

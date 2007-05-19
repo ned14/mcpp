@@ -540,9 +540,10 @@ static long do_line( void)
         unget_ch();
     }
 
+    if (infile->filename)
+        free( infile->filename);
     infile->filename = save;                /* New file name        */
             /* Note that this does not change infile->real_fname    */
-    /* Do not free() infile->filename, this is not always malloc()ed one.   */
     return  (long) valp->val;               /* New line number      */
 
 no_num:
@@ -990,11 +991,12 @@ static char *   is_formal(
  */
 {
     char *  repl_cur;
+    size_t  len;
     int     i;
 
+    len = strlen( name);
     for (i = 0; i < (nargs & ~AVA_ARGS); i++) {     /* For each parameter   */
-        if ((strlen( name) == parlen[ i]
-                            /* Note: parlist[] are comma separated  */
+        if ((len == parlen[ i]      /* Note: parlist[] are comma separated  */
                     && memcmp( name, parlist[ i], parlen[ i]) == 0)
                 || (standard && (nargs & VA_ARGS)
                     && i == (nargs & ~AVA_ARGS) - 1 && conv

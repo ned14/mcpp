@@ -54,17 +54,9 @@
 
 /* Functions other than standard.   */
 #if     HOST_SYS_FAMILY != SYS_UNIX     /* On UNIX "unistd.h" will suffice  */
-#ifdef  __cplusplus
-extern "C" {
-    int     getopt( int argc, char * const * argv, const char * opts);
-    extern int      optind;
-    extern char *   optarg;
-}
-#else   /* #ifndef __cplusplus  */
 extern int      getopt( int argc, char * const * argv, const char * opts);
 extern int      optind;
 extern char *   optarg;
-#endif
 #endif
 
 /*
@@ -273,7 +265,8 @@ static int      no_cygwin = FALSE;          /* -mno-cygwin          */
 void    init_system( void)
 /* Initialize static variables  */
 {
-    free( sharp_filename);
+    if (sharp_filename)
+        free( sharp_filename);
     sharp_filename = NULL;
     incend = incdir;
     fname_end = fnamelist;
@@ -1127,7 +1120,7 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.6.3 (2007/04) "
+        "MCPP V.2.6.4 (2007/05) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif
@@ -2351,7 +2344,7 @@ void    put_depend(
  */
 {
 #define MAX_OUT_LEN     76      /* Maximum length of output line    */
-#define MKDEP_MAXLEN    (MKDEP_MAX * 0x100)
+#define MKDEP_MAXLEN    (MKDEP_MAX * 0x200)
     static char     output[ MKDEP_MAXLEN];          /* File names   */
     static char *   pos[ MKDEP_MAX];      /* Pointers to filenames  */
     static int      pos_num;              /* Index of pos[]         */
@@ -2922,7 +2915,7 @@ void cur_file( void)
  */
 {
     FILEINFO *      file = infile;
-    const char *    name = "";
+    const char *    name;
     char *  cp;
 
     while (file->fp == NULL)
@@ -3741,11 +3734,7 @@ static void dump_path( void)
  * See "kmmalloc-2.5.1.lzh" by kmatsui.
  */
 #if     KMMALLOC
-#ifdef  __cplusplus
-    extern "C"  int     list_heap( int);
-#else
     int     list_heap( int);
-#endif
 #elif   BSD_MALLOC
     int     list_heap( char *);
 #elif   DB_MALLOC || DMALLOC
@@ -3773,9 +3762,6 @@ void    at_end( void)
         dump_def( dDflag, FALSE);
     }
 #endif
-
-    if (mcpp_debug & MEMORY)
-        print_heap();
 }
 
 #if MCPP_LIB

@@ -1,24 +1,22 @@
-# makefile to compile MCPP version 2.6.3 for Visual C / nmake
-#		2007/03 kmatsui
+# makefile to compile MCPP version 2.6.3 and later for Visual C / nmake
+#       2007/05 kmatsui
 # You must first edit BINDIR and LIBDIR according to your system.
 # To make compiler-independent-build of MCPP do:
-#		nmake
+#       nmake
 # To make Visual-C-specific-build of MCPP do:
-#		nmake COMPILER=MSC
+#       nmake COMPILER=MSC
 # To re-compile MCPP using Visual-C-specific-build of MCPP do:
-#		nmake COMPILER=MSC PREPROCESSED=1
+#       nmake COMPILER=MSC PREPROCESSED=1
 # To link kmmalloc V.2.5.1 (malloc() package of kmatsui) or later do:
-#	(Note: Visual C 2005 cannot coexist with kmmalloc)
-#		nmake [PREPROCESSED=1] KMMALLOC=1
+#   (Note: Visual C 2005 cannot coexist with kmmalloc)
+#       nmake [PREPROCESSED=1] KMMALLOC=1
 # To make mcpp.lib (subroutine-build of mcpp) do:
-#		nmake MCPP_LIB=1 mcpplib
-#		nmake MCPP_LIB=1 mcpplib_install
+#       nmake MCPP_LIB=1 mcpplib
+#       nmake MCPP_LIB=1 mcpplib_install
 # To make testmain.c (sample to use mcpp.lib) against mcpp.lib do
-#	(add 'DLL_IMPORT=1' to link against the DLL):
-#		nmake MCPP_LIB=1 [OUT2MEM=1] testmain
-#		nmake MCPP_LIB=1 [OUT2MEM=1] testmain_install
-# To compile MCPP with C++, rename *.c other than lib.c to *.cpp and do:
-#		nmake CPLUS=1
+#   (add 'DLL_IMPORT=1' to link against the DLL):
+#       nmake MCPP_LIB=1 [OUT2MEM=1] testmain
+#       nmake MCPP_LIB=1 [OUT2MEM=1] testmain_install
 
 NAME = mcpp
 
@@ -41,14 +39,6 @@ BINDIR = "$(VCINSTALLDIR)"\bin
 BINDIR = \PUB\bin
 !endif
 
-!ifdef CPLUS
-LANG = -TP
-preproc = preproc.cpp
-!else
-LANG = -TC
-preproc = preproc.c
-!endif
-
 !ifdef KMMALLOC
 MEM_MACRO = -DKMMALLOC -D_MEM_DEBUG -DXMALLOC
 MEMLIB = kmmalloc_debug.lib
@@ -58,7 +48,7 @@ MEMLIB =
 !endif
 
 OBJS = main.obj directive.obj eval.obj expand.obj support.obj system.obj \
-			mbchar.obj lib.obj
+        mbchar.obj lib.obj
 
 $(NAME).exe : $(OBJS)
 	$(CC) $(LINKFLAGS) $(OBJS) $(MEMLIB)
@@ -69,38 +59,22 @@ $(NAME).exe : $(OBJS)
 !ifdef PREPROCESSED
 # make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H internal.H
-	$(NAME) $(CPPFLAGS) $(LANG) $(MEM_MACRO) $(preproc) mcpp.H
+	$(NAME) $(CPPFLAGS) $(LANG) $(MEM_MACRO) preproc.c mcpp.H
 $(OBJS) : mcpp.H
-system.H	: noconfig.H
+system.H: noconfig.H
 !else
 $(OBJS) : noconfig.H
 main.obj directive.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
-		system.H internal.H
+        system.H internal.H
 !endif
 
 !ifdef PREPROCESSED
-!ifdef CPLUS
-.cpp.obj:
-	$(NAME) -DPREPROCESSED $(LANG) $< $(<B).i
-	$(CC) $(CFLAGS) $(LANG) $(<B).i
 .c.obj	:
-	$(NAME) $(CPPFLAGS) $< $(<B).i
+	$(NAME) -DPREPROCESSED $(CPPFLAGS) $< $(<B).i
 	$(CC) $(CFLAGS) -TC $(<B).i
 !else
 .c.obj	:
-	$(NAME) -DPREPROCESSED $(CPPFLAGS) $< $(<B).i
-	$(CC) $(CFLAGS) $(LANG) $(<B).i
-!endif
-!else
-!ifdef CPLUS
-.cpp.obj:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) $(LANG) $<
-.c.obj	:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) -TC $<
-!else
-.c.obj	:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) $(LANG) $<
-!endif
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) $<
 !endif
 
 clean	:

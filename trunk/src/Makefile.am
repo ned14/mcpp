@@ -4,7 +4,7 @@ if MCPP_LIB
 
 lib_LTLIBRARIES = libmcpp.la
 libmcpp_la_SOURCES = system.H configed.H internal.H main.c directive.c eval.c expand.c mbchar.c support.c system.c lib.c mcpp_lib.h
-libmcpp_la_LDFLAGS = -no-undefined -version-info 0:0:0
+libmcpp_la_LDFLAGS = -no-undefined -version-info 0:1:0
 
 main.lo directive.lo eval.lo expand.lo mbohar.lo support.lo system.lo	: system.H internal.H mcpp_lib.h
 lib.lo      :   configed.H

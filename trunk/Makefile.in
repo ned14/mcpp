@@ -686,14 +686,13 @@ uninstall-man: uninstall-man1
 
 
 @MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@install-exec-hook:
-@MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/share/doc/mcpp/doc"
-@MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/share/doc/mcpp/doc-jp"
+@MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@	$(top_srcdir)/config/install-sh -d "$(DESTDIR)$(prefix)/share/doc/mcpp"
 @MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@	cp -pf $(top_srcdir)/LICENSE $(top_srcdir)/README $(top_srcdir)/NEWS \
 @MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@            $(DESTDIR)$(prefix)/share/doc/mcpp
 @MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@	cp -pf $(top_srcdir)/doc/mcpp-manual.html   \
-@MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@            $(DESTDIR)$(prefix)/share/doc/mcpp/doc
+@MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@            $(DESTDIR)$(prefix)/share/doc/mcpp
 @MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@	cp -pf $(top_srcdir)/doc-jp/mcpp-manual.html   \
-@MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@            $(DESTDIR)$(prefix)/share/doc/mcpp/doc-jp
+@MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@            $(DESTDIR)$(prefix)/share/doc/mcpp/mcpp-manual-jp.html
 @MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@uninstall-hook:
 @MCPP_LIB_FALSE@@REPLACE_CPP_FALSE@	rm -rf $(DESTDIR)$(prefix)/share/doc/mcpp
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

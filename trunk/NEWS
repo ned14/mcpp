@@ -1,5 +1,15 @@
 This file summarizes new major features of each MCPP release.  (kmatsui)
 
+MCPP V.2.6.4 (2007/05)
+
+1. This is a bug-fixed version of V.2.6.3, fixing memory leaks in
+    subroutine-build, and fixing a bug of accessing non-allocated memory.
+
+2. Also changed the installation directory of some documents in stand-
+    alone-and-compiler-independent-build by configure or by binary
+    packages.
+
+
 MCPP V.2.6.3 (2007/04)
 
 1. Revised sutle points of #include and '#pragma once' handling, such as
@@ -19,8 +29,8 @@ MCPP V.2.6.3 (2007/04)
     makefile.  On the other hand, made 'install' target install also
     mcpp-manual.html.
 
-6. Provided stand-alone-and-compiler-independent-build binary packages .
-    pkg, .rpm, .deb, .zip and their corresponding source packages.
+6. Provided stand-alone-and-compiler-independent-build binary packages
+    port, rpm, deb, zip and their corresponding source packages.
 
 
 MCPP V.2.6.2 (2006/11)

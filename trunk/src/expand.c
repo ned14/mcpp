@@ -241,7 +241,7 @@ exp_end:
     if (mcpp_debug & EXPAND)
         dump_string( "expand_std exit", out);
     macro_name = NULL;
-    exp_mac_ind = 0;        /* Clear the information for diagnostic */
+    clear_exp_mac();        /* Clear the information for diagnostic */
     return  out_p;
 }
 
@@ -1071,7 +1071,7 @@ err_end:
         dump_string( "expand_prestd exit", out);
     }
     macro_name = NULL;
-    exp_mac_ind = 0;
+    clear_exp_mac();
     return  out_p;
 }
 
@@ -1551,9 +1551,10 @@ static void diag_macro(
 {
 
     if (defp1 && defp1->name != macro_name)
-        expanding( defp1->name);   /* Inform of the problematic macro call */
+        expanding( defp1->name, FALSE);
+                            /* Inform of the problematic macro call */
     if (defp2 && defp2->name != macro_name)
-        expanding( defp2->name);
+        expanding( defp2->name, FALSE);
     if (severity == CERROR)
         cerror( format, arg1, arg2, arg3);
     else

@@ -8,7 +8,7 @@
 
 #define     TRUE            1
 #define     FALSE           0
-#define     DATE            "2007/04"               /* Date of mcpp     */
+#define     DATE            "2007/05"               /* Date of mcpp     */
 
 /*
  *  'Target' means the O.S. and the compiler to which cpp is implemented.
@@ -361,22 +361,10 @@
 #define NEED_GETOPT     FALSE
 #endif
 
-#ifdef  __cplusplus
-extern "C" {
-    char *  stpcpy( char * dest, const char * src);
-}
-#else
 extern char *   stpcpy( char * dest, const char * src);
-#endif
 
 /* For debugging malloc systems by kmatsui  */
 #if     KMMALLOC && _MEM_DEBUG
-#if     __cplusplus
-extern "C" {
-#endif
 #include        "xalloc.h"
-#if     __cplusplus
-}
-#endif
 #endif
 
