@@ -1,10 +1,10 @@
-# makefile to compile MCPP version 2.6.3 for Linux / GCC / GNU make
-#       2007/03 kmatsui
+# makefile to compile MCPP version 2.6.3 or later for Linux / GCC / GNU make
+#       2007/05 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP:
 #       make
-#	    sudo make install
+#       sudo make install
 # To make GCC-specific-build of MCPP:
 #       make COMPILER=GNUC
 #       sudo make COMPILER=GNUC install
@@ -18,12 +18,8 @@
 #       make MCPP_LIB=1 mcpplib
 #    	sudo make MCPP_LIB=1 mcpplib_install
 # To make testmain using libmcpp:
-#		make MCPP_LIB=1 [OUT2MEM=1] testmain
-#		sudo make MCPP_LIB=1 [OUT2MEM=1] testmain_install
-# To compile cpp with C++, rename *.c other than lib.c to *.cc,
-#   and do:
-#       make CPLUS=1
-#       sudo make CPLUS=1 install
+#       make MCPP_LIB=1 [OUT2MEM=1] testmain
+#       sudo make MCPP_LIB=1 [OUT2MEM=1] testmain_install
 
 # COMPILER:
 #   Specify whether make a compiler-independent-build or GCC-specific-build
@@ -37,12 +33,12 @@ NAME = mcpp
 #       e.g. cc, gcc, gcc-2.95.3, i686-pc-linux-gnu-gcc-4.1.1
 CC = gcc
 GPP = g++
-CFLAGS = -c -O2 -Wall   # -v
-#CFLAGS += -fstack-protector-all     # for gcc 4.1 or later
+CFLAGS = -c -O2 -Wall   # -g -v
+#CFLAGS += -fstack-protector     # for gcc 4.1 or later
 CPPFLAGS =
 
 LINKFLAGS = -o $(NAME)
-#LINKFLAGS += -fstack-protector-all  # for gcc 4.1 or later
+#LINKFLAGS += -fstack-protector  # for gcc 4.1 or later
 
 ifeq    ($(COMPILER), )
 # compiler-independent-build
@@ -78,17 +74,8 @@ endif
 endif
 
 # The directory where 'gcc' (cc) command is located
-#GCCDIR = /usr/bin
-GCCDIR = /usr/local/bin
-
-CPLUS =
-ifeq	($(CPLUS), 1)
-	GCC = $(GPP)
-	preproc = preproc.cc
-else
-	GCC = $(CC)
-	preproc = preproc.c
-endif
+GCCDIR = /usr/bin
+#GCCDIR = /usr/local/bin
 
 ifneq	($(MALLOC), )
 ifeq	($(MALLOC), KMMALLOC)
@@ -104,7 +91,7 @@ OBJS = main.o directive.o eval.o expand.o support.o system.o mbchar.o lib.o
 
 all	:	$(NAME)
 $(NAME): $(OBJS)
-	$(GCC) $(OBJS) $(LINKFLAGS)
+	$(CC) $(OBJS) $(LINKFLAGS)
 
 PREPROCESSED = 0
 
@@ -115,7 +102,7 @@ CMACRO = -DPREPROCESSED
 # Make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H noconfig.H internal.H
 ifeq    ($(COMPILER), GNUC)
-	$(GCC) -E -Wp,-b  $(CPPFLAGS) $(CPPOPTS) $(MEM_MACRO) -o mcpp.H $(preproc)
+	$(CC) -E -Wp,-b  $(CPPFLAGS) $(CPPOPTS) $(MEM_MACRO) -o mcpp.H preproc.c
 else
 	@echo "Do 'sudo make COMPILER=GNUC install' prior to recompile."
 	@echo "Then, do 'make COMPILER=GNUC PREPROCESSED=1'."
@@ -129,15 +116,8 @@ main.o directive.o eval.o expand.o support.o system.o mbchar.o:   \
         system.H internal.H
 endif
 
-ifeq	($(CPLUS), 1)
-.cc.o	:
-	$(GPP) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
 .c.o	:
 	$(CC) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
-else
-.c.o	:
-	$(CC) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
-endif
 
 install :
 	install -s $(NAME) $(BINDIR)/$(NAME)
@@ -169,15 +149,15 @@ mcpplib_a:	$(OBJS)
 
 # shared library
 CUR = 0
-REV = 0
+REV = 1         # mcpp 2.6.3: 0, mcpp 2.6.4: 1
 AGE = 0
-SHLIB_VER = $(CUR).$(REV).$(AGE)
+SHLIB_VER = $(CUR).$(AGE).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so lib.so
 .SUFFIXES: .so
 .c.so	:
-	$(GCC) $(CFLAGS) $(MEM_MACRO) -c -fpic -o$*.so $*.c
+	$(CC) $(CFLAGS) $(MEM_MACRO) -c -fpic -o$*.so $*.c
 mcpplib_so: $(SOBJS)
-	ld -shared -olibmcpp.so.$(SHLIB_VER) $(SOBJS)
+	$(CC) -shared -olibmcpp.so.$(SHLIB_VER) $(SOBJS) # -fstack-protector
 	chmod a+x libmcpp.so.$(SHLIB_VER)
 
 mcpplib_install:
@@ -199,9 +179,9 @@ LINKFLAGS = $(NAME).o -o$(NAME) -lmcpp
 ifeq	($(MALLOC), KMMALLOC)
 	LINKFLAGS += -lkmmalloc_debug
 endif
-#LINKFLAGS += -fstack-protector-all
+#LINKFLAGS += -fstack-protector
 $(NAME)	:	$(NAME).o
-	$(GCC) $(LINKFLAGS)
+	$(CC) $(LINKFLAGS)
 $(NAME)_install	:
 	install -s $(NAME) $(BINDIR)/$(NAME)
 $(NAME)_uninstall	:

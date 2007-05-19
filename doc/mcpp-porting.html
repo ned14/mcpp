@@ -11,7 +11,7 @@
 <h2>== How to Port MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.6.3 (2007/04)<br>
+<h4>for V.2.6.4 (2007/05)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -97,7 +97,7 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <br>
 
 <h2><a name="1.1" href="#toc.1.1">1.1. High portability</a></h2>
-<p><b>mcpp</b> is a portable preprocessor, supporting various operating systems, including Linux, FreeBSD and Windows.  Its source has a wide portability, and can be compiled by any compilers which support Standard C or C++ (ANSI/ISO C or C++).  The library functions used are only the classic ones.</p>
+<p><b>mcpp</b> is a portable preprocessor, supporting various operating systems, including Linux, FreeBSD and Windows.  Its source has a wide portability, and can be compiled by any compilers which support Standard C (ANSI/ISO C).  The library functions used are only the classic ones.</p>
 <p>To port <b>mcpp</b> to each compiler system, in many cases, one only needs to change some macro definitions in the header files and simply compile it.  In the worst case, adding several dozen of lines into a source file would be enough.</p>
 <p>To process multi-byte characters (Kanji), it supports Japanese EUC-JP, shift-JIS and ISO2022-JP, Chinese GB-2312, Taiwanese Big-5 and Korean KSC-5601 (KSX 1001), as well as UTF-8.  For shift-JIS, ISO2022-JP or Big-5, <b>mcpp</b> can complement the compiler-proper if it does not recognize them.</p>
 <br>
@@ -164,6 +164,7 @@ In March 2004, V.2.4.1 was released.  In this version, recursive macro expansion
 In August 2006, V.2.6.1 was released.  In this version, porting to MinGW was added, some bugs were fixed and some relatively small improvements were done.<br>
 In November 2006, V.2.6.2 was released.  In this version, most of the text file documents were converted to html, some bugs were fixed, and subroutine-build of <b>mcpp</b> was implemented by contribution from Juergen Mueller.<br>
 In April 2007, V.2.6.3 was released.  In this version, compatibility of GCC-specific-build to GCC was increased, and output to memory buffer was implemented in subroutine-build by contribution from Greg Kress.  In addition, binary packages for some systems were begun to be provided.<br>
+In May 2007, V.2.6.4 was released.  This is a bug-fixed version of V.2.6.3.<br>
 </ol>
 <p>Note:</p>
 <p>*1 The outline of the "Exploratory Software Project" can be seen at the following site (the documents are only in Japanese).</p>
@@ -418,7 +419,7 @@ For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.</p>
 <br>
 
 <h2><a name="3.6" href="#toc.3.6">3.6. Standard headers</a></h2>
-<p>In the source code of <b>mcpp</b>, stdio.h, string.h, stdlib.h, ctype.h, errno.h and time.h are included unconditionally.  For UNIX-like systems, unistd.h is also included.  There should not be a compiler system which does not have these.</p>
+<p>In the source code of <b>mcpp</b>, stdio.h, string.h, stdlib.h, ctype.h, errno.h and time.h are included unconditionally.  For UNIX-like systems, unistd.h is also included.  When you build <b>mcpp</b> with configure and make, limits.h is also included.  There should not be a compiler system which does not have these.</p>
 <br>
 
 <h2><a name="3.7" href="#toc.3.7">3.7. Makefile and recompilation using <b>mcpp</b></a></h2>
@@ -477,14 +478,7 @@ For further information, see
 <br>
 
 <h2><a name="3.8" href="#toc.3.8">3.8. Compiler systems which can compile <b>mcpp</b></a></h2>
-<p>Though some configuration is required to port to each compiler system, compiling <b>mcpp</b>'s source code can be done by any compiler system which satisfies C90 specifications. *1</p>
-<p><b>mcpp</b> can be compiled by C++ too. (Whether C++ is used is decided by #ifdef <tt>__cplusplus</tt>.)  Compile with the next steps.</p>
-<ol>
-<li>Rename all *.c, except <samp>lib.c</samp>, to *.cc or *.cpp.<br>
-<li>Run 'make'.  When "pre-preprocessing" by using <b>mcpp</b>, add -+ option.<br>
-</ol>
-<p>Invoke 'make' using attached *.mak with an option of CPLUS=1 or -DCPLUS=1 depending on the 'make'.<br>
-There is no merit in compiling with C++, though.</p>
+<p>Though some configuration is required to port to each compiler system, compiling <b>mcpp</b>'s source code can be done by any compiler system which satisfies C90 specifications. *1, *2</p>
 <p>The char type can be either signed or unsigned.</p>
 <p>Floating point operation is not necessary.</p>
 <p>This source code is written so as not be affected by the minor discrepancies of the compiler systems.  Of course, it is necessary to avoid the compiler system's own bugs in order to actually compile with the compiler system.  This cannot be found out until it has to be done.  When I was porting to some compiler systems, there were a few cases which took me a long time to trace the bug and to find out a work around.</p>
@@ -493,6 +487,7 @@ There is no merit in compiling with C++, though.</p>
 <p>The CPUs for which integer operation is not two's complement are also not supported.  If it is not two's complement, it may run incorrectly when an overflow has occurred at a #if expression.</p>
 <p>Note:</p>
 <p>*1 Up to V.2.5, <b>mcpp</b> source was compilable even by K&amp;R 1st compiler.  From V.2.6, it presupposes C90 compiler, because K&amp;R spec is no longer required by current compiler systems.  I tidied up the source and this document accordingly.</p>
+<p>*2 Up to V.2.6.2, <b>mcpp</b> source was compilable by C++, too.  V.2.6.3 and later, however, is compilable only by C.</p>
 <br>
 
 <h2><a name="3.9" href="#toc.3.9">3.9. Host compiler system and target compiler system</a></h2>
@@ -572,7 +567,7 @@ sudo make install
 Then libmcpp.so and libmcpp.so.0 will be created as links to libmcpp.so.$(SHLIB_VER).
 The *.a is a static library, and the *.so is a shared library.
 The file named libmcpp.la will also be created, which is for the tool 'libtool'.
-$(SHLIB_VER) is 0.0.0 on <b>mcpp</b> V.2.6.3.</p>
+$(SHLIB_VER) is 0.0.0 on <b>mcpp</b> V.2.6.3, and 0.0.1 on V.2.6.4.</p>
 <p>On CygWIN and MinGW, DLL named *.dll will be generated instead of *.so.
 On CygWIN, libmcpp.a, libmcpp.dll.a, libmcpp.la will be generated and installed into /usr/local/lib, and cygmcpp-0.dll will be generated and installed into /usr/local/bin.
 On MinGW, those are the same with CygWIN, except cygmcpp-0.dll changes to libmcpp-0.dll.
@@ -600,7 +595,7 @@ On Windows, the name of the libraries are different from those on Linux as shown
   <tr><th>import library of DLL</th><td></td><td>libmcpp-$(DLL_VER).dll.a</td><td>libmcpp-$(DLL_VER).dll.a</td><td>mcpp$(DLL_VER).lib</td></tr>
 </table>
 </blockquote>
-<p>$(SHLIB_VER), $(DLL_VER) is 0.0.0, 0 respectively on <b>mcpp</b> V.2.6.3.</p>
+<p>$(SHLIB_VER) is 0.0.0, 0.0.1 on <b>mcpp</b> V.2.6.3, V.2.6.4 respectively.  $(DLL_VER) is 0 on both of <b>mcpp</b> V.2.6.3 and V.2.6.4.</p>
 <p>On Windows, so-called 'import library' is generated too, which is to use the DLL.
 In order to use the DLL, you must link your main program against this import library.
 The static library and the import library are installed into the $(LIBDIR) specified in the makefile, and the DLL itself is installed into the $(BINDIR).
@@ -714,6 +709,7 @@ This defines the default value of the predefined macro <tt>__STDC_VERSION__</tt>
 <br>
 <li><samp><i>CHARBIT, UCHARMAX, LONGMAX, ULONGMAX</i></samp><br>
 Write values of <tt>CHAR_BIT, UCHAR_MAX, LONG_MAX, ULONG_MAX</tt> in &lt;limits.h&gt; of the target compiler system.<br>
+Be careful about the definition of <tt>UCHAR_MAX</tt>, because limits.h of some system has a wrong definition.  Define as a signed value as 255 or 0xff, do not define as an unsigned value as 255U or 0xffU. (See <a href="cpp-test.html#5.1.3">cpp-test.html#5.1.3</a>.)<br>
 </ul>
 
 <h4><a name="4.1.1.5" href="#toc.4.1.1.5">4.1.1.5. Multi-byte characters</a></h4>

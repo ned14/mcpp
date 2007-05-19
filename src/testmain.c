@@ -58,9 +58,11 @@ int main(int argc, char *argv[])
         result = mcpp_get_mem_buffer( ERR); /* get the diagnostics  */
         if (result)
             fputs( result, stderr);
+#if 0   /* debug output is the same with normal output by default   */
         result = mcpp_get_mem_buffer( DBG); /* get the debug output */
         if (result)
             fputs( result, stdout);         /* appended to output   */
+#endif
 #else               /* Normal output to file    */
         retval = mcpp_lib_main(j + 1, tmp_argv);
 #endif

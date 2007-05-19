@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.6.3 for CygWIN / GCC / GNU make
-# 2007/03   kmatsui
+# makefile to compile MCPP version 2.6.3 and later for CygWIN / GCC / GNU make
+# 2007/05   kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -17,10 +17,6 @@
 # To make testmain using libmcpp (add 'DLL_IMPORT=1' to link against DLL):
 #       make MCPP_LIB=1 [OUT2MEM=1] testmain
 #       make MCPP_LIB=1 [OUT2MEM=1] testmain_install
-# To compile cpp with C++, rename *.c other than lib.c and preproc.c to *.cc,
-#   and do:
-#       make CPLUS=1
-#       make CPLUS=1 install
 
 # COMPILER:
 #   Specify whether make a compiler-independent-build or GCC-specific-build
@@ -74,19 +70,10 @@ endif
 GCCDIR = /usr/bin
 #GCCDIR = /usr/local/bin
 
-CPLUS =
-ifeq	($(CPLUS), 1)
-	GCC = $(GPP)
-	preproc = preproc.cc
-else
-	GCC = $(CC)
-	preproc = preproc.c
-endif
-
 OBJS = main.o directive.o eval.o expand.o support.o system.o mbchar.o lib.o
 
 $(NAME): $(OBJS)
-	$(GCC) $(OBJS) $(LINKFLAGS)
+	$(CC) $(OBJS) $(LINKFLAGS)
 
 PREPROCESSED = 0
 
@@ -98,7 +85,7 @@ CMACRO = -DPREPROCESSED
 # Make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H noconfig.H internal.H
 ifeq    ($(COMPILER), GNUC)
-	$(GCC) -v -E -Wp,-b $(CPPFLAGS) $(CPPOPTS) -o mcpp.H $(preproc)
+	$(CC) -v -E -Wp,-b $(CPPFLAGS) $(CPPOPTS) -o mcpp.H preproc.c
 else
 	@echo "Do 'sudo make COMPILER=GNUC install' prior to recompile."
 	@echo "Then, do 'make COMPILER=GNUC PREPROCESSED=1'."
@@ -112,15 +99,8 @@ main.o directive.o eval.o expand.o support.o system.o mbchar.o:   \
         system.H internal.H
 endif
 
-ifeq	($(CPLUS), 1)
-.cc.o	:
-	$(GPP) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
 .c.o	:
 	$(CC) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
-else
-.c.o	:
-	$(CC) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
-endif
 
 install :
 	install -s -b $(NAME).exe $(BINDIR)/$(NAME).exe
@@ -155,9 +135,9 @@ DLL_VER = 0
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so lib.so
 .SUFFIXES: .so
 .c.so   :
-	$(GCC) $(CFLAGS) $(MEM_MACRO) -c -DPIC -save-temps -o$*.so $*.c
+	$(CC) $(CFLAGS) $(MEM_MACRO) -c -DPIC -save-temps -o$*.so $*.c
 mcpplib_dll: $(SOBJS)
-	gcc -shared -ocygmcpp-$(DLL_VER).dll $(SOBJS) -Wl,--enable-auto-image-base,--out-implib,libmcpp.dll.a
+	$(CC) -shared -ocygmcpp-$(DLL_VER).dll $(SOBJS) -Wl,--enable-auto-image-base,--out-implib,libmcpp.dll.a
 
 mcpplib_install:
 	cp libmcpp.a libmcpp.dll.a $(LIBDIR)
@@ -180,7 +160,7 @@ else
 LINKFLAGS += $(LIBDIR)/libmcpp.a
 endif
 $(NAME) :   $(NAME).o
-	$(GCC) $(LINKFLAGS)
+	$(CC) $(LINKFLAGS)
 $(NAME)_install :
 	install -s $(NAME).exe $(BINDIR)/$(NAME).exe
 $(NAME)_uninstall   :

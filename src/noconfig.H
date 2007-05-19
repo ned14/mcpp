@@ -580,25 +580,10 @@
 #define NEED_GETOPT     FALSE
 #endif
 
-#if     ! (HOST_LIB_IS_GLIBC && COMPILER == GNUC && __cplusplus)
-        /* Avoid conflict with glibc's declaration in C++.  */
-#ifdef  __cplusplus
-extern "C" {
-    char *  stpcpy( char * dest, const char * src);
-}
-#else
 extern char *   stpcpy( char * dest, const char * src);
-#endif
-#endif
 
 /* For debugging malloc systems by kmatsui  */
 #if     KMMALLOC && _MEM_DEBUG
-#if     __cplusplus
-extern "C" {
-#endif
 #include        "xalloc.h"
-#if     __cplusplus
-}
-#endif
 #endif
 

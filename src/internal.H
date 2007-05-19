@@ -243,7 +243,7 @@ typedef struct ifinfo {
     (fp == fp_out) ? OUT : \
     ((fp == fp_err) ? ERR : \
     ((fp == fp_debug) ? DBG : \
-    (-1)))
+    ((OUTDEST) -1)))
 
 /* VAL_SIGN structure stores information about evaluated number.    */
 typedef struct val_sign {
@@ -325,7 +325,6 @@ extern int      in_include;         /* In #include line             */
 extern int      compat_mode;        /* Compatible macro recursion   */
 extern long     macro_line;         /* Line number of macro call    */
 extern char *   macro_name;         /* Currently expanding macro    */
-extern int      exp_mac_ind;        /* Index into expanding_macro[] */
 extern int      openum;             /* Number of operator or punct. */
 extern IFINFO *     ifptr;          /* -> current ifstack item      */
 extern FILEINFO *   infile;         /* Current input file or macro  */
@@ -421,8 +420,10 @@ extern char *   scan_quote( int delim, char * out, char * out_end, int diag);
                 /* Scan a quoted literal        */
 extern int      id_operator( const char * name);
                 /* Check identifier-like ops    */
-extern void     expanding( const char * name);
+extern void     expanding( const char * name, int to_be_freed);
                 /* Save macro name expanding    */
+extern void     clear_exp_mac( void);
+                /* Clear expanding macro infs   */
 extern int      get_ch( void);
                 /* Get the next char from input */
 extern int      cnv_trigraph( char * in);

@@ -31,7 +31,7 @@ compiler-specific-build: 特定の処理系のプリプロセッサを（もし可能なら）
 
   MCPP をコンパイルするには、UNIX 系のシステムおよび CygWIN, MinGW では
 configure スクリプトを使うことができます。configure と make は任意のディ
-レクトリで実行できます。以下の説明では mcpp-2.6.3 ディレクトリのある
+レクトリで実行できます。以下の説明では mcpp-2.6.4 ディレクトリのある
 path を ${mcpp-dir} と表記します。
 
 2、1、compiler-independent-build
@@ -324,6 +324,6 @@ MCPP の "pre-preprocess" という機能を使って MCPP をリコンパイルしてみる
 MCPP だけでなく任意のプリプロセッサに適用することができます。その使い方
 については、cpp-test.html 3.1, 3.2 を参照してください。
 
-2007/04
+2007/05
                                          松井　潔 <kmatsui@t3.rim.or.jp>
 

@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.6.3 (2007/04)<br>
+<h4>for V.2.6.4 (2007/05)<br>
 ¾¾°æ  ·é (kmatsui@t3.rim.or.jp)</p>
 </div>
 <div align="center">
@@ -2721,9 +2721,14 @@ pre-Standard ¥â¡¼¥É¤Ç¤ÏÀ°¿ôÄê¿ô¥È¡¼¥¯¥ó¤ÎÉ¾²Á¤ÏÈóÉé¤Î long ¤ÎÈÏ°Ï¤Ç¹Ô¤¤¡¢¤½¤ì¤ò±
 <br>
 
 <h2><a name="4.7" href="#toc.4.7">4.7. White-space sequence ¤Î°·¤¤</a></h2>
-<p><b>mcpp</b> ¤Ï translation phase 3 ¤Î tokenization ¤ËºÝ¤·¤Æ¡¢token separator ¤È¤·¤Æ¤ÎÊ£¿ô¤Î white spaces ¤Î sequence ¤Ï¡¢²þ¹Ô¥³¡¼¥É°Ê³°¤Ï one space ¤Ë°µ½Ì¤·¤Þ¤¹¡£¤Þ¤¿¡¢¹ÔËö¤Î white space sequence ¤Ïºï½ü¤·¤Þ¤¹¡£¹ÔÆ¬¤Î white spaces ¤Ï <i>POSTSTD</i> ¥â¡¼¥É¤Ç¤Ïºï½ü¤·¡¢Â¾¤Î¥â¡¼¥É¤Ç¤Ï one space ¤Ë°µ½Ì¤·¤ÆÊÝÂ¸¤·¤Þ¤¹¡£</p>
+<p><b>mcpp</b> ¤Ï translation phase 3 ¤Î tokenization ¤ËºÝ¤·¤Æ¡¢token separator ¤È¤·¤Æ¤ÎÊ£¿ô¤Î white spaces ¤Î sequence ¤Ï¡¢²þ¹Ô¥³¡¼¥É°Ê³°¤Ï¸¶Â§¤È¤·¤Æ one space ¤Ë°µ½Ì¤·¤Þ¤¹¡£
+¤Þ¤¿¡¢¹ÔËö¤Î white space sequence ¤Ïºï½ü¤·¤Þ¤¹¡£
+<p>¹ÔÆ¬¤Î white spaces ¤Ï <i>POSTSTD</i> ¥â¡¼¥É¤Ç¤Ïºï½ü¤·¡¢Â¾¤Î¥â¡¼¥É¤Ç¤ÏÆÃÊÌ°·¤¤¤Ç¡¢¤½¤Î¤Þ¤Þ½ÐÎÏ¤·¤Þ¤¹¡£
+¸å¼Ô¤Ï¿Í´Ö¤¬½ÐÎÏ¤òÆÉ¤à¾ì¹ç¤Î¤Ä¤´¤¦¤Ë¹ç¤ï¤»¤Æ¤¢¤ê¤Þ¤¹¡£*1</p>
 <p>¤¿¤À¤·¡¢¤³¤ì¤Ï¥×¥ê¥×¥í¥»¥¹¤ÎÃæ´ÖÃÊ³¬¤ÎÏÃ¤Ç¤¹¡£¤½¤Î¸å¤Ë phase 4 ¤¬¤¢¤Ã¤Æ¡¢¥Þ¥¯¥íÅ¸³«¤È¥×¥ê¥×¥í¥»¥¹¥Ç¥£¥ì¥¯¥Æ¥£¥Ö¹Ô¤Î½èÍý¤¬¹Ô¤ï¤ì¤Þ¤¹¡£¥Þ¥¯¥íÅ¸³«¤Î¸å¤Ç¤Ï¤½¤ÎÁ°¸å¤ËÊ£¿ô¤Î spaces ¤¬¤Ç¤­¤ë¤³¤È¤¬¤¢¤ê¤Þ¤¹¡£¤â¤Á¤í¤ó¡¢space ¤¬¤¤¤¯¤Ä¤¢¤í¤¦¤È¡¢¥³¥ó¥Ñ¥¤¥ë¤Î·ë²Ì¤Ï²¿¤âÊÑ¤ï¤ê¤Þ¤»¤ó¡£</p>
 <p>Standard C ¤Ç¤Ï translation phase 3 ¤Ç¤³¤ì¤ò one space ¤Ë°µ½Ì¤¹¤ë¤«¤É¤¦¤«¤Ï implementation-defined ¤È¤µ¤ì¤Æ¤¤¤Þ¤¹¤¬¡¢ÄÌ¾ï¤Ï¥æ¡¼¥¶¤Ï¤Þ¤Ã¤¿¤¯µ¤¤Ë¤¹¤ëÉ¬Í×¤Ï¤¢¤ê¤Þ¤»¤ó¡£Portability ¤¬ÌäÂê¤Ë¤Ê¤ë¤Î¤Ï¡¢preprocessing directive ¹Ô¤Ë &lt;vertical-tab&gt; ¤Þ¤¿¤Ï &lt;form-feed&gt; ¤¬¤¢¤ë¾ì¹ç¤À¤±¤Ç¤¹¡£¤³¤Î¾ì¹ç¤Ï Standard C ¤Ç¤Ï undefined ¤Ç¤¹¡£<b>mcpp</b> ¤Ç¤Ï¤³¤ì¤é¤Ï space ¤ËÊÑ´¹¤·¤Þ¤¹¡£</p>
+<p>Ãí:</p>
+<p>*1 V.2.6.3 ¤Þ¤Ç¤Ï¸¶Â§¤È¤·¤Æ one space ¤Ë°µ½Ì¤·¤Æ¤¤¤¿¤¬¡¢V.2.6.4 ¤«¤éÊÑ¹¹¤·¤¿¡£</p>
 <br>
 
 <h2><a name="4.8" href="#toc.4.8">4.8. <b>mcpp</b> ¼Â¹Ô¥×¥í¥°¥é¥à¤Î¥Ç¥Õ¥©¥ë¥È¤Î»ÅÍÍ</a></h2>

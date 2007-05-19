@@ -34,7 +34,7 @@ stand-alone-build.
 
 To compile MCPP, the configure script can be used on UNIX-like systems
 and CygWIN, MinGW.  You can do configure and make in any directory.  In
-this document ${mcpp-dir} represents the path of 'mcpp-2.6.3' directory.
+this document ${mcpp-dir} represents the path of 'mcpp-2.6.4' directory.
 
 2.1. The compiler-independent-build
 
@@ -375,6 +375,6 @@ preprocessor comprehensively.  Validation Suite has 265 items and can be
 applied to any preprocessor as well as MCPP.  Refer to 3.1 and 3.2 of
 cpp-test.html.
 
-April, 2007
+May, 2007
 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
 

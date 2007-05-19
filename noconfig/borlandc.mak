@@ -1,18 +1,18 @@
-# makefile to compile MCPP version 2.6.3 for Borland C / BC make
-#		2007/03 kmatsui
+# makefile to compile MCPP version 2.6.3 and later for Borland C / BC make
+#       2007/05 kmatsui
 # You must first edit BINDIR, LIBDIR and LINKER according to your system.
 # To make compiler-independent-build of MCPP do:
-#		make
-#		make install
+#       make
+#       make install
 # To make Borland-C-specific-build of MCPP do:
-#		make -DCOMPILER=BORLANDC
-#		make -DCOMPILER=BORLANDC install
+#       make -DCOMPILER=BORLANDC
+#       make -DCOMPILER=BORLANDC install
 # To re-compile MCPP using Borland-C-specific-build of MCPP do:
-#		make -DCOMPILER=BORLANDC -DPREPROCESSED
-#		make -DCOMPILER=BORLANDC -DPREPROCESSED install
+#       make -DCOMPILER=BORLANDC -DPREPROCESSED
+#       make -DCOMPILER=BORLANDC -DPREPROCESSED install
 # To link kmmalloc V.2.5.1 (malloc() package of kmatsui) or later do:
-#		make [-DPREPROCESSED] -DKMMALLOC
-#		make [-DPREPROCESSED] -DKMMALLOC install
+#       make [-DPREPROCESSED] -DKMMALLOC
+#       make [-DPREPROCESSED] -DKMMALLOC install
 # To make mcpp.lib (subroutine-build of mcpp) do:
 #       make -DMCPP_LIB mcpplib
 #       make -DMCPP_LIB mcpplib_install
@@ -20,9 +20,6 @@
 #   (add '-DDLL_IMPORT' to link against the DLL):
 #       make -DMCPP_LIB [-DOUT2MEM] testmain
 #       make -DMCPP_LIB [-DOUT2MEM] testmain_install
-# To compile MCPP with C++, rename *.c other than lib.c to *.cpp and do:
-#		make -DCPLUS
-#		make -DCPLUS install
 
 NAME = mcpp
 
@@ -41,16 +38,6 @@ BINDIR = \PUB\COMPILERS\BCC55\BIN
 #BINDIR = E:\BC4\BIN
 !else
 BINDIR = \PUB\BIN
-!endif
-
-!if 	$d( CPLUS)
-LANG = -P
-CPP_LANG = -+
-preproc = preproc.cc
-!else
-LANG =
-CPP_LANG =
-preproc = preproc.c
 !endif
 
 # '-N -D__BORLANDC__=0x0452' to work around bugs of bcc32 V.4.0
@@ -73,7 +60,7 @@ $(NAME).exe : $(OBJS)
 !if 	$d( PREPROCESSED)
 # Make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H noconfig.H internal.H
-	$(NAME) $(CPPFLAGS) $(CPP_LANG) $(MEM_MACRO) $(preproc) mcpp.H
+	$(NAME) $(CPPFLAGS) $(MEM_MACRO) preproc.c mcpp.H
 $(OBJS) : mcpp.H
 !else
 main.obj directive.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
@@ -82,27 +69,12 @@ lib.obj : noconfig.H
 !endif
 
 !if 	$d( PREPROCESSED)
-!if 	$d( CPLUS)
-.cpp.obj:
-	$(NAME) -DPREPROCESSED=1 -+ $< $(<B).i
-	$(CC) $(CFLAGS) $(LANG) $(<B).i
-.c.obj	:
-	$(CC) $(CFLAGS) $(MEM_MACRO) $<
-!else
 .c.obj	:
 	$(NAME) -DPREPROCESSED=1 $(CPPFLAGS) $< $(<B).i
 	$(CC) $(CFLAGS) $(<B).i
-!endif
-!else
-!if 	$d( CPLUS)
-.cpp.obj:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) $(LANG) $<
-.c.obj	:
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) $<
 !else
 .c.obj	:
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) $<
-!endif
 !endif
 
 install :
