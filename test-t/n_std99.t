@@ -6,8 +6,6 @@
  *   Samples to test Standard C99 preprocessing.
  */
 
-
-
 /* n_ucn1:  Universal-character-name    */ 
 
 /* UCN in character constant    */

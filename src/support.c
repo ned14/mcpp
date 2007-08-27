@@ -61,6 +61,8 @@
  * xmalloc()    Gets a specified number of bytes from heap memory.
  *              If malloc() returns NULL, exits with a message.
  * xrealloc()   realloc().  If it fails, exits with a message.
+ * get_src_location()   Trace back line-column datum into pre-line-splicing
+ *              phase.  A function for -K option.
  * cfatal(), cerror(), cwarn()
  *              These routines format print messages to the user.
  * mcpp_fputc(), mcpp_fputs(), mcpp_fprintf()
@@ -89,7 +91,7 @@ static char *   scan_op( int c, char * out);
                 /* Scan an operator or punctuat.*/
 static char *   parse_line( void);
                 /* Parse a logical line         */
-static char *   read_a_comment( char * sp);
+static char *   read_a_comment( char * sp, size_t * sizp);
                 /* Read over a comment          */
 static char *   get_line( int in_comment);
                 /* Get a logical line from file */
@@ -109,16 +111,27 @@ static void     dump_token( int token_type, const char * cp);
 
 #define EXP_MAC_IND_MAX     16
 /* Information of current expanding macros for diagnostic   */
-typedef struct  expanding_mac {
+static struct {
     const char *    name;       /* Name of the macro just expanded  */
     int             to_be_freed;    /* Name should be freed later   */
-} EXPANDING_MAC;
-static EXPANDING_MAC    expanding_macro[ EXP_MAC_IND_MAX];
+} expanding_macro[ EXP_MAC_IND_MAX];
 static int  exp_mac_ind = 0;        /* Index into expanding_macro[] */
 
 static int  in_token = FALSE;       /* For token scanning functions */
 static int  in_string = FALSE;      /* For get_ch() and parse_line()*/
 static int  squeezews = FALSE;
+
+#define MAX_CAT_LINE    256
+/* Information on line catenated by <backslash><newline>    */
+/* and by line-crossing comment.                            */
+typedef struct catenated_line {
+    long    start_line;         /* Starting line of catenation      */
+    long    last_line;          /* Ending line of catanation        */
+    size_t  len[ MAX_CAT_LINE + 1];
+                        /* Length of successively catenated lines   */
+} CAT_LINE;
+static CAT_LINE bsl_cat_line;   /* Datum on the last catenated line */
+static CAT_LINE com_cat_line;
 
 #if MCPP_LIB
 static int  use_mem_buffers = FALSE;
@@ -126,6 +139,7 @@ static int  use_mem_buffers = FALSE;
 void    init_support( void)
 {
     in_token = in_string = squeezews = FALSE;
+    bsl_cat_line.len[ 0] = com_cat_line.len[ 0] = 0;
     clear_exp_mac();
 }
 
@@ -144,6 +158,7 @@ void    mcpp_use_mem_buffers(
 {
     use_mem_buffers = tf ? TRUE : FALSE;
 
+    /* Output to memory buffers instead of files    */
     if (use_mem_buffers) {
         int i;
 
@@ -372,7 +387,7 @@ int     get_unexpandable(
                     == NAM)                     /* Identifier       */
             && fp != NULL                       /* In source !      */
             && (defp = is_macro( NULL)) != NULL) {      /* Macro    */
-        expand_macro( defp, work_buf, work_end);        /* Expand macro call*/
+        expand_macro( defp, work_buf, work_end, 0L, 0); /* Expand macro call*/
         file = unget_string( work_buf, defp->name);     /* Stack to re-read */
         c = skip_ws();                          /* Skip TOK_SEP     */
         if (file != infile && macro_line != MACRO_ERROR && (warn_level & 1)) {
@@ -380,7 +395,7 @@ int     get_unexpandable(
             cwarn( "Macro \"%s\" is expanded to 0 token"    /* _W1_ */
                     , defp->name, 0L, NULL);
             if (! no_source_line)
-                dump_a_def( "    macro", defp, FALSE, FALSE, TRUE, fp_err);
+                dump_a_def( "    macro", defp, FALSE, TRUE, fp_err);
         }
     }
 
@@ -442,17 +457,15 @@ void    skip_nl( void)
 
 int     skip_ws( void)
 /*
- * Skip over whitespaces other than <newline>.
- * Note: POST_STD mode does not use TOK_SEP, and KR mode does not use COM_SEP.
+ * Skip over horizontal whitespaces.
  */
 {
     int     c;
 
     do {
         c = get_ch();
-    }
-    while (c == ' ' || c == TOK_SEP);
-                                /* COM_SEP is an alias of TOK_SEP   */
+    } while (char_type[ c] & HSP);
+
     return  c;
 }
 
@@ -481,8 +494,8 @@ int     scan_token(
 
     if (standard)
         in_token = TRUE;                /* While a token is scanned */
-    ch_type = char_type[ c & UCHARMAX] & mbmask;
     c = c & UCHARMAX;
+    ch_type = char_type[ c] & mbmask;
 
     switch (ch_type) {
     case LET:                           /* An identifier            */
@@ -598,6 +611,13 @@ static void scan_id(
 #endif
     size_t  len;                        /* Length of identifier     */
     char *  bp = identifier;
+
+    if (c == IN_SRC) {                  /* Magic character  */
+        *bp++ = c;
+        if ((mcpp_debug & MACRO_CALL) && ! in_directive)
+            *bp++ = get_ch();           /* Its argument     */
+        c = get_ch();
+    }
 
     do {
         if (bp < limit)
@@ -1500,9 +1520,10 @@ int     get_ch( void)
     }
 
     if (mcpp_debug & GETC) {
-        mcpp_fprintf( DBG, "get_ch(%s), line %ld, bptr = %d, buffer"
+        mcpp_fprintf( DBG, "get_ch(%s) '%c' line %ld, bptr = %d, buffer"
             , file->fp ? cur_fullname : file->real_fname ? file->real_fname
             : file->filename ? file->filename : "NULL"
+            , *file->bptr & UCHARMAX
             , src_line, (int) (file->bptr - file->buffer));
         dump_string( NULL, file->buffer);
         dump_unget( "get entrance");
@@ -1522,7 +1543,8 @@ int     get_ch( void)
         if (! in_string && c == '\\' && *file->bptr == '\n'
                 && in_define        /* '\\''\n' is deleted in #define line, */
                     /*   provided the '\\' is not the 2nd byte of mbchar.   */
-                && ! last_is_mbchar( file->buffer, strlen( file->buffer) - 2)
+                && ! last_is_mbchar( file->buffer, strlen( file->buffer) - 2
+                && ! keep_spaces)
             ) {
             if (*(file->bptr - 2) == ' ')
                 squeezews = TRUE;
@@ -1547,7 +1569,7 @@ int     get_ch( void)
     free( file->buffer);                    /* Free buffer          */
     if (infile == NULL) {                   /* If at end of input,  */
         if (file->filename)
-            free( file->filename);              /* Free filename        */
+            free( file->filename);
         free( file);
         return  CHAR_EOF;                   /*   return end of file.*/
     }
@@ -1579,6 +1601,8 @@ int     get_ch( void)
         sharp();                            /* Need a #line now     */
         src_line--;
         newlines = 0;                       /* Clear the blank lines*/
+        if (mcpp_debug & MACRO_CALL)    /* Should be re-initialized */
+            com_cat_line.last_line = bsl_cat_line.last_line = 0L;
     } else if (file->filename) {            /* Expanding macro      */
         if (macro_name)     /* file->filename should be freed later */
             expanding( file->filename, TRUE);
@@ -1595,9 +1619,10 @@ static char *   parse_line( void)
  * Parse a logical line.
  * Check illegal control characters.
  * Check unterminated string literal, character constant or comment.
- * Convert each comment to one space.
+ * Convert each comment to one space (or spaces of the comment length on
+ * 'keep_spaces' mode)..
  * Squeeze succeding white spaces other than <newline> (including comments) to
- * one space.
+ * one space (unless keep_spaces == TRUE).
  * The lines might be spliced by comments which cross the lines.
  */
 {
@@ -1605,6 +1630,8 @@ static char *   parse_line( void)
     char *      limit;                      /* Buffer end           */
     char *      tp;     /* Current pointer into temporary buffer    */
     char *      sp;                 /* Pointer into input buffer    */
+    char *      sp_save;
+    size_t      com_size;
     int         c;
 
     if ((sp = get_line( FALSE)) == NULL)    /* Next logical line    */
@@ -1619,13 +1646,12 @@ static char *   parse_line( void)
     tp = temp = xmalloc( (size_t) NBUFF);
     limit = temp + NBUFF - 2;
 
-    if (mcpp_mode == POST_STD) {
-        while (((c = *sp++ & UCHARMAX) == ' ') || c == '\t')
-            ;                           /* Skip the line top spaces */
-    } else {
-        /* Putout the line top spaces as they are   */
-        while (((c = *sp++ & UCHARMAX) == ' ') || c == '\t')
+    while (char_type[ c = *sp++ & UCHARMAX] & HSP) {
+        if (mcpp_mode != POST_STD)
+            /* Preserve line top horizontal white spaces    */
+            /*      as they are for human-readability       */
             *tp++ = c;
+        /* Else skip the line top spaces    */
     }
     sp--;
 
@@ -1635,17 +1661,34 @@ static char *   parse_line( void)
         case '/':
             switch (*sp++) {
             case '*':                       /* Start of a comment   */
-                if ((sp = read_a_comment( sp)) == NULL) {
+                sp_save = sp - 2;           /* Location of comment  */
+                if ((sp = read_a_comment( sp, &com_size)) == NULL) {
                     free( temp);            /* End of file with un- */
                     return  NULL;           /*   terminated comment */
                 }
-                if (mcpp_mode == POST_STD && (temp < tp && *(tp - 1) != ' '))
-                    *tp++ = ' ';            /* Skip line top spaces */
-                else if (mcpp_mode == OLD_PREP && (temp == tp
-                        || (*(tp - 1) != ' ' && *(tp - 1) != COM_SEP)))
-                    *tp++ = COM_SEP;        /* Convert to magic character   */
-                else if (temp == tp || *(tp - 1) != ' ')
-                    *tp++ = ' ';            /* Squeeze white spaces */
+                if (keep_spaces && mcpp_mode != OLD_PREP) {
+                    if (tp + com_size >= limit - 1)     /* Too long comment */
+                        com_size = limit - tp - 1;      /* Truncate */
+                    while (com_size--)
+                        *tp++ = ' ';        /* Spaces of the comment length */
+                    break;
+                }
+                switch (mcpp_mode) {
+                case POST_STD:
+                    if (temp < tp && *(tp - 1) != ' ')
+                        *tp++ = ' ';        /* Squeeze white spaces */
+                    break;
+                case OLD_PREP:
+                    if (temp == tp
+                            || ! (char_type[ *(tp - 1) & UCHARMAX] & HSP))
+                        *tp++ = COM_SEP;    /* Convert to magic character   */
+                    break;
+                default:
+                    if (temp == tp ||
+                            ! (char_type[ *(tp - 1) & UCHARMAX] & HSP))
+                        *tp++ = ' ';        /* Squeeze white spaces */
+                    break;
+                }
                 break;
             case '/':                                       /* //   */
                 if (! standard)
@@ -1657,9 +1700,8 @@ static char *   parse_line( void)
                             , NULL, 0L, NULL);
                 if (keep_comments) {
                     sp -= 2;
-                    while (*sp != '\n')
-                        mcpp_fputc( *sp++, OUT);    /* Until end of line    */
-                    wrong_line = TRUE;      /* Need to adjust #line */
+                    while (*sp != '\n')     /* Until end of line    */
+                        mcpp_fputc( *sp++, OUT);
                 }
                 goto  end_line;
             default:                        /* Not a comment        */
@@ -1678,12 +1720,15 @@ not_comment:
                     , NULL, (long) c, NULL);
         case '\t':                          /* Horizontal space     */
         case ' ':
-            if (mcpp_mode == OLD_PREP) {
-                if ((*(tp - 1) != ' ' && *(tp - 1) != COM_SEP))
-                    *(tp - 1) = ' ';        /* Squeeze COM_SEP with spaces  */
-            } else {
-                if (*(tp - 1) != ' ')
-                    *tp++ = ' ';            /* Squeeze white spaces */
+            if (keep_spaces) {
+                if (c == '\t')
+                    *tp++ = '\t';
+                else
+                    *tp++ = ' ';            /* Convert to ' '       */
+            } else if (! (char_type[ *(tp - 1) & UCHARMAX] & HSP)) {
+                *tp++ = ' ';                /* Squeeze white spaces */
+            } else if (mcpp_mode == OLD_PREP && *(tp - 1) == COM_SEP) {
+                *(tp - 1) = ' ';    /* Replace COM_SEP with ' '     */
             }
             break;
         case '"':                           /* String literal       */
@@ -1721,7 +1766,7 @@ not_comment:
     }
 
 end_line:
-    if (temp < tp && *(tp - 1) == ' ')
+    if (temp < tp && (char_type[ *(tp - 1) & UCHARMAX] & HSP))
         tp--;                       /* Remove trailing white space  */
     *tp++ = '\n';
     *tp = EOS;
@@ -1729,7 +1774,7 @@ end_line:
     free( temp);
     if (macro_line != 0 && macro_line != MACRO_ERROR) { /* Expanding macro  */
         temp = infile->buffer;
-        if (*temp == ' ')
+        while (char_type[ *temp & UCHARMAX] & HSP)
             temp++;
         if (*temp == '#'
                     || (mcpp_mode == STD && *temp == '%' && *(temp + 1) == ':'))
@@ -1742,14 +1787,21 @@ end_line:
 }
 
 static char *   read_a_comment(
-    char *      sp
+    char *      sp,                         /* Source               */
+    size_t *    sizp                        /* Size of the comment  */
 )
 /*
  * Read over a comment (which may cross the lines).
  */
 {
     int         c;
+    char *      saved_sp;
+    int         cat_line = 0;       /* Number of catenated lines    */
 
+    if (keep_spaces) {
+        saved_sp = sp - 2;          /* '-2' for beginning / and *   */
+        *sizp = 0;
+    }        
     if (keep_comments)                      /* If writing comments  */
         mcpp_fputs( "/*", OUT);             /* Write the initializer*/
     c = *sp++;
@@ -1772,14 +1824,44 @@ static char *   read_a_comment(
                 continue;                   /*   end, look at next. */
             if (keep_comments) {            /* Put out comment      */
                 mcpp_fputc( c, OUT);        /*   terminator, too.   */
-                mcpp_fputc( '\n', OUT);     /* Newline to avoid mess*/
+            }
+            if (keep_spaces)                /* Save the length      */
+                *sizp = *sizp + (sp - saved_sp);
+            if ((mcpp_debug & MACRO_CALL) && compiling) {
+                if (cat_line) {
+                    cat_line++;
+                    com_cat_line.len[ cat_line]         /* Catenated length */
+                            = com_cat_line.len[ cat_line - 1]
+                                + strlen( infile->buffer) - 1;
+                                            /* '-1' for '\n'        */
+                    com_cat_line.last_line = src_line;
+                }
             }
             return  sp;                     /* End of comment       */
-        case '\n':
+        case '\n':                          /* Line-crossing comment*/
+            if (keep_spaces)                /* Save the length      */
+                *sizp = *sizp + (sp - saved_sp) - 1;    /* '-1' for '\n'    */
+            if ((mcpp_debug & MACRO_CALL) && compiling) {
+                                    /* Save location informations   */
+                if (cat_line == 0)  /* First line of catenation     */
+                    com_cat_line.start_line = src_line;
+                if (cat_line >= MAX_CAT_LINE - 1) {
+                    *sizp = 0;      /* Discard the too long comment */
+                    cat_line = 0;
+                    if (warn_level & 4)
+                        cwarn(
+                        "Too long comment, discarded up to here"    /* _W4_ */
+                                , NULL, 0L, NULL);
+                }
+                cat_line++;
+                com_cat_line.len[ cat_line]
+                        = com_cat_line.len[ cat_line - 1]
+                            + strlen( infile->buffer) - 1;
+            }
+            if ((saved_sp = sp = get_line( TRUE)) == NULL)
+                return  NULL;       /* End of file within comment   */
             if (! keep_comments)            /* We'll need a #line   */
                 wrong_line = TRUE;          /*   later...           */
-            if ((sp = get_line( TRUE)) == NULL) /* End of file      */
-                return  NULL;               /*   within comment     */
             break;
         default:                            /* Anything else is     */
             break;                          /*   just a character   */
@@ -1818,10 +1900,13 @@ static char *   get_line(
     int     converted = FALSE;
     int     len;                            /* Line length - alpha  */
     char *  ptr;
+    int     cat_line = 0;           /* Number of catenated lines    */
 
     if (infile == NULL)                     /* End of a source file */
         return  NULL;
     ptr = infile->bptr = infile->buffer;
+    if ((mcpp_debug & MACRO_CALL) && src_line == 0) /* Initialize   */
+        com_cat_line.last_line = bsl_cat_line.last_line = 0L;
 
     while (mcpp_fgets( ptr, (int) (infile->buffer + NBUFF - ptr), infile->fp)
             != NULL) {
@@ -1869,6 +1954,16 @@ static char *   get_line(
                             /* <backslash><newline> (not MBCHAR)    */
                     ptr = infile->bptr += len;  /* Splice the lines */
                     wrong_line = TRUE;
+                    if ((mcpp_debug & MACRO_CALL) && compiling) {
+                                    /* Save location informations   */
+                        if (cat_line == 0)      /* First line of catenation */
+                            bsl_cat_line.start_line = src_line;
+                        if (cat_line < MAX_CAT_LINE)
+                                    /* Record the catenated length  */
+                            bsl_cat_line.len[ ++cat_line]
+                                    = strlen( infile->buffer) - 2;
+                        /* Else ignore  */
+                    }
                     continue;
                 }
             }
@@ -1878,6 +1973,13 @@ static char *   get_line(
             cwarn( "Logical source line longer than %.0s%ld bytes"  /* _W4_ */
                         , NULL, str_len_min, NULL);
 #endif
+        }
+        if ((mcpp_debug & MACRO_CALL) && compiling) {
+            if (cat_line && cat_line < MAX_CAT_LINE) {
+                bsl_cat_line.len[ ++cat_line] = strlen( infile->buffer) - 1;
+                                /* Catenated length: '-1' for '\n'  */
+                bsl_cat_line.last_line = src_line;
+            }
         }
         return  infile->bptr = infile->buffer;      /* Logical line */
     }
@@ -2236,6 +2338,52 @@ char *  (xrealloc)(
     return  result;
 }
 
+LINE_COL *  get_src_location(
+    LINE_COL *  p_line_col          /* Line and column on phase 4   */
+)
+/*
+ * Convert line-column datum of just after translation phase 3 into that of
+ * phase 2, tracing back line splicing by a comment and <backslash><newline>.
+ * Note: This conversion does not give correct datum on a line catenated by
+ * both of <backslash><newline> and line-crossing-comment at the same time.
+ *
+ * com_cat_line and bsl_cat_line have data only on last catenated line.
+ * com_cat_line.len[] and bsl_cat_line.len[] have the length of catenated
+ * line, and len[ 0] is always 0, followed by len[ 1], len[ 2], ..., as
+ * accumulated length of successively catenated lines.
+ */
+{
+    long        line;
+    size_t      col;
+    size_t *    cols;
+    CAT_LINE *  l_col_p;
+    int         i;
+
+    line = p_line_col->line;
+    col = p_line_col->col;
+
+    for (i = 0; i <= 1; i++) {
+        l_col_p = i ? & bsl_cat_line : & com_cat_line;
+        if (l_col_p->last_line != line)
+            continue;
+        /* Else just catenated line */
+        cols = l_col_p->len + 1;
+        while (*cols < col)
+            cols++;
+        if (col <= *cols) {
+            cols--;
+            col -= *cols;
+        }
+        line = l_col_p->start_line + (cols - l_col_p->len);
+    }
+
+    p_line_col->line = line;
+    p_line_col->col = col + 1;
+                    /* col internally start at 0, output start at 1 */
+
+    return  p_line_col;
+}
+
 static void put_line(
     char *  out,
     FILE *  fp
@@ -2301,17 +2449,28 @@ static void do_msg(
                 /* Else fall through    */
             case RT_END:
             case IN_SRC:
-                if (mcpp_mode != STD) {
-                    *tp++ = ' ';
-                    /* Illegal control character, convert to a space*/
-                    break;
-                }                       /* Else fall through        */
             case CAT:
             case ST_QUOTE:
             case DEF_MAGIC:
                 if (! standard)
                     *tp++ = ' ';
-                break;                  /* Skip magic characters    */
+                break;                  /* Skip the magic characters*/
+            case MAC_INF:
+                if (mcpp_mode != STD) {
+                    *tp++ = ' ';
+                    /* Illegal control character, convert to a space*/
+                } else {
+                    switch (*sp++) {    /* Skip the magic characters*/
+                    case MAC_ARG_START  :
+                        sp++;
+                        /* Fall through */
+                    case MAC_CALL_START :
+                        sp++;
+                        sp++;
+                        break;
+                    }
+                }
+                break;
             case '\n':
                 *tp++ = ' ';            /* Convert '\n' to a space  */
                 break;
@@ -2355,16 +2514,20 @@ static void do_msg(
         if (file->fp == NULL) {             /* Macro                */
             if (file->filename) {
                 defp = look_id( file->filename);
-                if (defp->nargs >= DEF_NOARGS - 2)
-                    dump_a_def( "    macro", defp, FALSE, FALSE, TRUE, fp_err);
+                if ((defp->nargs > DEF_NOARGS_STANDARD)
+                        && ! (file->parent && file->parent->filename
+                        && str_eq( file->filename, file->parent->filename)))
+                        /* If the name is not duplicate of parent   */
+                    dump_a_def( "    macro", defp, FALSE, TRUE, fp_err);
             }
         } else {                            /* Source file          */
             if (file->buffer[ 0] == '\0')
                 strcpy( file->buffer, "\n");
             if (mcpp_mode != OLD_PREP) {
                 mcpp_fprintf( ERR, "    from %s%s: %ld:    %s",
-                    *(file->dirp),          /* Include directory    */
-                    file->real_fname,       /* Current file name    */
+                    file->line ? *(file->dirp) : "",/* Include directory    */
+                    file->line ? file->real_fname   /* Current file name    */
+                        : "<stdin>",        /* Included by -include */
                     file->line,             /* Current line number  */
                     file->buffer);          /* The source line      */
             } else {
@@ -2397,9 +2560,9 @@ static void do_msg(
         if (file)
             continue;
         if ((defp = look_id( expanding_macro[ ind].name)) != NULL) {
-            if (defp->nargs < DEF_NOARGS - 2)
-                continue;                   /* __FILE__, __LINE__   */
-            dump_a_def( "    macro", defp, FALSE, FALSE, TRUE, fp_err);
+            if (defp->nargs <= DEF_NOARGS_STANDARD)
+                continue;                   /* Standard predefined  */
+            dump_a_def( "    macro", defp, FALSE, TRUE, fp_err);
             /* Macro already read over  */
         }
     }
@@ -2462,7 +2625,7 @@ void    dump_string(
 {
     const char *    cp;
     const char *    chr;
-    int     c;
+    int     c, c1;
 
     if (why != NULL)
         mcpp_fprintf( DBG, " (%s)", why);
@@ -2480,6 +2643,32 @@ void    dump_string(
         case MAC_PARM:
             c = *cp++ & UCHARMAX;
             mcpp_fprintf( DBG, "<%d>", c);
+            break;
+        case MAC_INF:
+            c = *cp++ & UCHARMAX;
+            switch (c) {
+            case MAC_CALL_START:
+                c = ((*cp++ & UCHARMAX) - 1) * UCHARMAX;
+                c += (*cp++ & UCHARMAX) - 1;
+                mcpp_fprintf( DBG, "<MAC%d>", c);
+                break;
+            case MAC_CALL_END:
+                chr = "<MAC_END>";
+                break;
+            case MAC_ARG_START:
+                c = ((*cp++ & UCHARMAX) - 1) * UCHARMAX;
+                c += (*cp++ & UCHARMAX) - 1;
+                c1 = *cp++ & UCHARMAX;
+                mcpp_fprintf( DBG, "<MAC%d:ARG%d>", c, c1 - 1);
+                break;
+            case MAC_ARG_END:
+                chr = "<ARG_END>";
+                break;
+            case EOS    :
+                chr = "<MAC_INF>";
+                cp--;
+                break;
+            }
             break;
         case DEF_MAGIC:
             if (standard) {
@@ -2503,11 +2692,15 @@ void    dump_string(
             }       /* Else fall through    */
         case IN_SRC:
             if (standard) {
-                chr = "<SRC>";
-                break;
+                if ((mcpp_debug & MACRO_CALL) && ! in_directive) {
+                    mcpp_fprintf( DBG, "<SRC%d>", *cp++ & UCHARMAX);
+                } else {
+                    chr = "<SRC>";
+                }
             } else {                        /* Control character    */
                 mcpp_fprintf( DBG, "<^%c>", c + '@');
             }
+            break;
         case TOK_SEP:
             if (mcpp_mode == STD) {
                 chr = "<TSEP>";

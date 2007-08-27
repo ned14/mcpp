@@ -56,6 +56,9 @@
 #define DOL     000
 #endif
 
+/* Horizontal spaces (' ', '\t' and TOK_SEP)    */
+#define HSPA    (SPA | HSP)
+
 short *     char_type;  /* Pointer to one of the following type_*[].    */
 
 #define EJ1     0x100   /* 1st byte of EUC_JP   */
@@ -81,11 +84,11 @@ static short    type_euc[ UCHARMAX + 1] = {
 /*   8,     9,     A,     B,     C,     D,     E,     F,       Hex          */
 
    000,   000,   000,   000,   000,   000,   000,   000,    /* 00           */
-   000,   SPA,   SPA,   SPA,   SPA,   SPA,   000,   000,    /* 08           */
+   000,   HSPA,  SPA,   SPA,   SPA,   SPA,   000,   000,    /* 08           */
    000,   000,   000,   000,   000,   000,   000,   000,    /* 10           */
-    /* 0x19, 0x1A and 0x1F will be cleared in some modes by chk_opts(). */
-   000,   LET,   LET,   000,   000,   000,   000,   SPA,    /* 18           */
-   SPA,   PUNC,  QUO,   PUNC,  DOL,   PUNC,  PUNC,  QUO,    /* 20  !"#$%&'  */
+    /* 0x17-0x1A and 0x1F will be cleared in some modes by chk_opts()       */
+   000,   LET,   LET,   000,   000,   000,   000,   HSPA,   /* 18           */
+   HSPA,  PUNC,  QUO,   PUNC,  DOL,   PUNC,  PUNC,  QUO,    /* 20  !"#$%&'  */
    PUNC,  PUNC,  PUNC,  PUNC,  PUNC,  PUNC,  DOT,   PUNC,   /* 28 ()*+,-./  */
    DIG,   DIG,   DIG,   DIG,   DIG,   DIG,   DIG,   DIG,    /* 30 01234567  */
    DIG,   DIG,   PUNC,  PUNC,  PUNC,  PUNC,  PUNC,  PUNC,   /* 38 89:;<=>?  */
@@ -142,11 +145,11 @@ static short    type_bsl[ UCHARMAX + 1] = {
 /*   8,     9,     A,     B,     C,     D,     E,     F,       Hex          */
 
    000,   000,   000,   000,   000,   000,   000,   000,    /* 00           */
-   000,   SPA,   SPA,   SPA,   SPA,   SPA,   000,   000,    /* 08           */
+   000,   HSPA,  SPA,   SPA,   SPA,   SPA,   000,   000,    /* 08           */
    000,   000,   000,   000,   000,   000,   000,   000,    /* 10           */
-    /* 0x19, 0x1A and 0x1F will be cleared in some modes    */
-   000,   LET,   LET,   000,   000,   000,   000,   SPA,    /* 18           */
-   SPA,   PUNC,  QUO,   PUNC,  DOL,   PUNC,  PUNC,  QUO,    /* 20  !"#$%&'  */
+    /* 0x17-0x1A and 0x1F will be cleared in some modes by chk_opts()       */
+   000,   LET,   LET,   000,   000,   000,   000,   HSPA,   /* 18           */
+   HSPA,  PUNC,  QUO,   PUNC,  DOL,   PUNC,  PUNC,  QUO,    /* 20  !"#$%&'  */
    PUNC,  PUNC,  PUNC,  PUNC,  PUNC,  PUNC,  DOT,   PUNC,   /* 28 ()*+,-./  */
    DIG,   DIG,   DIG,   DIG,   DIG,   DIG,   DIG,   DIG,    /* 30 01234567  */
    DIG,   DIG,   PUNC,  PUNC,  PUNC,  PUNC,  PUNC,  PUNC,   /* 38 89:;<=>?  */
@@ -206,11 +209,11 @@ static short    type_iso2022_jp[ UCHARMAX + 1] = {
 /*   8,     9,     A,     B,     C,     D,     E,     F,       Hex          */
 
    000,   000,   000,   000,   000,   000,   000,   000,    /* 00           */
-   000,   SPA,   SPA,   SPA,   SPA,   SPA,   000,   000,    /* 08           */
+   000,   HSPA,  SPA,   SPA,   SPA,   SPA,   000,   000,    /* 08           */
    000,   000,   000,   000,   000,   000,   000,   000,    /* 10           */
-    /* 0x19, 0x1A and 0x1F will be cleared in some modes    */
-   000,   LET,   LET,   IS1,   000,   000,   000,   SPA,    /* 18           */
-   SPA,   PIJP,  QIJP,  PIJP,  DLJPS2,PIJP,  PIJP,  QIJP,   /* 20  !"#$%&'  */
+    /* 0x17-0x1A and 0x1F will be cleared in some modes by chk_opts()       */
+   000,   LET,   LET,   IS1,   000,   000,   000,   HSPA,   /* 18           */
+   HSPA,  PIJP,  QIJP,  PIJP,  DLJPS2,PIJP,  PIJP,  QIJP,   /* 20  !"#$%&'  */
    PJPS23,PIJP,  PIJP,  PIJP,  PIJP,  PIJP,  DTJP,  PIJP,   /* 28 ()*+,-./  */
    DGJP,  DGJP,  DGJP,  DGJP,  DGJP,  DGJP,  DGJP,  DGJP,   /* 30 01234567  */
    DGJP,  DGJP,  PIJP,  PIJP,  PIJP,  PIJP,  PIJP,  PIJP,   /* 38 89:;<=>?  */
@@ -248,11 +251,11 @@ static short    type_utf8[ UCHARMAX + 1] = {
 /*   8,     9,     A,     B,     C,     D,     E,     F,       Hex          */
 
    000,   000,   000,   000,   000,   000,   000,   000,    /* 00           */
-   000,   SPA,   SPA,   SPA,   SPA,   SPA,   000,   000,    /* 08           */
+   000,   HSPA,  SPA,   SPA,   SPA,   SPA,   000,   000,    /* 08           */
    000,   000,   000,   000,   000,   000,   000,   000,    /* 10           */
-    /* 0x19, 0x1A and 0x1F will be cleared in some modes    */
-   000,   LET,   LET,   000,   000,   000,   000,   SPA,    /* 18           */
-   SPA,   PUNC,  QUO,   PUNC,  DOL,   PUNC,  PUNC,  QUO,    /* 20  !"#$%&'  */
+    /* 0x17-0x1A and 0x1F will be cleared in some modes by chk_opts()       */
+   000,   LET,   LET,   000,   000,   000,   000,   HSPA,   /* 18           */
+   HSPA,  PUNC,  QUO,   PUNC,  DOL,   PUNC,  PUNC,  QUO,    /* 20  !"#$%&'  */
    PUNC,  PUNC,  PUNC,  PUNC,  PUNC,  PUNC,  DOT,   PUNC,   /* 28 ()*+,-./  */
    DIG,   DIG,   DIG,   DIG,   DIG,   DIG,   DIG,   DIG,    /* 30 01234567  */
    DIG,   DIG,   PUNC,  PUNC,  PUNC,  PUNC,  PUNC,  PUNC,   /* 38 89:;<=>?  */
@@ -562,7 +565,7 @@ void    mb_init( void)
         char_type[ DEF_MAGIC] = standard ? LET : 0;
         char_type[ IN_SRC] = (mcpp_mode == STD) ? LET : 0;
         char_type[ TOK_SEP] = (mcpp_mode == STD || mcpp_mode == OLD_PREP)
-                ? SPA: 0;           /* TOK_SEP equals to COM_SEP    */
+                ? HSPA: 0;          /* TOK_SEP equals to COM_SEP    */
     }
 }
 

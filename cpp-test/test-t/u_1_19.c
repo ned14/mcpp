@@ -4,7 +4,7 @@
 
 /* u.1.19:  A macro expanded to "defined" in #if expression.    */
 #define DEFINED     defined
-#if     DEFINED DEFINED     /* { dg-warning "this use of \"defined\" may not be portable|expanded to \"defined\"" } */
+#if     DEFINED DEFINED     /* { dg-warning "this use of \"defined\" may not be portable| is expanded to \"defined\"" } */
 #endif
 
 #undef  __linux__
@@ -17,7 +17,7 @@
  *  #define HAVE_MREMAP 1
  *  #endif
  */
-#if HAVE_MREMAP /* { dg-warning "thss use of \"defined\" may not be portable| is expanded to \"defined\"\n\[^ \]* error:" } */
+#if HAVE_MREMAP /* { dg-warning "this use of \"defined\" may not be portable| is expanded to \"defined\"" } */
     mremap();
 #endif
 

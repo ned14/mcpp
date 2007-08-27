@@ -27,16 +27,16 @@
 /* Define the value of COMPILER-specific STD-style predefined macro. */
 #undef COMPILER_SP_STD_VAL
 
-/* Define compiler-specific C include directory 1. */
+/* Define compiler-specific C++ include directory 1. */
 #undef CPLUS_INCLUDE_DIR1
 
-/* Define compiler-specific C include directory 2. */
+/* Define compiler-specific C++ include directory 2. */
 #undef CPLUS_INCLUDE_DIR2
 
-/* Define compiler-specific C include directory 3. */
+/* Define compiler-specific C++ include directory 3. */
 #undef CPLUS_INCLUDE_DIR3
 
-/* Define compiler-specific C include directory 4. */
+/* Define compiler-specific C++ include directory 4. */
 #undef CPLUS_INCLUDE_DIR4
 
 /* Define the cpu-specific-predefined-macro. */
@@ -74,6 +74,15 @@
 
 /* Define if the cases of file name are folded. */
 #undef FNAME_FOLD
+
+/* Define MacOS-specific framework directory 1. */
+#undef FRAMEWORK1
+
+/* Define MacOS-specific framework directory 2. */
+#undef FRAMEWORK2
+
+/* Define MacOS-specific framework directory 3. */
+#undef FRAMEWORK3
 
 /* Define gcc major version. */
 #undef GCC_MAJOR_VERSION
@@ -134,6 +143,9 @@
 
 /* Define the host system. */
 #undef HOST_SYSTEM
+
+/* Define include directory to install mcpp_g*.h header files. */
+#undef INC_DIR
 
 /* Define if '0x5c' in ISO2022-JP multi-byte character is safe. */
 #undef ISO2022_JP_IS_ESCAPE_FREE

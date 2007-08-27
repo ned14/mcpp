@@ -193,6 +193,7 @@ host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
 host_os = @host_os@
+host_system = @host_system@
 host_vendor = @host_vendor@
 inc_dir = @inc_dir@
 includedir = @includedir@
@@ -630,9 +631,9 @@ uninstall-am: uninstall-binPROGRAMS uninstall-cc1PROGRAMS \
 
 @GNUC_TRUE@@REPLACE_CPP_TRUE@install-exec-hook:
 @GNUC_TRUE@@REPLACE_CPP_TRUE@	@if test x"$(gcc_path)" = x""; then	exit 1; fi
-@GNUC_TRUE@@REPLACE_CPP_TRUE@	@$(srcdir)/set_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver) '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)' '$(inc_dir)'
+@GNUC_TRUE@@REPLACE_CPP_TRUE@	@$(srcdir)/set_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver) '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)' '$(inc_dir)' $(host_system)
 @GNUC_TRUE@@REPLACE_CPP_TRUE@uninstall-hook:
-@GNUC_TRUE@@REPLACE_CPP_TRUE@	@$(srcdir)/unset_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver) '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)' '$(inc_dir)'
+@GNUC_TRUE@@REPLACE_CPP_TRUE@	@$(srcdir)/unset_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver) '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)' '$(inc_dir)' $(host_system)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

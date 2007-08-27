@@ -1,5 +1,16 @@
 This file summarizes new major features of each MCPP release.  (kmatsui)
 
+MCPP V.2.7-prerelease (2007/08)
+
+1. Implemented -K option to enable macro notification mode.  This mode
+    is designed for C/C++ refactoring tools and embeds macro annotations
+    into comments.  This mode is also enabled by '#pragma MCPP debug
+    macro_call' sub-directive.
+
+2. Implemented -k option to keep horizontal spaces and tabs as they are.
+    The -K option implies -k.
+
+
 MCPP V.2.6.4 (2007/05)
 
 1. This is a bug-fixed version of V.2.6.3, fixing memory leaks in
@@ -31,6 +42,8 @@ MCPP V.2.6.3 (2007/04)
 
 6. Provided stand-alone-and-compiler-independent-build binary packages
     port, rpm, deb, zip and their corresponding source packages.
+
+7. Added documentation on source checking of glibc 2.4.
 
 
 MCPP V.2.6.2 (2006/11)

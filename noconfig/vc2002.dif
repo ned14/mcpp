@@ -1,5 +1,5 @@
-*** noconfig.H	2007-01-30 00:29:12.000000000 +0900
---- noconfig.H.vc2002	2007-01-30 01:43:38.000000000 +0900
+*** noconfig.H	2007-08-26 23:06:23.000000000 +0900
+--- noconfig.H.vc2002	2007-08-26 23:21:11.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -43,7 +43,7 @@
       "LCC-Win32 2006-03"
       "Visual C 2005"
 ***************
-*** 242,252 ****
+*** 248,258 ****
   #define ONE_PASS            TRUE
   #endif
   #define COMPILER_EXT        "_MSC_VER"
@@ -55,7 +55,7 @@
   /* VC 6.0:12008804, VC 2002:13009466, VC 2003:13103077, VC 2005: "140050320"*/
   #define COMPILER_SP1        "_MSC_EXTENSIONS"
   #define COMPILER_SP1_VAL    "1"
---- 242,252 ----
+--- 248,258 ----
   #define ONE_PASS            TRUE
   #endif
   #define COMPILER_EXT        "_MSC_VER"

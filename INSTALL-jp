@@ -18,8 +18,6 @@ compiler-independent-build: 処理系からは独立して動くプリプロセッサです。
     実行時オプションなどの仕様は処理系のいかんによらず一定です。プリプロ
     セスだけすることができますが、処理系の一部として動作することはできま
     せん。
-    これを V.2.6, V.2.6.1 では stand-alone-build と呼んでいました。V.2.6.
-    2 で subroutine-build ができたのに伴って、呼称を変更しました。
 compiler-specific-build: 特定の処理系のプリプロセッサを（もし可能なら）
     代替するためのものです。その処理系に専用の仕様を持ち、その処理系の専
     用のディレクトリにインストールされます。
@@ -31,15 +29,15 @@ compiler-specific-build: 特定の処理系のプリプロセッサを（もし可能なら）
 
   MCPP をコンパイルするには、UNIX 系のシステムおよび CygWIN, MinGW では
 configure スクリプトを使うことができます。configure と make は任意のディ
-レクトリで実行できます。以下の説明では mcpp-2.6.4 ディレクトリのある
-path を ${mcpp-dir} と表記します。
+レクトリで実行できます。以下の説明では mcpp-2.7 ディレクトリのある path
+を ${mcpp-dir} と表記します。
 
 2、1、compiler-independent-build
 
     ${mcpp-dir}/configure; make; make install
 
-とすると、compiler-independent 版の実行プログラムが生成されてインストー
-ルされます。一部のドキュメントもインストールされます。
+とすると、compiler-independent 版の実行プログラムが生成されて mcpp とい
+う名前でインストールされます。一部のドキュメントもインストールされます。
 
     ${mcpp-dir}/configure --prefix=/usr; make; make install
 
@@ -60,14 +58,14 @@ path を ${mcpp-dir} と表記します。
 
     make uninstall
 
-とすると、mcpp の実行プログラムは削除されます。
+とすると、MCPP の実行プログラムは削除されます。
 
   make (un)install では DESTDIR=DIR というオプションを指定すると、DIR 以
 下のディレクトリにインストールされます。例えば、
 
     make DESTDIR=/tmp/mcpp install
 
-とすると、/tmp/mcpp/usr/local/bin/ に mcpp がインストールされます（存在
+とすると、/tmp/mcpp/usr/local/bin/ に MCPP がインストールされます（存在
 しないディレクトリは作成される。configure で --prefix=DIR オプションを指
 定していると '/usr/local' の部分が 'DIR' に置き換わる）。バイナリ・パッ
 ケージを作るにはこの方法を使います。
@@ -85,7 +83,7 @@ GCC-specific-build でも同様です。
 これはバイナリ・パッケージを作るつごうに合わせたものです。
 
   Linux や CygWIN ではシステムの標準ヘッダに欠陥があるので、compiler-
-independent-build の mcpp ではその対策が必要です。この問題については
+independent-build の MCPP ではその対策が必要です。この問題については
 mcpp-manual.html 3.9.9 を見てください。
 
 2、2、compiler-specific-build
@@ -110,14 +108,14 @@ mcpp-manual.html 3.9.9 を見てください。
 はコンパイラの置かれるディレクトリ（/usr/libexec, /usr/lib/gcc-lib/i686-
 pc-linux-gnu/VERSION 等）に実行プログラムがインストールされます。これは
 gcc の呼び出す cpp0 (cc1) が置かれているディレクトリです。make install
-は GCC / cpp0 (cc1) を保存した上で、gcc, g++ から mcpp が呼び出されるよ
+は GCC / cpp0 (cc1) を保存した上で、gcc, g++ から MCPP が呼び出されるよ
 うに適切な設定をします。この設定は GCC が V.2.* であるか V.3.*, 4.* であ
 るかによって違っています（mcpp-manual.html 3.9.5, 3.9.7 を参照のこと）。
 
 2、2、1、2、make check
   MCPP の検証セットには GCC の testsuite に対応した edition があります。
 GCC / testsuite がインストールされている場合は、make check によってこの
-testsuite 版検証セットで mcpp の Standard モードのテストをすることができ
+testsuite 版検証セットで MCPP の Standard モードのテストをすることができ
 ます。Testsuite 版検証セットは GCC / testsuite の一部として使うようにな
 っているので、あらかじめ GCC / testsuite がインストールされ実行できる状
 態になっていることが必要です。GCC / testsuite は通常は GCC のソースの一
@@ -142,7 +140,7 @@ testsuite 版検証セットで mcpp の Standard モードのテストをすることができ
 GCC が V.2.* であるかそれとも V.3.*, 4.* であるかに応じて必要な設定がさ
 れ、そして testsuite が実行されます。通常のソフトウェアでは make install
 の前に make check しますが、MCPP の場合は順序が逆になります。gcc から
-mcpp が呼び出されるようにしておかないと testsuite が mcpp に適用できない
+MCPP が呼び出されるようにしておかないと testsuite が MCPP に適用できない
 からです。また、このため --enable-replace-cpp オプションも必要です。
   Testsuite 版検証セットは MCPP だけでなく、GCC V.2.95 以降の cpp0 (cc1)
 にも適用することができます（cpp-test.html 3.2.3 参照）。
@@ -189,7 +187,7 @@ CygWIN 等で GCC を使っているので移植がすんでおり、configure で情報を収集
     ${mcpp-dir}/configure --help
 
 とするとオプションが表示されます。
-  そして make; make install して、さらにコンパイラドライバから mcpp が呼
+  そして make; make install して、さらにコンパイラドライバから MCPP が呼
 び出されるように細工をします。その方法については、GCC での設定方法を参考
 にしてください。
 
@@ -324,6 +322,6 @@ MCPP の "pre-preprocess" という機能を使って MCPP をリコンパイルしてみる
 MCPP だけでなく任意のプリプロセッサに適用することができます。その使い方
 については、cpp-test.html 3.1, 3.2 を参照してください。
 
-2007/05
+2007/08
                                          松井　潔 <kmatsui@t3.rim.or.jp>
 

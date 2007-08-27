@@ -19,8 +19,6 @@ compiler-independent-build:  The preprocessor which behaves on its own
     example, are the same across the compilers with which MCPP is
     compiled.  Although it can preprocess source files, it cannot behave
     as an integrated part of the compiler system.
-    While V.2.6 and V.2.6.1 called this as 'stand-alone-build', V.2.6.2
-    changed the name according to the creation of subroutine-build.
 compiler-specific-build:  The preprocessor to replace (if possible) the
     resident preprocessor of certain compiler system.  It has some
     specifications for the compiler system only and is installed into
@@ -34,7 +32,7 @@ stand-alone-build.
 
 To compile MCPP, the configure script can be used on UNIX-like systems
 and CygWIN, MinGW.  You can do configure and make in any directory.  In
-this document ${mcpp-dir} represents the path of 'mcpp-2.6.4' directory.
+this document ${mcpp-dir} represents the path of 'mcpp-2.7' directory.
 
 2.1. The compiler-independent-build
 
@@ -42,8 +40,8 @@ If you type the commands as:
 
     ${mcpp-dir}/configure; make; make install
 
-the compiler-independent executable will be generated and installed.
-Also a few document files will be installed.
+the compiler-independent executable will be generated and installed by
+name of 'mcpp'.  Also a few document files will be installed.
 
     ${mcpp-dir}/configure --prefix=/usr; make; make install
 
@@ -73,7 +71,7 @@ example,
 
     make DESTDIR=/tmp/mcpp install
 
-will install mcpp into '/tmp/mcpp/usr/local/bin/', (Non-existent
+will install MCPP into '/tmp/mcpp/usr/local/bin/', (Non-existent
 directories will be generated.  If '--prefix=DIR' option was specified
 in configure, '/usr/local' part will be replaced by 'DIR').  This option
 is used to make a binary package.
@@ -97,8 +95,8 @@ build of MCPP.  See mcpp-manual.html 3.9.9 for this problem.
 
 2.2. The compiler-specific-build
 
-This command will generate a compiler-specific executable and will
-install it into the compiler-specific directory.
+This line of commands will generate a compiler-specific executable and
+will install it into the compiler-specific directory.
 
     ${mcpp-dir}/configure --enable-replace-cpp; make; make install
 
@@ -213,7 +211,7 @@ If you type
 
 some options will be displayed.
 
-Then, after doing 'make; make install', some work for making mcpp
+Then, after doing 'make; make install', some work for making MCPP
 callable from the compiler driver is required.  Please see the setup on
 GCC for how to do this.
 
@@ -299,7 +297,7 @@ itself and mcpp-porting.html 3.1).  Similarly, if the multi-byte
 character for normal use is not Japanese, change the macro definition
 MBCHAR in noconfig.H.
 
-Also, define BINDIR in the Makefile to the directory in which mcpp
+Also, define BINDIR in the Makefile to the directory in which MCPP
 executable should be installed.  As for the Makefile for Visual C,
 remove '#' of this line and make 'install' target effective.
 
@@ -375,6 +373,6 @@ preprocessor comprehensively.  Validation Suite has 265 items and can be
 applied to any preprocessor as well as MCPP.  Refer to 3.1 and 3.2 of
 cpp-test.html.
 
-May, 2007
+August, 2007
 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
 

@@ -119,7 +119,7 @@ de
 
 /* 5.1: */
 /*  |**|[TAB]# |**|[TAB]define |**| MACRO_abcde[TAB]|**| abcde |**| */
-/**/    # /**/  define /**/ MACRO_abcde /**/ abcde /**/
+/**/	# /**/	define /**/ MACRO_abcde	/**/ abcde /**/
 /*  abcde   */
     MACRO_abcde
 

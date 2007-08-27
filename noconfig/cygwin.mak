@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.6.3 and later for CygWIN / GCC / GNU make
-# 2007/05   kmatsui
+# makefile to compile MCPP version 2.7 and later for CygWIN / GCC / GNU make
+# 2007/08   kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -44,20 +44,25 @@ CPPOPTS =
 BINDIR = /usr/local/bin
 # INCDIR:   empty
 INCDIR =
+
 else
 # compiler-specific-build:  Adjust for your system
 
 ifeq    ($(COMPILER), GNUC)
-CPPOPTS = -DCOMPILER=$(COMPILER)
-# BINDIR:   the directory where cpp0 or cc1 resides
-#BINDIR = /usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5
-BINDIR = /usr/lib/gcc/i686-pc-cygwin/3.4.4
-# INCDIR:   version specific include directory
-#INCDIR = /usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5/include
-INCDIR = /usr/lib/gcc/i686-pc-cygwin/3.4.4/include
+# The directory where 'gcc' (cc) command is located
+GCCDIR = /usr/bin
+#GCCDIR = /usr/local/bin
 # set GCC version
 gcc_maj_ver = 3
 gcc_min_ver = 4
+# INCDIR:   version specific include directory
+#INCDIR = /usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5/include
+INCDIR = /usr/lib/gcc/i686-pc-cygwin/3.4.4/include
+CPPOPTS = -DCOMPILER=$(COMPILER)
+
+# BINDIR:   the directory where cpp0 or cc1 resides
+#BINDIR = /usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5
+BINDIR = /usr/lib/gcc/i686-pc-cygwin/3.4.4
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0.exe
 else
@@ -65,10 +70,6 @@ cpp_call = $(BINDIR)/cc1.exe
 endif
 endif
 endif
-
-# The directory where 'gcc' (cc) command is located
-GCCDIR = /usr/bin
-#GCCDIR = /usr/local/bin
 
 OBJS = main.o directive.o eval.o expand.o support.o system.o mbchar.o lib.o
 
@@ -105,8 +106,8 @@ endif
 install :
 	install -s -b $(NAME).exe $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
-	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)' \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)'
+    @./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'    \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)' SYS_CYGWIN
 endif
 
 clean	:
@@ -116,7 +117,7 @@ uninstall:
 	rm -f $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
 	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)'
+        '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)' SYS_CYGWIN
 endif
 
 ifeq    ($(COMPILER), )

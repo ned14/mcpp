@@ -1,5 +1,5 @@
-*** noconfig.H	2007-01-30 00:29:12.000000000 +0900
---- noconfig.H.cyg1518	2007-01-30 00:45:10.000000000 +0900
+*** noconfig.H	2007-08-26 22:00:08.000000000 +0900
+--- noconfig.H.cyg1518	2007-08-26 22:46:11.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -18,44 +18,27 @@
   /* Define target compiler.          */
   #ifndef COMPILER
 ***************
-*** 306,316 ****
+*** 313,323 ****
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
   #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */
-! #define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.6" */  /* "/usr/local/include/c++/4.1.1" */
-! #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/local/include/c++/4.1.1/i686-pc-linux-gnu" */
-! /* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/local/include/c++/4.1.1/backward"    */
-! /* #define C_INCLUDE_DIR1   */  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include" */
+! #define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.6" */  /* "/usr/include/c++/4.1.2" */
+! #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/include/c++/4.1.2/i486-linux-gnu" */
+! /* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/include/c++/4.1.2/backward"    */
+! /* #define C_INCLUDE_DIR1 */    /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/lib/gcc/i486-linux-gnu/4.1.2/include" */
 ! /* #define C_INCLUDE_DIR2   */
-  #ifndef ENV_C_INCLUDE_DIR
-  #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
-  #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"
---- 306,316 ----
+  #ifndef INC_DIR
+  #ifdef  C_INCLUDE_DIR1
+  #define INC_DIR             C_INCLUDE_DIR1  /* GNUC version specific dir    */
+--- 313,323 ----
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
   #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */
-! #define CPLUS_INCLUDE_DIR1  "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++" /* "/usr/include/c++/3.4" */ /* "/usr/include/c++/3.3.6" */  /* "/usr/local/include/c++/4.1.1" */
-! #define CPLUS_INCLUDE_DIR2  "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++/i686-pc-cygwin"  /* "/usr/include/c++/3.4/backward" */ /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/local/include/c++/4.1.1/i686-pc-linux-gnu" */
-! #define CPLUS_INCLUDE_DIR3  "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++/backward" /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/local/include/c++/4.1.1/backward"    */
-! #define C_INCLUDE_DIR1      "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include"  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include" */
+! #define CPLUS_INCLUDE_DIR1  "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++" /* "/usr/include/c++/3.4" */ /* "/usr/include/c++/3.3.6" */  /* "/usr/include/c++/4.1.2" */
+! #define CPLUS_INCLUDE_DIR2  "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++/i686-pc-cygwin"  /* "/usr/include/c++/3.4/backward" */    /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/include/c++/4.1.2/i486-linux-gnu" */
+! #define CPLUS_INCLUDE_DIR3  "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++/backward" /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/include/c++/4.1.2/backward"    */
+! #define C_INCLUDE_DIR1      "/usr/lib/gcc/i686-pc-cygwin/3.4.4/include" /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/lib/gcc/i486-linux-gnu/4.1.2/include" */
 ! #define C_INCLUDE_DIR2      "/usr/include/w32api"
-  #ifndef ENV_C_INCLUDE_DIR
-  #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
-  #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"
-***************
-*** 323,329 ****
-  #define COMPILER_SP3        "__WCHAR_TYPE__"
-  #define COMPILER_SP1_VAL    "unsigned int"
-  #define COMPILER_SP2_VAL    "int"
-! #define COMPILER_SP3_VAL    "int"
-      /* SYS_FREEBSD: "int" , SYS_CYGWIN, SYS_MINGW: "short unsigned int"
-          , others: "long int"    */
-  #endif  /* COMPILER_FAMILY == GNUC   */
---- 323,329 ----
-  #define COMPILER_SP3        "__WCHAR_TYPE__"
-  #define COMPILER_SP1_VAL    "unsigned int"
-  #define COMPILER_SP2_VAL    "int"
-! #define COMPILER_SP3_VAL    "short unsigned int"
-      /* SYS_FREEBSD: "int" , SYS_CYGWIN, SYS_MINGW: "short unsigned int"
-          , others: "long int"    */
-  #endif  /* COMPILER_FAMILY == GNUC   */
+  #ifndef INC_DIR
+  #ifdef  C_INCLUDE_DIR1
+  #define INC_DIR             C_INCLUDE_DIR1  /* GNUC version specific dir    */
