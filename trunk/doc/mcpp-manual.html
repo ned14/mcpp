@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.6.4 (2007/05)<br>
+<h4>for V.2.7 (2007/08)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -50,7 +50,8 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.3.5.4" href="#3.5.4">3.5.4. #pragma MCPP debug if, #debug if</a>
 <dd><a name="toc.3.5.5" href="#3.5.5">3.5.5. #pragma MCPP debug expression, #debug expression</a>
 <dd><a name="toc.3.5.6" href="#3.5.6">3.5.6. #pragma MCPP debug getc, #debug getc</a>
-<dd><a name="toc.3.5.7" href="#3.5.7">3.5.7. #pragma MCPP debug memory, #debug memory</a></dl>
+<dd><a name="toc.3.5.7" href="#3.5.7">3.5.7. #pragma MCPP debug memory, #debug memory</a>
+<dd><a name="toc.3.5.8" href="#3.5.8">3.5.8. #pragma MCPP debug macro_call</a></dl>
 <dd><a name="toc.3.6" href="#3.6">3.6. #assert, #asm, #endasm</a>
 <dd><a name="toc.3.7" href="#3.7">3.7. New C99 Features (_Pragma() operator, Variadic Macro and others)</a>
 <dd><a name="toc.3.8" href="#3.8">3.8. Asm Statement in Borland C and Other Special Syntaxes</a>
@@ -64,7 +65,8 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.3.9.6" href="#3.9.6">3.9.6. Preprocessing GCC 3.2 Source</a>
 <dd><a name="toc.3.9.7" href="#3.9.7">3.9.7. To Use <b>mcpp</b> with GCC 3 or 4</a>
 <dd><a name="toc.3.9.8" href="#3.9.8">3.9.8. Preprocessing Linux/glibc 2.4</a>
-<dd><a name="toc.3.9.9" href="#3.9.9">3.9.9. The Problems of Linux / stddef.h, limits.h and #include_next</a></dl>
+<dd><a name="toc.3.9.9" href="#3.9.9">3.9.9. The Problems of Linux / stddef.h, limits.h and #include_next</a>
+<dd><a name="toc.3.9.10" href="#3.9.10">3.9.10. Preprocessing firefox 3.0a7pre</a></dl>
 <dd><dl><dt><a name="toc.3.10" href="#3.10">3.10. Visual C++ System Header Problems</a>
 <dd><a name="toc.3.10.1" href="#3.10.1">3.10.1. Comment Generating Macro?</a></dl>
 <br>
@@ -269,6 +271,7 @@ See <a href="#2.5">2.5</a> for its specifications.</p>
 <p>For the above reasons, there are some different specifications in <b>mcpp</b> executables.  So, please read this manual carefully.  This chapter describes first the common options, next the behavioral-mode-dependent options, then the the options common to most compiler systems, finally the compiler-dependent options for each compiler-specific-build.</p>
 <p>Note:</p>
 <p>*1 There is another one named <b>subroutine-build</b> which is called as a subroutine from some other main program.  The behavioral specification of subroutine-build is, however, the same with either of compiler-specific-build or compiler-independent-build according to its compile time setting.  Hence, this manual does not mention subroutine-build particularly.</p>
+This manual does not explain this build.</p>
 <p>*2 The binary packages provided at the SourceForge site are of compiler-independent-builds.</p>
 <p>*3 <b>mcpp</b> had two separate executables for Standard mode and pre-Standard mode; they were integrated into one at V.2.6.</p>
 <p>*4 This option is for compatibility with GCC, Visual C++ and other major implementations.  'compat' means "compatible mode".</p>
@@ -407,7 +410,10 @@ Reverse initial settings for the digraphs processing.  With <i>DIGRAPHS_INIT</i>
 Define the value of <tt>__STDC_HOSTED__</tt> macro with &lt;n&gt;.<br>
 <br>
 <li><samp>-S &lt;n&gt;</samp><br>
-Change the value of <tt>__STDC__</tt> to &lt;n&gt; in C.  In C++, this option is ignored.  The range of &lt;n&gt; must be 0-9.  With &lt;n&gt; set to 1 or higher, the predefined macros that do not begin with "_", such as <tt>unix</tt>, <tt>linux</tt>, are disabled.  S indicates <tt>__STDC__</tt>.  If this option is omitted, <tt>__STDC__</tt> is set to a default value (i.e. 1).  For a GCC-specific-build, -pedantic, -pedantic-errors, or -lang-c89 is equivalent to -S1, so the next -S is ignored.<br>
+Change the value of <tt>__STDC__</tt> to &lt;n&gt; in C.  In C++, this option is ignored.  The range of &lt;n&gt; must be 0-9.  With &lt;n&gt; set to 1 or higher, the predefined macros that do not begin with "_", such as <tt>unix</tt>, <tt>linux</tt>, are disabled.  S indicates <tt>__STDC__</tt>.  If this option is omitted, <tt>__STDC__</tt> is set to a default value (i.e. 1).<br>
+For a GCC-specific-build, -pedantic, -pedantic-errors, or -lang-c89 is equivalent to -S1, so the next -S is ignored.
+This option does not disable the non-conforming predefined macros such as <tt>unix, linux, i386</tt> for compatibility with GCC.
+These macros are disabled only by -ansi or -std=iso* options.<br>
 <br>
 <li><samp>-V &lt;value&gt;</samp><br>
 Change the values of the predefined macros <tt>__STDC_VERSION__</tt> for C and <tt>__cplusplus</tt> for C++ to &lt;value&gt;.  &lt;value&gt; is of a long type. (In C95, C99, and C++ Standard, this value is set to 199409L, 199901L and 199711L, respectively.)  With <tt>__STDC__</tt> set to 0, <tt>__STDC_VERSION__</tt> is always set to 0L, overriding the -V option.<br>
@@ -432,12 +438,33 @@ The -D option cannot be used with <tt>__STDC__</tt>, <tt>__STDC_VERSION__</tt>, 
 <ul>
 <li><samp>-3</samp><br>
 Reverse initial settings for the trigraphs processing.  With <i>TRIGRAPHS_INIT</i> == <i>FALSE</i>, <b>mcpp</b> recognizes trigraphs.  Otherwise, it does not.<br>
+<li><samp>-K</samp><br>
+Enable <b>macro notification mode</b> which embeds macro notifications into comments. This mode is designed to allow reconstruction of the original source position from the preprocessed output. The primary purpose of the macro notification mode is to allow C/C++ refactoring tools to refactor source code without having to implement a special-purpose C preprocessor. This mode is also handy for debugging macro expansions. The goal for macro expansion mode is to annotate every macro expansion, while still allowing the code to be compiled. *5<br>
+This mode is also enabled by the following pragma:
+<pre>
+#pragma MCPP debug macro_call
+</pre>
+The -K option has almost the same effect with this pragma at top of an input file except predefined macros are notified only by this option.
+About the specs of macro notification, see <a href="#3.5.8">3.5.8. #pragma MCPP debug macro_call</a><br>
+This option implies -k option and disables -C option.<br>
+<li><samp>-k</samp><br>
+Keep horizontal whitespaces ('\t' and space characters) without squeezing them into one space.
+Comment is converted to spaces of the same length.
+This option is to keep column position of source file in preprocessed output except within macro expansion. (Column position of macros are known by -K option.) *6
 </ul>
 <p>Note:</p>
 <p>*1 C++'s <tt>__STDC__</tt> is not desirable and causes many problems.  GCC document says that <tt>__STDC__</tt> needs to be predefined in C++ because many header files expect <tt>__STDC__</tt> to be defined.  The header files should be blamed for this.  For common parts among C90, C99 and C++, "<samp>#if __STDC__ || __cplusplus</samp>" should be used.</p>
 <p>*2 Different from C99, the C++ Standard makes much of UCN.  So did C 1997/11 draft.  Half-hearted implementation is not permitted.  However, implementing Unicode in earnest is too much burden for preprocessor.</p>
 <p>*3 In C90 <b>mcpp</b> treats // as a comment but issues a warning.</p>
 <p>*4 This is for compatibility with GCC.</p>
+<p>*5 If you install GCC-specific-mcpp, cc1 (cc1plus) is set to be handed from <b>mcpp</b> preprocessed file with -fpreprocessed option.
+Though this option means that the input is already preprocessed,
+cc1 still processes comment.
+Therefore, you can safely pass output of -K to cc1 with -fpreprocessed.
+Furthermore, if you add -save-temps option to gcc (g++) command, preprocessed output is left as *.i (*.ii) file, and you can read it by some refactoring tool.</p>
+<p>*6 This option fails to keep column position on some particularly complex cases.
+When line splicing by a &lt;backslash&gt;&lt;newline&gt; and line splicing by a line-crossing comment are intermingled on one output line, or a comment crosses over 256 lines, column position will be lost.
+Note that each '\v' and '\f' is converted to a space with or without this option.</p>
 <br>
 
 <h2><a name="2.5" href="#toc.2.5">2.5. Common Options Except for Some Compiler Systems</a></h2>
@@ -589,19 +616,29 @@ Same as -W0.<br>
 <p>The following options are available for Standard mode.</p>
 <ul>
 <li><samp>-ansi</samp><br>
-Define macro <tt>__STRICT_ANSI__</tt> as 1.<br>
+Define macro <tt>__STRICT_ANSI__</tt> as 1.
+Disable non-conforming predefined macros such as <tt>linux, i386</tt>.<br>
+Do not remove comma preceding absent variable argument of GCC-spec variadic. *5<br>
 <li><samp>-digraphs</samp><br>
 Recognize digraphs.  Digraphs specification is also reversed by -2.<br>
-<li><samp>-lang-c89, -std=c89, -std=gnu89</samp><br>
+<li><samp>-lang-c89, -std=gnu89</samp><br>
 Same as -S1.  Not only C90 but also C95 specifications are used.  The result is same with or without this option.<br>
-<li><samp>-lang-c99, -lang-c9x, -std=c99, -std=c9x, -std=gnu99, -std=gnu9x</samp><br>
+<li><samp>-std=c89, -std=c90</samp><br>
+Almost same as -S1, except these imply -ansi.<br>
+<li><samp>-lang-c99, -lang-c9x, -std=gnu99, -std=gnu9x</samp><br>
 Same as -V199901L.<br>
+<li><samp>-std=c99, -std=c9x</samp><br>
+Same as -V199901L and also imply -ansi.<br>
 <li><samp>-lang-c++, -x c++</samp><br>
 Perform C++ preprocessing.  Same as -+.<br>
+<li><samp>-std=c++98</samp><br>
+Same as -+ and also implies -ansi.<br>
 <li><samp>-pedantic, -pedantic-errors</samp><br>
 Same as -W7 (i.e. -W1 -W2 -W4).<br>
 <li><samp>-std=iso&lt;n&gt;:&lt;ym&gt;</samp><br>
 Specify a version of C Standard.  To specify C, &lt;n&gt; is 9899 and C++, 14882.  If &lt;n&gt; is 9899, &lt;ym&gt; is any of 1990, 199409, 1999 and 199901.  If &lt;n&gt; is 14882, &lt;ym&gt; is 199711.  If you enter other value than these in &lt;ym&gt;, <tt>__STDC_VERSION__</tt>  or <tt>__cplusplus</tt> is set to that value.  In this case, &lt;ym&gt; must be specified in six digits, like 200503.<br>
+These options imply -ansi.
+On the other hand, -std=gnu* do not imply -ansi, also -pedantic does not imply -ansi.<br>
 </ul>
 <p>For <i>STD</i> mode, following options are available.  (These cannot be used in <i>POSTSTD</i> mode.)</p>
 <ul>
@@ -653,6 +690,7 @@ Alter the include directory from /usr/include to /usr/include/mingw, and alter t
 <li>'put_defines' outputs also Standard predefined macros as comments.<br>
 <li>'put_defines' outputs also the file name and the line number of the macro definition as a comment, arranging to readable format.  On the other hand, -d* options output in the same simple format with GCC, because some makefiles expect that format.<br>
 </ol>
+<p>*5 Refer <a href="#3.9.6.3">3.9.6.3</a>.</p>
 <br>
 
 <h2><a name="2.7" href="#toc.2.7">2.7. Environment Variables</a></h2>
@@ -938,7 +976,8 @@ ins_once *.h */*.h */*/*.h
 <h2><a name="3.5" href="#toc.3.5">3.5. #pragma MCPP debug, #pragma MCPP end_debug, #debug, #end_debug</a></h2>
 <p>'#pragma MCPP debug' and '#pragma MCPP end_debug' are for Standard mode.  #debug and #end_debug are for pre-Standard mode.</p>
 <p>The '#pragma MCPP debug &lt;args&gt;' directive can be written anywhere in a source program.  &lt;args&gt; specifies a debug information type.  One #pragma MCPP debug directive can take several &lt;arg&gt;.  One or more &lt;arg&gt; must be specified for each directive.  <b>mcpp</b> begins to output debug information when it finds this directive, and stops it when it encounters '#pragma MCPP end_debug &lt;args&gt;'.  The &lt;args&gt; can be omitted, in which case all types of debug information is reset.  If &lt;args&gt; contains an argument that is not supported by <b>mcpp</b>, <b>mcpp</b> issues a warning, but all the preceding arguments are regarded as valid.</p>
-<p>All the debug information is output to the same path with the preprocessing output to synchronize with it.  Therefore, this directive prevents compilation.</p>
+<p>All the debug information is output to the same path with the preprocessing output to synchronize with it.  Therefore, this directive usually prevents compilation.
+Nevertheless, <samp>#pragma MCPP debug macro_call</samp> outputs informations embedding into comments, and can be re-preprocessed and compiled.</p>
 <p>When you noticed something was wrong with the preprocessing result, enclose the coding you want to debug with the following directives, for example:</p>
 <pre>
 #pragma MCPP debug token expand
@@ -952,6 +991,7 @@ ins_once *.h */*.h */*/*.h
   <tr><th>path      </th><td>Displays the include file search path.</td></tr>
   <tr><th>token     </th><td>Parses tokens one by one and displays its type.</td></tr>
   <tr><th>expand    </th><td>Traces a macro expansion process.</td></tr>
+  <tr><th>macro_call</th><td>Embed macro notifications into comments on each macro definition and macro expansion.</td></tr>
   <tr><th>if        </th><td>Displays the result (true or false) of #if, #elif, #ifdef and #ifndef.</td></tr>
   <tr><th>expression</th><td>Traces #if expression evaluation.</td></tr>
   <tr><th>getc      </th><td>Traces preprocess 1-byte by 1-byte.</td></tr>
@@ -1017,7 +1057,18 @@ Also <b>mcpp</b> dereferences the symbolic link to its linked-file, and displays
 </table>
 </blockquote>
 <p>&lt;SRC&gt; is used only in <i>STD</i> mode, and is not used in <i>POSTSTD</i> mode nor in <i>COMPAT</i> mode.</p>
-<p>It is recommended that '#pragma MCPP debug token' should be also used.</p>
+<p>It is recommended that '<samp>#pragma MCPP debug token</samp>' should be also used.</p>
+<p>If you specify also '<samp>#pragma MCPP debug macro_call</samp>' or -K option, macro notifications are output embedded in comments.
+However, in replace() and its subordinate routines some magic characters (internal codes) are written or removed in the input stream instead of comment.
+These magic characters are displayed as:</p>
+<blockquote>
+<table>
+  <tr><th>&lt;MACm&gt;     </th><td>Call of the m'th macro contained in one macro call</td></tr>
+  <tr><th>&lt;MAC_END&gt;  </th><td>The end of the macro call started by previous MACm</td></tr>
+  <tr><th>&lt;MACm:ARGn&gt;</th><td>The n'th argument of the m'th macro call</td></tr>
+  <tr><th>&lt;ARG_END&gt;  </th><td>The end of the argument started by previous MACm:ARGn</td></tr>
+</table>
+</blockquote>
 <p>For #debug expand, <b>mcpp</b> uses internal routines considerably different from those used for Standard mode.  The explanations are omitted.</p>
 
 <h3><a name="3.5.4" href="#toc.3.5.4">3.5.4. #pragma MCPP debug if, #debug if</a></h3>
@@ -1035,6 +1086,65 @@ Also <b>mcpp</b> dereferences the symbolic link to its linked-file, and displays
 <p>With these directives, <b>mcpp</b> reports the status of the heap memory it has internally allocated or released using malloc(), realloc() or free() only once.  Only the kmmalloc I developed and some other types of malloc() provide this functionality.  Refer to 
 <a href="mcpp-porting.html#4.extra"> mcpp-porting.html#4.extra</a>.  In case of other malloc(), <b>mcpp</b> will neither cause an error nor report a status.</p>
 <p><b>mcpp</b> reports the heap memory status again when it terminates with these directives on.  The same thing happens when <b>mcpp</b> terminates due to out of memory.</p>
+
+<h3><a name="3.5.8" href="#toc.3.5.8">3.5.8. #pragma MCPP debug macro_call</a></h3>
+<p>With this directive, <b>mcpp</b> starts <b>macro notification mode</b>.
+In this mode, on each macro definition and macro expansion, its line and column information on source file are output embedded in comments.
+On a macro call with arguments, location information on each arguments are reported too.
+Token concatenation by macro, however, may cause loss of macro information about the tokens before concatenation.<br>
+This mode is specified also by -K option.</p>
+<p>Macro notification mode is designed to allow reconstruction of the original source position from the preprocessed output. The primary purpose of this mode is to allow C/C++ refactoring tools to refactor source code without having to implement a special-purpose C preprocessor. This mode is also handy for debugging macro expansions. *1</p>
+<p>The goal for macro expansion mode is to annotate every macro expansion, while still allowing the output to be compiled.
+On the other hand, '<samp>#pragma MCPP debug expand</samp>' is to trace macro expansion and outputs detailed informations, but its output is not compilable.</p>
+<p>For example, macro definition statements such as:</p>
+<pre>
+#define NULL 0L
+#define BAR(x, y) x ## y
+#define BAZ(a, b) a + b
+</pre>
+<p>produce the following output:</p>
+<pre>
+/*mNULL 1:9-1:16*/
+/*mBAR 2:9-2:25*/
+/*mBAZ 3:9-3:24*/
+</pre>
+<p>where the format means:</p>
+<samp>/*m&lt;NAME&gt; &lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;*/</samp>
+<p>Line and column numbers start from 1.
+When you specify -K option, predefined macros are output too, which have no location information.</p>
+<p>Then within code macros are expanded with markers indicating start and stop of the macro expansion.
+The format allows for HTML-like nesting. <samp>/*<...*/</samp> signals start of macro expansion and <samp>/*>*/</samp> the end.
+The start of macro expansion takes the following format replacing <samp>/*m</samp> of start of macro definition format to <samp>/*<</samp>:</p>
+<samp>/*&lt;&lt;NAME&gt; &lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;*/</samp>
+<p>On macro with arguments, markers indicating source location of each argument and markers indicating start and end of each argument expansion are output too.
+The marker for argument location takes the format of <samp>/*!...*/</samp>.
+Macro argument marker also have a disambiguating naming scheme. An argument name is of the format:</p>
+<samp>&lt;func-like-macro-name&gt;:&lt;nesting level&gt;-&lt;argument number&gt;</samp>
+<p>This way if someone calls <samp>BAZ(BAZ(a,b), c)</samp> it would possible to distinguish nested macros of the same name and their arguments from each other.
+The argument number starts from 0.
+Then the location format follows it as:</p>
+<samp>&lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;</samp>
+<p>The marker for start of an argument also takes the format:</p>
+<samp>/*&lt;&lt;func-like-macro-name&gt;:&lt;nesting level&gt;-&lt;argument number&gt;*/</samp>
+<p>The marker for end of an argument is the same with the one for end of a macro expansion: <samp>/*>*/</samp>.</p>
+<p>The following code:</p>
+<pre>
+foo(NULL);
+foo(BAR(some_, var));
+foo = BAZ(NULL, 2);
+bar = BAZ(BAZ(a,b), c);
+</pre>
+<p>would expand to:</p>
+<pre>
+foo(/*&lt;NULL 4:5-4:9*/0L/*&gt;*/);
+foo(/*&lt;BAR 5:5-5:20*//*!BAR:0-0 5:9-5:14*//*!BAR:0-1 5:16-5:19*/some_var/*&gt;*/);
+foo = /*&lt;BAZ 6:7-6:19*//*!BAZ:0-0 6:11-6:15*//*!BAZ:0-1 6:17-6:18*//*&lt;BAZ:0-0*//*&lt;NULL 6:11-6:15*/0L/*&gt;*//*&gt;*/ + /*&lt;BAZ:0-1*/2/*&gt;*//*&gt;*/;
+bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:0-0*//*&lt;BAZ 7:11-7:19*//*!BAZ:1-0*//*!BAZ:1-1*//*&lt;BAZ:1-0*/a/*&gt;*/ + /*&lt;BAZ:1-1*/b/*&gt;*//*&gt;*//*&gt;*/ +  /*&lt;BAZ:0-1*/c/*&gt;*//*&gt;*/;
+</pre>
+<p>Note:</p>
+<p>*1 The specifications of macro notification mode were proposed by Taras Glek.
+He is working on refactoring of sources at mozilla project:</p>
+<p><a href="http://blog.mozilla.com/tglek/"> http://blog.mozilla.com/tglek/</a></p>
 <br>
 
 <h2><a name="3.6" href="#toc.3.6">3.6. #assert, #asm, #endasm</a></h2>
@@ -1611,12 +1721,15 @@ When you use "make", you must temporarily change the above shell-script.<br>
 <pre>
 eprintf( "success!\n")  ==&gt;  fprintf( stderr, "success!\n")
 </pre>
-<p>As far as this example is concerned, this specification seems to be convenient, but is not desirable in that (1) a comma in a replacement list of a macro definition is not always used to delimit parameters, (2) it allows a token concatenation operator (##) to have other functionality, (3) it makes rules more complex by allowing exceptions. *2, *3</p>
+<p>As far as this example is concerned, this specification seems to be convenient, but is not desirable in that (1) a comma in a replacement list of a macro definition is not always used to delimit parameters, (2) it allows a token concatenation operator (##) to have other functionality, (3) it makes rules more complex by allowing exceptions. *2, *3, *4</p>
 
 <p>Note:</p>
 <p>*1 This manual calls the variadic macro of specification since GCC 2 as GCC2 spec, and that of created in GCC 3 as GCC3 spec.</p>
 <p>*2 While on GCC 2.* <samp>'args...'</samp> in definition of GCC2 spec variadic macro should not be separated as <samp>'args ...'</samp>, on GCC 3 the intervening spaces are allowed.</p>
-<p>*3 <b>mcpp</b> V.2.6.3 implemented variadic macro of GCC3 spec for GCC-specific-build only.</p>
+<p>*3 When -ansi option (or any of -std=c* or -std=iso* option) is specified, GCC, however, does not remove the comma even if the variable argument is absent.
+Nevertheless, the '##' disappears silently.</p>
+<p>*4 <b>mcpp</b> V.2.6.3 implemented variadic macro of GCC3 spec for <i>STD</i> mode on GCC-specific-build only.
+V.2.7 even implemented GCC2 spec one.</p>
 
 <h4>3.9.6.4. Empty Arguments in Macro Invocation</h4>
 <p>Apart from #include-ed system headers, such as <samp>/usr/include/bits/mathcalls.h and /usr/include/bits/sigset.h</samp>, empty arguments in a macro invocation are found only in gcc/libgcc2.h of GCC 3.2 sources themselves. *1</p>
@@ -1837,9 +1950,11 @@ If you rewrite GCC spec macro definition to C99 one, you must also rewrite macro
 In glibc 2.4, however, such macro definitions increased and especially their calls vastly increased.
 As a consequence, it is impossible now for a user to rewrite them.</p>
 <p>To cope with this situation, <b>mcpp</b> V.2.6.3 onward implemented GCC3 spec variadic macro for GCC-specific-build only.
-<b>mcpp</b> does not implement GCC2 spec macro, because the spec is too deviant from token-based principle.
-Since GCC2 spec corresponds to GCC3 spec one-to-one, it is easy to rewrite macro definition to GCC3 spec, and macro call need not be rewritten. *1</p>
-<p>To rewrite GCC2 spec variadic macro to GCC3 spec one, for example, change:</p>
+Furthermore, <b>mcpp</b> V.2.7 implemented GCC2 spec one, too.
+However, you should not write GCC2 spec macro in your sources, because the spec is too deviant from token-based principle.
+Since GCC2 spec corresponds to GCC3 spec one-to-one, it is easy to rewrite a macro definition to GCC3 spec, and call of that macro need not be rewritten.
+The already written macros with GCC2 spec will become a little clearer, if rewritten this way. *1</p>
+<p>To rewrite a GCC2 spec variadic macro to GCC3 spec one, for example, change:</p>
 
 <pre>
 #define libc_hidden_proto(name, attrs...)   hidden_proto (name, ##attrs)
@@ -1851,7 +1966,7 @@ Since GCC2 spec corresponds to GCC3 spec one-to-one, it is easy to rewrite macro
 #define libc_hidden_proto(name, ...)    hidden_proto (name, ## __VA_ARGS__)
 </pre>
 
-<p>That is, change <samp>attrs...</samp> to <samp>...</samp>, and change <samp>attrs</samp> to <samp>__VA_ARGS__</samp>.</p>
+<p>That is, change the parameter <samp>attrs...</samp> to <samp>...</samp>, and change <samp>attrs</samp> in the replacement-list to <samp>__VA_ARGS__</samp>.</p>
 
 <p>Note:</p>
 <p>*1 As for variadic macro of GCC2 spec and GCC3 spec, see <a href="#3.9.1.6">3.9.1.6</a>, <a href="#3.9.6.3">3.9.6.3</a> respectively.</p>
@@ -1952,7 +2067,7 @@ elf/dynamic-link.h</samp></p>
 <p>In glibc 2.1.3, <samp>malloc/malloc.c</samp> had a macro definition of <tt>HAVE_MREMAP</tt> whose replacement-list contained the <samp>'defined'</samp> token.
 In glibc 2.4, that macro definition has been revised to portable one, nevertheless the unportable macros of the same sort have increased in other source files.</p>
 <p>In a #if expression, the result of a macro expansion whose replacement-list has the <samp>'defined'</samp> token is undefined according to the Standards, and it is only self-satisfaction of GCC to preprocess the expression plausibly and arbitrarily.
-In order to make these sources portable among other preprocessors including <b>mcpp</b>, at least the definitions of these macros should be rewritten, and in some cases the calls of the macros should be rewritten, too.</p>
+In order to make these sources portable among other preprocessors, at least the definitions of these macros should be rewritten, and in some cases the calls of the macros should be rewritten, too. *2</p>
 <p>In most cases, the simple rewriting is sufficient as seen in <a href="#3.9.4.6">3.9.4.6</a>.
 In some cases, however, this method does not work.
 Those are the cases where evaluation result of <samp>'defined MACRO'</samp> differs depending on its timing.
@@ -1988,18 +2103,17 @@ In order to rewrite these sources portable, the macro <tt>ELF_MACHINE_NO_RELA</t
 
 <p>Note:</p>
 <p>*1 On Linux, /usr/include/_G_config.h is the header file installed from glibc's sysdeps/gnu/_G_config.h, therefore it has the same macro definition as:</p>
-
 <pre>
 #define _G_HAVE_ST_BLKSIZE defined (_STATBUF_ST_BLKSIZE)
 </pre>
-
 <p>This should be rewritten to:</p>
-
 <pre>
 #if defined (_STATBUF_ST_BLKSIZE)
 #define _G_HAVE_ST_BLKSIZE 1
 #endif
 </pre>
+<p>*2 <b>mcpp</b> V.2.7 and later in <i>STD</i> mode on GCC-specific-build handles '<samp>defined</samp>' token generated by macro expansion in #if line like GCC.
+Yet, such a bug-to-bug handling should not be depended on.</p>
 
 <h4>3.9.8.7. Preprocessing .S File</h4>
 
@@ -2434,6 +2548,10 @@ Even on FreeBSD, an installation of another version of GCC makes GCC-version-spe
 </pre>
 <br>
 
+<h3><a name="3.9.10" href="#toc.3.9.10">3.9.10. Preprocessing firefox 3.0a7pre</a></h3>
+<p>(Not yet written)</p>
+<br>
+
 <h2><a name="3.10" href="#toc.3.10">3.10. Visual C++ System Header Problems</a></h2>
 <p>I used <b>mcpp</b> to preprocess some sample programs provided by Visual C++ 2003.  The system headers seems to have only a few compatibility problems shown below.  These problems are often seen in other compile systems and do not have a serious impact on preprocessing.</p>
 <ol>
@@ -2521,7 +2639,7 @@ In case of a nested #include, if search begins at current directory, the base di
 <li>System-specific directories defined by setsysdirs() in system.c (For UNIX systems, <samp>/usr/include</samp>).
 </ol>
 </ol>
-<p>The total number of include directories above must be equal to or less than the number specified with <i>NINCLUDE</i> in system.H.  With the -I- option (-nostdinc option for GCC-specific-build and -X for Visual C-specific-build), the directories specified in 4.4 and later are not searched.</p>
+<p>With the -I- option (-nostdinc option for GCC-specific-build and -X for Visual C-specific-build), the directories specified in 4.4 and later are not searched.</p>
 <p>ANSI C Rationale says the ANSI committee intends to define a current directory as base directory.  I think this is acceptable, in that the base directory is always constant and that the specification is clearer.  However, some implementations, such as UNIX, seem to define a source file directory as base one at least for #include "header".  The compiler-independent-build of <b>mcpp</b> also takes source file directory as base, according to the majority.</p>
 <br>
 
@@ -2584,7 +2702,7 @@ In pre-Standard mode, an integer constant token is evaluated within the range of
 <br>
 
 <h2><a name="4.7" href="#toc.4.7">4.7. How to Handle White-Space Sequence</a></h2>
-<p><b>mcpp</b> compresses a white-space sequence, excluding &lt;newline&gt;, as a token separator into one space character during tokenization in the translation phase 3. It also deletes a white-space sequence at the end of a line.</p>
+<p><b>mcpp</b> in principle compresses a white-space sequence, excluding &lt;newline&gt;, as a token separator into one space character during tokenization in the translation phase 3. If -k or -K option is specified in <i>STD</i> mode, however, it outputs horizontal white spaces as they are without compressing.  It also deletes a white-space sequence at the end of a line.</p>
 <p>A white-space sequence at the beginning of a line is deleted in <i>POSTSTD</i> mode, and putout as they are in other modes.  The latter is special treatment for convenience of human reading. *1</p>
 <p>This compression and deletion occurs during the intermediate phase.  The next phase 4 involves macro expansion and preprocess-directive-line processing.  Macro expansion may sometimes produce several space characters before and after the macro.  Of course, the number of space characters does not affect compilation results.</p>
 <p>Standard C says that whether implementation compresses a white-space sequence into one space character during the translation phase 3 is implementation-defined, but you usually do not have to worry about this.  &lt;Vertical-tab&gt; or &lt;form-feed&gt; in a preprocessor directive line may adversely affect portability, since this is undefined in Standard C.  <b>mcpp</b> converts it to one space character.</p>
@@ -2625,13 +2743,13 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
   <tr><th><i>BLK_NEST</i> (Maximum number of nested levels of #if section)      </th><td>256</td></tr>
   <tr><th><i>RESCAN_LIMIT</i> (Maximum number of nested levels of macro rescans)</th><td>64</td></tr>
   <tr><th><i>IDMAX</i> (Valid length of identifier)                             </th><td>1024</td></tr>
-  <tr><th><i>NINCLUDE</i> (Maximum number of include directories)               </th><td>64</td></tr>
   <tr><th><i>INCLUDE_NEST</i> (Maximum number of #include nest level)           </th><td>256</td></tr>
   <tr><th><i>NBUFF</i> (Maximum length of a source line) *1                     </th><td>65536</td></tr>
   <tr><th><i>NWORK</i> (Maximum length of an output line)                       </th><td>65536</td></tr>
   <tr><th><i>NMACWORK</i> (Size of internal buffers used for macro expansion)   </th><td>262144</td></tr>
 </table>
 </blockquote>
+<p>On GCC-specific-build and Visual C-specific-build, however, <i>NMACWORK</i> is used as the maximum length of an output line.</p>
 <p>This macro differs on OS regardless of build types.</p>
 <p><i>MBCHAR</i> (Default encoding of multibyte character):</p>
 <blockquote>
@@ -2678,7 +2796,8 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
 <p>CygWIN GCC-specific-build changes /usr/include to /usr/include/mingw by -mno-cygwin option.</p>
 <p>For the implementation-specific directories that vary among compiler systems and their versions, see the DIFfiles.  The compiler-independent-build does not set implementation-specific directories.  <b>mcpp</b> for the compiler systems on Windows does not preset any directory but uses the environment variables: INCLUDE, CPLUS_INCLUDE.  These environment variables are used by the compiler-independent-build too.</p>
 <p>If these default settings do not suit you, change settings to recompile <b>mcpp</b>, or use environment variables or the -I option.</p>
-<p>When the length of a preprocessed line exceeds <i>NWORK</i>-1, <b>mcpp</b> divides it into several parts so that each part length becomes equal to or less than <i>NWORK</i>-1.  A string literal length must be equal to or less than <i>NWORK</i>-2.</p>
+<p>When the length of a preprocessed line exceeds <i>NWORK</i>-1, <b>mcpp</b> generally divides it into several lines so that each line length becomes equal to or less than <i>NWORK</i>-1.  A string literal length must be equal to or less than <i>NWORK</i>-2.
+<b>mcpp</b> of GCC-specific-build and Visual C-specific-build, however, do not divide output line.</p>
 <p>Again for confirmation, the macros mentioned above in <i>italics</i> are used only to compile <b>mcpp</b>, and are not built-in macros in a <b>mcpp</b> executable.</p>
 <p>If you invoke <b>mcpp</b> without an input file and enter '#pragma MCPP put_defines', the built-in macros will be displayed.</p>
 <p>With <tt>__STDC__</tt> set to 1 or higher, the macros that do not begin with '_' are deleted.  The -N (-undef) option deletes all the macros other than <tt>__MCPP</tt>.  After -N, you can use -D to defines macro symbols over again.  When you use a different compiler system version from those specified here, -N and -D allow you to redefine your version macro without recompiling <b>mcpp</b>.  The -D option allows you to redefine a particular macro without using -N or -U.</p>
@@ -2749,13 +2868,13 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
 <p><b>mcpp</b> has various types of diagnostic messages.  For example, <i>STD</i> mode provides the following types of diagnostics for each level and class.</p>
 <blockquote>
 <table>
-  <tr><th>fatal error     </th><td>19 types</td></tr>
-  <tr><th>error           </th><td>72 types</td></tr>
-  <tr><th>warning class 1 </th><td>48 types</td></tr>
-  <tr><th>warning class 2 </th><td>14 types</td></tr>
-  <tr><th>warning class 4 </th><td>15 types</td></tr>
+  <tr><th>fatal error     </th><td>17 types</td></tr>
+  <tr><th>error           </th><td>75 types</td></tr>
+  <tr><th>warning class 1 </th><td>49 types</td></tr>
+  <tr><th>warning class 2 </th><td>15 types</td></tr>
+  <tr><th>warning class 4 </th><td>17 types</td></tr>
   <tr><th>warning class 8 </th><td>30 types</td></tr>
-  <tr><th>warning class 16</th><td>2 types</td></tr>
+  <tr><th>warning class 16</th><td> 2 types</td></tr>
 </table>
 </blockquote>
 <p>Principally, these messages point the coding in question.  The diagnostic messages below have a sample value embedded in a token or a numeric value from source code.  For the messages with a macro name embedded, a value the macro is expanded into is shown in real messages.</p>
@@ -2825,11 +2944,6 @@ The depth of nested #if, #ifdef, and #ifndef has exceeded <i>BLK_NEST</i>. (In r
 <li><samp>More than <i>INCLUDE_NEST</i> nesting of #include</samp><br>
 The depth of nested #included has exceeded <i>INCLUDE_NEST</i>.  Probably the #includes are in infinite recursion.<br>
 <br>
-<li><samp>Too many include directories "dir"</samp><br>
-The number of include directories specified has exceeded <i>NINCLUDE</i>.<br>
-<br>
-<li><samp>Too many include files</samp><br>
-The number of #included header files preprocessed in one source file has exceeded <i>NINCLUDE</i>*4.  Duplicated included header files are counted as one.<br>
 </ul>
 
 <h3><a name="5.3.4" href="#toc.5.3.4">5.3.4. #pragma MCPP preprocessed Related Errors</a></h3>
@@ -3111,6 +3225,11 @@ A function-like macro definition has a # operator whose operand id is not a para
 <li><samp>"__VA_ARGS__" without corresponding "..."</samp><br>
 "<samp>__VA_ARGS__</samp>", an identifier in a replacement list, can be used only when it has a corresponding "<samp>...</samp>" parameter.<br>
 </ul>
+<p>In <i>STD</i> mode of GCC-specific-build, if you write GCC2-spec variadic using <samp>__VA_ARGS__</samp>, you will get this error.
+<samp>__VA_ARGS__</samp> should be used only in GCC3-spec or C99-spec variadic.</p>
+<ul>
+<li><samp>__VA_ARGS__ cannot be used in GCC2-spec variadic macro</samp><br>
+</ul>
 
 <h3><a name="5.4.8" href="#toc.5.4.8">5.4.8. #undef Related Errors</a></h3>
 <p>This section covers #undef related errors.</p>
@@ -3147,6 +3266,13 @@ The depth of nested macros is so deep that the number of rescans has exceeded <i
 <br>
 <li><samp>Recursive macro definition of "macro" to "macro"</samp><br>
 A macro definition is recursive.  This error occurs only in pre-Standard mode.  When the number of rescans has exceeded <i>PRESTD_RESCAN_LIMIT</i>, <b>mcpp</b> regards it as a recursive macro definition.<br>
+</ul>
+<p>The following errors can occur only with -K option in <i>STD</i> mode.
+These errors mean that the macro is extremely complex and buffer for macro notification ran short.
+Almost impossible to happen in real life.</p>
+<ul>
+<li><samp>Too many magics nested in macro argument</samp>
+<li><samp>Too many nested macros in tracing MACRO</samp>
 </ul>
 
 <h3><a name="5.4.10" href="#toc.5.4.10">5.4.10. #error and #assert</a></h3>
@@ -3409,6 +3535,10 @@ An insufficient number of arguments of a macro invocation.  Normally, this cause
 <li><samp>Removed ',' preceding the absent variable argument</samp><br>
 Since variable argument is absent and the replacement list has a sequence <samp>", ## __VA_ARGS__"</samp>, removed the comma immediately preceding <samp>"## __VA_ARGS__"</samp>.
 This warning is issued only in Standard mode of GCC-specific-build.<br>
+<br>
+<li><samp>Old style predefined macro "linux" is used</samp><br>
+The non-conforming predefined macro without leading '_' is used.
+This warning is only on Standard mode of GCC-specific-build.<br>
 </ul>
 <p>The following two are issued only in <i>OLDPREP</i> mode. (In other mode it causes an error.)
 <ul>
@@ -3485,6 +3615,8 @@ The header name in the form of &lt;stdio.h&gt; is one of the specifications I wa
 <li><samp>#include_next is not allowed by Standard</samp><br>
 <li><samp>#warning is not allowed by Standard</samp><br>
 These directives are valid in GCC but not Standard C-conforming and lack of portability.<br>
+<li><samp>GCC2-spec variadic macro is defined</samp><br>
+Though GCC2-spec variadic macro is valid in GCC-specific-build, this macro is not portable.<br>
 <br>
 <li><samp>Converted  to /</samp><br>
 A #include directive contains \ in the header name.  <b>mcpp</b> converts \ into /.  "\" is a valid path delimiter in OSs, such as Windows, but undefined in Standard C.  It is safe to use /.  <b>mcpp</b> on Windows issues this warning only once. (<b>mcpp</b> does not regard " preceded by \ as a delimiter of a string literal, raising an "unterminated string literal" error.)<br>
@@ -3576,6 +3708,12 @@ A function-like macro has a token sequence of "## #" in the replacement list.  T
 <li><samp>Macro with multiple ## operators isn't portable</samp><br>
 A macro definition has only one token or parameter inserted between ## operators in the replacement list.  This macro may lack of portability because the evaluation order of ## operators is unspecified in Standard C.  <b>mcpp</b> applies the ## operator from left to right.<br>
 </ul>
+<p>This warning is only with -K option in <i>STD</i> mode.</p>
+<ul>
+<li><samp>Too long comment, discarded up to here</samp><br>
+The comment is longer than 256 lines, <b>mcpp</b> discards it up to here.
+It is not a good style to include long document in source.<br>
+</ul>
 <br>
 
 <h2><a name="5.8" href="#toc.5.8">5.8. Warnings (Class 8)</a></h2>
@@ -3662,6 +3800,7 @@ Therefore, the compiler-proper is not necessary to be able to handle digraphs.  
 <tr><td><samp>"__STDC__" shouldn't be redefined</samp></td><td></td><td><a href='#5.4.7'>5.4.7</td></tr>
 <tr><td><samp>"__STDC__" shouldn't be undefined</samp></td><td></td><td><a href='#5.4.8'>5.4.8</td></tr>
 <tr><td><samp>"__VA_ARGS__" without corresponding "..."</samp></td><td></td><td><a href='#5.4.7'>5.4.7</td></tr>
+<tr><td><samp>"__VA_ARGS__" cannot be used in GCC2-spec variadic macro</samp></td><td></td><td><a href='#5.4.7'>5.4.7</td></tr>
 <tr><td><samp>## after ##</samp></td><td></td><td><a href='#5.4.7'>5.4.7</td></tr>
 <tr><td><samp>#error</samp></td><td></td><td><a href='#5.4.10'>5.4.10</td></tr>
 <tr><td><samp>#include_next is not allowed by Standard</samp></td><td></td><td></td><td></td><td><a href='#5.6'>5.6</td><td></td><td><a href='#5.8'>5.8</td></tr>
@@ -3703,6 +3842,7 @@ Therefore, the compiler-proper is not necessary to be able to handle digraphs.  
 <tr><td><samp>Excessive token sequence "junk"</samp></td><td></td><td><a href='#5.4.4'>5.4.4</td><td><a href='#5.5.3'>5.5.3</td></tr>
 <tr><td><samp>File read error</samp></td><td><a href='#5.3.2'>5.3.2</td></tr>
 <tr><td><samp>File write error</samp></td><td><a href='#5.3.2'>5.3.2</td></tr>
+<tr><td><samp>GCC2-spec variadic macro is defined</samp></td><td></td><td></td><td></td><td><a href='#5.6'>5.6</td></tr>
 <tr><td><samp>Header-name enclosed by <, > is an obsolescent feature <stdio.h></samp></td><td></td><td></td><td></td><td><a href='#5.6'>5.6</td></tr>
 <tr><td><samp>I64 suffix is used in other than C99 mode "123i64"</samp></td><td></td><td></td><td></td><td><a href='#5.6'>5.6</td><td></td><td><a href='#5.8'>5.8</td></tr>
 <tr><td><samp>Identifier longer than 31 bytes "very_very_long_name"</samp></td><td></td><td></td><td></td><td></td><td><a href='#5.7'>5.7</td></tr>
@@ -3773,6 +3913,7 @@ Therefore, the compiler-proper is not necessary to be able to handle digraphs.  
 <tr><td><samp>Not in a #if (#ifdef) section in a source file</samp></td><td></td><td><a href='#5.4.3'>5.4.3</td><td><a href='#5.5.3'>5.5.3</td></tr>
 <tr><td><samp>Operand of _Pragma() is not a string literal</samp></td><td></td><td><a href='#5.4.12'>5.4.12</td></tr>
 <tr><td><samp>Operator ">" in incorrect context</samp></td><td></td><td><a href='#5.4.5'>5.4.5</td></tr>
+<tr><td><samp>Old style predefined macro "linux" is used</samp></td><td></td><td></td><td><a href='#5.5.5'>5.5.5</td></tr>
 <tr><td><samp>Out of memory (required size is 0x1234 bytes)</samp></td><td><a href='#5.3.2'>5.3.2</td></tr>
 <tr><td><samp>Parsed "//" as comment</samp></td><td></td><td></td><td></td><td><a href='#5.6'>5.6</td></tr>
 <tr><td><samp>Preprocessing assertion failed</samp></td><td></td><td><a href='#5.4.10'>5.4.10</td></tr>
@@ -3794,6 +3935,7 @@ Therefore, the compiler-proper is not necessary to be able to handle digraphs.  
 <tr><td><samp>The macro is redefined</samp></td><td></td><td></td><td><a href='#5.5.4'>5.5.4</td></tr>
 <tr><td><samp>This is not a preprocessed source</samp></td><td><a href='#5.3.4'>5.3.4</td></tr>
 <tr><td><samp>This preprocessed file is corrupted</samp></td><td><a href='#5.3.4'>5.3.4</td></tr>
+<tr><td><samp>Too long comment, discarded up to here</samp></td><td></td><td></td><td></td><td></td><td><a href='#5.7'>5.7</td></tr>
 <tr><td><samp>Too long header name "long-file-name"</samp></td><td><a href='#5.3.3'>5.3.3</td></tr>
 <tr><td><samp>Too long identifier, truncated to "very_long_identifier"</samp></td><td></td><td></td><td><a href='#5.5.1'>5.5.1</td></tr>
 <tr><td><samp>Too long line spliced by comments</samp></td><td><a href='#5.3.3'>5.3.3</td></tr>
@@ -3803,8 +3945,8 @@ Therefore, the compiler-proper is not necessary to be able to handle digraphs.  
 <tr><td><samp>Too long quotation "long-string"</samp></td><td><a href='#5.3.3'>5.3.3</td></tr>
 <tr><td><samp>Too long source line</samp></td><td><a href='#5.3.3'>5.3.3</td></tr>
 <tr><td><samp>Too long token</samp></td><td><a href='#5.3.3'>5.3.3</td></tr>
-<tr><td><samp>Too many include directories "dir"</samp></td><td><a href='#5.3.3'>5.3.3</td></tr>
-<tr><td><samp>Too many include files</samp></td><td><a href='#5.3.3'>5.3.3</td></tr>
+<tr><td><samp>Too many magics nested in macro argument</samp></td><td></td><td><a href='#5.4.9'>5.4.9</td></tr>
+<tr><td><samp>Too many nested macros in tracing MACRO</samp></td><td></td><td><a href='#5.4.9'>5.4.9</td></tr>
 <tr><td><samp>UCN cannot specify the value "0000007f"</samp></td><td></td><td><a href='#5.4.1'>5.4.1</td><td></td><td></td><td></td><td><a href='#5.8'>5.8</td></tr>
 <tr><td><samp>Undefined escape sequence '\x'</samp></td><td></td><td></td><td><a href='#5.5.4'>5.5.4</td><td></td><td></td><td><a href='#5.8'>5.8</td></tr>
 <tr><td><samp>Undefined symbol "name", evaluated to 0</samp></td><td></td><td></td><td></td><td></td><td><a href='#5.7'>5.7</td><td><a href='#5.8'>5.8</td></tr>

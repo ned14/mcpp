@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.6.3 and later for MinGW / GCC / GNU make
-#   2007/05   kmatsui
+# makefile to compile MCPP version 2.7 and later for MinGW / GCC / GNU make
+#   2007/08   kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -45,26 +45,27 @@ CPPOPTS =
 BINDIR = /usr/local/bin
 # INCDIR:   empty
 INCDIR =
+
 else
 # compiler-specific-build:  Adjust for your system
 
 ifeq    ($(COMPILER), GNUC)
-CPPOPTS = -DCOMPILER=$(COMPILER)
-# BINDIR:   the directory where cc1 resides
-BINDIR = /mingw/libexec/gcc/mingw32/3.4.5
-# INCDIR:   version specific include directory
-INCDIR = /mingw/lib/gcc/mingw32/3.4.5/include
+# The directory where 'gcc' (cc) command is located
+GCCDIR = /mingw/bin
 # set GCC version
 gcc_maj_ver = 3
 gcc_min_ver = 4
+# INCDIR:   version specific include directory
+INCDIR = /mingw/lib/gcc/mingw32/3.4.5/include
+CPPOPTS = -DCOMPILER=$(COMPILER)
+
+# BINDIR:   the directory where cc1 resides
+BINDIR = /mingw/libexec/gcc/mingw32/3.4.5
 cpp_call = $(BINDIR)/cc1.exe
 endif
 endif
 
 LIBDIR = /usr/local/lib
-
-# The directory where 'gcc' (cc) command is located
-GCCDIR = /mingw/bin
 
 ifneq   ($(MALLOC), )
 ifeq    ($(MALLOC), KMMALLOC)
@@ -111,8 +112,8 @@ endif
 install :
 	install -s -b $(NAME).exe $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
-	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)' \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)'
+    @./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'    \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)' SYS_MINGW
 endif
 
 clean	:
@@ -121,8 +122,8 @@ clean	:
 uninstall:
 	rm -f $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
-	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)'
+	@./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x.exe' 'ln -s' '$(INCDIR)' SYS_MINGW
 endif
 
 ifeq    ($(COMPILER), )

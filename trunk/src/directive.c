@@ -60,29 +60,31 @@ static char *   str_parm_scan( char * string_end);
                 /* Scan the param. in string        */
 static void     do_undef( void);
                 /* Process #undef directive         */
-static void     dump_repl( const DEFBUF * dp, FILE * fp);
+static void     dump_repl( const DEFBUF * dp, FILE * fp, int gcc2_va);
                 /* Dump replacement text            */
 
 /*
  * Generate (by hand-inspection) a set of unique values for each directive.
  * MCPP won't compile if there are hash conflicts.
  */
-
 #define L_if            ('i' ^ (EOS << 1))
-#define L_ifdef         ('i' ^ ('e' << 1))
-#define L_ifndef        ('i' ^ ('d' << 1))
-#define L_elif          ('e' ^ ('f' << 1))
-#define L_else          ('e' ^ ('e' << 1))
-#define L_endif         ('e' ^ ('i' << 1))
-#define L_define        ('d' ^ ('i' << 1))
-#define L_undef         ('u' ^ ('e' << 1))
-#define L_line          ('l' ^ ('e' << 1))
-#define L_include       ('i' ^ ('l' << 1))
+#define L_ifdef         ('i' ^ ('d' << 1))
+#define L_ifndef        ('i' ^ ('n' << 1))
+#define L_elif          ('e' ^ ('i' << 1))
+#define L_else          ('e' ^ ('s' << 1))
+#define L_endif         ('e' ^ ('d' << 1))
+#define L_define        ('d' ^ ('f' << 1))
+#define L_undef         ('u' ^ ('d' << 1))
+#define L_line          ('l' ^ ('n' << 1))
+#define L_include       ('i' ^ ('c' << 1))
 #if COMPILER == GNUC
-#define L_include_next  ('i' ^ ('l' << 1) ^ ('_' << 1))
+#define L_include_next  ('i' ^ ('c' << 1) ^ ('_' << 1))
 #endif
-#define L_error         ('e' ^ ('o' << 1))
-#define L_pragma        ('p' ^ ('g' << 1))
+#if SYSTEM == SYS_MAC
+#define L_import        ('i' ^ ('p' << 1))
+#endif
+#define L_error         ('e' ^ ('r' << 1))
+#define L_pragma        ('p' ^ ('a' << 1))
 
 static const char * const   not_ident
             = "Not an identifier \"%s\"";               /* _E_      */
@@ -138,10 +140,8 @@ void    directive( void)
             goto  skip_line;
         }
     }
-    if (identifier[ 2] == EOS)
-        identifier[ 3] = EOS;                   /* Diddle           */
     hash = (identifier[ 1] == EOS) ? identifier[ 0]
-            : (identifier[ 0] ^ (identifier[ 3] << 1));
+            : (identifier[ 0] ^ (identifier[ 2] << 1));
     if (strlen( identifier) > 7)
         hash ^= (identifier[ 7] << 1);
 
@@ -158,6 +158,9 @@ void    directive( void)
     case L_include: tp = "include"; break;
 #if COMPILER == GNUC
     case L_include_next:    tp = "include_next";    break;
+#endif
+#if SYSTEM == SYS_MAC
+    case L_import:  tp = "import";  break;
 #endif
     case L_error:   tp = "error";   break;
     case L_pragma:  tp = "pragma";  break;
@@ -285,7 +288,7 @@ ifdo:
         break;
 
     case L_define:
-        do_define( FALSE);
+        do_define( FALSE, 0);
         break;
 
     case L_undef:
@@ -342,6 +345,11 @@ ifdo:
         if (file != infile)             /* File has been included   */
             newlines = -1;
 #endif
+#if SYSTEM == SYS_MAC
+    case L_import   :
+        if (file != infile)             /* File has been included   */
+            newlines = -1;
+#endif
     case L_error    :
         if (standard)
             goto  skip_line;
@@ -388,6 +396,8 @@ if_nest_err:
 ret:
     in_directive = FALSE;
     keep_comments = cflag && compiling && !no_output;
+    keep_spaces = kflag && compiling;
+       /* keep_spaces is on for #define line even if no_output is TRUE  */
     if (! wrong_line)
         newlines++;
 }
@@ -584,9 +594,17 @@ static char *   token_p;        /* Pointer to the token scanned */
 static char *   repl_base;      /* Base of buffer for repl-text */
 static char *   repl_end;       /* End of buffer for repl-text  */
 static const char * const   no_ident = "No identifier";     /* _E_  */
+#if COMPILER == GNUC
+static int      gcc2_va_arg;    /* GCC2-spec variadic macro     */
+#endif
 
 DEFBUF *    do_define(
-    int     ignore_redef        /* Do not redefine   */
+    int     ignore_redef,       /* Do not redefine   */
+    int     predefine           /* Predefine compiler-specific name */
+    /*
+     * Note: The value of 'predefine' should be one of 0, DEF_NOARGS_PREDEF
+     *      or DEF_NOARGS_PREDEF_OLD, the other values cause errors.
+     */
 )
 /*
  * Called from directive() when a #define is scanned or called from
@@ -635,10 +653,14 @@ DEFBUF *    do_define(
     int     redefined;                      /* TRUE if redefined    */
     int     dnargs = 0;                     /* defp->nargs          */
     int     cmp;                    /* Result of name comparison    */
+    size_t  def_start, def_end;     /* Column of macro definition   */
 
     repl_base = repl_list;
     repl_end = & repl_list[ NMACWORK];
-    if ((c = skip_ws()) == '\n') {
+    c = skip_ws();
+    if (mcpp_debug & MACRO_CALL)            /* Start of definition  */
+        def_start = infile->bptr - infile->buffer - 1;
+    if (c == '\n') {
         cerror( no_ident, NULL, 0L, NULL);
         unget_ch();
         return  NULL;
@@ -661,9 +683,11 @@ DEFBUF *    do_define(
             } else {                        /* It's known:          */
                 if (ignore_redef)
                     return  defp;
-                dnargs = (defp->nargs == DEF_NOARGS-1) ? DEF_NOARGS
-                        : defp->nargs;
-                if (dnargs < DEF_NOARGS - 1 /* Standard predefined  */
+                dnargs = (defp->nargs == DEF_NOARGS_STANDARD
+                            || defp->nargs == DEF_NOARGS_PREDEF
+                            || defp->nargs == DEF_NOARGS_PREDEF_OLD) 
+                        ? DEF_NOARGS : defp->nargs;
+                if (dnargs <= DEF_NOARGS_DYNAMIC    /* __FILE__ and such    */
                         || dnargs == DEF_PRAGMA /* _Pragma() pseudo-macro   */
                         ) {
                     cerror( predef, identifier, 0L, NULL);
@@ -678,8 +702,10 @@ DEFBUF *    do_define(
             } else {                        /* It's known:          */
                 if (ignore_redef)
                     return  defp;
-                dnargs = (defp->nargs == DEF_NOARGS-1) ? DEF_NOARGS
-                        : defp->nargs;
+                dnargs = (defp->nargs == DEF_NOARGS_STANDARD 
+                            || defp->nargs == DEF_NOARGS_PREDEF
+                            || defp->nargs == DEF_NOARGS_PREDEF_OLD) 
+                        ? DEF_NOARGS : defp->nargs;
                 redefined = TRUE;
             }
         }
@@ -691,9 +717,24 @@ DEFBUF *    do_define(
         in_define = FALSE;
         return  NULL;                       /* Syntax error         */
     }
-    if (get_repl( macroname) == FALSE) {    /* Get replacement text */
+    if (get_repl( macroname) == FALSE) {
+        /* Get replacement text */
         in_define = FALSE;
         return  NULL;                       /* Syntax error         */
+    }
+    if (mcpp_debug & MACRO_CALL) {      /* Remove trailing blank    */
+        char *  cp;
+        size_t  len;
+
+        cp = infile->bptr - 1;              /* Before '\n'          */
+        while (char_type[ *cp & UCHARMAX] & HSP)
+            cp--;                           /* Trailing space       */
+        cp++;               /* Just after the last space or '\n'    */
+        def_end = cp - infile->buffer;      /* End of definition    */
+        len = strlen( repl_list);
+        if (*(repl_list + len - 1) == ' ')
+            *(repl_list + len - 1) = EOS;
+                            /* Remove trailing blank from repl_list */
     }
 
     in_define = FALSE;
@@ -705,14 +746,34 @@ DEFBUF *    do_define(
                 cwarn(
             "The macro is redefined", NULL, 0L, NULL);      /* _W1_ */
                 if (! no_source_line)
-                    dump_a_def( "    previously macro", defp, FALSE, FALSE
-                            , TRUE, fp_err);
+                    dump_a_def( "    previously macro", defp, FALSE, TRUE
+                            , fp_err);
             }
         } else {                        /* Identical redefinition   */
             return  defp;
         }
     }                                   /* Else new or re-definition*/
-    defp = install_macro( macroname, nargs, work_buf, repl_list, prevp, cmp);
+    defp = install_macro( macroname, nargs, work_buf, repl_list, prevp, cmp
+            , predefine);
+    if (mcpp_debug & MACRO_CALL) {  /* Get location on source file  */        
+        LINE_COL    s_line_col, e_line_col;
+        if (src_line) {
+            s_line_col.line = src_line;
+            s_line_col.col = def_start;
+            get_src_location( & s_line_col);
+                            /* Convert to pre-line-splicing data    */
+            e_line_col.line = src_line;
+            e_line_col.col = def_end;
+            get_src_location( & e_line_col);
+            /* Putout the macro definition information embedded in comment  */
+            mcpp_fprintf( OUT, "/*m%s %ld:%d-%ld:%d*/\n", defp->name
+                    , s_line_col.line, s_line_col.col
+                    , e_line_col.line, e_line_col.col);
+        } else {                                /* Predefined macro */
+            mcpp_fprintf( OUT, "/*m%s*/\n", defp->name);
+        }
+        wrong_line = TRUE;                      /* Need #line later */
+    }
     if (mcpp_mode == STD && cplus_val && id_operator( macroname)
             && (warn_level & 1))
         /* These are operators, not identifiers, in C++98   */
@@ -735,11 +796,16 @@ static int  get_parm( void)
             = "More than %.0s%ld parameters";       /* _E_ _W4_     */
     const char * const  illeg_parm
             = "Illegal parameter \"%s\"";           /* _E_          */
+    const char * const  misplaced_ellip
+            = "\"...\" isn't the last parameter";   /* _E_          */
     int     token_type;
     int     c;
 
     parlist[ 0] = workp = work_buf;
     work_buf[ 0] = EOS;
+#if COMPILER == GNUC
+    gcc2_va_arg = FALSE;
+#endif
 
     /* POST_STD mode    */
     insert_sep = NO_SEP;    /* Clear the inserted token separator   */
@@ -773,15 +839,14 @@ static int  get_parm( void)
                      * compatibility.
                      */
                     if (skip_ws() != ')') {
-                        cerror( "\"...\" isn't the last parameter", /* _E_  */
-                                NULL, 0L, NULL);
+                        cerror( misplaced_ellip, NULL, 0L, NULL);
                         return  FALSE;
                     }
                     parlen[ nargs++] = 3;
                     nargs |= VA_ARGS;
                     goto  ret;
                 } else {
-                    cerror( illeg_parm , parlist[ nargs], 0L, NULL);
+                    cerror( illeg_parm, parlist[ nargs], 0L, NULL);
                     return  FALSE;          /* Bad parameter syntax */
                 }
             }
@@ -804,6 +869,22 @@ static int  get_parm( void)
 
         *--workp = EOS;                     /* Remove excessive ',' */
         if (c != ')') {                     /* Must end at )        */
+#if COMPILER == GNUC
+            /* Handle GCC2 variadic params like par...  */
+            char *  tp = workp;
+            if (mcpp_mode == STD
+                    &&(token_type = scan_token( c, &workp, work_end)) == OPE
+                    && openum == OP_ELL) {
+                if ((c = skip_ws()) != ')') {
+                    cerror( misplaced_ellip, NULL, 0L, NULL);
+                    return  FALSE;
+                }
+                *tp = EOS;                  /* Remove "..."         */
+                nargs |= VA_ARGS;
+                gcc2_va_arg = TRUE;
+                goto  ret;
+            }
+#endif
             unget_ch();                     /* Push back '\n'       */
             cerror(
         "Missing \",\" or \")\" in parameter list \"(%s\""  /* _E_  */
@@ -826,7 +907,9 @@ ret:
     return  TRUE;
 }
 
-static int  get_repl( const char * macroname)
+static int  get_repl( 
+    const char * macroname
+)
 /*
  *   Get replacement text i.e. names of formal parameters are converted to
  * the magic numbers, and operators #, ## is converted to magic characters.
@@ -923,6 +1006,13 @@ static int  get_repl( const char * macroname)
                     break;
                 if ((stdc_val || cplus_val)
                             && str_eq( identifier, "__VA_ARGS__")) {
+#if COMPILER == GNUC
+                    if (gcc2_va_arg) {
+        cerror( "\"%s\" cannot be used in GCC2-spec variadic macro" /* _E_  */
+                            , identifier, 0L, NULL);
+                        return  FALSE;
+                    }
+#endif
                     cerror( "\"%s\" without corresponding \"...\""  /* _E_  */
                             , identifier, 0L, NULL);
                     return  FALSE;
@@ -932,12 +1022,23 @@ static int  get_repl( const char * macroname)
             } else {                        /* Parameter name       */
                 repl_cur = temp;
 #if COMPILER == GNUC
-                if (mcpp_mode == STD && str_eq( identifier, "__VA_ARGS__")
-                        && prev_token && *prev_token == CAT
-                        && prev_prev_token && *prev_prev_token == ',')
-                        /* ", ## __VA_ARGS__" sequence              */
-                        /* This is a GCC3-specific variadic macro   */
-                    nargs |= GVA_ARGS;      /* Mark as GCC3 variadic*/
+                if (mcpp_mode == STD && (nargs & VA_ARGS)
+                        && *(repl_cur - 1) == (nargs & ~AVA_ARGS)) {
+                    if (! str_eq( identifier, "__VA_ARGS__")
+                            && (warn_level & 2))
+                        cwarn(
+                            "GCC2-spec variadic macro is defined"   /* _W2_ */
+                                    , NULL, 0L, NULL);
+                    if (prev_token && *prev_token == CAT
+                            && prev_prev_token && *prev_prev_token == ',')
+                        /* ", ## __VA_ARGS__" is sequence peculiar  */
+                        /* to GCC3-spec variadic macro.             */
+                        /* Or ", ## last_arg" is sequence peculiar  */
+                        /* to GCC2-spec variadic macro.             */
+                        nargs |= GVA_ARGS;
+                        /* Mark as sequence peculiar to GCC         */
+                        /* This will be warned at expansion time    */
+                }
 #endif
             }
             break;
@@ -955,10 +1056,10 @@ static int  get_repl( const char * macroname)
             break;
         }
 
-        c = get_ch();
-        if (c == ' ') {
-            *repl_cur++ = ' ';
-            c = get_ch();
+        if ((c = get_ch()) == ' ' || c == '\t') {
+            *repl_cur++ = ' ';              /* Space                */
+            while ((c = get_ch()) == ' ' || c == '\t')
+                ;                   /* Skip excessive spaces        */
         }
     }
 
@@ -991,6 +1092,7 @@ static char *   is_formal(
  */
 {
     char *  repl_cur;
+    const char *    va_arg = "__VA_ARGS__";
     size_t  len;
     int     i;
 
@@ -1000,8 +1102,12 @@ static char *   is_formal(
                     && memcmp( name, parlist[ i], parlen[ i]) == 0)
                 || (standard && (nargs & VA_ARGS)
                     && i == (nargs & ~AVA_ARGS) - 1 && conv
-                    && memcmp( name, "__VA_ARGS__", 12) == 0)) {
+                    && str_eq( name, va_arg))) {
                                             /* If it's known        */
+#if COMPILER == GNUC
+            if (gcc2_va_arg && str_eq( name, va_arg))
+                return  NULL;               /* GCC2 variadic macro  */
+#endif
             if (conv) {
                 repl_cur = token_p;         /* Overwrite on the name*/
                 *repl_cur++ = MAC_PARM;     /* Save the signal      */
@@ -1028,10 +1134,11 @@ static char *   def_stringization( char * repl_cur)
     int     c;
     char *  temp;
 
-    *repl_cur++ = ST_QUOTE;                 /* prefix               */
-    if ((c = get_ch()) == ' ') {
+    *repl_cur++ = ST_QUOTE;                 /* Prefix               */
+    if (char_type[ c = get_ch()] & HSP) {   /* There is a space     */
         *repl_cur++ = ' ';
-        c = get_ch();
+        while (char_type[ c = get_ch()] & HSP)      /* Skip excessive spaces*/
+            ;
     }
     token_p = repl_cur;                     /* Remember the pointer */
     if (scan_token( c, &repl_cur, repl_end) == NAM) {
@@ -1121,8 +1228,8 @@ static void do_undef( void)
             if (warn_level & 8)
                 cwarn( "\"%s\" wasn't defined"              /* _W8_ */
                         , identifier, 0L, NULL);
-        } else if (standard 
-                && (defp->nargs < DEF_NOARGS - 1        /* Standard predef  */
+        } else if (standard && (defp->nargs <= DEF_NOARGS_STANDARD
+                                                /* Standard predef  */
                     || defp->nargs == DEF_PRAGMA)) {
                                         /* _Pragma() pseudo-macro   */
             cerror( "\"%s\" shouldn't be undefined"         /* _E_  */
@@ -1224,7 +1331,7 @@ DEFBUF *    look_and_install(
     int         cmp;    /* Result of comparison of new name and old */
 
     prevp = look_prev( name, &cmp);
-    defp = install_macro( name, numargs, parmnames, repl, prevp, cmp);
+    defp = install_macro( name, numargs, parmnames, repl, prevp, cmp, 0);
     return  defp;
 }
 
@@ -1234,12 +1341,15 @@ DEFBUF *    install_macro(
     const char *    parmnames,  /* Names of parameters concatenated */
     const char *    repl,                   /* Replacement text     */
     DEFBUF **  prevp,           /* The place to insert definition   */
-    int     cmp         /* Result of comparison of new name and old */
+    int     cmp,        /* Result of comparison of new name and old */
+    int     predefine   /* Predefined macro without leading '_'     */
 )
 /*
  * Enter this name in the lookup table.
  * Returns a pointer to the definition block.
  * Returns NULL if the symbol was Standard-predefined.
+ * Note that predefinedness can be specified by either of 'numargs' or
+ * 'predefine'.
  */
 {
     DEFBUF *    dp;
@@ -1250,7 +1360,10 @@ DEFBUF *    install_macro(
     if (cmp == 0 && defp->nargs < DEF_NOARGS - 1)
         return  NULL;                       /* Standard predefined  */
     s_parmnames = 0;
-    if (parmnames == NULL || repl == NULL)      /* Shouldn't happen */
+    if (parmnames == NULL || repl == NULL || (predefine && numargs > 0)
+            || (predefine && predefine != DEF_NOARGS_PREDEF
+                    && predefine != DEF_NOARGS_PREDEF_OLD))
+                                                /* Shouldn't happen */
         cfatal( "Bug: Illegal macro installation of \"%s\"" /* _F_  */
                 , name, 0L, NULL);      /* Use "" instead of NULL   */
     s_name = strlen( name);
@@ -1267,7 +1380,7 @@ DEFBUF *    install_macro(
         *prevp = dp;
         free( defp);
     }
-    dp->nargs = numargs;
+    dp->nargs = predefine ? predefine : numargs;
     if (standard) {
         dp->push = 0;
         dp->parmnames = (char *)dp + sizeof (DEFBUF) + s_name;
@@ -1305,7 +1418,7 @@ int undefine(
 
     prevp = look_prev( name, &cmp);
     dp = *prevp;                        /* Definition to delete     */
-    if (cmp || dp->nargs < DEF_NOARGS - 1)
+    if (cmp || dp->nargs <= DEF_NOARGS_STANDARD)
         return  FALSE;                      /* Standard predefined  */
     if (standard && dp->push)
         return  FALSE;                  /* 'Pushed' macro           */
@@ -1318,7 +1431,8 @@ int undefine(
 
 static void dump_repl( 
     const DEFBUF *  dp,
-    FILE *  fp
+    FILE *  fp,
+    int     gcc2_va
 )
 /*
  * Dump replacement text.
@@ -1337,7 +1451,8 @@ static void dump_repl(
             c = (*cp++ & UCHARMAX) - 1;
             if (standard) {
                 if ((numargs & VA_ARGS) && c == (numargs & ~AVA_ARGS) - 1) {
-                    mcpp_fputs( "__VA_ARGS__", FP2DEST( fp));
+                    mcpp_fputs( gcc2_va ? parlist[ c] : "__VA_ARGS__"
+                            , FP2DEST( fp));
                 } else {
                     if (mcpp_mode == STD) {
                         for (i = 0, cp1 = parlist[ c]; i < parlen[ c]; i++)
@@ -1393,14 +1508,13 @@ static void dump_repl(
 #if ONE_PASS
 #define CAN_REDEF   DEF_NOARGS
 #else
-#define CAN_REDEF   (DEF_NOARGS - 1)
+#define CAN_REDEF   DEF_NOARGS_PREDEF
 #endif
 
 void    dump_a_def(
     const char *    why,
     const DEFBUF *  dp,
     int     newdef,         /* TRUE if parmnames are currently in parlist[] */
-    int     dDflag,         /* TRUE if -dD option is used (for GCC)         */
     int     comment,        /* Show location of the definition in comment   */
     FILE *  fp
 )
@@ -1411,12 +1525,12 @@ void    dump_a_def(
     char *  cp, * cp1;
     int     numargs = dp->nargs & ~AVA_ARGS;
     int     commented;                      /* To be commented out  */
+    int     gcc2_va = FALSE;                /* GCC2-spec variadic   */
     int     i;
 
     if (standard && numargs == DEF_PRAGMA)  /* _Pragma pseudo-macro */
         return;
-    if ((numargs < CAN_REDEF) || (dDflag && (numargs == DEF_NOARGS - 1))
-            || (standard && dp->push))
+    if ((numargs < CAN_REDEF) || (standard && dp->push))
         commented = TRUE;
     else
         commented = FALSE;
@@ -1428,7 +1542,7 @@ void    dump_a_def(
             dp->name);                      /* Macro name           */
     if (numargs >= 0) {                     /* Parameter list       */
         if (mcpp_mode == STD) {
-            mcpp_fprintf( FP2DEST( fp), "(%s)", dp->parmnames);
+            char *  appendix = null;
             if (! newdef) {
                 for (i = 0, cp = dp->parmnames; i < numargs;
                         i++, cp = cp1 + 1) {
@@ -1439,6 +1553,14 @@ void    dump_a_def(
                     parlist[ i] = cp;
                 }
             }
+#if COMPILER == GNUC
+            if ((dp->nargs & VA_ARGS)
+                    && memcmp( parlist[ numargs - 1], "...", 3) != 0) {
+                appendix = "...";
+                gcc2_va = TRUE;
+            }
+#endif
+            mcpp_fprintf( FP2DEST( fp), "(%s%s)", dp->parmnames, appendix);
         } else {
             if (newdef) {
                 mcpp_fprintf( FP2DEST( fp), "(%s)", parlist[0]);
@@ -1459,7 +1581,7 @@ void    dump_a_def(
     }
     if (*dp->repl) {
         mcpp_fputc( ' ', FP2DEST( fp));
-        dump_repl( dp, fp);                 /* Replacement text     */
+        dump_repl( dp, fp, gcc2_va);        /* Replacement text     */
     }
     if (commented)
             /* Standard predefined or one-pass-compiler-predefined  */
@@ -1471,7 +1593,6 @@ void    dump_a_def(
 }
 
 void    dump_def(
-    int     dDflag,                 /* -dD option (for GCC)         */
     int     comment         /* Location of definition in comment    */
 )
 /*
@@ -1487,7 +1608,7 @@ void    dump_def(
     for (symp = symtab; symp < &symtab[ SBSIZE]; symp++) {
         if ((dp = *symp) != NULL) {
             do {
-                dump_a_def( NULL, dp, FALSE, dDflag, comment, fp_out);
+                dump_a_def( NULL, dp, FALSE, comment, fp_out);
             } while ((dp = dp->link) != NULL);
         }
     }

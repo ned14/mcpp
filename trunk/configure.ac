@@ -1,10 +1,10 @@
-dnl configure.ac for MCPP   2003/11, 2007/05  kmatsui
+dnl configure.ac for MCPP   2003/11, 2007/08  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
 dnl To cross-compile you must edit here and there of this file.
 
-AC_INIT( mcpp, 2.6.4, kmatsui@t3.rim.or.jp)
+AC_INIT( mcpp, 2.7-prerelease, kmatsui@t3.rim.or.jp)
 AC_CONFIG_SRCDIR( src/main.c)
 AM_CONFIG_HEADER( src/config.h)
 AC_CONFIG_AUX_DIR( config)
@@ -25,7 +25,7 @@ dnl MCPP may modify the behavior of the target compiler-system.
 dnl You must uninstall MCPP before re-configuring.
 
 AC_MSG_CHECKING( [whether the cpp is target preprocessor])
-if test `echo '' | ${CPP} -v - 2>&1 | grep 'MCPP' > /dev/null; echo $?` = 0;
+if test `${CPP} -xc -v /dev/null 2>&1 | grep 'MCPP' > /dev/null; echo $?` = 0;
         then
     AC_MSG_ERROR( Do 'make uninstall' before configuring again.)
 fi
@@ -36,9 +36,15 @@ dnl Define host system and target system
 case $host_os in
 linux*)
     AC_DEFINE( [HOST_SYSTEM], [SYS_LINUX], [Define the host system.])
+    ac_c_define_HOST_SYSTEM=[SYS_LINUX]
     ;;
 freebsd*)
     AC_DEFINE( [HOST_SYSTEM], [SYS_FREEBSD])
+    ac_c_define_HOST_SYSTEM=[SYS_FREEBSD]
+    ;;
+darwin*)
+    AC_DEFINE( [HOST_SYSTEM], [SYS_MAC])
+    ac_c_define_HOST_SYSTEM=[SYS_MAC]
     ;;
 cygwin*)
     AC_DEFINE( [HOST_SYSTEM], [SYS_CYGWIN])
@@ -51,8 +57,10 @@ mingw*)
 *)
     AC_MSG_WARN( [Unsupported host OS, assuming to be an UNIX variant])
     AC_DEFINE( [HOST_SYSTEM], [SYS_UNIX])
+    ac_c_define_HOST_SYSTEM=[SYS_UNIX]
     ;;
 esac
+host_system=$ac_c_define_HOST_SYSTEM
 
 case $target_os in
 linux*)
@@ -60,6 +68,9 @@ linux*)
     ;;
 freebsd*)
     AC_DEFINE( [SYSTEM], [SYS_FREEBSD])
+    ;;
+darwin*)
+    AC_DEFINE( [SYSTEM], [SYS_MAC])
     ;;
 cygwin*)
     AC_DEFINE( [SYSTEM], [SYS_CYGWIN])
@@ -150,8 +161,8 @@ int main( void)
 
 if test x${ac_cv_type_intmax_t} = xyes; then
     AC_CHECK_MOD_LL( [intmax_t], [j], [#include <stdint.h>])
-    if test x${ac_c_define_HOST_SYSTEM} = xSYS_CYGWIN \
-            || test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW; then
+    if test ${ac_c_define_HOST_SYSTEM} = SYS_CYGWIN \
+            || test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
         sleep 1         # wait for cleanup
     fi
 fi
@@ -163,8 +174,8 @@ if test x${ac_cv_type_long_long} = xyes; then
         if test x${ac_cv_c_printf_modifier+set} = xset; then
             break
         fi
-        if test x${ac_c_define_HOST_SYSTEM} = xSYS_CYGWIN \
-                || test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW; then
+        if test ${ac_c_define_HOST_SYSTEM} = SYS_CYGWIN \
+                || test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
             sleep 1         # wait for cleanup
         fi
     done
@@ -201,8 +212,7 @@ if test x$mcpp_ac_c_define_CPU_OLD != x${Target_Cpu}; then
         [Define the cpu-specific-predefined-macro.])
 fi
 
-fbsd=`expr ${target_os} : '\(freebsd\)'`
-if test x${fbsd} = xfreebsd &&  \
+if test ${ac_c_define_HOST_SYSTEM} = SYS_FREEBSD &&   \
         test x$mcpp_ac_c_define_SYSTEM_SP_STD != x__FreeBSD__; then
     fbsd_ver=`echo '__FreeBSD__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`
     AC_DEFINE_UNQUOTED( [SYSTEM_EXT_VAL], "${fbsd_ver}",
@@ -241,7 +251,7 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
         AC_DEFINE( [LIB_IS_GLIBC], 1, [Define if the library is glibc.])
     fi
 
-    if test x${ac_c_define_HOST_SYSTEM} = xSYS_CYGWIN; then
+    if test ${ac_c_define_HOST_SYSTEM} = SYS_CYGWIN; then
         AC_CACHE_CHECK( the root directory,
             ac_cv_cygwin_root,
             [ac_cv_cygwin_root=`mount | grep ' on / ' | sed 's, on / .*,,' | tr '\\\' '/'`]
@@ -249,7 +259,7 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
         AC_DEFINE_UNQUOTED( [CYGWIN_ROOT_DIRECTORY], "${ac_cv_cygwin_root}",
             [Define root directory of CYGWIN.])
     fi
-    if test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW; then
+    if test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
         AC_CACHE_CHECK( the root directory,
             ac_cv_msys_root,
             cw=`pwd`
@@ -341,6 +351,39 @@ mcpp_AC_C_PREDEF( [COMPILER], [OLD])
 
 fi
 
+## MacOS has "framework" directories.
+if test ${ac_c_define_HOST_SYSTEM} = SYS_MAC; then
+    AC_MSG_CHECKING( for the MacOS-specific framework directory)
+    frameworks=`${CPP} -xc -v /dev/null 2>&1 | sed 's/^ *//' | sed 's/ *$//' | $EGREP '/Frameworks$'`
+    n=1
+    for dir in ${frameworks}
+    do
+        case $n in
+        1)  framework1=${dir};;
+        2)  framework2=${dir};;
+        3)  framework3=${dir};;
+        esac
+        let n=n+1
+    done
+    if test x${framework1+set} = xset; then
+        AC_DEFINE_UNQUOTED( [FRAMEWORK1], "${framework1}",
+            [Define MacOS-specific framework directory 1.])
+        AC_MSG_RESULT( ${framework1})
+    else
+        AC_MSG_RESULT( none)
+    fi
+    if test x${framework2+set} = xset; then
+        AC_DEFINE_UNQUOTED( [FRAMEWORK2], "${framework2}",
+            [Define MacOS-specific framework directory 2.])
+        AC_MSG_RESULT( ${framework2})
+    fi
+    if test x${framework3+set} = xset; then
+        AC_DEFINE_UNQUOTED( [FRAMEWORK3], "${framework3}",
+            [Define MacOS-specific framework directory 3.])
+        AC_MSG_RESULT( ${framework3})
+    fi
+fi  ## SYS_MAC
+
 ## --enable-mcpplib option
 AC_ARG_ENABLE( mcpplib,
     AC_HELP_STRING( [--enable-mcpplib],
@@ -352,11 +395,11 @@ AC_ARG_ENABLE( replace-cpp,
     AC_HELP_STRING( [--enable-replace-cpp],
         [Replace the resident preprocessor with mcpp]),
     ,       ## the compiler name will be defined later
-    AC_DEFINE( [COMPILER], [INDEPENDENT], [Specify compiler-independent-build.])
+    AC_DEFINE( [COMPILER], [INDEPENDENT], [Define the target compiler.])
             ## else define COMPILER as INDEPENDENT
 )
 
-if test x${enable_mcpplib} = xyes; then           ## mcpplib mode
+if test x${enable_mcpplib} = xyes; then             ## mcpplib mode
     AC_DEFINE( [MCPP_LIB], 1, [Define if build libmcpp])
     if test x${enable_replace_cpp} = xyes; then
         AC_MSG_WARN( Ignores enable-replace-cpp option)
@@ -368,7 +411,7 @@ else
 if test x${enable_replace_cpp} = xyes; then         ## replace-cpp mode
 
 dnl Check the characteristics of target compiler.
-dnl Note: The following 3 hundreds and more lines are for replace-cpp-mode.
+dnl Note: The following 3 hundred and more lines are for replace-cpp-mode.
 dnl Target-compiler-specific configuration need these lines.
 dnl These lines are not used in compiler-independent configuration.
 
@@ -409,8 +452,8 @@ AC_CACHE_CHECK( include preference - relative to current or source directory,
     fi
     cd ..
     rm -rf mcpp-tmp next
-    if test x$ac_c_define_HOST_SYSTEM = xSYS_CYGWIN \
-            || test x$ac_c_define_HOST_SYSTEM = xSYS_MINGW; then
+    if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN \
+            || test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
         sleep 1         # wait for cleanup
     fi
 )
@@ -518,7 +561,7 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
 
     AC_DEFINE( [COMPILER], [GNUC], [Define the target compiler.])
 
-    cpp_call=`echo '' | ${CPP} -v - 2>&1 | $EGREP '/cpp|/cc1' | sed 's/^ *//; s/ .*//'` 
+    cpp_call=`${CPP} -xc -v /dev/null 2>&1 | $EGREP '/cpp|/cc1' | sed 's/^ *//; s/ .*//'` 
     AC_MSG_CHECKING( for the directory to install mcpp)
     cpp_name=`expr ${cpp_call} : '.*/\(.*\)'`
     bindir=`expr ${cpp_call} : "\(.*\)/${cpp_name}"`
@@ -528,7 +571,7 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
     export LANG=C
 
     AC_MSG_CHECKING( for the compiler-specific C include directory)
-    c_include_dirs=`echo '' | ${CPP} -xc -v - 2>&1 | sed '1,/> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | $EGREP -v '^/usr(/local|)/include$|End of search list'`
+    c_include_dirs=`${CPP} -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | $EGREP -v '^/usr(/local|)/include$|/Frameworks$|End of search list'`
     n=1
     for dir in ${c_include_dirs}
     do
@@ -555,7 +598,7 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
     AC_PROG_CXXCPP
     AC_LANG_PUSH( C++)
     AC_MSG_CHECKING( for the compiler-specific C++ include directory)
-    cxx_include_dirs=`echo '' | ${CXXCPP} -xc++ -v - 2>&1 | sed '1,/> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | $EGREP -v "^/usr(/local|)/include\$|^${c_include_dir1}\$|^${c_include_dir2}\$"`
+    cxx_include_dirs=`${CXXCPP} -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | $EGREP -v "^/usr(/local|)/include\$|/Frameworks\$|^${c_include_dir1}\$|^${c_include_dir2}\$"`
     n=1
     for dir in ${cxx_include_dirs}
     do
@@ -569,44 +612,51 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
     done
     if test x${cxx_include_dir1+set} = xset; then
         AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR1], "${cxx_include_dir1}",
-            [Define compiler-specific C include directory 1.])
+            [Define compiler-specific C++ include directory 1.])
         AC_MSG_RESULT( ${cxx_include_dir1})
     fi
     if test x${cxx_include_dir2+set} = xset; then
         AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR2], "${cxx_include_dir2}",
-            [Define compiler-specific C include directory 2.])
+            [Define compiler-specific C++ include directory 2.])
         AC_MSG_RESULT( ${cxx_include_dir2})
     fi
     if test x${cxx_include_dir3+set} = xset; then
         AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR3], "${cxx_include_dir3}",
-            [Define compiler-specific C include directory 3.])
+            [Define compiler-specific C++ include directory 3.])
         AC_MSG_RESULT( ${cxx_include_dir3})
     fi
     if test x${cxx_include_dir4+set} = xset; then
         AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR4], "${cxx_include_dir4}",
-            [Define compiler-specific C include directory 4.])
+            [Define compiler-specific C++ include directory 4.])
         AC_MSG_RESULT( ${cxx_include_dir4})
     fi
     AC_LANG_POP( C++)
 
     export LANG=${lang_save}
 
-    if test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW; then
+    ## the directory into which mcpp_g*.h header files are generated
+    ## '/mcpp-gcc' will be appended to 'inc_dir'
+    if test x${includedir+set} != xset; then
+        includedir=${prefix}/include
+    fi
+    if test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
         inc_dir=${c_include_dir2}
     else
         if test x${c_include_dir1+set} = xset; then
             inc_dir=${c_include_dir1}
         else
-            inc_dir=/usr/local/include
+            inc_dir=${includedir}
         fi
     fi
+    AC_DEFINE_UNQUOTED( [INC_DIR], "${inc_dir}",
+        [Define include directory to install mcpp_g*.h header files.])
 
+    AC_SUBST( [host_system])
     AC_SUBST( [inc_dir])
-    AC_SUBST( [cpp_call])
     AC_SUBST( [gcc_maj_ver])
     AC_SUBST( [gcc_min_ver])
+    AC_SUBST( [cpp_call])
     AC_PATH_PROG( [gcc_path], [${CC}], , [${PATH}])
-
     AC_PROG_LN_S
 
     if test x${gcc_maj_ver} = x2; then
@@ -720,10 +770,9 @@ AC_ARG_WITH( [gcc-testsuite-dir],
 )
 AC_SUBST( [gcc_testsuite_dir])
 AM_CONDITIONAL( [GNUC], test x${ac_cv_c_compiler_gnu} = xyes)
-
 AM_CONDITIONAL( [MCPP_LIB], test x${enable_mcpplib} = xyes)
 AM_CONDITIONAL( [REPLACE_CPP], test x${enable_replace_cpp} = xyes)
-AM_CONDITIONAL( [MINGW], test x${ac_c_define_HOST_SYSTEM} = xSYS_MINGW)
+AM_CONDITIONAL( [MINGW], test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW)
 
 dnl Final output.
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 # script to set GNU CPP or CC1, CC1PLUS to be called from gcc
 # ./unset_mcpp.sh ${gcc_path} ${gcc_maj_ver} ${gcc_min_ver} ${cpp_call}     \
-#       ${CC} ${CXX} x${EXEEXT} ${LN_S} ${inc_dir}
+#       ${CC} ${CXX} x${EXEEXT} ${LN_S} ${inc_dir} ${host_system}
 
 gcc_maj_ver=$2
 gcc_min_ver=$3
@@ -10,6 +10,7 @@ CC=$5
 CXX=$6
 LN_S=$8
 inc_dir=$9
+host_system=${10}
 cpp_name=`echo ${cpp_call} | sed 's,.*/,,'`
 cpp_path=`echo ${cpp_call} | sed "s,/${cpp_name},,"`
 gcc_path=`echo $1 | sed "s,/${CC}\$,,"`
@@ -19,21 +20,19 @@ if test x${EXEEXT} != x; then
 else
     cpp_base=${cpp_name}
 fi
-sys_mingw=`echo $1 | grep 'mingw'`
-sys_cygwin=`echo ${inc_dir} | grep 'cygwin'`
 
-echo "  rm -f ${inc_dir}/mcpp_g*_predef_*.h"
-rm -f ${inc_dir}/mcpp_g*_predef_*.h
-if test ${sys_cygwin}; then
-    echo "  rm -f ${inc_dir}/mingw/mcpp_g*_predef_*.h"
-    rm -f ${inc_dir}/mingw/mcpp_g*_predef_*.h
+echo "  rm -fr ${inc_dir}/mcpp-gcc"
+rm -fr ${inc_dir}/mcpp-gcc
+if test ${host_system} = SYS_CYGWIN; then
+    echo "  rm -fr ${inc_dir}/mingw/mcpp-gcc"
+    rm -fr ${inc_dir}/mingw/mcpp-gcc
 fi
 
 echo "  cd ${cpp_path}"
 cd ${cpp_path}
 
 sym_link=`ls -l ${cpp_name} | sed 's/^l.*/l/; s/^[^l].*//'`;
-if (test x${sym_link} = xl || test ${sys_mingw})  \
+if (test x${sym_link} = xl || test ${host_system} = SYS_MINGW)  \
         && test -f ${cpp_base}_gnuc${EXEEXT}; then
     rm -f ${cpp_name} mcpp.sh
     echo "  mv ${cpp_base}_gnuc${EXEEXT} ${cpp_name}"
@@ -51,10 +50,10 @@ fi
 
 echo "  cd ${gcc_path}"
 cd ${gcc_path}
-if test ! ${sys_mingw}; then
+if test ${host_system} != SYS_MINGW; then
     c_sh=`readlink ${CC}`
 fi
-if test x${c_sh} = x${CC}.sh || test ${sys_mingw}; then
+if test x${c_sh} = x${CC}.sh || test ${host_system} = SYS_MINGW; then
     if test `grep _proper ${CC}.sh > /dev/null; echo $? = 0`; then
         c_entity=`grep ${gcc_path} ${CC}.sh | sed "s,${gcc_path}/,,"  \
                 | sed 's/_proper.*$//'`
@@ -68,10 +67,10 @@ if test x${c_sh} = x${CC}.sh || test ${sys_mingw}; then
     fi
     rm -f ${CC}.sh
 fi
-if test ! ${sys_mingw}; then
+if test ${host_system} != SYS_MINGW; then
     cxx_sh=`readlink ${CXX}`
 fi
-if test x${cxx_sh} = x${CXX}.sh || test ${sys_mingw}; then
+if test x${cxx_sh} = x${CXX}.sh || test ${host_system} = SYS_MINGW; then
     if test `cat ${CXX}.sh | grep _proper > /dev/null; echo $? = 0`; then
         cxx_entity=`grep ${gcc_path} ${CXX}.sh | sed "s,${gcc_path}/,,"  \
                 | sed 's/_proper.*$//'`

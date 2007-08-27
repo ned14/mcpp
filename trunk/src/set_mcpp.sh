@@ -1,7 +1,7 @@
 #!/bin/sh
 # script to set MCPP to be called from gcc
 # ./set_mcpp.sh ${gcc_path} ${gcc_maj_ver} ${gcc_min_ver} ${cpp_call} ${CC} \
-#       ${CXX} x${EXEEXT} ${LN_S} ${inc_dir}
+#       ${CXX} x${EXEEXT} ${LN_S} ${inc_dir} ${host_system}
 
 gcc_maj_ver=$2
 gcc_min_ver=$3
@@ -10,11 +10,10 @@ CC=$5
 CXX=$6
 LN_S=$8
 inc_dir=$9
+host_system=${10}
 cpp_name=`echo ${cpp_call} | sed 's,.*/,,'`
 cpp_path=`echo ${cpp_call} | sed "s,/${cpp_name},,"`
 gcc_path=`echo $1 | sed "s,/${CC}\$,,"`
-sys_mingw=`echo $1 | grep 'mingw'`
-sys_cygwin=`echo ${inc_dir} | grep 'cygwin'`
 
 # remove ".exe" or such
 EXEEXT=`echo $7 | sed 's/^x//'`
@@ -24,7 +23,7 @@ else
     cpp_base=${cpp_name}
 fi
 
-if test ${sys_mingw} && test ! -f cc1${EXEEXT}; then
+if test ${host_system} = SYS_MINGW && test ! -f cc1${EXEEXT}; then
     ## cc1.exe has not yet compiled
     echo "  do 'make COMPILER=GNUC mcpp cc1'; then do 'make COMPILER=GNUC install'"
     exit 1
@@ -32,36 +31,38 @@ fi
 
 cwd=`pwd`
 
-echo "  cd ${inc_dir}"
-cd ${inc_dir}
-if test ! -f mcpp_gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h; then
-    echo "  generating mcpp_g*.h header files"
+mkdir -p ${inc_dir}/mcpp-gcc
+echo "  cd ${inc_dir}/mcpp-gcc"
+cd ${inc_dir}/mcpp-gcc
+if test ! -f gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h; then
+    echo "  generating g*.h header files"
     echo '' | ${CC} -E -xc -dM - | sort | grep ' *#define *_'       \
-            > mcpp_gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h
+            > gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h
     echo '' | ${CC} -E -xc -dM - | sort | grep -E ' *#define *[A-Za-z]+'    \
-            > mcpp_gcc${gcc_maj_ver}${gcc_min_ver}_predef_old.h
+            > gcc${gcc_maj_ver}${gcc_min_ver}_predef_old.h
     echo '' | ${CXX} -E -xc++ -dM - | sort | grep ' *#define *_'    \
-            > mcpp_gxx${gcc_maj_ver}${gcc_min_ver}_predef_std.h
+            > gxx${gcc_maj_ver}${gcc_min_ver}_predef_std.h
     echo '' | ${CXX} -E -xc++ -dM - | sort | grep -E ' *#define *[A-Za-z]+' \
-            > mcpp_gxx${gcc_maj_ver}${gcc_min_ver}_predef_old.h
+            > gxx${gcc_maj_ver}${gcc_min_ver}_predef_old.h
 fi
-if test ${sys_cygwin}; then
-    mkdir -p mingw
-    cd mingw
-    if test ! -f mcpp_gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h; then
-        echo "  generating mcpp_g*.h header files for cygwin/mingw"
+if test ${host_system} = SYS_CYGWIN; then
+    cd ..
+    mkdir -p mingw/mcpp-gcc
+    cd mingw/mcpp-gcc
+    if test ! -f gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h; then
+        echo "  generating g*.h header files for cygwin/mingw"
         echo '' | ${CC} -E -xc -dM -mno-cygwin - | sort |   \
                 grep ' *#define *_'       \
-                > mcpp_gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h
+                > gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h
         echo '' | ${CC} -E -xc -dM -mno-cygwin - | sort |   \
                 grep -E ' *#define *[A-Za-z]+'    \
-                > mcpp_gcc${gcc_maj_ver}${gcc_min_ver}_predef_old.h
+                > gcc${gcc_maj_ver}${gcc_min_ver}_predef_old.h
         echo '' | ${CXX} -E -xc++ -dM -mno-cygwin - | sort |    \
                 grep ' *#define *_'    \
-                > mcpp_gxx${gcc_maj_ver}${gcc_min_ver}_predef_std.h
+                > gxx${gcc_maj_ver}${gcc_min_ver}_predef_std.h
         echo '' | ${CXX} -E -xc++ -dM -mno-cygwin - | sort |    \
                 grep -E ' *#define *[A-Za-z]+' \
-                > mcpp_gxx${gcc_maj_ver}${gcc_min_ver}_predef_old.h
+                > gxx${gcc_maj_ver}${gcc_min_ver}_predef_old.h
     fi
 fi
 
@@ -71,7 +72,7 @@ echo "  cd ${cpp_path}"
 cd ${cpp_path}
 
 # other than MinGW
-if test ! ${sys_mingw}; then
+if test ${host_system} != SYS_MINGW; then
 
     echo '#!/bin/sh'        >  mcpp.sh
 
@@ -112,7 +113,7 @@ fi
 # backup GCC / cpp or cc1, cc1plus
 if test `echo '' | ${cpp_call} -v - 2>&1 | grep 'MCPP' > /dev/null; echo $?`;
         then
-    if test ${sys_mingw}; then
+    if test ${host_system} = SYS_MINGW; then
         if test -f cc1_gnuc${EXEEXT}; then
             sym_link=l          ## cc1.exe already moved to cc1_gnuc.exe
         else
@@ -138,7 +139,7 @@ if test -f ${cpp_name}; then
 fi
 
 # make symbolic link of mcpp.sh to 'cpp0' or 'cc1', 'cc1plus'
-if test ${sys_mingw}; then
+if test ${host_system} = SYS_MINGW; then
     echo "  cp ${cwd}/cc1${EXEEXT}"
     cp ${cwd}/cc1${EXEEXT} .
     strip cc1${EXEEXT}
@@ -147,7 +148,7 @@ else
     ${LN_S} mcpp.sh ${cpp_name}
 fi
 if test x${cpp_base} = xcc1; then
-    if test ${sys_mingw}; then
+    if test ${host_system} = SYS_MINGW; then
         echo "  cp cc1${EXEEXT} cc1plus${EXEEXT}"
         cp cc1${EXEEXT} cc1plus${EXEEXT}
     else
@@ -165,7 +166,7 @@ fi
 echo "  cd ${gcc_path}"
 cd ${gcc_path}
 
-if test ! ${sys_mingw}; then
+if test ${host_system} != SYS_MINGW; then
     ref=${CC}${EXEEXT}
     while ref=`readlink ${ref}`
     do
@@ -182,14 +183,15 @@ if test x${c_entity} != x; then     # symbolic linked file dereferenced
         c_entity_base=${c_entity}
     fi
 else                                # not symbolic link
-    if test ! ${sys_mingw} || test ! -f ${CC}_proper${EXEEXT}; then
+    if test ! ${host_system} = SYS_MINGW || test ! -f ${CC}_proper${EXEEXT};
+            then
         echo "  mv ${CC}${EXEEXT} ${CC}_proper${EXEEXT}"
         mv -f ${CC}${EXEEXT} ${CC}_proper${EXEEXT}
     fi
     c_entity_base=${gcc_path}/${CC}_proper
 fi
 
-if test ! ${sys_mingw}; then
+if test ${host_system} != SYS_MINGW; then
     ref=${CXX}${EXEEXT}
     while ref=`readlink ${ref}`
     do
@@ -206,7 +208,8 @@ if test x${cxx_entity} != x; then      # symbolic linked file dereferenced
         cxx_entity_base=${cxx_entity}
     fi
 else
-    if test ! ${sys_mingw} || test ! -f ${CXX}_proper${EXEEXT}; then
+    if test ${host_system} != SYS_MINGW || test ! -f ${CXX}_proper${EXEEXT};
+            then
         echo "  mv ${CXX}${EXEEXT} ${CXX}_proper${EXEEXT}"
         mv -f ${CXX}${EXEEXT} ${CXX}_proper${EXEEXT}
     fi

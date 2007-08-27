@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.6.3 and later for FreeBSD / GCC / UCB make
-#       2007/05 kmatsui
+# makefile to compile MCPP version 2.7 and later for FreeBSD / GCC / UCB make
+#       2007/08 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -31,7 +31,7 @@
 NAME ?= mcpp
 CC = gcc
 GPP = g++
-CFLAGS = -c -O2 -Wall   # -g -v
+CFLAGS = -c -O2 -Wall   # -ggdb -v
 #CFLAGS += -fstack-protector        # for gcc 4.1 or later
 CPPFLAGS =
 #CPPFLAGS = -Wp,-v,-Q,-W3
@@ -47,21 +47,25 @@ CPPOPTS =
 BINDIR = /usr/local/bin
 # INCDIR:   empty
 INCDIR =
+
 .else
 # compiler-specific-build:  Adjust for your system
 
 .if     ! empty(COMPILER) && $(COMPILER) == GNUC
-CPPOPTS = -DCOMPILER=$(COMPILER)
-# BINDIR:   the directory where cpp0 or cc1 resides
-BINDIR ?= /usr/libexec
-#BINDIR ?= /usr/local/gcc-4.1.1/lib/gcc-lib/i386-unknown-freebsd6.2/4.1.1
+# The directory 'gcc' (cc) command is located (/usr/bin or /usr/local/bin)
+GCCDIR ?= /usr/bin
+# Set GCC version
+gcc_maj_ver = 3
+gcc_min_ver = 4
 # INCDIR:   the compiler's version specific include directory, if it exists,
 #       /usr/local/include, if it does not exist
 INCDIR = /usr/local/include
 #INCDIR ?= /usr/local/gcc-4.1.1/lib/gcc-lib/i386-unknown-freebsd6.2/4.1.1/include
-# Set GCC version
-gcc_maj_ver = 3
-gcc_min_ver = 4
+CPPOPTS = -DCOMPILER=$(COMPILER)
+
+# BINDIR:   the directory where cpp0 or cc1 resides
+BINDIR ?= /usr/libexec
+#BINDIR ?= /usr/local/gcc-4.1.1/lib/gcc-lib/i386-unknown-freebsd6.2/4.1.1
 .if $(gcc_maj_ver) == 2
 cpp_call = $(BINDIR)/cpp0
 .else
@@ -69,9 +73,6 @@ cpp_call = $(BINDIR)/cc1
 .endif
 .endif
 .endif
-
-# The directory 'gcc' (cc) command is located (/usr/bin or /usr/local/bin)
-GCCDIR ?= /usr/bin
 
 MALLOC =
 .if     !empty(MALLOC)
@@ -117,8 +118,8 @@ main.o directive.o eval.o expand.o support.o system.o mbchar.o:   \
 install :
 	install -s $(NAME) $(BINDIR)/$(NAME)
 .if ! empty(COMPILER) && $(COMPILER) == GNUC
-	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)' \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)'
+	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'    \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)' SYS_FREEBSD
 .endif
 
 clean	:
@@ -128,7 +129,7 @@ uninstall:
 	rm -f $(BINDIR)/$(NAME)
 .if ! empty(COMPILER) && $(COMPILER) == GNUC
 	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)'
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)' SYS_FREEBSD
 .endif
 
 .if empty(COMPILER)
@@ -144,7 +145,7 @@ mcpplib_a:  $(OBJS)
 
 # shared library
 CUR = 0
-REV = 1         # mcpp 2.6.3: 0, mcpp 2.6.4: 1
+REV = 1         # mcpp 2.6.3: 0, mcpp 2.6.4 and later: 1
 AGE = 0
 SHLIB_VER = $(CUR).$(AGE).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so lib.so

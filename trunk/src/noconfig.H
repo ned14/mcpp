@@ -52,7 +52,7 @@
 #define SYS_LINUX           0x1800  /* (SYS_LINUX & 0xF000) == SYS_UNIX     */
 #define SYS_FREEBSD         0x1A00  /* (SYS_FREEBSD & 0xF000) == SYS_UNIX   */
 #define SYS_CYGWIN          0x1C00  /* (SYS_CYGWIN & 0xF000) == SYS_UNIX    */
-#define SYS_MAC             0x6000
+#define SYS_MAC             0x1E00  /* (SYS_MAC & 0xF000) == SYS_UNIX       */
 #define SYS_WIN             0x7000
 #define SYS_WIN32           0x7400  /* (SYS_WIN32 & 0xF000) == SYS_WIN      */
 #define SYS_MINGW           0x7C00  /* (SYS_MINGW & 0xF000) == SYS_WIN      */
@@ -166,7 +166,7 @@
 #define SYSTEM_STD2         "__unix__"
 #endif
 
-#if     SYSTEM == SYS_FREEBSD || SYSTEM == SYS_LINUX
+#if     SYSTEM == SYS_FREEBSD || SYSTEM == SYS_LINUX || SYSTEM == SYS_MAC
 #define CPU_STD2            "__i386__"
 #endif
 
@@ -177,6 +177,11 @@
 
 #if     SYSTEM == SYS_LINUX
 #define SYSTEM_EXT          "__linux__"
+#endif
+
+#if     SYSTEM == SYS_MAC   /* Mac OS X */
+#define SYSTEM_EXT          "__APPLE__"
+#define FNAME_FOLD          TRUE    /* Case-insensitive file-system */
 #endif
 
 #if     SYSTEM == SYS_CYGWIN
@@ -195,6 +200,7 @@
 #define MINGW_DIRECTORY     "c:/pub/compilers/mingw"
 #if     COMPILER == GNUC
 #define SJIS_IS_ESCAPE_FREE FALSE
+#define INC_DIR             C_INCLUDE_DIR2
 #endif
 #endif  /* SYSTEM == SYS_MINGW  */
 
@@ -298,6 +304,7 @@
 #define COMPILER_EXT2_VAL   "4"     /* "4" for V.3.4, "1" for V.4.1 */
 #define COMPILER_CPLUS      "__GNUG__"
 #define COMPILER_CPLUS_VAL  "3"     /* "3" for V.3.*, "4" for V.4.* */
+#define GCC_MAJOR_VERSION   3       /* Value of __GNUC__ as a digit */
 #define LINE_PREFIX         "# "
 #ifndef HAVE_DIGRAPHS
 #define HAVE_DIGRAPHS       TRUE
@@ -306,27 +313,37 @@
 #define TARGET_HAVE_LONG_LONG       TRUE
 #endif
 #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */
-#define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.6" */  /* "/usr/local/include/c++/4.1.1" */
-#define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/local/include/c++/4.1.1/i686-pc-linux-gnu" */
-/* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/local/include/c++/4.1.1/backward"    */
-/* #define C_INCLUDE_DIR1   */  /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include" */
+#define CPLUS_INCLUDE_DIR1  "/usr/include/c++/3.4"  /* "/usr/include/c++/3.3.6" */  /* "/usr/include/c++/4.1.2" */
+#define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward"     /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/include/c++/4.1.2/i486-linux-gnu" */
+/* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/include/c++/4.1.2/backward"    */
+/* #define C_INCLUDE_DIR1 */    /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/lib/gcc/i486-linux-gnu/4.1.2/include" */
 /* #define C_INCLUDE_DIR2   */
+#ifndef INC_DIR
+#ifdef  C_INCLUDE_DIR1
+#define INC_DIR             C_INCLUDE_DIR1  /* GNUC version specific dir    */
+#else
+#define INC_DIR             "/usr/include"  /* "/usr/local/include" */
+#endif
+#endif
 #ifndef ENV_C_INCLUDE_DIR
 #define ENV_C_INCLUDE_DIR   "C_INCLUDE_PATH"
 #define ENV_CPLUS_INCLUDE_DIR   "CPLUS_INCLUDE_PATH"
 #endif
+#define SEARCH_INIT         SOURCE  /* Include directory relative to source */
 /*
  * __SIZE_TYPE__, __PTRDIFF_TYPE__ and __WCHAR_TYPE__ are predefines of GCC.
  */
+#if GCC_MAJOR_VERSION < 3
 #define COMPILER_SP1        "__SIZE_TYPE__"
 #define COMPILER_SP2        "__PTRDIFF_TYPE__"
 #define COMPILER_SP3        "__WCHAR_TYPE__"
 #define COMPILER_SP1_VAL    "unsigned int"
 #define COMPILER_SP2_VAL    "int"
 #define COMPILER_SP3_VAL    "int"
-    /* SYS_FREEBSD: "int" , SYS_CYGWIN, SYS_MINGW: "short unsigned int"
-        , others: "long int"    */
-#endif  /* COMPILER_FAMILY == GNUC   */
+    /* SYS_FREEBSD: "int", SYS_CYGWIN, SYS_MINGW: "short unsigned int"
+            , others: "long int"  */
+#endif  /* GCC_MAJOR_VERSION < 3    */
+#endif  /* COMPILER_FAMILY == GNUC  */
 
 #if     COMPILER == INDEPENDENT
 /* specifications of compiler-independent build  */

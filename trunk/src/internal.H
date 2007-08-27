@@ -44,16 +44,23 @@
 #define CHAR_EOF        0           /* Returned by get_ch() on eof  */
 
 #define VA_ARGS         (UCHARMAX + 1)      /* Signal of variable arguments */
-#define GVA_ARGS        (VA_ARGS * 2)       /* GCC3-specific variable args  */
+#define GVA_ARGS        (VA_ARGS * 2)       /* GCC-specific variable args   */
 #define AVA_ARGS        (VA_ARGS | GVA_ARGS)/* Any variable arguments       */
 #define DEF_PRAGMA      (-1 - AVA_ARGS)     /* _Pragma() pseudo-macro       */
 #define DEF_NOARGS      (-2 - AVA_ARGS)     /* #define foo vs #define foo() */
+#define DEF_NOARGS_PREDEF_OLD   (DEF_NOARGS - 1)
+                        /* Compiler-predefined macro without leading '_'    */
+#define DEF_NOARGS_PREDEF   (DEF_NOARGS - 2)/* Compiler-predefined macro    */
+#define DEF_NOARGS_STANDARD (DEF_NOARGS - 3)/* Standard predefined macro    */
+#define DEF_NOARGS_DYNAMIC  (DEF_NOARGS - 4)/* Standard dynamically defined */
 
 /*
  * The following may need to change if the host system doesn't use ASCII.
  * These magic characters must be control characters which can't be used
  * in source file.
  */
+/* for '#pragma MCPP debug macro_call' and -K option in STD mode.   */
+#define MAC_INF         0x18        /* Magic for macro informations */
 /* In STD and POST_STD modes (IN_SRC and TOK_SEP are for STD mode only).    */
 #define DEF_MAGIC       0x19        /* Magic for #defines           */
 #define IN_SRC          0x1A        /* Magic of name from source    */
@@ -73,6 +80,7 @@
 #define PUNC            8           /* Punctuators and operators    */
 #define QUO             16          /* Both flavors of quotation ",'*/
 #define SPA             32          /* White spaces                 */
+#define HSP             64          /* Horizontal white spaces (' ', '\t')  */
 
 /*
  * Codes for operators used in #if expression.
@@ -166,16 +174,23 @@
 #define SEP             73          /* Token separator or magics    */
 
 /*
- * The following are values of 'debug' variable which is set by the
- * arguments of #pragma MCPP debug directive.
+ * The following are values of 'mcpp_debug' variable which is set by the
+ * arguments of '#pragma MCPP debug' directive.
  */
 #define PATH            1
 #define TOKEN           2
 #define EXPAND          4
-#define IF              8
-#define EXPRESSION      16
-#define GETC            32
-#define MEMORY          64
+#define MACRO_CALL      8
+#define IF              16
+#define EXPRESSION      32
+#define GETC            64
+#define MEMORY          128
+
+/* MAC_* represent macro information types for -K option.   */
+#define MAC_CALL_START  1
+#define MAC_CALL_END    2
+#define MAC_ARG_START   3
+#define MAC_ARG_END     4
 
 /* MB_ERROR signals wrong multi-byte character sequence.    */
 #define MB_ERROR        0x8000
@@ -256,6 +271,12 @@ typedef struct val_sign {
 #define UNSIGNED        0
 #define VAL_ERROR       (-1)
 
+/* LINE_COL stores information of line and column data  */
+typedef struct line_col {
+        long            line;
+        size_t          col;
+} LINE_COL;
+
 /* Value of macro_line on macro call error.         */
 #define MACRO_ERROR     (-1L)
 
@@ -285,6 +306,7 @@ typedef struct val_sign {
  */
 extern int      mcpp_mode;          /* Mode of preprocessing        */
 extern int      cflag;              /* -C option (keep comments)    */
+extern int      kflag;              /* -k option (keep white spaces)*/
 extern int      zflag;  /* -Z option (no-output of included file)   */
 extern int      pflag;              /* -P option (no #line output)  */
 extern int      qflag;              /* -Q option (diag to mcpp.err) */
@@ -313,6 +335,7 @@ extern long     src_line;           /* Current source line number   */
 extern int      wrong_line;         /* Force #line to compiler      */
 extern int      newlines;           /* Count of blank lines         */
 extern int      keep_comments;      /* Don't remove comments        */
+extern int      keep_spaces;        /* Don't remove white spaces    */
 extern int      include_nest;       /* Nesting level of #include    */
 extern const char *     null;       /* "" string for convenience    */
 extern const char **    inc_dirp;   /* Directory of #includer       */
@@ -351,6 +374,9 @@ extern IFINFO   ifstack[];          /* Information of #if nesting   */
 extern char     cur_fullname[];     /* Full name of current source  */
 extern char     work_buf[];
         /* Temporary buffer for directive line and macro expansion  */
+#if COMPILER == GNUC
+extern int      ansi;               /* __STRICT_ANSI__ flag         */
+#endif
 
 /* main.c   */
 extern void     sharp( void);
@@ -363,7 +389,7 @@ extern void     undef_a_predef( const char * name);
 /* directive.c  */
 extern void     directive( void);
                 /* Process #directive lines     */
-extern DEFBUF * do_define( int ignore_redef);
+extern DEFBUF * do_define( int ignore_redef, int predefine);
                 /* Do #define directive         */
 extern DEFBUF * look_id( const char * name);
                 /* Look for a #define'd thing   */
@@ -373,14 +399,15 @@ extern DEFBUF * look_and_install( const char * name, int numargs
         , const char * parmnames, const char * repl);
                 /* Look and insert macro def.   */
 extern DEFBUF * install_macro( const char * name, int numargs
-        , const char * parmnames, const char * repl, DEFBUF ** prevp, int cmp);
+        , const char * parmnames, const char * repl, DEFBUF ** prevp, int cmp
+        , int predefine);
                 /* Install to symbol table      */
 extern int      undefine( const char * name);
                 /* Delete from symbol table     */
 extern void     dump_a_def( const char * why, const DEFBUF * dp, int newdef
-        , int dDflag, int comment, FILE * fp);
+        , int comment, FILE * fp);
                 /* Dump a specific macro def    */
-extern void     dump_def( int dDflag, int comment);
+extern void     dump_def( int comment);
                 /* Dump current macro defs      */
 
 /* eval.c   */
@@ -390,7 +417,8 @@ extern VAL_SIGN *   eval_num( const char * nump);
                 /* Evaluate preprocessing number*/
 
 /* expand.c */
-extern char *   (* expand_macro)( DEFBUF * defp, char * out, char * out_end);
+extern char *   (* expand_macro)( DEFBUF * defp, char * out, char * out_end
+        , long mline, size_t col);
                 /* Expand a macro completely    */
 extern void     expand_init( void);
                 /* Initialize expand_macro()    */
@@ -442,6 +470,8 @@ extern char *   (xmalloc)( size_t size);
                 /* Get memory or die            */
 extern char *   (xrealloc)( char * ptr, size_t size);
                 /* Reallocate memory or die     */
+extern LINE_COL *   get_src_location( LINE_COL * p_line_col);
+                /* Get location on source file  */
 extern void     cfatal( const char * format, const char * arg1, long arg2
         , const char * arg3);
                 /* Print a fatal error and exit */
@@ -458,12 +488,14 @@ extern void     dump_unget( const char * why);
 /* Support for alternate output mechanisms (e.g. memory buffers) */
 extern int      (* mcpp_fputc)( int c, OUTDEST od),
                 (* mcpp_fputs)( const char * s, OUTDEST od),
-                (* mcpp_fprintf)( OUTDEST od, const char *format, ...);
+                (* mcpp_fprintf)( OUTDEST od, const char * format, ...);
 
 /* system.c */
 extern void     do_options( int argc, char ** argv, char ** in_pp
         , char ** out_pp);
                 /* Process command line args    */
+extern void     init_sys_macro( void);
+                /* Define system-specific macro */
 extern void     at_start( void);
                 /* Commands prior to main input */
 extern void     put_depend( const char * filename);
@@ -476,8 +508,6 @@ extern void     cur_file( void);
                 /* Output current source fname  */
 extern void     conv_case( char * name, char * lim, int upper);
                 /* Convert to upper/lower case  */
-extern void     put_info( void);
-                /* Putout compiler-specific info*/
 extern void     do_pragma( void);
                 /* Process #pragma directive    */
 extern void     put_asm( void);
@@ -493,6 +523,7 @@ extern void     print_heap( void);
 /* directive.c  */
 extern void     clear_symtable( void);
                 /* Free all macro definitions   */
+/* system.c     */
 extern void     clear_filelist( void);
                 /* Free filename and directory list     */
 /* The following 5 functions are to Initialize static variables.    */

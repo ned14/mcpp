@@ -8,7 +8,7 @@
 
 #define     TRUE            1
 #define     FALSE           0
-#define     DATE            "2007/05"               /* Date of mcpp     */
+#define     DATE            "2007/08"               /* Date of mcpp     */
 
 /*
  *  'Target' means the O.S. and the compiler to which cpp is implemented.
@@ -38,7 +38,7 @@
 #define SYS_LINUX           0x1800  /* (SYS_LINUX & 0xF000) == SYS_UNIX     */
 #define SYS_FREEBSD         0x1A00  /* (SYS_FREEBSD & 0xF000) == SYS_UNIX   */
 #define SYS_CYGWIN          0x1C00  /* (SYS_CYGWIN & 0xF000) == SYS_UNIX    */
-#define SYS_MAC             0x6000
+#define SYS_MAC             0x1E00  /* (SYS_MAC & 0xF000) == SYS_UNIX       */
 #define SYS_WIN             0x7000
 #define SYS_WIN32           0x7400  /* (SYS_WIN32 & 0xF000) == SYS_WIN      */
 #define SYS_MINGW           0x7C00  /* (SYS_MINGW & 0xF000) == SYS_WIN      */
@@ -151,6 +151,9 @@
 #endif
 #if     SYSTEM == SYS_LINUX
 #define SYSTEM_EXT          "__linux__"
+#endif
+#if     SYSTEM == SYS_MAC
+#define SYSTEM_EXT          "__APPLE__"
 #endif
 
 #if     SYSTEM == SYS_CYGWIN

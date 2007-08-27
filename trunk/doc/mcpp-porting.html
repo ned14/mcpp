@@ -11,7 +11,7 @@
 <h2>== How to Port MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.6.4 (2007/05)<br>
+<h4>for V.2.7 (2007/08)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -126,6 +126,7 @@ This document uses the following typographical conventions:</p>
 <li><i>STD</i>:<br>
 <i>Italic</i> font is used for the macros defined in <b>mcpp</b> source file named <samp>system.H</samp>.  This document uses these names to denote various <b>mcpp</b> settings as well as to denote the macro itself.  Note that these macros are only used in compilation of <b>mcpp</b>, and that the <b>mcpp</b> executable does not have such macros.<br>
 </ul>
+<br>
 
 <h1><a name="2" href="#toc.2">2. History</a></h1>
 <ol>
@@ -165,6 +166,10 @@ In August 2006, V.2.6.1 was released.  In this version, porting to MinGW was add
 In November 2006, V.2.6.2 was released.  In this version, most of the text file documents were converted to html, some bugs were fixed, and subroutine-build of <b>mcpp</b> was implemented by contribution from Juergen Mueller.<br>
 In April 2007, V.2.6.3 was released.  In this version, compatibility of GCC-specific-build to GCC was increased, and output to memory buffer was implemented in subroutine-build by contribution from Greg Kress.  In addition, binary packages for some systems were begun to be provided.<br>
 In May 2007, V.2.6.4 was released.  This is a bug-fixed version of V.2.6.3.<br>
+<br>
+<li>In August 2007, V.2.7 was released.
+In this version, 'macro notification mode' to embed macro informations into comments was implemented.
+The version number was incremented to 2.7, because the updates since V.2.6.2 accumulated very large.<br>
 </ol>
 <p>Note:</p>
 <p>*1 The outline of the "Exploratory Software Project" can be seen at the following site (the documents are only in Japanese).</p>
@@ -228,6 +233,8 @@ into the compiler-system-specific directory.
 <table>
   <tr><th>FreeBSD 6.2        </th><td>GCC V.3.4.6</td></tr>
   <tr><th>Vine Linux 4.1     </th><td>GCC V.2.95.3, V.3.2, V.3.3.6, V.3.4.3, V.4.1.1</td></tr>
+  <tr><th>FedoraLinux 7      </th><td>GCC V.4.1.2</td></tr>
+  <tr><th>DebianLInux 4.0    </th><td>GCC V.4.1.2</td></tr>
   <tr><th>CygWIN 1.3.10      </th><td>GCC V.2.95.3</td></tr>
   <tr><th>CygWIN 1.5.18      </th><td>GCC V.3.4.4</td></tr>
   <tr><th>MinGW (MSYS 1.0.11)</th><td>GCC V.3.4.5</td></tr>
@@ -307,8 +314,10 @@ You can also overwrite <i>COMPILER</i> by <samp>'make COMPILER=GNUC'</samp> comm
 #define COMPILER_EXT_VAL    "3"
 #define COMPILER_EXT2_VAL   "4"
 #define COMPILER_CPLUS_VAL  "3"
+#define GCC_MAJOR_VERSION   3
 </pre>
-<p>For the first, write major version number of GCC, and for the second, write minor version number.  The third is value of the macro <tt>__GNUG__</tt>, which is the same with the first.</p>
+<p>For the first, write major version number of GCC, and for the second, write minor version number, both by string-literal.  The third is value of the macro <tt>__GNUG__</tt>, which is the same with the first.
+And for the fourth, write the same number with the first by a digit.</p>
 <p>If the version of FreeBSD is not 6.*, then change the following values.</p>
 <pre>
 #define SYSTEM_EXT_VAL      "6"     /* V.5.*: 5, V.6.*:6    */
@@ -343,12 +352,12 @@ You can also overwrite <i>COMPILER</i> by <samp>'make COMPILER=GNUC'</samp> comm
 <pre>
 #define COMPILER_SP3_VAL    "long int"
 </pre>
-<p>Then modify the macros, as on FreeBSD, <i>COMPILER, VERSION_MSG, COMPILER_EXT_VAL, COMPILER_EXT2_VAL, COMPILER_CPLUS_VAL, CPLUS_INCLUDE_DIR1, CPLUS_INCLUDE_DIR2, C_INCLUDE_DIR1</i>.<br>
+<p>Then modify the macros, as on FreeBSD, <i>COMPILER, VERSION_MSG, COMPILER_EXT_VAL, COMPILER_EXT2_VAL, COMPILER_CPLUS_VAL, GCC_MAJOR_VERSION, CPLUS_INCLUDE_DIR1, CPLUS_INCLUDE_DIR2, C_INCLUDE_DIR1</i>.<br>
 For GCC 2.* modify the value of <i>STDC_VERSION</i>.</p>
 <p>You should make sure the include directories by these commands:</p>
 <pre>
-echo '' | gcc -xc -E -v -
-echo '' | g++ -xc++ -E -v -
+gcc -xc -E -v /dev/null
+g++ -xc++ -E -v /dev/null
 </pre>
 <p>The difference files in 'noconfig' directory named <samp>linux_gcc2953.dif, linux_gcc32.dif, linux_gcc336.dif, linux_gcc343.dif and linux_gcc411.dif</samp> are for VineLinux 4.0 / GCC V.2.95.3, V.3.2, V.3.3.6, V.3.4.3 and V.4.1.1, respectively.  For the compiler-specific-build, change <i>COMPILER</i> too.  The include directories may vary between distributions of Linux.  Also, if another version is installed in addition to the system standard version of GCC, it should create another include directory for the specific version.  Specify the particular directory using the above macros.</p>
 <p>The specification of getopt() of glibc is different from the standard ones such as POSIX, please use the one in <samp>lib.c</samp> instead.  I assume glibc is used by default for <samp>noconfig.H</samp> in Linux.</p>
@@ -522,7 +531,7 @@ The character set of the host system and the target system should be both ASCII.
 <p>The above compiler systems are old ones, and users of these systems probably have gotten small now.<br>
 However, if you would like to compile <b>mcpp</b> with these compilers, you will easily succeed in making compiler-independent-build by the following procedures, as long as the compiler has most of C90 specifications, though compiler-specific-build is not easy because it requires various settings.</p>
 <p>As for DJGPP, define <i>SYSTEM, HOST_SYSTEM</i> to <i>SYS_WIN32</i> and <i>HAVE_INTMAX_T, HAVE_INTTYPES_H</i> to <i>FALSE</i> in noconfig.H, define <i>NBUFF</i> as about 1/4 of the default value in system.H. *1</p>
-<p>As for the compiler systems on MS-DOS, define <i>SYSTEM, HOST_SYSTEM</i> to <i>SYS_WIN32</i> and <i>HAVE_LONG_LONG</i> to <i>FALSE</i> in noconfig.H, define <i>NBUFF</i> as about 1/16 of the default, <i>IDMAX, NINCLUDE</i> as about 1/4 of the default in system.H, define <i>SBSIZE</i> as about 1/8 of the default in directive.c.  Then compile with large memory model.<br>
+<p>As for the compiler systems on MS-DOS, define <i>SYSTEM, HOST_SYSTEM</i> to <i>SYS_WIN32</i> and <i>HAVE_LONG_LONG</i> to <i>FALSE</i> in noconfig.H, define <i>NBUFF</i> as about 1/16 of the default, <i>IDMAX</i> as about 1/4 of the default in system.H, define <i>SBSIZE</i> as about 1/8 of the default in directive.c.  Then compile with large memory model.<br>
 However, since memory is scarce on MS-DOS, you may get an "out of memory" error on preprocessing a source which has many long macro definitions, even if you have compiled <b>mcpp</b> with these settings.</p>
 <p>Note:<p>
 <p>*1 It was reported that DJGPP / GCC 4.1.0 successfully compiled <b>mcpp</b> with this setting.</p>
@@ -567,7 +576,7 @@ sudo make install
 Then libmcpp.so and libmcpp.so.0 will be created as links to libmcpp.so.$(SHLIB_VER).
 The *.a is a static library, and the *.so is a shared library.
 The file named libmcpp.la will also be created, which is for the tool 'libtool'.
-$(SHLIB_VER) is 0.0.0 on <b>mcpp</b> V.2.6.3, and 0.0.1 on V.2.6.4.</p>
+$(SHLIB_VER) is 0.0.0 on <b>mcpp</b> V.2.6.3, and 0.0.1 on V.2.6.4 and later.</p>
 <p>On CygWIN and MinGW, DLL named *.dll will be generated instead of *.so.
 On CygWIN, libmcpp.a, libmcpp.dll.a, libmcpp.la will be generated and installed into /usr/local/lib, and cygmcpp-0.dll will be generated and installed into /usr/local/bin.
 On MinGW, those are the same with CygWIN, except cygmcpp-0.dll changes to libmcpp-0.dll.
@@ -595,7 +604,7 @@ On Windows, the name of the libraries are different from those on Linux as shown
   <tr><th>import library of DLL</th><td></td><td>libmcpp-$(DLL_VER).dll.a</td><td>libmcpp-$(DLL_VER).dll.a</td><td>mcpp$(DLL_VER).lib</td></tr>
 </table>
 </blockquote>
-<p>$(SHLIB_VER) is 0.0.0, 0.0.1 on <b>mcpp</b> V.2.6.3, V.2.6.4 respectively.  $(DLL_VER) is 0 on both of <b>mcpp</b> V.2.6.3 and V.2.6.4.</p>
+<p>$(SHLIB_VER) is 0.0.0, 0.0.1 on <b>mcpp</b> V.2.6.3, V.2.6.4 and later, respectively.  $(DLL_VER) is 0 on both of <b>mcpp</b> V.2.6.3 and V.2.6.4.</p>
 <p>On Windows, so-called 'import library' is generated too, which is to use the DLL.
 In order to use the DLL, you must link your main program against this import library.
 The static library and the import library are installed into the $(LIBDIR) specified in the makefile, and the DLL itself is installed into the $(BINDIR).
@@ -834,6 +843,8 @@ Define the maximum length +1 of the logical line (the line spliced deleting \ at
 Define the internal buffer size of macro expansion.  Hence, the result of expanding macros within one logical line (when macro call spreads out to multiple lines, the result of expansion), has to be within this size.  This is also used for the maximum length for memorizing the replacement list of one macro definition internally.  This should be greater or equal to <i>NBUFF</i>*2 and greater or equal to <i>NWORK</i>*2.<br>
 <li><samp><i>NWORK</i></samp><br>
 Defines the maximum length for output line of <b>mcpp</b>.  This cannot be more than the maximum length +1 of what the compiler-proper can accept.  Also, this cannot be more than the value of <i>NBUFF</i>.  When the line length after the macro expansion exceeds this, <b>mcpp</b> divides that to the lines of length less than this value, then outputs.  The length of string literal has to be within the range of <i>NWORK</i>-2.  (The length of the string literal is not the number of elements of the char array, but the length of the string literal token in the source code including " on both sides.  For example, \n is counted as 2 bytes.  'L' prefix is also counted for wide string literals.)<br>
+For GCC-specific-build and Visual C-specific-build, however, <b>mcpp</b> uses NMACWORK instead of NWORK for output line length.
+In other words, it does not divide output line, because these compilers can accept very long line.<br>
 <li><samp><i>IDMAX</i></samp><br>
 Defines the maximum length of an identifier.  A name longer than this value is not an error, but is cut down to this length.<br>
 <li><samp><i>NMACPARS</i></samp><br>
@@ -844,8 +855,6 @@ Defines the limit of the nest level bound by parentheses in #if expression (in r
 Defines the limit of the nest level of #if (#ifdef, #ifndef) sections (how many levels #if and so on can be nested).<br>
 <li><samp><i>INCLUDE_NEST</i></samp><br>
 Define the limit of nest level of #include.  This prevents infinite recursion of #includes.  This can exceeds the limit imposed by OS on number of simultaneously opened files.<br>
-<li><samp><i>NINCLUDE</i></samp><br>
-Define the maximum number of the include directories to be searched.<br>
 <li><samp><i>SBSIZE</i></samp><br>
 Defines the number of elements for the hash table when macros are internally classified by a hash and are stored.  This has to be a power of 2.  It operates correctly when the number is much smaller than the number of macros, but the process is slightly quicker when this is set to be bigger.<br>
 </ul>
@@ -892,7 +901,7 @@ If you require the preprocessing directives which don't conform to Standard C (t
 <p>Note:</p>
 <p>*1 kmmalloc is at the following location.</p>
 <blockquote>
-<p><a href="http://download.vector.co.jp/pack/dos/prog/c/kmmalloc-2.5.1.lzh">http://download.vector.co.jp/pack/dos/prog/c/kmmalloc-2.5.1.lzh</a></p>
+<p><a href="http://download.vector.co.jp/pack/dos/prog/c/kmmalloc-2.5.2.zip">http://download.vector.co.jp/pack/dos/prog/c/kmmalloc-2.5.2.zip</a></p>
 </blockquote>
 <p>*2 In CygWIN, my malloc() is not used as other malloc() are not allowed to be used by the library structure.  As with Visual C 2005, the matter is the same.</p>
 <br>

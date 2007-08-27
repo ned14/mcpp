@@ -238,6 +238,9 @@ typedef long            expr_t;
  * NWORK        Output buffer size.  Set this size according to your compiler-
  *              proper.  Length of string literal should be less than NWORK
  *              - 1.
+ *              Nevertheless, when COMPILER == GNUC || COMPILER == MSC, mcpp
+ *              uses NMACWORK as output buffer size because GNUC and Visual C
+ *              can accept very long line.
  * NBUFF        Input buffer size after line concatenation by <backslash>
  *              <newline>.
  * NMACWORK     Internal work buffer size for macro definition and expansion.
@@ -246,8 +249,6 @@ typedef long            expr_t;
  *              NOTE: Must be NMACPARS <= UCHARMAX.
  * NEXP         The maximum nesting depth of #if expressions.
  * BLK_NEST     The number of nested #if's permitted.
- * NINCLUDE     The number of directories that may be specified on a per-
- *              system basis, or by the -I option.
  * RESCAN_LIMIT The maximum rescan times of macro expansion in STD or POST_STD
  *              modes.
  * PRESTD_RESCAN_LIMIT  The maximum rescan times of macro expansion in KR or
@@ -259,8 +260,8 @@ typedef long            expr_t;
  * SBSIZE defines the number of hash-table slots for the macro symbol table.
  * It must be a power of 2.
  *
- * MKDEP_MAX    The maximum number of filenames in a dependency line of
- *              output of -M* option.
+ * MKDEP_INIT   The initial maximum number of filenames in a dependency line
+ *              of output of -M* option.
  */
 
 #ifndef IDMAX
@@ -277,9 +278,6 @@ typedef long            expr_t;
 #endif
 #ifndef INCLUDE_NEST
 #define INCLUDE_NEST        0x100
-#endif
-#ifndef NINCLUDE
-#define NINCLUDE            0x80
 #endif
 #ifndef RESCAN_LIMIT
 #define RESCAN_LIMIT        0x40
@@ -299,8 +297,8 @@ typedef long            expr_t;
 #ifndef SBSIZE
 #define SBSIZE              0x400
 #endif
-#ifndef MKDEP_MAX
-#define MKDEP_MAX           0x100
+#ifndef MKDEP_INIT
+#define MKDEP_INIT          0x100
 #endif
 
 #if     UCHARMAX < NMACPARS

@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.6.3 or later for Linux / GCC / GNU make
-#       2007/05 kmatsui
+# makefile to compile MCPP version 2.7 or later for Linux / GCC / GNU make
+#       2007/08 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP:
@@ -33,7 +33,7 @@ NAME = mcpp
 #       e.g. cc, gcc, gcc-2.95.3, i686-pc-linux-gnu-gcc-4.1.1
 CC = gcc
 GPP = g++
-CFLAGS = -c -O2 -Wall   # -g -v
+CFLAGS = -c -O2 -Wall   # -ggdb -v
 #CFLAGS += -fstack-protector     # for gcc 4.1 or later
 CPPFLAGS =
 
@@ -47,24 +47,30 @@ CPPOPTS =
 BINDIR = /usr/local/bin
 # INCDIR:   empty
 INCDIR =
+
 else
 # compiler-specific-build:  Adjust for your system
 
 ifeq    ($(COMPILER), GNUC)
-CPPOPTS = -DCOMPILER=$(COMPILER)
-# BINDIR:   the directory where cpp0 or cc1 resides
-#BINDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3
-#BINDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2
-#BINDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6
-BINDIR = /usr/local/libexec/gcc/i686-pc-linux-gnu/4.1.1
-# INCDIR:   version specific include directory
-#INCDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include
-#INCDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2/include
-#INCDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6/include
-INCDIR = /usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include
+# The directory where 'gcc' (cc) command is located
+GCCDIR = /usr/bin
+#GCCDIR = /usr/local/bin
 # set GCC version
 gcc_maj_ver = 4
 gcc_min_ver = 1
+# INCDIR:   GCC's version specific include directory
+#INCDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include
+#INCDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2/include
+#INCDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6/include    # Vine 4.1
+#INCDIR = /usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include
+INCDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2/include          # Debian 4.0
+CPPOPTS = -DCOMPILER=$(COMPILER)
+
+#BINDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3
+#BINDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2
+#BINDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6            # Vine 4.1
+#BINDIR = /usr/local/libexec/gcc/i686-pc-linux-gnu/4.1.1
+BINDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2                  # Debian 4.0
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0
 else
@@ -72,10 +78,6 @@ cpp_call = $(BINDIR)/cc1
 endif
 endif
 endif
-
-# The directory where 'gcc' (cc) command is located
-GCCDIR = /usr/bin
-#GCCDIR = /usr/local/bin
 
 ifneq	($(MALLOC), )
 ifeq	($(MALLOC), KMMALLOC)
@@ -122,8 +124,8 @@ endif
 install :
 	install -s $(NAME) $(BINDIR)/$(NAME)
 ifeq    ($(COMPILER), GNUC)
-	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)' \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)'
+	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)' SYS_LINUX
 endif
 
 clean	:
@@ -132,8 +134,8 @@ clean	:
 uninstall:
 	rm -f $(BINDIR)/$(NAME)
 ifeq    ($(COMPILER), GNUC)
-	@./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)'
+	@./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'  \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)' SYS_LINUX
 endif
 
 ifeq    ($(COMPILER), )
@@ -149,7 +151,7 @@ mcpplib_a:	$(OBJS)
 
 # shared library
 CUR = 0
-REV = 1         # mcpp 2.6.3: 0, mcpp 2.6.4: 1
+REV = 1         # mcpp 2.6.3: 0, mcpp 2.6.4 and later: 1
 AGE = 0
 SHLIB_VER = $(CUR).$(AGE).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so lib.so
