@@ -2809,7 +2809,8 @@ error:
     free( fname);
     return  FALSE;
 opened:
-    free( fname);
+    /* 'fname' should not be free()ed, it is used as file->         */
+    /*      real_fname and has been registered into fnamelist[]     */
     errno = 0;      /* Clear errno possibly set by path searching   */
     return  TRUE;
 }

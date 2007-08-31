@@ -2448,13 +2448,18 @@ static void do_msg(
                     break;              /* Skip magic characters    */
                 /* Else fall through    */
             case RT_END:
-            case IN_SRC:
             case CAT:
             case ST_QUOTE:
             case DEF_MAGIC:
                 if (! standard)
                     *tp++ = ' ';
                 break;                  /* Skip the magic characters*/
+            case IN_SRC:
+                if (! standard)
+                    *tp++ = ' ';
+                if ((mcpp_debug & MACRO_CALL) && !in_directive)
+                    sp++;               /* Skip one more byte       */
+                break;
             case MAC_INF:
                 if (mcpp_mode != STD) {
                     *tp++ = ' ';
