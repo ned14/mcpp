@@ -328,6 +328,18 @@ void    init_system( void)
     to_search_framework = NULL;
 #endif
 }
+
+void    init_lib( void)
+/*
+ * Initialize getopt()
+ * This should be in system.c rather than lib.c
+ * in case of getopt() is in library.
+ */
+{
+    optind = 1;
+    opterr = 1;
+}
+
 #endif
 
 #define LINE90LIMIT         32767
@@ -1183,7 +1195,7 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.7-prerelease (2007/08) "
+        "MCPP V.2.7-prerelease (2007/09) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif

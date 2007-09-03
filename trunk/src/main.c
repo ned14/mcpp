@@ -318,7 +318,7 @@ static void     init_main( void)
     n_mac_pars_min = NMACPARS;
     errors = 0;
     warn_level = -1;
-    infile = stdin_name = NULL;
+    infile = NULL;
     in_directive = in_define = in_getarg = in_include = FALSE;
     in_asm = 0L;
     macro_line = 0L;
@@ -355,9 +355,7 @@ int     main
     init_eval();
     init_support();
     init_system();
-#if NEED_GETOPT
     init_lib();
-#endif
 #endif
 
     fp_in = stdin;
