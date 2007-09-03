@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2007/08)<br>
+<h4>for V.2.7 (2007/09)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -54,7 +54,10 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.3.5.8" href="#3.5.8">3.5.8. #pragma MCPP debug macro_call</a></dl>
 <dd><a name="toc.3.6" href="#3.6">3.6. #assert, #asm, #endasm</a>
 <dd><a name="toc.3.7" href="#3.7">3.7. New C99 Features (_Pragma() operator, Variadic Macro and others)</a>
-<dd><a name="toc.3.8" href="#3.8">3.8. Asm Statement in Borland C and Other Special Syntaxes</a>
+<dd><dl><dt><a name="toc.3.8" href="#3.8">3.8. Particular specifications for certain compiler system</a>
+<dd><a name="toc.3.8.1" href="#3.8.1">3.8.1. Variadic macro of GCC and Visual C</a>
+<dd><a name="toc.3.8.2" href="#3.8.2">3.8.2. Handling of 'defined' by GCC</a>
+<dd><a name="toc.3.8.3" href="#3.8.3">3.8.3. Asm Statement in Borland C and Other Special Syntaxes</a></dl>
 <dd><dl><dt><a name="toc.3.9" href="#3.9">3.9. Problems of GCC and Compatibility with GCC</a>
 <dd><a name="toc.3.9.1" href="#3.9.1">3.9.1. Preprocessing FreeBSD 2/Kernel Sources</a>
 <dd><a name="toc.3.9.2" href="#3.9.2">3.9.2. Preprocessing FreeBSD 2/Libc</a>
@@ -1096,7 +1099,7 @@ This mode is specified also by -K option.</p>
 <p>Macro notification mode is designed to allow reconstruction of the original source position from the preprocessed output. The primary purpose of this mode is to allow C/C++ refactoring tools to refactor source code without having to implement a special-purpose C preprocessor. This mode is also handy for debugging macro expansions. *1</p>
 <p>The goal for macro expansion mode is to annotate every macro expansion, while still allowing the output to be compiled.
 On the other hand, '<samp>#pragma MCPP debug expand</samp>' is to trace macro expansion and outputs detailed informations, but its output is not compilable.</p>
-<p>For example, macro definition statements such as:</p>
+<p>For example, macro definition directives such as:</p>
 <pre>
 #define NULL 0L
 #define BAR(x, y) x ## y
@@ -1118,6 +1121,7 @@ The start of macro expansion takes the following format replacing <samp>/*m</sam
 <samp>/*&lt;&lt;NAME&gt; &lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;*/</samp>
 <p>On macro with arguments, markers indicating source location of each argument and markers indicating start and end of each argument expansion are output too.
 The marker for argument location takes the format of <samp>/*!...*/</samp>.
+When a macro is found in an argument, informations on that macro is output recursively, with its location information if it is on the source file.
 Macro argument marker also have a disambiguating naming scheme. An argument name is of the format:</p>
 <samp>&lt;func-like-macro-name&gt;:&lt;nesting level&gt;-&lt;argument number&gt;</samp>
 <p>This way if someone calls <samp>BAZ(BAZ(a,b), c)</samp> it would possible to distinguish nested macros of the same name and their arguments from each other.
@@ -1214,17 +1218,59 @@ fprintf(stderr, "X = %d\n", x);
 <p>*2 C99 says that a #pragma argument that begins with STDC is not macro-expanded.  For other #pragma arguments, whether macro is expanded is implementation-defined.</p>
 <br>
 
-<h2><a name="3.8" href="#toc.3.8">3.8. Asm Statement in Borland C and Other Special Syntaxes</a></h2>
-<p>Borland C has the asm keyword.  This keyword is used to write assembly code as follows:</p>
+<h2><a name="3.8" href="#toc.3.8">3.8. Particular specifications for certain compiler systems</a></h2>
+<p><b>mcpp</b> of compiler-specific-builds have some specifications peculiar to each compiler system.
+Such particular specifications, other than execution option and #pragma, are explained in this section.</p>
+
+<h3><a name="3.8.1" href="#toc.3.8.1">3.8.1. Variadic macro of GCC and Visual C</a></h3>
+<p>GCC has variadic macro of its own specification from V.2 as shown in <a href="#3.9.1.6">3.9.1.6</a>.
+In this manual we call this as GCC2-spec variadic macro.
+Moreover, GCC implemented one more spec of variadics from V.3 as shown in <a href="#3.9.6.3">3.9.6.3</a>, which we call GCC3-spec variadic macro.
+GCC V.2.95 and later implements C99 variadics, too.
+Nevertheless, softwares such as glibc or Linux system headers do not use C99 variadics, nor even GCC3-spec one, and still use that of GCC2-spec.</p>
+<p><b>mcpp</b> of GCC-specific-build on <i>STD</i> mode implemented GCC3-spec variadics from V.2.6.3, and GCC2-spec one from V.2.7, in order to avoid inconveniences on Linux or some other softwares.
+Yet, <b>mcpp</b> warns at use of them.
+GCC-spec variadics, especially GCC2-spec one, are not only unportable, but also syntactically unclean.
+Use of them in sources to write in future is not recommendable.</p>
+<p>Visual C had not implemented variadic macro up to 2003.
+But, Visual C 2005 finally implemented it.
+Its specification is C99 one with a modification like GCC3-spec one.
+When variable arguments are absent, Visual C removes their immediately preceding comma.
+It does not use '##' token used in GCC3-spec.
+The specification is illustrated as below.
+Visual C document says that in the third example, a comma is not removed.
+In actual, however, it removes even the comma in this case.</p>
+<pre>
+#define EMPTY
+#define VC_VA( format, ...)     printf( format, __VA_ARGS__)
+VC_VA( "var_args: %s %d\n", "Hello", 2005);     /* printf( "var_args: %s %d\n", "Hello", 2005); */
+VC_VA( "absence of var_args:\n");               /* printf( "absence of var_args:\n");   */
+VC_VA( "empty var_args:\n", EMPTY);             /* printf( "empty var_args:\n", );  */  /* trailing comma   */
+</pre>
+<p>Visual C-specific-build of <b>mcpp</b> implemented in <i>STD</i> mode this special handling from V.2.7.
+Still, it warns at use of the spec.
+<b>mcpp</b> implements the behavior on the above third example as its spec, and does not remove the comma.</p>
+
+<h3><a name="3.8.2" href="#toc.3.8.2">3.8.2. Handling of 'defined' by GCC</a></h3>
+<p>On a macro with 'defined' token in it, GCC expands it differently from usual when it is in #if line.
+I explain this problem at <a href="#3.9.4.6">3.9.4.6</a>.</p>
+<p><b>mcpp</b> of GCC-specific-build from V.2.7 onward handles this sort of macro like GCC in <i>STD</i> mode.
+This behavior was implemented to cope with a few wrong macros used in Linux system headers.
+Yet, it warns at use of 'defined' token in macro on #if line.
+You should write correct #if expression.</p>
+
+<h3><a name="3.8.3" href="#toc.3.8.3">3.8.3. Asm Statement in Borland C and Other Special Syntaxes</a></h3>
+<p>Borland C has the <samp>asm</samp> keyword.  This keyword is used to write assembly code as follows:</p>
 <pre>
 asm {
     mov x,4;
     ...;
 }
 </pre>
-<p>This is quite irregular and deviates from the C grammar more than #asm.  If there happen to be a token with the same name as a macro, it will be macro-expanded.  The same can be said with Borland C itself and <b>mcpp</b>.  It is recommended that an assembler program should be written in a separate .ASM file.</p>
-<p>Visual C++ also has the __asm keyword, which provides the similar functionality to this.</p>
-<p>GCC provide a Standard-conforming built-in function asm() which is used as asm( " mov x,4\n").</p>
+<p>This is quite irregular and deviates from the C grammar.  If there happen to be a token with the same name as a macro, it will be macro-expanded.  The same can be said with Borland C itself and <b>mcpp</b>.  It is recommended that an assembler program should be written in a separate <samp>.asm</samp> file.
+<b>mcpp</b> does not treat this specially.</p>
+<p>Visual C++ also has the <samp>__asm</samp> keyword, which provides the similar functionality to this.</p>
+<p>GCC provide a Standard-conforming built-in function <samp>asm()</samp> which is used as <samp>asm( " mov x,4\n")</samp>.</p>
 <br>
 
 <h2><a name="3.9" href="#toc.3.9">3.9. Problems of GCC and Compatibility with GCC</a></h2>
@@ -1357,8 +1403,7 @@ asm(
 </pre>
 <p>This is simpler with one-to-one correspondence.  However, this way of writing has a disadvantage that a comma immediately before an empty argument remains, resulting in, for example, printf( fmt, ).  In this case, there is no other way but to write a macro definition in accordance with C99 specifications, or avoid using an empty argument in a macro invocation.  Harmless tokens, such as NULL or 0, are used to write, for example, <samp>MCD_TRACE(fmt, NULL)</samp>. *1</p>
 <p>Note:</p>
-<p>*1 To use <b>mcpp</b>, source code must be rewritten in this way.  In addition, with the -Q option, a huge amount of warnings is output not to the screen but to the mcpp.err file.</p>
-<p>GCC 2.95.3 or later also implements variable argument macros based on the C99 syntax.  It is recommended to use this syntax.  GCC specific one provides the flexibility of allowing for zero number of variable argument, but its notation is bad in that (1) for the "<samp>args...</samp>" parameter, a white space must not be inserted between "<samp>args</samp>" and "<samp>...</samp>", but such a pp-token is not permitted in C/C++, and that (2) it is not desirable that the notation for a token concatenation operator is used for different meaning in a replacement list.  It is desirable to allow zero number of variable arguments based on the C99 notation.  GCC 3 introduced a notation for variable argument macros that is a mixture of GCC 2's traditional notation and C99 one.  For details, refer to <a href="#3.9.6.3">3.9.6.3</a>.</p>
+<p>*1 <p>GCC 2.95.3 or later also implements variable argument macros based on the C99 syntax.  It is recommended to use this syntax.  GCC specific one provides the flexibility of allowing for zero number of variable argument, but its notation is bad in that (1) for the "<samp>args...</samp>" parameter, a white space must not be inserted between "<samp>args</samp>" and "<samp>...</samp>", but such a pp-token is not permitted in C/C++, and that (2) it is not desirable that the notation for a token concatenation operator is used for different meaning in a replacement list.  It is desirable to allow zero number of variable arguments based on the C99 notation.  GCC 3 introduced a notation for variable argument macros that is a mixture of GCC 2's traditional notation and C99 one.  For details, refer to <a href="#3.9.6.3">3.9.6.3</a>.</p>
 
 <h4>3.9.1.7. Empty Argument in Macro Call</h4>
 <p>The following macro invocations appear in <samp>nfs/nfs.h, nfs/nfsmount.h, nfs/nfsmode.h, netinet/if_ether.c, netinet/in.c, sys/proc.h, sys/socketvars.h, i386/scsi/aic7xxx.h, i386/include/pmap.h, dev/aic7xxx/scan.l, dev/aic7xxx/aic7xxx_asm.c, kern/vfs_cache.c, pci/wd82371.c, vm/vm_object.h, and vm/device/pager.c</samp>.  So do in <samp>/usr/include/nfs/nfs.h</samp>.</p>
@@ -1608,7 +1653,7 @@ etc.
 <p>However, as a whole, there were not a few sources that are based on GCC-specific specifications in glibc 2.1, which impairs portability to other compiler systems although such sources form only a small portion of several thousand source files.  Dependence on GCC local specifications is not desirable for program readability and maintainability.  I hope that GCC V.3 will make obsolete these local specifications and that all the source code based on them will be completely rewritten.</p>
 
 <h3><a name="3.9.5" href="#toc.3.9.5">3.9.5. To Use <b>mcpp</b> with GCC 2</a></h3>
-<p>You must modify some source code as follows before you can use <b>mcpp</b> to compile glibc 2.1 sources:</p>
+<p>You must modify some source code as follows before you can use <b>mcpp</b> to compile glibc 2.1 sources: *1</p>
 <ol>
 <li>Macro definitions with variable number of arguments: Modify the 14 files in 3.9.4.3 as shown in 3.9.1.6.  Of course, you had better save the original files.<br>
 <br>
@@ -1619,7 +1664,7 @@ etc.
 <ol>
 <li>Become a super-user to move to the directory where cpp resides (here assuming <samp>/usr/lib/gcc-lib/i386-redhat-linux/egcs-2.91.66</samp>).  Let me assume that this directory has GCC/cpp installed under the name of cpp and <b>mcpp</b> as mcpp.<br>
 <br>
-<li>Create a file called mcpp.sh with the following contents. *1<br>
+<li>Create a file called mcpp.sh with the following contents. *2<br>
 <pre>
 #!/bin/sh
 /usr/lib/gcc-lib/i386-redhat-linux/egcs-2.91.66/mcpp -Q -lang-asm "$@"
@@ -1640,7 +1685,9 @@ ln -sf cpp_gnuc cpp
 </pre>
 </ol>
 <p>Note:</p>
-<p>*1 If you use 'configure' and 'make' to compile GCC-specific-build of <b>mcpp</b>, the 'make install' command will set the script appropriately.  The only thing left for you here is to add '-Q -lang-asm' options to the script.</p>
+<p>*1 <b>mcpp</b> V.2.7 implemented these specs.
+Hence, editing of sources are not necessarily required.</p>
+<p>*2 If you use 'configure' and 'make' to compile GCC-specific-build of <b>mcpp</b>, the 'make install' command will set the script appropriately.  The only thing left for you here is to add '-Q -lang-asm' options to the script.</p>
 
 <h4><a name="3.9.5.1" href="#toc.3.9.5.1">3.9.5.1. To Sort <b>mcpp</b>'s Warnings</a></h4>
 <p>Another problem of using <b>mcpp</b> is that it issues a huge amount of warning messages.  You can redirect them to a file using the -Q option, but when you preprocess a large amount of source code, such as glibc, total of several hundred MB or more of 'mcpp.err' are created, so it is impossible for you to look through the whole files.</p>
@@ -2549,7 +2596,167 @@ Even on FreeBSD, an installation of another version of GCC makes GCC-version-spe
 <br>
 
 <h3><a name="3.9.10" href="#toc.3.9.10">3.9.10. Preprocessing firefox 3.0a7pre</a></h3>
-<p>(Not yet written)</p>
+<p>I compiled source of firefox developing version 3.0a7pre (July, 2007) by GCC 4.1.2 replacing its preprocessor with <b>mcpp</b> V.2.7 on Linux/x86.
+<b>mcpp</b> was executed with -K option passing its output to cc1 (cc1plus).
+As a result, the compilation successfully completed, and the firefox binary was generated. *1</p>
+<p>The preprocessing portability of firefox source on the whole is rather high.
+The dependencies on GCC-local specifications, such as frequently found in glibc sources, are rarely found.
+It is portable enough to officially support both of GCC on Linux, Mac OS X and Visual C++ on Windows.</p>
+<p>Preprocessing portability of a source is, however, not necessarily sufficient, even if GCC and Visual C pass it.
+In the sections below, I will check some problems, sometimes comparing with glibc sources.
+I omit explanations on GCC's problems here to avoid duplication.
+For GCC's problems, refer to <a href="#3.9.4">3.9.4</a>, <a href="#3.9.8">3.9.8.
+</a>, which also comment on glibc sources. *2</p>
+<p>Note:</p>
+<p>*1 I checked out the sources from CVS repository of mozilla.org.
+One of the motivations to compile firefox source was to test -K option of <b>mcpp</b>.
+This option was proposed by Taras Glek, and he has been working on refactoring of C/C++ source at mozilla.com.
+So, I also used firefox source to test -K option and other behaviors of <b>mcpp</b>.
+About -K option, refer to <a href="#2.4">2.4</a>.</p>
+<p>*2 There is a coding-guideline for firefox as below.
+But, it is too old (last updated in 2001).</p>
+<a href="http://www.mozilla.org/hacking/portable-cpp.html">http://www.mozilla.org/hacking/portable-cpp.html</a>
+ 
+<h4>3.9.10.1. GCC-local specifications are rarely used</h4>
+<p>The following GCC-local-specs, which are sometimes used in glibc sources, are not used in firefox sources at all.
+Though compiling firefox on Linux includes system headers, and some of which contain #include_next and GCC2-spec variadic macros, they are not firefox sources themselves.</p>
+<ul>
+<li>#include_next<br>
+<li>GCC-local variadic macro<br>
+Even C99 spec variadic macro is not yet used, too.
+<li>*.S file (assembler source which requires preprocessing)<br>
+The assembler sources are written as *.s (*.asm) files, and some of which contain macros, but none of them calls for preprocessor anyway.
+</ul>
+<p>The following features are not used even in recent glibc, and not used in firefox at all.</p>
+<ul>
+<li>Multi-line string-literal
+<li>#warning
+<li>-isystem, -I- options
+</ul>
+
+<h4>3.9.10.2. Using C99 specs without specifying C99</h4>
+<p>Many sources use C99 specifications without specifying C99.
+GCC use "gnu89" spec by default on *.c source, which is a compromising spec of C90 plus some of C99 specs and GCC-local specs.
+Some of firefox sources use the following C99 specs implicitly, depending on GCC's default behavior.</p>
+<ul>
+<li>Empty argument in macro call<br>
+Though empty argument in macro call is very rare in firefox, these two files have that.
+<samp>layout/style/nsHTMLStyleSheet.cpp, gfx/cairo/cairo/src/cairoint.h</samp>
+<li>Translation limits beyond C90<br>
+Length of an identifier, nesting level of #include, number of macro definitions and so forth often exceed C90 translation limits.<br>
+Identifiers longer than 31 bytes are found especially frequently in the directory <samp>gfx/cairo/cairo/src/</samp>.
+Nesting of #include over than 8 level and macro definitions over than 1024 are often found, too.
+These are almost inevitable on Linux, since only inclusion of some system headers often reaches these limits.
+<li>Using <samp>//</samp> comment in C source<br>
+Some C sources have this type of comments.
+<a href="http://www.mozilla.org/hacking/portable-cpp.html">http://www.mozilla.org/hacking/portable-cpp.html</a> prohibits this.
+However, this causes few problem nowadays.
+</ul>
+<p>Above specifications are also available on Visual C 2005.
+Since GCC has <samp>-std=c99</samp> option, we might use this to specify C99 explicitly.
+Visual C, however, has no option to specify a version of Standard.
+We cannot help to use C99 specs implicitly.
+Therefore, firefox sources cannot be blamed for using C99 specs implicitly, in the current states of the major compiler-systems. *1</p>
+<p>By the way, firefox sources do not use variadic macro for some reason, in spite of using some other C99 specs implicitly.
+Visual C up to 2003 did not implement variadic macro.
+Is that why firefox did not use the feature?
+The circumstances has changed since Visual C 2005 implemented it.</p>
+<p>Note:</p>
+<p>*1 On C++, GCC defaults to "gnu++98" spec, which is explained as "C++98 plus GCC extensions".  It has in actual, however, some C99 specs mixed.
+Meanwhile, Visual C says that it is based on C90 and C++98 for C and C++ respectively.
+In actual, both of C and C++ of Visual C have C99 features mixed in it as well as a few Visual C extensions, especially in Visual C 2005.
+Both of GCC and Visual C have such mixture of versions of Standard and their own extensions, thus bring about some ambiguities.
+The absence of option in Visual C to specify a version of Standard is the most inconvenient problem.</p>
+
+<h4>3.9.10.3. Object-like macro replaced with function-like macro name</h4>
+<p>Object-like macro replaced with function-like macro name is found sometimes in many other programs, and is found also in firefox sources below, though not frequently.</p>
+<samp>content/base/src/nsTextFragment.h,
+gfx/cairo/libpixman/src/pixman-xserver-compat.h,
+modules/libjar/zipstub.h,
+nsprpub/pr/include/private/primpl.h,
+parser/expat/lib/xmlparse.c,
+security/nss/lib/jar/jarver.c</samp>
+<p>In addition, building of firefox creates, in a directory for developing environment, many links to header files, which are copied into /usr/include/firefox-VERSION/ when you install developing environment for firefox.
+Some of these header files, listed below, have definitions of object-like macro replacing to function-like macro name. ("obj-dir" represents the directory to place object files.)</p>
+<samp>obj-dir/dist/include/imglib2/ImageLogging.h,
+obj-dir/dist/include/nspr/obsolete/protypes.h,
+obj-dir/dist/include/nspr/prtypes.h,
+obj-dir/dist/include/xpcom/nsISupportsImpl.h,
+obj-dir/dist/public/nss/secport.h,
+obj-dir/mozilla-config.h</samp>
+<p>These macros should be written as function-like macro to improve readability.
+In actual, many other macros in firefox sources are defined as function-like macro replacing to another function-like macro with the same arguments.
+There are coding style differences among the authors.
+It would be better to set a coding guideline on this matter.</p>
+
+<h4>3.9.10.4. Macro expanded to 'defined'</h4>
+<p>A Macro with 'defined' token in its replacement text, sometimes found in glibc, is found in firefox only once.</p>
+<p><samp>modules/oji/src/nsJVMConfigManagerUnix.cpp</samp>
+defines a macro as:
+<pre>
+#define NS_COMPILER_GNUC3 defined(__GXX_ABI_VERSION) && \
+                          (__GXX_ABI_VERSION >= 102) /* G++ V3 ABI */
+</pre>
+and uses it in itself as:</p>
+<pre>
+#if (NS_COMPILER_GNUC3)
+</pre>
+<p>This macro should be removed and the #if line should be rewritten as:</p>
+<pre>
+#if defined(__GXX_ABI_VERSION) && (__GXX_ABI_VERSION >= 102) /* G++ V3 ABI */
+</pre>
+<p>Maybe this file is to be compiled only by GCC, nevertheless it is not good practice to depend on preprocessor's wrong implementation.</p>
+<p>Note:</p>
+<p>*1 GCC-specific-build of <b>mcpp</b> V.2.7 enabled GCC-like handling of 'defined' in macro on #if line.
+But <b>mcpp</b> warns at it, and you would better to revise the code.</p>
+
+<h4>3.9.10.5. -include option</h4>
+<p>Compilation of firefox begins with <samp>configure</samp>, which generates <samp>mozilla-config.h</samp>.
+In compilation of most of the sources, this header file is specified by <samp>-include</samp> option.
+Why don't they <samp>#include</samp> this header at their top?</p>
+
+<h4>3.9.10.6. Redefinition of macro</h4>
+<p>In compilation of most of the sources, <samp>-DZLIB_INTERNAL</samp> option is specified.
+This macro is, however, defined by some sources in <samp>modules/zlib/src/</samp> as:</p>
+<pre>
+#define ZLIB_INTERNAL
+</pre>
+<p>and is used as:
+<pre>
+#    ifdef ZLIB_INTERNAL
+</pre>
+<p>Though the difference does not make real harm in this case, different definitions of the same macro is not recommended.
+Maybe the option by Makefiles is redundant.</p>
+<p><samp>xpcom/build/nsXPCOMPrivate.h</samp> defines a macro <tt>MAXPATHLEN</tt> differently from <samp>/usr/include/sys/param.h</samp>.
+This discrepancy stems from an inconsistency among the related header files on whether include <samp>/usr/include/sys/param.h</samp> or not.
+The related header files should be reorganized.</p>
+
+<h4>3.9.10.7. Nesting of comments</h4>
+<p><p><samp>security/nss/lib/pk11wrap/pk11obj.c</samp> has a few queer nested comments as:</p>
+<pre>
+/*
+ * a comment
+ * /* one more comment */
+</pre>
+<p>Though this notation is not wrong, this is mistake-prone.
+The outer comment should be written using #if 0 and #endif as:</p>
+<pre>
+#if 0
+a comment
+/* one more comment */
+#endif
+</pre>
+
+<h4>3.9.10.8. Too long comments</h4>
+<p>The following files have too long comments crossing over several hundred lines or more.</p>
+<p><samp>extensions/universalchardet/src/base/Big5Freq.tab, extensions/universalchardet/src/base/EUCKRFreq.tab,intl/unicharutil/src/ignorables_abjadpoints.x-ccmap, layout/generic/punct_marks.ccmap</samp></p>
+<p>Especially, in the directories <samp>intl/uconv/ucv*</samp>, there are many files with too long comments.
+There is even a case of single comment crossing over 7000 lines!
+All of these files have name of *.uf or *.ut, and are mapping tables between Unicode and each Asian encodings, generated automatically by some tool.
+They do not seem to be source of C/C++, but they are included from other C++ sources.
+The most part of these files are comments, which seem to be a sort of document or table for some other tool.</p>
+<p>It is not recommended to include long documents or tables in source files.
+They should be separated from source files, even if placed in source tree.</p>
 <br>
 
 <h2><a name="3.10" href="#toc.3.10">3.10. Visual C++ System Header Problems</a></h2>

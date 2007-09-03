@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2007/08/27  kmatsui
+2007/09/03  kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
@@ -29,6 +29,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         diagnostics sake.  (internal.H, system.c)
         * Fixed a bug of file searching failure when a file is specified
         by relative path in -include option.  (system.c)
+        * Fixed a bug of mcpplib initialization which caused problem on
+        CygWIN.  (main.c, system.c, lib.c)
         * Changed allocation of buffer for -M* options and incdir[],
         fnamelist[], once_list[] from fixed size to dynamically
         enlarging ones.  (system.c)

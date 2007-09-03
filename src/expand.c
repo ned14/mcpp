@@ -1428,7 +1428,7 @@ static char *   substitute(
                 mcpp_fprintf( DBG, " (expanding arg[%d])", c);
                 dump_string( NULL, arglist[ c - 1]);
             }
-#if COMPILER == GNUC
+#if COMPILER == GNUC || COMPILER == MSC
             arg = arglist[ c - 1];
             if (trace_macro) {
                 if (*arg == MAC_INF) {
@@ -1436,13 +1436,22 @@ static char *   substitute(
                         arg += ARG_S_LEN - 1;       /* Next to magic chars  */
                 }
             }
+#if COMPILER == GNUC
             if (c == gvar_arg && *arg == RT_END && ! ansi) {
-                /* GCC variadic macro and its variable argument is absent   */
-                /* Note that in its "strict-ansi" mode GCC does not remove  */ 
-                /* ',', nevertheless it ignores '##' (inconsistent          */
-                /* behavior).  Though GCC changes behavior depending the    */
-                /* ',' is preceded by space or not, we only count on the    */
-                /* "strict-ansi" flag.                                      */
+                /*
+                 * GCC variadic macro and its variable argument is absent.
+                 * Note that in its "strict-ansi" mode GCC does not remove 
+                 * ',', nevertheless it ignores '##' (inconsistent
+                 * behavior).  Though GCC2 changes behavior depending the
+                 * ',' is preceded by space or not, we only count on the
+                 * "strict-ansi" flag.
+                 */
+#else
+            if ((defp->nargs & VA_ARGS) && c == (defp->nargs & ~VA_ARGS)
+                    && *arg == RT_END && mcpp_mode == STD) {
+                /* Visual C 2005 also removes ',' immediately preceding     */
+                /* absent variable arguments.  It does not use '##' though. */
+#endif
                 char *  tmp;
                 tmp = out - 1;
                 while (*tmp == ' ')
