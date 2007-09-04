@@ -56,6 +56,7 @@
 #if     HOST_SYS_FAMILY != SYS_UNIX     /* On UNIX "unistd.h" will suffice  */
 extern int      getopt( int argc, char * const * argv, const char * opts);
 extern int      optind;
+extern int      opterr;
 extern char *   optarg;
 #endif
 

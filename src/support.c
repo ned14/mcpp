@@ -1630,7 +1630,6 @@ static char *   parse_line( void)
     char *      limit;                      /* Buffer end           */
     char *      tp;     /* Current pointer into temporary buffer    */
     char *      sp;                 /* Pointer into input buffer    */
-    char *      sp_save;
     size_t      com_size;
     int         c;
 
@@ -1661,7 +1660,6 @@ static char *   parse_line( void)
         case '/':
             switch (*sp++) {
             case '*':                       /* Start of a comment   */
-                sp_save = sp - 2;           /* Location of comment  */
                 if ((sp = read_a_comment( sp, &com_size)) == NULL) {
                     free( temp);            /* End of file with un- */
                     return  NULL;           /*   terminated comment */
