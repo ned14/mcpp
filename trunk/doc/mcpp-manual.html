@@ -69,7 +69,7 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.3.9.7" href="#3.9.7">3.9.7. To Use <b>mcpp</b> with GCC 3 or 4</a>
 <dd><a name="toc.3.9.8" href="#3.9.8">3.9.8. Preprocessing Linux/glibc 2.4</a>
 <dd><a name="toc.3.9.9" href="#3.9.9">3.9.9. The Problems of Linux / stddef.h, limits.h and #include_next</a>
-<dd><a name="toc.3.9.10" href="#3.9.10">3.9.10. Preprocessing firefox 3.0a7pre</a></dl>
+<dd><a name="toc.3.9.10" href="#3.9.10">3.9.10. Preprocessing firefox 3.0a8pre</a></dl>
 <dd><dl><dt><a name="toc.3.10" href="#3.10">3.10. Visual C++ System Header Problems</a>
 <dd><a name="toc.3.10.1" href="#3.10.1">3.10.1. Comment Generating Macro?</a></dl>
 <br>
@@ -2595,15 +2595,15 @@ Even on FreeBSD, an installation of another version of GCC makes GCC-version-spe
 </pre>
 <br>
 
-<h3><a name="3.9.10" href="#toc.3.9.10">3.9.10. Preprocessing firefox 3.0a7pre</a></h3>
-<p>I compiled source of firefox developing version 3.0a7pre (July, 2007) by GCC 4.1.2 replacing its preprocessor with <b>mcpp</b> V.2.7 on Linux/x86.
+<h3><a name="3.9.10" href="#toc.3.9.10">3.9.10. Preprocessing firefox 3.0a8pre</a></h3>
+<p>I compiled source of firefox developing version 3.0a8pre (September, 2007) by GCC 4.1.2 replacing its preprocessor with <b>mcpp</b> V.2.7 on Linux/x86.
 <b>mcpp</b> was executed with -K option passing its output to cc1 (cc1plus).
 As a result, the compilation successfully completed, and the firefox binary was generated. *1</p>
 <p>The preprocessing portability of firefox source on the whole is rather high.
 The dependencies on GCC-local specifications, such as frequently found in glibc sources, are rarely found.
 It is portable enough to officially support both of GCC on Linux, Mac OS X and Visual C++ on Windows.</p>
 <p>Preprocessing portability of a source is, however, not necessarily sufficient, even if GCC and Visual C pass it.
-In the sections below, I will check some problems, sometimes comparing with glibc sources.
+In the sections below, I will check some problems, sometimes comparing them with glibc sources.
 I omit explanations on GCC's problems here to avoid duplication.
 For GCC's problems, refer to <a href="#3.9.4">3.9.4</a>, <a href="#3.9.8">3.9.8.
 </a>, which also comment on glibc sources. *2</p>
@@ -2640,8 +2640,8 @@ GCC use "gnu89" spec by default on *.c source, which is a compromising spec of C
 Some of firefox sources use the following C99 specs implicitly, depending on GCC's default behavior.</p>
 <ul>
 <li>Empty argument in macro call<br>
-Though empty argument in macro call is very rare in firefox, these two files have that.
-<samp>layout/style/nsHTMLStyleSheet.cpp, gfx/cairo/cairo/src/cairoint.h</samp>
+Though empty argument in macro call is very rare in firefox, these 4 files have that.
+<samp>layout/style/nsHTMLStyleSheet.cpp, layout/generic/nsObjectFrame.cpp, intl/uconv/src/nsGREResProperties.cpp, gfx/cairo/cairo/src/cairoint.h</samp>
 <li>Translation limits beyond C90<br>
 Length of an identifier, nesting level of #include, number of macro definitions and so forth often exceed C90 translation limits.<br>
 Identifiers longer than 31 bytes are found especially frequently in the directory <samp>gfx/cairo/cairo/src/</samp>.
@@ -2671,7 +2671,6 @@ The absence of option in Visual C to specify a version of Standard is the most i
 <h4>3.9.10.3. Object-like macro replaced with function-like macro name</h4>
 <p>Object-like macro replaced with function-like macro name is found sometimes in many other programs, and is found also in firefox sources below, though not frequently.</p>
 <samp>content/base/src/nsTextFragment.h,
-gfx/cairo/libpixman/src/pixman-xserver-compat.h,
 modules/libjar/zipstub.h,
 nsprpub/pr/include/private/primpl.h,
 parser/expat/lib/xmlparse.c,
@@ -2717,7 +2716,7 @@ Why don't they <samp>#include</samp> this header at their top?</p>
 
 <h4>3.9.10.6. Redefinition of macro</h4>
 <p>In compilation of most of the sources, <samp>-DZLIB_INTERNAL</samp> option is specified.
-This macro is, however, defined by some sources in <samp>modules/zlib/src/</samp> as:</p>
+This macro is, however, defined by 4 sources in <samp>modules/zlib/src/</samp> as:</p>
 <pre>
 #define ZLIB_INTERNAL
 </pre>
@@ -2755,8 +2754,13 @@ There is even a case of single comment crossing over 7000 lines!
 All of these files have name of *.uf or *.ut, and are mapping tables between Unicode and each Asian encodings, generated automatically by some tool.
 They do not seem to be source of C/C++, but they are included from other C++ sources.
 The most part of these files are comments, which seem to be a sort of document or table for some other tool.</p>
-<p>It is not recommended to include long documents or tables in source files.
+<p>It is not recommendable to include long documents or tables in source files.
 They should be separated from source files, even if placed in source tree.</p>
+
+<h4>3.9.10.9. Mixed encodings of newline</h4>
+<p>Some files have a few lines ending with [CR][LF] in the midst of lines ending with [LF].
+All of these [CR][LF] lines seem to be small fragments inserted as patches.
+Some conversion tools should be used when one edit source file on Windows.</p>
 <br>
 
 <h2><a name="3.10" href="#toc.3.10">3.10. Visual C++ System Header Problems</a></h2>

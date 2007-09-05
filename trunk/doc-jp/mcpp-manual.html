@@ -69,7 +69,7 @@
 <dd><a name="toc.3.9.7" href="#3.9.7">3.9.7. GCC 3, 4 で <b>mcpp</b> を使うには</a>
 <dd><a name="toc.3.9.8" href="#3.9.8">3.9.8. Linux / glibc 2.4 ソースのプリプロセス</a>
 <dd><a name="toc.3.9.9" href="#3.9.9">3.9.9. Linux の stddef.h, limits.h, #include_next の問題</a>
-<dd><a name="toc.3.9.10" href="#3.9.10">3.9.10. firefox 3.0a7pre ソースのプリプロセス</a></dl>
+<dd><a name="toc.3.9.10" href="#3.9.10">3.9.10. firefox 3.0a8pre ソースのプリプロセス</a></dl>
 <dd><dl><dt><a name="toc.3.10" href="#3.10">3.10. Visual C++ のシステムヘッダの問題</a>
 <dd><a name="toc.3.10.1" href="#3.10.1">3.10.1. コメントを生成するマクロ ?</a></dl>
 <br>
@@ -2745,8 +2745,8 @@ FreeBSD でも別バージョンの GCC をインストールすると GCC-version-specific な incl
 </pre>
 <br>
 
-<h3><a name="3.9.10" href="#toc.3.9.10">3.9.10. firefox 3.0a7pre ソースのプリプロセス</a></h3>
-<p>firefox の developing version である 3.0a7pre (2007/07) のソースを、Linux/x86 上で GCC 4.1.2 でプリプロセッサを <b>mcpp</b> V.2.7 に置き換えてコンパイルしてみました。
+<h3><a name="3.9.10" href="#toc.3.9.10">3.9.10. firefox 3.0a8pre ソースのプリプロセス</a></h3>
+<p>firefox の developing version である 3.0a8pre (2007/09) のソースを、Linux/x86 上で GCC 4.1.2 でプリプロセッサを <b>mcpp</b> V.2.7 に置き換えてコンパイルしてみました。
 <b>mcpp</b> は -K オプションのテストを兼ねて、すべて -K オプションを付けて実行し、その出力を cc1 (cc1plus) に渡しています。
 その結果、コンパイルが正常に終了し、firefox のバイナリが生成されるのを確かめることができました。*1</p>
 <p>firefox のソースのプリプロセス上の portability は全体としてはかなり高いものです。
@@ -2790,8 +2790,8 @@ GCC ではソースファイル名が *.c だとデフォルトでは gnu89 という仕様が使われますが
 firefox のソースには、これを利用して次のような C99 の仕様を暗黙のうちに使っているものがあります。</p>
 <ul>
 <li>マクロ呼び出しのカラ引数<br>
-Linux のシステムヘッダを別とすれば、firefox 自身のソースでのカラ引数はごくわずかですが、次の２本のファイルにあります。
-<samp>layout/style/nsHTMLStyleSheet.cpp, gfx/cairo/cairo/src/cairoint.h</samp>
+Linux のシステムヘッダを別とすれば、firefox 自身のソースでのカラ引数はごくわずかですが、次の４本のファイルにあります。
+<samp>layout/style/nsHTMLStyleSheet.cpp, layout/generic/nsObjectFrame.cpp, intl/uconv/src/nsGREResProperties.cpp, gfx/cairo/cairo/src/cairoint.h</samp>
 <li>C90 の規定を超える translation limits<br>
 identifier の長さ、#include のネスト、マクロ定義の数などが C90 の最低保証限度を超える場合がしばしばあります。<br>
 31 バイトを超える長い identifier はことに <samp>gfx/cairo/cairo/src/</samp> に多く見られます。
@@ -2816,7 +2816,6 @@ Visual C でも 2005 で使えるようになったのですが、2003 までは使えなかったので、避
 <h4>3.9.10.3. Function-like マクロの名前に置換される object-like マクロ</h4>
 <p>Function-like マクロの名前に置換される object-like マクロの定義は他のプログラムにもよく見られるものですが、firefox のソースにも少数ながら次のところに見られます。</p>
 <samp>content/base/src/nsTextFragment.h,
-gfx/cairo/libpixman/src/pixman-xserver-compat.h,
 modules/libjar/zipstub.h,
 nsprpub/pr/include/private/primpl.h,
 parser/expat/lib/xmlparse.c,
@@ -2863,7 +2862,8 @@ obj-dir/mozilla-config.h</samp>
 <pre>
 #define ZLIB_INTERNAL
 </pre>
-<p>と定義され、次のように使われています。</p>
+<p>と定義されているのです。
+そして、次のように使われています。</p>
 <pre>
 #    ifdef ZLIB_INTERNAL
 </pre>
@@ -2900,6 +2900,11 @@ C/C++ のソースには見えませんが、C++ のソースから include されます。
 コメントはある種のドキュメントか他のツールのための表のようです。</p>
 <p>長大なドキュメントや表をコメントとしてソース中に含めるのは、いかがなものでしょうか。
 ソースツリーに含めるとしても、ソースとは別のファイルに分離すべきでしょう。</p>
+
+<h4>3.9.10.9. 改行コードの混在</a></h4>
+<p>firefox のソースの改行コードは [LF] ですが、[CR][LF] の行が少し混ざっているファイルが一部にあります。
+これらはいずれも短いブロックで、ソースにパッチを挿入する時に、その部分だけ [CR][LF] になってしまったもののようです。
+ソースを Windows 上で編集する時は、改行コード変換ツールでチェックすべきでしょう。</p>
 <br>
 
 <h2><a name="3.10" href="#toc.3.10">3.10. Visual C++ のシステムヘッダの問題</a></h2>
