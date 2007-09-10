@@ -322,7 +322,7 @@
 #ifdef  C_INCLUDE_DIR1
 #define INC_DIR             C_INCLUDE_DIR1  /* GNUC version specific dir    */
 #else
-#define INC_DIR             "/usr/include"  /* "/usr/local/include" */
+#define INC_DIR             "/usr/local/include"    /* "/usr/include"   */
 #endif
 #endif
 #ifndef ENV_C_INCLUDE_DIR

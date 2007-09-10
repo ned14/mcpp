@@ -45,6 +45,8 @@
 
 #if     HOST_SYS_FAMILY == SYS_UNIX
 #include    "unistd.h"              /* For getcwd(), readlink(), getopt()   */
+#include    "sys/types.h"
+#include    "sys/stat.h"                        /* For stat()       */
 #elif   HOST_COMPILER == MSC || HOST_COMPILER == LCC
 #include    "direct.h"
 #define getcwd( buf, size)  _getcwd( buf, size)
@@ -3009,13 +3011,22 @@ static int  open_file(
     FILEINFO *  file = infile;
     FILE *      fp;
     char *      fullname;
-
+    
     if (mcpp_debug & PATH)
         mcpp_fprintf( DBG, "Searching %s\n", **dirp == EOS ? filename : *dirp);
     fullname = norm_path( *dirp, filename);
     if (standard && included( null, fullname))  /* Once included    */
         return  TRUE;
-
+#if HOST_SYS_FAMILY == SYS_UNIX
+    {   /* On UNIX fopen() can also open a directory, disallow that */
+        struct stat     st_buf;
+        if (stat( fullname, & st_buf) != 0 || ! S_ISREG( st_buf.st_mode)) {
+            free( fullname);
+            return  FALSE;
+        }
+    }
+#endif
+        
     if ((max_open != 0 && max_open <= include_nest)
                             /* Exceed the known limit of open files */
             || ((fp = fopen( fullname, "r")) == NULL && errno == EMFILE)) {
@@ -3036,7 +3047,7 @@ static int  open_file(
         }
         if (max_open == 0)      /* Remember the limit of the system */
             max_open = include_nest;
-    } else if (fp == NULL) {    /* No file, illegal path name or so */
+    } else if (fp == NULL) {            /* No read permission       */
         free( fullname);
         return  FALSE;
     }
