@@ -101,7 +101,7 @@ DEFBUF *    is_macro(
 )
 /*
  * The name is already in 'identifier', the next token is not yet read.
- * Return TRUE if the name is a macro call, else return FALSE.
+ * Return the definition info if the name is a macro call, else return NULL.
  */
 {
     DEFBUF *    defp;
@@ -117,7 +117,7 @@ static DEFBUF * is_macro_call(
     char **     cp
 )
 /*
- * Return TRUE if the defp->name is a macro call, else return FALSE.
+ * Return DEFBUF if the defp->name is a macro call, else return NULL.
  */
 {
     int    c;
@@ -222,15 +222,12 @@ static void     update_addr( int arg_magic, char ** cp_sp, char ** cp_ep
                 /* Update address of searched magics*/
 static char *   stringize( const DEFBUF * defp, const char * argp, char * out);
                 /* Stringize an argument            */
-static char *   substitute( const DEFBUF * defp, int gvar_arg
-        , const char ** arglist, const char * in, char * out, char * out_end);
+static char *   substitute( const DEFBUF * defp, const char ** arglist
+        , const char * in, char * out, char * out_end);
                 /* Substitute parms with arguments  */
 static char *   rescan( const DEFBUF * outer, const char * in, char * out
         , char * out_end);
                 /* Rescan once replaced sequences   */
-static char *   chk_magics( char * tp, char * name_end, char ** out_pp
-        , char *  arg_start, const DEFBUF * defp);
-                /* Check magics surrounding name    */
 static int      disable_repl( const DEFBUF * defp);
                 /* Disable the macro once replaced  */
 static void     enable_repl( const DEFBUF * defp, int done);
@@ -247,7 +244,7 @@ static char *   expand_std(
 )
 /*
  * Expand a macro call completely, write the results to the specified buffer
- * and return the advanced pointer.
+ * and return the advanced output pointer.
  */
 {
     char    macrobuf[ NMACWORK + IDMAX];    /* Buffer for replace() */
@@ -283,14 +280,14 @@ static char *   expand_std(
     }
 
     cp = macrobuf;
-    c1 = '\0';
+    c1 = '\0';                          /* The char previous to 'c' */
     while ((c = *cp++) != EOS) {
         if (c == DEF_MAGIC)
             continue;                       /* Skip DEF_MAGIC       */
         if (mcpp_mode == STD) {
             if (c == IN_SRC) {
                 if (trace_macro)
-                    cp++;
+                    cp++;                   /* Skip also the number */
                 continue;                   /* Skip IN_SRC          */
             } else if (c == TOK_SEP) {
                 if ((char_type[ c1 & UCHARMAX] & HSP)
@@ -303,7 +300,7 @@ static char *   expand_std(
                     /* Skip just before MAC_INF,MAC_CALL_END seq too*/
                 else
                     c = ' ';                /* Else convert to ' '  */
-            } else if (c == ' ' 
+            } else if ((char_type[ c & UCHARMAX] & HSP)
                     && (*cp == MAC_INF && *(cp + 1) == MAC_CALL_END)) {
                     /* Skip just before MAC_INF,MAC_CALL_END seq too*/
                 continue;
@@ -373,9 +370,9 @@ static int  print_macro_inf(
         m_inf = & mac_inf[ num];            /* Saved information    */
         *opp += sprintf( *opp, "/*<%s", m_inf->defp->name); /* Macro name   */ 
         if (m_inf->locs.start_line && m_inf->locs.end_line) {
-            /* Location of the macro call in source file    */
-            /* Note: some abnormal macro has start-location,*/
-            /*      but has not end-location.               */
+            /* Location of the macro call in source file        */
+            /* Note: some abnormal macro has not end-location   */
+            /*      even if it has start-location.              */
             *opp += sprintf( *opp, " %ld:%d-%ld:%d"
                     , m_inf->locs.start_line, m_inf->locs.start_col
                     , m_inf->locs.end_line, m_inf->locs.end_col);
@@ -383,7 +380,7 @@ static int  print_macro_inf(
         *opp = stpcpy( *opp, "*/");
         if ((nargs = (m_inf->defp->nargs & ~AVA_ARGS)) >= 0) {
             /* The macro has arguments.  Show the locations.    */
-            for (i = 0; i < nargs; i++)
+            for (i = 0; i < nargs; i++)     /* Arg num begins at 0  */
                 *opp = print_macro_arg( *opp, m_inf, i, TRUE);
         }
         break;
@@ -416,10 +413,8 @@ static char *   print_macro_arg(
 {
     LOCATION *  loc = m_inf->loc_args + argn;
 
-    out = stpcpy( out, "/*");
-    *out++ = real_arg ? '!' : '<';
-    out += sprintf( out, "%s:%d-%d", m_inf->defp->name, m_inf->recur
-            , argn);                        /* Arg num begins at 0  */
+    out += sprintf( out, "/*%c%s:%d-%d", real_arg ? '!' : '<'
+            , m_inf->defp->name, m_inf->recur, argn);
 
     if (real_arg && m_inf->loc_args && loc->start_line) {
         /* Location of the argument in source file  */
@@ -439,7 +434,7 @@ static char *   replace(
     FILEINFO *  rt_file,                    /* Repl-text "file"     */
     long        mline,                      /* Location of macro    */
     size_t      mcol,                       /*      call in source  */
-    int         in_src_n                    /* -> in_src[]          */
+    int         in_src_n                    /* Index into in_src[]  */
 )
 /*
  * Replace a possibly nested macro recursively.
@@ -568,6 +563,7 @@ static char *   replace(
                 , NULL);
         if (nargs >= 0) {
             if (! enable_trace_macro)
+                /* arglist[0] is needed for macro infs  */
                 free( arglist[ 0]);
             free( arglist);
         }
@@ -582,15 +578,13 @@ static char *   replace(
     }
 
     if (nargs > 0) {    /* Function-like macro with any argument    */
-        int     gvar_arg;
         expbuf = xmalloc( (size_t) (NMACWORK + IDMAX));
         if (mcpp_debug & EXPAND) {
             mcpp_fprintf( DBG, "(%s)", defp->name);
             dump_string( "substitute entry", catbuf);
         }
-        gvar_arg = (defp->nargs & GVA_ARGS) ? (defp->nargs & ~AVA_ARGS) : 0;
-        out_p = substitute( defp, gvar_arg, (const char **) arglist, catbuf
-                , expbuf, expbuf + NMACWORK);   /* Expand each arguments    */
+        out_p = substitute( defp, (const char **) arglist, catbuf, expbuf
+                , expbuf + NMACWORK);   /* Expand each arguments    */
         if (! enable_trace_macro)
             free( arglist[ 0]);
         free( arglist);
@@ -618,14 +612,15 @@ static char *   replace(
     if (enable_trace_macro && out_p) {
         out_p = close_macro_inf( out_p, m_num, in_src_n);
 #if 0
-        chk_magic_balance( out, out_p, m_num);
+        chk_magic_balance( out, out_p);
 #endif
     }
     if (mcpp_debug & EXPAND)
         dump_string( "replace exit", out);
 
     if (trace_macro && defp->nargs == DEF_PRAGMA) {
-        /* Remove intervening magics if the macro is _Pragma pseudo-macro   */ 
+        /* Remove intervening magics if the macro is _Pragma pseudo-macro   */
+        /* These magics have been inserted by macros in _Pragma()'s args    */
         int     c;
         cur_out = out_p = out;
         while ((c = *cur_out++) != EOS) {
@@ -715,11 +710,11 @@ static void chk_magic_balance(
         switch (*out++) {
         case MAC_CALL_START :
             mac++;
-            out += 2;
+            out += MAC_S_LEN - 2;
             break;
         case MAC_ARG_START  :
             arg++;
-            out += 3;
+            out += ARG_S_LEN - 2;
             break;
         case MAC_ARG_END    :
             arg--;
@@ -791,9 +786,9 @@ static int  prescan(
  */
 {
     FILEINFO *  file;
-    char *      prev_token = NULL;  /* Preceding token              */
-    char *      prev_prev_token = NULL; /* Preceding token to prev_token    */
-    char *      ppp_token = NULL;   /* Preceding token to prev_prev_token   */
+    char *      prev_token;         /* Preceding token              */
+    char *      prev_prev_token;    /* Preceding token to prev_token        */
+    char *      ppp_token;          /* Preceding token to prev_prev_token   */
     int         c;                  /* Value of a character         */
     /*
      * The replacement lists are --
@@ -805,7 +800,15 @@ static int  prescan(
      *          MAC_PARM<n>
      *      or  <QUO>MAC_PARM<n>
      * where <QUO> is ST_QUO, possibly with following space.
+     *
+     * DEF_MAGIC may has been inserted sometimes.
+     * In other than POST_STD modes, TOK_SEP and IN_SRC may have been
+     * inserted, and TOK_SEPs are inserted also in this routine.
+     * In trace_macro mode, many magic character sequences may have been
+     * inserted here and there.
      */
+
+    prev_token = prev_prev_token = ppp_token = NULL;
 
     if (mcpp_mode == POST_STD) {
         file = unget_string( defp->repl, defp->name);
@@ -822,7 +825,7 @@ static int  prescan(
 
         switch (c) {
         case ST_QUOTE:
-            skip_ws();                      /* Skip space, MAC_PARM */
+            skip_ws();      /* Skip spaces and the returned MAC_PARM*/
             c = get_ch() - 1;               /* Parameter number     */
             ppp_token = prev_prev_token;
             prev_prev_token = prev_token;
@@ -832,36 +835,14 @@ static int  prescan(
             break;
         case CAT:
             if (*prev_token == DEF_MAGIC || *prev_token == IN_SRC) {
+                /* Rare case yet possible after catenate()  */
                 size_t  len = 1;
                 if (*prev_token == IN_SRC && trace_macro)
                     len = 2;
                 memmove( prev_token, prev_token + len
                         , strlen( prev_token + len));
-                *--out = EOS;           /* Remove DEF_MAGIC, IN_SRC */
-            } else if (*prev_token == MAC_INF) {    /* Rare case    */
-#if 0
-/* This is for debugging purpose only, and should be commented out  */
-/*      on release version.                                         */
-                mcpp_fprintf( ERR, "Removed magics %s, %s\n"
-                        , ppp_token, prev_token);
-#endif
-                *prev_token = EOS;          /* Remove the magic seq */
-                if (ppp_token && *ppp_token == MAC_INF) {
-                    if ((*(prev_token + 1) == MAC_ARG_END
-                                && *(ppp_token + 1) == MAC_ARG_START)
-                            || (*(prev_token + 1) == MAC_CALL_END
-                                && *(ppp_token + 1) == MAC_CALL_START)) {
-                        /* Remove corresponding magic   */
-                        int     len = *(prev_token + 1) == MAC_ARG_END
-                                        ? ARG_S_LEN : MAC_S_LEN;
-                        memmove( ppp_token, ppp_token + len
-                                , strlen( ppp_token + len));
-                        prev_prev_token -= len;
-                        ppp_token = NULL;
-                    }
-                }
-                prev_token = prev_prev_token;
-                prev_prev_token = ppp_token;
+                out -= len;
+                *out = EOS;             /* Remove DEF_MAGIC, IN_SRC */
             }
 #if COMPILER == GNUC
             if (*prev_token == ',')
@@ -876,24 +857,9 @@ static int  prescan(
             *out++ = MAC_PARM;
             *out++ = get_ch();              /* Parameter number     */
             break;
-        case MAC_INF:
-            ppp_token = prev_prev_token;
-            prev_prev_token = prev_token;
-            prev_token = out;               /* As if this is token  */
-            *out++ = c;
-            *out++ = c = get_ch();
-            switch (c) {
-            case MAC_ARG_START  :
-                *out++ = get_ch();
-                /* Fall through */
-            case MAC_CALL_START :
-                *out++ = get_ch();
-                *out++ = get_ch();
-                break;
-            }
-        /* Fall through */
         case TOK_SEP:
         case ' ':
+        case '\t'   :
             *out++ = c;
             break;
         default:
@@ -963,6 +929,7 @@ static char *   catenate(
                 unget_string( argp, NULL);
                 if (trace_macro)
                     free( (char *) argp);
+                    /* malloc()ed in remove_magics()    */
                 while ((c = get_ch()) != RT_END) {
                     prev_prev_token = prev_token;
                     prev_token = out;   /* Remember the last token  */
@@ -980,10 +947,10 @@ static char *   catenate(
                     len = 2;
                 memmove( prev_token, prev_token + len
                         , (size_t) ((out -= len) - prev_token));
-            /* Remove DEF_MAGIC enabling the name to replace later  */
+                /* Remove DEF_MAGIC enabling the name to replace later      */
             }
         }
-    }
+    }   /* Else the previous token is an ordinary token, not an argument    */
 
     c = skip_ws();
 
@@ -1010,7 +977,7 @@ static char *   catenate(
                 c = get_ch();               /*  enabling to replace */
             } else if (c == IN_SRC) {       /* Remove IN_SRC        */
                 if (trace_macro)
-                    get_ch();
+                    get_ch();               /* Also its number      */
                 c = get_ch();
             }
             scan_token( c, &out, out_end);  /* The first token      */
@@ -1220,8 +1187,8 @@ static const char *     remove_magics(
 #if 0
 /* This is for debugging only, should be commented out on release version.  */
     if (warn_level & 4)
-        mcpp_fprintf( ERR, "arg_s:%d, arg_e:%d, mac_s:%d, mac_e:%d\n"
-                , arg_s, arg_e, mac_s, mac_e);
+        mcpp_fprintf( ERR, "arg_s:%d, arg_e:%d, mac_s:%d, mac_e:%d at:%s:%ld\n"
+                , arg_s, arg_e, mac_s, mac_e, infile->real_fname, src_line);
 #endif
     return  arg_p;
 }
@@ -1307,20 +1274,18 @@ static char *   stringize(
 
     while ((c = get_ch()), ((mcpp_mode == POST_STD && file == infile)
             || (mcpp_mode == STD && c != RT_END))) {
-        if (c == ' ') {
-            *out_p++ = ' ';
+        if (c == ' ' || c == '\t') {
+            *out_p++ = c;
             continue;
-        }
-        if (c == TOK_SEP)
+        } else if (c == TOK_SEP) {
             continue;                   /* Skip inserted separator  */
-        if (c == IN_SRC) {                  /* Skip magics          */
+        } else if (c == IN_SRC) {           /* Skip magics          */
             if (trace_macro)
                 get_ch();
             continue;
-        }
-        if (c == '\\')
+        } else if (c == '\\') {
             stray_bsl = TRUE;               /* May cause a trouble  */
-        if (c == MAC_INF) {         /* Remove intervening magics    */
+        } else if (c == MAC_INF) {  /* Remove intervening magics    */
             switch (get_ch()) {
             case MAC_ARG_START  :
                 get_ch();
@@ -1345,8 +1310,7 @@ static char *   stringize(
                     mb_read( c, &workp, (*out_p++ = c, &out_p));
                                             /* Copy as it is        */
                     continue;
-                }
-                if (c == '"') {
+                } else if (c == '"') {
                     *out_p++ = '\\';        /* Insert '\\'          */
                 } else if (c == '\\') {
 #if OK_UCN
@@ -1377,7 +1341,7 @@ static char *   stringize(
     }
     *out_p = EOS;
 
-    if (stray_bsl) {
+    if (stray_bsl) {    /* '\\' outside of quotation has been found */
         int     invalid = FALSE;
         unget_string( out, defp->name);
         if (mcpp_debug & EXPAND)
@@ -1405,7 +1369,6 @@ static char *   stringize(
 
 static char *   substitute(
     const DEFBUF *  defp,           /* The macro getting arguments  */
-    int     gvar_arg,   /* gvar_arg'th argument is GCC variable argument    */
     const char **   arglist,    /* Pointers to actual arguments     */
     const char *    in,                     /* Replacement text     */
     char *      out,                        /* Output buffer        */
@@ -1419,8 +1382,11 @@ static char *   substitute(
     char *  out_start = out;
     char *  arg;
     int     c;
+    int     gvar_arg;   /* gvar_arg'th argument is GCC variable argument    */
 
+    gvar_arg = (defp->nargs & GVA_ARGS) ? (defp->nargs & ~AVA_ARGS) : 0;
     *out = EOS;                             /* Ensure to termanate  */
+
     while ((c = *in++) != EOS) {
         if (c == MAC_PARM) {                /* Formal parameter     */
             c = *in++ & UCHARMAX;           /* Parameter number     */
@@ -1454,7 +1420,7 @@ static char *   substitute(
 #endif
                 char *  tmp;
                 tmp = out - 1;
-                while (*tmp == ' ')
+                while (char_type[ *tmp & UCHARMAX] & HSP)
                     tmp--;
                 if (*tmp == ',') {
                     out = tmp;      /* Remove the immediately preceding ',' */
@@ -1504,9 +1470,10 @@ static char *   rescan(
     DEFBUF *    inner;              /* Inner macro to replace       */
     int     c;                      /* First character of token     */
     int     token_type;
+#if COMPILER == GNUC
     int     within_defined = FALSE;
     int     within_defined_arg_depth = 0;
-    char *  arg_start = NULL;
+#endif
 
     if (mcpp_debug & EXPAND) {
         mcpp_fprintf( DBG, "rescan_level--%d (%s) "
@@ -1531,13 +1498,13 @@ static char *   rescan(
              * may read over to file->parent (provided the "file" is macro)
              * unless stopped by RT_END.
              */
+        char *  arg_start = NULL;
         size_t  len = 0;
 
-        if (c == ' ' || c == TOK_SEP) {
+        if (char_type[ c] & HSP) {
             *out_p++ = c;
             continue;
-        }
-        if (c == MAC_INF) {
+        } else if (c == MAC_INF) {
             *out_p++ = c;
             *out_p++ = c = get_ch();
             switch (c) {
@@ -1598,8 +1565,6 @@ static char *   rescan(
                         in_src_line = in_src[ in_src_n].start_line;
                         in_src_col = in_src[ in_src_n].start_col;
                     }
-                    /* Check balance of magics  */
-                    tp = chk_magics( tp, name_end, &out_p, arg_start, outer);
                 }
                 if ((out_p = replace( inner, tp, out_end, outer, file
                         , in_src_line, in_src_col, in_src_n)) == NULL)
@@ -1658,67 +1623,6 @@ static char *   rescan(
         dump_string( "rescan exit", out);
     }
     return  out_p;
-}
-
-static char *   chk_magics(
-    char *  tp,
-    char *  cp,
-    char ** out_pp,
-    char *  arg_start,
-    const DEFBUF *  defp
-)
-/*
- * Dirty routine to check magics surrounding the macro name and remove
- * unused magics.
- */
-{
-    char *  arg_end = NULL;
-
-    if (! arg_start)
-        return  tp;
-
-    while (cp < *out_pp) {
-        if (*cp++ == MAC_INF) {
-            /*
-             * Check magics immediately following the macro name.
-             * These magics are overwritten by expansion result of macro.
-             * Note that this routine remembers only the last occurrence of 
-             * MAC_ARG_END.  Though this is far from  perfect, yet usable
-             * in most cases.
-             */
-            switch (*cp++) {
-            case MAC_CALL_START :
-                cp += 2;
-                break;
-            case MAC_ARG_START  :
-                cp += 3;
-                break;
-            case MAC_ARG_END    :
-                arg_end = cp - 2;
-                break;
-            case MAC_CALL_END   :
-                break;
-            }
-        }
-    }
-    if (arg_end) {
-        memmove( arg_end, arg_end + ARG_E_LEN, strlen( arg_end + ARG_E_LEN));
-        memmove( arg_start, arg_start + ARG_S_LEN
-                , strlen( arg_start + ARG_S_LEN));
-        tp -= ARG_S_LEN;
-        *out_pp -= (ARG_S_LEN + ARG_E_LEN);
-        **out_pp = EOS;
-#if 0
-/* This warning is for debugging only, and should be commented out  */
-/*          on release version.                                     */
-        if (warn_level & 4)
-            cwarn (
-                "Removed a pair of MAC_ARG_* magics expanding %s"   /* _W4_ */
-                    , defp->name, 0L, NULL);
-#endif
-    }
-
-    return  tp;
 }
 
 static int  disable_repl(
@@ -1928,7 +1832,7 @@ static int  replace_pre(
 )
 /*
  * Replace a macro one level.  Called from expand_prestd() (via rescan_pre())
- * when an identifier is found in the symbol table.  It calls collect_args()
+ * when an identifier is found in the macro table.  It calls collect_args()
  * to parse actual arguments, checking for the correct number.  It then
  * creates a "file" containing single line containing the replacement text
  * with the actual arguments inserted appropriately.  This is "pushed back"
@@ -1954,25 +1858,13 @@ static int  replace_pre(
      * Here's a macro to replace.
      */
     switch (defp->nargs) {
-
     case DEF_NOARGS:                /* No argument just stuffs      */
     case DEF_NOARGS_PREDEF_OLD:     /* Compiler-specific predef without '_' */
     case DEF_NOARGS_PREDEF:         /* Compiler-specific predef     */
         break;
-
     default:                                /* defp->nargs >= 0     */
-        /*
-         * Nothing funny about this macro.
-         */
         c = squeeze_ws( NULL);              /* Look for and skip '('*/
-        if (c != '(') {
-            /*
-             * If the programmer writes
-             *      #define foo() ...
-             *      ...
-             *      foo [no ()]
-             * just write foo to output.
-             */
+        if (c != '(') {         /* Macro name without following '(' */
             unget_ch();
             if (warn_level & 8)
                 diag_macro( CWARN, only_name, defp->name, 0L, NULL, defp, NULL);
@@ -1987,7 +1879,7 @@ static int  replace_pre(
             }
         }
         break;
-    }                                       /* defp->nargs switch   */
+    }
 
     if (defp->nargs > 0)
         substitute_pre( defp);              /* Do actual arguments  */
@@ -2015,6 +1907,7 @@ static void substitute_pre(
     char *      out_p;                      /* -> macro output buff */
 
     file = get_file( defp->name, (size_t) (NMACWORK + 1));
+                                            /* file == infile       */
     in_p = defp->repl;                      /* -> macro replacement */
     out_p = file->buffer;                   /* -> output buffer     */
     out_end = file->buffer + NMACWORK;      /* -> buffer end        */
@@ -2398,7 +2291,7 @@ static int  get_an_arg(
     if (c == '\n' || c == RT_END)
         return  -1;                         /* Unterminated macro   */
     argp--;                                 /* Remove the punctuator*/
-    while (*argpp < argp && *(argp - 1) == ' ')
+    while (*argpp < argp && (*(argp - 1) == ' ') || (*(argp - 1) == '\t'))
         --argp;                     /* Remove trailing blanks       */
     if (mcpp_mode == STD) {
         if (trace_macro && m_num) {

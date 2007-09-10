@@ -61,16 +61,20 @@ gcc_min_ver = 1
 # INCDIR:   GCC's version specific include directory
 #INCDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include
 #INCDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2/include
-#INCDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6/include    # Vine 4.1
+# Vine 4.1
+INCDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6/include
 #INCDIR = /usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include
-INCDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2/include          # Debian 4.0
+# Debian 4.0
+#INCDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2/include
 CPPOPTS = -DCOMPILER=$(COMPILER)
 
 #BINDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3
 #BINDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2
-#BINDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6            # Vine 4.1
+# Vine 4.1
+BINDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6
 #BINDIR = /usr/local/libexec/gcc/i686-pc-linux-gnu/4.1.1
-BINDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2                  # Debian 4.0
+# Debian 4.0
+#BINDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0
 else

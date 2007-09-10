@@ -36,13 +36,13 @@ echo "  cd ${inc_dir}/mcpp-gcc"
 cd ${inc_dir}/mcpp-gcc
 if test ! -f gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h; then
     echo "  generating g*.h header files"
-    echo '' | ${CC} -E -xc -dM - | sort | grep ' *#define *_'       \
+    ${CC} -E -xc -dM /dev/null | sort | grep ' *#define *_'       \
             > gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h
-    echo '' | ${CC} -E -xc -dM - | sort | grep -E ' *#define *[A-Za-z]+'    \
+    ${CC} -E -xc -dM /dev/null | sort | grep -E ' *#define *[A-Za-z]+'    \
             > gcc${gcc_maj_ver}${gcc_min_ver}_predef_old.h
-    echo '' | ${CXX} -E -xc++ -dM - | sort | grep ' *#define *_'    \
+    ${CXX} -E -xc++ -dM /dev/null | sort | grep ' *#define *_'    \
             > gxx${gcc_maj_ver}${gcc_min_ver}_predef_std.h
-    echo '' | ${CXX} -E -xc++ -dM - | sort | grep -E ' *#define *[A-Za-z]+' \
+    ${CXX} -E -xc++ -dM /dev/null | sort | grep -E ' *#define *[A-Za-z]+' \
             > gxx${gcc_maj_ver}${gcc_min_ver}_predef_old.h
 fi
 if test ${host_system} = SYS_CYGWIN; then
@@ -51,16 +51,16 @@ if test ${host_system} = SYS_CYGWIN; then
     cd mingw/mcpp-gcc
     if test ! -f gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h; then
         echo "  generating g*.h header files for cygwin/mingw"
-        echo '' | ${CC} -E -xc -dM -mno-cygwin - | sort |   \
+        ${CC} -E -xc -dM -mno-cygwin /dev/null | sort |   \
                 grep ' *#define *_'       \
                 > gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h
-        echo '' | ${CC} -E -xc -dM -mno-cygwin - | sort |   \
+        ${CC} -E -xc -dM -mno-cygwin /dev/null | sort |   \
                 grep -E ' *#define *[A-Za-z]+'    \
                 > gcc${gcc_maj_ver}${gcc_min_ver}_predef_old.h
-        echo '' | ${CXX} -E -xc++ -dM -mno-cygwin - | sort |    \
+        ${CXX} -E -xc++ -dM -mno-cygwin /dev/null | sort |    \
                 grep ' *#define *_'    \
                 > gxx${gcc_maj_ver}${gcc_min_ver}_predef_std.h
-        echo '' | ${CXX} -E -xc++ -dM -mno-cygwin - | sort |    \
+        ${CXX} -E -xc++ -dM -mno-cygwin /dev/null | sort |    \
                 grep -E ' *#define *[A-Za-z]+' \
                 > gxx${gcc_maj_ver}${gcc_min_ver}_predef_old.h
     fi
@@ -111,7 +111,7 @@ _EOF
 fi
 
 # backup GCC / cpp or cc1, cc1plus
-if test `echo '' | ${cpp_call} -v - 2>&1 | grep 'MCPP' > /dev/null; echo $?`;
+if test `${cpp_call} -v /dev/null 2>&1 | grep 'MCPP' > /dev/null; echo $?`;
         then
     if test ${host_system} = SYS_MINGW; then
         if test -f cc1_gnuc${EXEEXT}; then
@@ -217,11 +217,9 @@ else
 fi
 
 echo '#!/bin/sh' > ${CC}.sh
-echo ${c_entity_base} -no-integrated-cpp '"$@"'     \
-        >> ${CC}.sh
+echo ${c_entity_base} -no-integrated-cpp '"$@"' >> ${CC}.sh
 echo '#!/bin/sh' > ${CXX}.sh
-echo ${cxx_entity_base} -no-integrated-cpp '"$@"'   \
-        >> ${CXX}.sh
+echo ${cxx_entity_base} -no-integrated-cpp '"$@"' >> ${CXX}.sh
 chmod a+x ${CC}.sh ${CXX}.sh
 
 echo "  ${LN_S} ${CC}.sh ${CC}"

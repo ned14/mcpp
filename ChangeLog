@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2007/09/03  kmatsui
+2007/09/10  kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
@@ -31,6 +31,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         by relative path in -include option.  (system.c)
         * Fixed a bug of mcpplib initialization which caused problem on
         CygWIN.  (main.c, system.c, lib.c)
+        * Made open_file() not to open a directory.  (by Taras Glek)
+        (system.c)
         * Changed allocation of buffer for -M* options and incdir[],
         fnamelist[], once_list[] from fixed size to dynamically
         enlarging ones.  (system.c)
@@ -38,7 +40,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         directories for #include.  Enabled #import, which is #include
         with unconditional once only feature.  Created init_framework(),
         search_framework(), search_subdir().  This is still a
-        preliminary porting.  (system.c, directive.c)
+        preliminary porting, because I have no Mac machine.  (system.c,
+        directive.c)
         * Updated some documents.  Some parts of the documents are not
         yet updated.  (mainly by kmatsui, partly by Taras Glek)
 

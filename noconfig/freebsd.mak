@@ -58,10 +58,10 @@ GCCDIR ?= /usr/bin
 gcc_maj_ver = 3
 gcc_min_ver = 4
 # INCDIR:   the compiler's version specific include directory, if it exists,
-#       /usr/local/include, if it does not exist
+#       /usr/local/include or /usr/include, if it does not exist
 INCDIR = /usr/local/include
 #INCDIR ?= /usr/local/gcc-4.1.1/lib/gcc-lib/i386-unknown-freebsd6.2/4.1.1/include
-CPPOPTS = -DCOMPILER=$(COMPILER)
+CPPOPTS = -DCOMPILER=$(COMPILER) -DINC_DIR=\"$(INCDIR)\"
 
 # BINDIR:   the directory where cpp0 or cc1 resides
 BINDIR ?= /usr/libexec

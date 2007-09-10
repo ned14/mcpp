@@ -1,4 +1,4 @@
-dnl configure.ac for MCPP   2003/11, 2007/08  kmatsui
+dnl configure.ac for MCPP   2003/11, 2007/09  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
@@ -636,16 +636,14 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
 
     ## the directory into which mcpp_g*.h header files are generated
     ## '/mcpp-gcc' will be appended to 'inc_dir'
-    if test x${includedir+set} != xset; then
-        includedir=${prefix}/include
-    fi
     if test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
         inc_dir=${c_include_dir2}
     else
         if test x${c_include_dir1+set} = xset; then
             inc_dir=${c_include_dir1}
         else
-            inc_dir=${includedir}
+            test "x$prefix" = xNONE && prefix=$ac_default_prefix
+            inc_dir="$prefix"/include
         fi
     fi
     AC_DEFINE_UNQUOTED( [INC_DIR], "${inc_dir}",
