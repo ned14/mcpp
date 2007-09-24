@@ -70,7 +70,7 @@
  * MBCHAR means the default encoding, and you can change the encoding by
  *      #pragma MCPP setlocale, -e <encoding> option or environment variable
  *      LC_ALL, LC_CTYPE, LANG.
- * MBCHAR == 0 means no multi-byte character encoding.
+ * MBCHAR == 0 means not to recognize any multi-byte character encoding.
  */
 
 /*
@@ -85,16 +85,16 @@
  * They should not be #defined to no token or to "".
  *
  * CPU_OLD, CPU_STD1, CPU_STD2, CPU_SP_OLD, CPU_SP_STD
- *      define the target cpu (by name)
+ *      define the target cpu (by name).
  * SYSTEM_OLD, SYSTEM_STD1, SYSTEM_STD2, SYSTEM_EXT, SYSTEM_EXT2
- *      define the target operating system (by name)
+ *      define the target operating system (by name).
  * SYSTEM_SP_OLD, SYSTEM_SP_STD     define the target-OS specific macro name
  * COMPILER_OLD, COMPILER_STD1, COMPILER_STD2, COMPILER_EXT, COMPILER_EXT2
  *          , COMPILER_SP_OLD, COMPILER_SP_STD
- *      define the target compiler (by name)
- * COMPILER_CPLUS        define the target C++ compiler
+ *      define the target compiler (by name).
+ * COMPILER_CPLUS        defines the target C++ compiler.
  * COMPILER_SP1, COMPILER_SP2, COMPILER_SP3
- *      define the compiler-specific macros
+ *      define the compiler-specific macros.
  *
  * <macro>_VAL      specify the value of the <macro>.
  *      If not specified, these values default to "1".
@@ -192,6 +192,7 @@
 /*
  * __SIZE_TYPE__, __PTRDIFF_TYPE__ and __WCHAR_TYPE__ are the predefines of
  * GCC and undocumented in GCC 2.
+ * On GCC V.3.*, V.4.*, these macros are known by mcpp_g*_predef_*.h files.
  */
 #if     __GNUC__ == 2
 #define COMPILER_SP1        "__SIZE_TYPE__"
@@ -308,8 +309,6 @@
  * SJIS literal.
  * BIGFIVE_IS_ESCAPE_FREE means similar case on BIGFIVE encoding.
  * ISO2022_JP_IS_ESCAPE_FREE means similar case on ISO2022_JP encoding.
- *
- * GCC can handle these encodings if it has been configured so.
  */
 #ifndef SJIS_IS_ESCAPE_FREE
 #define SJIS_IS_ESCAPE_FREE     FALSE   /* or TRUE following your compiler  */

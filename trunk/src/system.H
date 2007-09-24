@@ -119,7 +119,7 @@
  *      2. A space is inserted as a token separator between any tokens in
  *          a source (except a macro name and the next '(' in macro
  *          definition): thus simplifying tokenization, test of macro
- *          redefinition and macro expansion especially "stringization".
+ *          redefinition and macro expansion, especially "stringization".
  *      3. Test of macro redefinition ignores difference of parameter names,
  *          test of which has little utility and not a little overhead.
  *      4. #if expression forbids character constants, which have little
@@ -156,7 +156,7 @@
  * The following specifications are available only in KR and OLD_PREP modes.
  *      #assert, #asm, #endasm, #put_defines, #debug and some other older
  *          directives,
- *      argument of #line directive other than dicimal-digits.
+ *      argument of #line directive other than decimal-digits.
  */
 
 /* The values of 'mcpp_mode'.   */
@@ -249,6 +249,8 @@ typedef long            expr_t;
  *              NOTE: Must be NMACPARS <= UCHARMAX.
  * NEXP         The maximum nesting depth of #if expressions.
  * BLK_NEST     The number of nested #if's permitted.
+ * INCLUDE_NEST The maximum nesting depth of #include.  This is needed to
+ *              prevent infinite recursive inclusion.
  * RESCAN_LIMIT The maximum rescan times of macro expansion in STD or POST_STD
  *              modes.
  * PRESTD_RESCAN_LIMIT  The maximum rescan times of macro expansion in KR or
@@ -261,7 +263,8 @@ typedef long            expr_t;
  * It must be a power of 2.
  *
  * MKDEP_INIT   The initial maximum number of filenames in a dependency line
- *              of output of -M* option.
+ *              of output of -M* option.  The maximum number is dynamically
+ *              enlarged in execution.
  */
 
 #ifndef IDMAX
@@ -367,7 +370,6 @@ typedef long            expr_t;
 
 /*
  * STDC     This macro is used for the predefined __STDC__.
- *      (STDC >= 1) disables predefined macros not beginning with '_'.
  * STDC_VERSION     is used for the value of __STDC_VERSION__.
  * STDC_HOSTED      is used for the value of __STDC_HOSTED__.
  */

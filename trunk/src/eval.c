@@ -173,7 +173,7 @@ typedef struct sizes {
 } SIZES;
 
 /*
- * S_CHAR etc.  define the sizeof the basic TARGET machine word types.
+ * S_CHAR, etc.  define the sizeof the basic TARGET machine word types.
  *      By default, sizes are set to the values for the HOST computer.  If
  *      this is inappropriate, see those tables for details on what to change.
  *      Also, if you have a machine where sizeof (signed int) differs from
@@ -273,7 +273,7 @@ void    init_eval( void)
 expr_t  eval_if( void)
 /*
  * Evaluate a #if expression.  Straight-forward operator precedence.
- * This is called from directive() on encountering an #if statement.
+ * This is called from directive() on encountering an #if directive.
  * It calls the following routines:
  * eval_lex()   Lexical analyser -- returns the type and value of
  *              the next input token.
@@ -364,10 +364,10 @@ expr_t  eval_if( void)
                 if (op == OP_LPA) {
                     prec = OP_RPA_PREC;
                     if (standard && (warn_level & 4)
-                            && ++parens == exp_nest_min + 1)
+                            && ++parens == std_limits.exp_nest + 1)
                         cwarn(
                     "More than %.0s%ld nesting of parens"   /* _W4_ */
-                            , NULL, (long) exp_nest_min, NULL);
+                            , NULL, (long) std_limits.exp_nest, NULL);
                 } else if (op == OP_QUE) {
                     prec = OP_QUE_PREC;
                 } else if (is_unary( op)) {
@@ -484,8 +484,8 @@ expr_t  eval_if( void)
 
 static int  eval_lex( void)
 /*
- * Return next operator or value to evaluate.  Called from eval_if().  It calls
- * a special-purpose routines for character constants and numeric values:
+ * Return next operator or constant to evaluate.  Called from eval_if().  It 
+ * calls a special-purpose routines for character constants and numeric values:
  *      eval_char()     called to evaluate 'x'
  *      eval_num()      called to evaluate numbers
  * C++98 treats 11 identifier-like tokens as operators.
@@ -732,7 +732,7 @@ no_good:
 }
 
 static int  look_type(
-    int typecode
+    int     typecode
 )
 {
     const char * const  unknown_type
@@ -835,7 +835,7 @@ VAL_SIGN *  eval_num(
 
     ev.sign = SIGNED;                       /* Default signedness   */
     ev.val = 0L;                            /* Default value        */
-    if ((char_type[ c = *cp++ & UCHARMAX] & DIG) == 0)   /* Dot          */
+    if ((char_type[ c = *cp++ & UCHARMAX] & DIG) == 0)   /* Dot     */
         goto  num_err;
     if (c != '0') {                         /* Decimal              */
         base = 10;
@@ -956,7 +956,7 @@ num_err:
 }
 
 static VAL_SIGN *   eval_char(
-    char * const token
+    char * const    token
 )
 /*
  * Evaluate a character constant.
@@ -1261,8 +1261,8 @@ range_err:
 }
 
 static VAL_SIGN *   eval_eval(
-    VAL_SIGN * valp,
-    int op
+    VAL_SIGN *  valp,
+    int         op
 )
 /*
  * One or two values are popped from the value stack and do arithmetic.
@@ -1367,9 +1367,9 @@ static VAL_SIGN *   eval_eval(
 
 static expr_t   eval_signed(
     VAL_SIGN ** valpp,
-    expr_t v1,
-    expr_t v2,
-    int op
+    expr_t      v1,
+    expr_t      v2,
+    int         op
 )
 /*
  * Apply the argument operator to the signed data.
@@ -1494,7 +1494,7 @@ static expr_t   eval_signed(
 }
 
 static expr_t   eval_unsigned(
-    VAL_SIGN **     valpp,
+    VAL_SIGN ** valpp,
     uexpr_t     v1u,
     uexpr_t     v2u,
     int         op
@@ -1618,8 +1618,8 @@ static void overflow(
 }
 
 static void dump_val(
-    const char * msg,
-    const VAL_SIGN * valp
+    const char *        msg,
+    const VAL_SIGN *    valp
 )
 /*
  * Dump a value by internal representation.

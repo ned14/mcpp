@@ -57,7 +57,7 @@
  * unget_string()   Pushs sequence on the input stream.
  * save_string() Saves a string in malloc() memory.
  * get_file()   Initializes a new FILEINFO structure, called when #include
- *              opens a new file.
+ *              opens a new file, or from unget_string().
  * xmalloc()    Gets a specified number of bytes from heap memory.
  *              If malloc() returns NULL, exits with a message.
  * xrealloc()   realloc().  If it fails, exits with a message.
@@ -82,20 +82,20 @@ static void     scan_id( int c);
 static char *   scan_number( int c, char * out, char * out_end);
                 /* Scan a preprocessing number  */
 static char *   scan_number_prestd( int c, char * out, char * out_end);
-                /* scan_number() for pre-Standard       */
+                /* scan_number() for pre-Standard mode  */
 #if OK_UCN
 static char *   scan_ucn( int cnt, char * out);
                 /* Scan an UCN sequence         */
 #endif
 static char *   scan_op( int c, char * out);
-                /* Scan an operator or punctuat.*/
+                /* Scan an operator or a punctuator     */
 static char *   parse_line( void);
-                /* Parse a logical line         */
+                /* Parse a logical line and convert comments    */
 static char *   read_a_comment( char * sp, size_t * sizp);
                 /* Read over a comment          */
 static char *   get_line( int in_comment);
-                /* Get a logical line from file */
-static void     at_eof( int in_comment);
+                /* Get a logical line from file, handle line-splicing   */
+static char *   at_eof( int in_comment);
                 /* Check erroneous end of file  */
 static void     do_msg( const char * severity, const char * format
         , const char * arg1, long arg2, const char * arg3);
@@ -123,15 +123,17 @@ static int  squeezews = FALSE;
 
 #define MAX_CAT_LINE    256
 /* Information on line catenated by <backslash><newline>    */
-/* and by line-crossing comment.                            */
+/* and by line-crossing comment.  This is for -K option.    */
 typedef struct catenated_line {
     long    start_line;         /* Starting line of catenation      */
     long    last_line;          /* Ending line of catanation        */
     size_t  len[ MAX_CAT_LINE + 1];
                         /* Length of successively catenated lines   */
 } CAT_LINE;
-static CAT_LINE bsl_cat_line;   /* Datum on the last catenated line */
+static CAT_LINE bsl_cat_line;
+        /* Datum on the last catenated line by <backslash><newline> */
 static CAT_LINE com_cat_line;
+        /* Datum on the last catenated line by a line-crossing comment  */
 
 #if MCPP_LIB
 static int  use_mem_buffers = FALSE;
@@ -364,7 +366,7 @@ void    mcpp_set_out_func(
 #endif
 
 int     get_unexpandable(
-    int     c,                              /* First of token       */
+    int     c,                              /* First char of token  */
     int     diag                            /* Flag of diagnosis    */
 )
 /*
@@ -378,7 +380,9 @@ int     get_unexpandable(
     DEFBUF *    defp = NULL;
     FILEINFO *  file;
     FILE *  fp = NULL;
+    LINE_COL    line_col = { 0L, 0};
     int     token_type = NO_TOKEN;
+    int     has_pragma;
 
     while (c != EOS && c != '\n'                /* In a line        */
             && (fp = infile->fp         /* Preserve current state   */
@@ -387,14 +391,18 @@ int     get_unexpandable(
                     == NAM)                     /* Identifier       */
             && fp != NULL                       /* In source !      */
             && (defp = is_macro( NULL)) != NULL) {      /* Macro    */
-        expand_macro( defp, work_buf, work_end, 0L, 0); /* Expand macro call*/
+        expand_macro( defp, work_buf, work_end, line_col, & has_pragma);
+                                                /* Expand macro     */
+        if (has_pragma)
+            cerror( "_Pragma operator found in directive line"      /* _E_  */
+                    , NULL, 0L, NULL);
         file = unget_string( work_buf, defp->name);     /* Stack to re-read */
         c = skip_ws();                          /* Skip TOK_SEP     */
         if (file != infile && macro_line != MACRO_ERROR && (warn_level & 1)) {
             /* This diagnostic is issued even if "diag" is FALSE.   */
             cwarn( "Macro \"%s\" is expanded to 0 token"    /* _W1_ */
                     , defp->name, 0L, NULL);
-            if (! no_source_line)
+            if (! option_flags.no_source_line)
                 dump_a_def( "    macro", defp, FALSE, TRUE, fp_err);
         }
     }
@@ -498,7 +506,7 @@ int     scan_token(
     ch_type = char_type[ c] & mbmask;
 
     switch (ch_type) {
-    case LET:                           /* An identifier            */
+    case LET:                           /* Probably an identifier   */
         switch (c) {
         case 'L':
             if (! standard)
@@ -515,7 +523,7 @@ int     scan_token(
             } else {
                 unget_ch();
             }                           /* Fall through             */
-        default:
+        default:                        /* An identifier            */
 ident:
             scan_id( c);
             out = stpcpy( out, identifier);
@@ -527,7 +535,7 @@ ident:
         /* Else fall through    -- i.e. WSTR, WCHR  */
     case QUO:                   /* String or character constant     */
         out = scan_quote( c, out, out_end, FALSE);
-        if (token_type == 0) {
+        if (token_type == 0) {                  /* Without prefix L */
             if (c == '"')
                 token_type = STR;
             else
@@ -549,7 +557,7 @@ ident:
 operat: out = scan_op( c, out);         /* Operator or punctuator   */
         token_type = OPE;       /* Number is set in global "openum" */
         break;
-    default:
+    default:                /* Special tokens or special characters */
 #if OK_UCN
         if (mcpp_mode == STD && c == '\\' && stdc2) {
             ch = get_ch();
@@ -564,7 +572,7 @@ operat: out = scan_op( c, out);         /* Operator or punctuator   */
             mb_read( c, &infile->bptr, &out);
             infile->bptr = bptr;
             out = *out_pp;
-            goto  ident;
+            goto  ident;        /* An identifier with multi-byte characters */
         }
 #endif
         if ((standard && (c == CAT || c == ST_QUOTE)) || (char_type[ c] & SPA))
@@ -599,10 +607,10 @@ static void scan_id(
  * The caller has already read the first character of the identifier.
  */
 {
+    static char * const     limit = &identifier[ IDMAX];
 #if DOLLAR_IN_NAME
     static int      diagnosed = FALSE;  /* Flag of diagnosing '$'   */
 #endif
-    static char * const     limit = &identifier[ IDMAX];
 #if OK_UCN
     int     uc2 = 0, uc4 = 0;           /* Count of UCN16, UCN32    */
 #endif
@@ -692,9 +700,9 @@ next_c:
     if (mcpp_mode == STD)
         len -= mb;
 #endif
-    if (standard && infile->fp && len > id_len_min && (warn_level & 4))
+    if (standard && infile->fp && len > std_limits.id_len && (warn_level & 4))
         cwarn( "Identifier longer than %.0s%ld characters \"%s\""   /* _W4_ */
-                , NULL, (long) id_len_min, identifier);
+                , NULL, (long) std_limits.id_len, identifier);
 #endif  /* IDMAX > IDLEN90MIN   */
 
 #if DOLLAR_IN_NAME
@@ -834,7 +842,8 @@ chk_limit:
                     && (delim == '"' || delim == '\''))
                 goto  done;
             if (delim == '"') {
-                if (mcpp_mode != POST_STD && lang_asm) {    /* STD, KR      */
+                if (mcpp_mode != POST_STD && option_flags.lang_asm) {
+                    /* STD, KR      */
                     /* Concatenate the unterminated string to the next line */
                     if (warn_level & 1)
                         cwarn( unterm_string
@@ -847,7 +856,8 @@ chk_limit:
                     cerror( unterm_string, skip, 0L, NULL); /* _E_  */
                 }
             } else if (delim == '\'') {
-                if (mcpp_mode != POST_STD && lang_asm) {    /* STD, KR      */
+                if (mcpp_mode != POST_STD && option_flags.lang_asm) {
+                    /* STD, KR      */
                     if (warn_level & 1)
                         cwarn( unterm_char, out, 0L, NULL); /* _W1_ */
                     goto  done;
@@ -869,9 +879,9 @@ chk_limit:
         "Header-name enclosed by <, > is an obsolescent feature %s" /* _W2_ */
                     , out, 0L, skip);
 #if NWORK-2 > SLEN90MIN
-        if (standard && out_p - out > str_len_min && (warn_level & 4))
+        if (standard && out_p - out > std_limits.str_len && (warn_level & 4))
             cwarn( "Quotation longer than %.0s%ld bytes"    /* _W4_ */
-                    , NULL, str_len_min, NULL);
+                    , NULL, std_limits.str_len, NULL);
 #endif
     }
 
@@ -924,8 +934,9 @@ static char *   scan_number(
     char *  out_end                 /* Limit of output buffer       */
 )
 /*
- * Read a preprocessing number.  We know that c is from 0 to 9 or dot, and if
- * c is dot then the next character is digit.
+ * Read a preprocessing number.
+ * By scan_token() we know already that the first c is from 0 to 9 or dot,
+ * and if c is dot then the second character is digit.
  * Returns the advanced output pointer.
  * Note: preprocessing number permits non-numeric forms such as 3E+xy,
  *   which are used in stringization or token-concatenation.
@@ -995,7 +1006,8 @@ static char *   scan_number(
     return  out_p;
 }
 
-/* Original version of DECUS CPP, too exact for Standard preprocessing.     */
+/* Original version of DECUS CPP with slight modifications, */
+/* too exact for Standard preprocessing.                    */
 static char *   scan_number_prestd(
     int         c,                          /* First char of number */
     char *      out,                        /* Output buffer        */
@@ -1078,17 +1090,15 @@ static char *   scan_number_prestd(
     /*
      * When we break out of the scan loop, c contains the first
      * character (maybe) not in the number.  If the number is an
-     * integer, allow a trailing 'L' for long.  for unsigned.  If not
-     * those, push the trailing character back on the input stream.
-     * Floating point numbers accept a trailing 'L' for "long double"
-     * or a trailing 'F' for explicit float.
+     * integer, allow a trailing 'L' for long.  If not those, push
+     * the trailing character back on the input stream.
+     * Floating point numbers accept a trailing 'L' for "long double".
      */
 done:
     if (! (dotflag || expseen)) {           /* Not floating point   */
         /*
          * We know that dotflag and expseen are both zero, now:
          *   dotflag signals "saw 'L'".
-         * We assume that 12F is not a floating constant.
          */
         for (;;) {
             switch (c) {
@@ -1170,7 +1180,7 @@ static char *   scan_op(
  * Scan C operator or punctuator into the specified buffer.
  * Return the advanced output pointer.
  * The code-number of the operator is stored to global variable 'openum'.
- * Note: '#' is not an operator nor a punctuator in other than control line,
+ * Note: '#' is not an operator nor a punctuator in other than directive line,
  *   nevertheless is handled as a punctuator in this cpp for convenience.
  */
 {
@@ -1233,13 +1243,13 @@ static char *   scan_op(
             break;
         case '=':   openum = OP_LE;         break;      /* <=       */
         case ':':                                   /* <: i.e. [    */
-            if (mcpp_mode == STD && dig_flag)
+            if (mcpp_mode == STD && option_flags.dig)
                 openum = OP_LBRCK_D;
             else
                 openum = OP_LT;
             break;
         case '%':                                   /* <% i.e. {    */
-            if (mcpp_mode == STD && dig_flag)
+            if (mcpp_mode == STD && option_flags.dig)
                 openum = OP_LBRACE_D;
             else
                 openum = OP_LT;
@@ -1300,13 +1310,13 @@ static char *   scan_op(
         switch (c2) {
         case '=':                           break;      /* %=       */
         case '>':                                   /* %> i.e. }    */
-            if (mcpp_mode == STD && dig_flag)
+            if (mcpp_mode == STD && option_flags.dig)
                 openum = OP_RBRACE_D;
             else
                 openum = OP_MOD;
             break;
         case ':':
-            if (mcpp_mode == STD && dig_flag) {
+            if (mcpp_mode == STD && option_flags.dig) {
                 if ((c3 = get_ch()) == '%') {
                     if ((c4 = get_ch()) == ':') {   /* %:%: i.e. ## */
                         openum = OP_DSHARP_D;
@@ -1373,12 +1383,12 @@ static char *   scan_op(
     case ':':
         if (cplus_val && c2 == ':')                     /* ::       */
             /* openum = OP_2    */  ;
-        else if (mcpp_mode == STD && c2 == '>' && dig_flag)
+        else if (mcpp_mode == STD && c2 == '>' && option_flags.dig)
             openum = OP_RBRCK_D;                    /* :> i.e. ]    */
         else                                            /* :        */
             openum = OP_COL;
         break;
-    default:                                        /* Who knows ?  */
+    default:                                    /* Never reach here */
         cfatal( "Bug: Punctuator is mis-implemented %.0s0lx%x"      /* _F_  */
                 , NULL, (long) c, NULL);
         openum = OP_1;
@@ -1501,7 +1511,7 @@ int     get_ch( void)
     if ((file = infile) == NULL)
         return  CHAR_EOF;                   /* End of all input     */
 
-    if (mcpp_mode == POST_STD && file->fp) {     /* In a source file     */
+    if (mcpp_mode == POST_STD && file->fp) {        /* In a source file     */
         switch (insert_sep) {
         case NO_SEP:
             break;
@@ -1774,7 +1784,7 @@ end_line:
         temp = infile->buffer;
         while (char_type[ *temp & UCHARMAX] & HSP)
             temp++;
-        if (*temp == '#'
+        if (*temp == '#'        /* This line starts with # token    */
                     || (mcpp_mode == STD && *temp == '%' && *(temp + 1) == ':'))
             if (warn_level & 1)
                 cwarn(
@@ -1858,6 +1868,7 @@ static char *   read_a_comment(
             }
             if ((saved_sp = sp = get_line( TRUE)) == NULL)
                 return  NULL;       /* End of file within comment   */
+                /* Never happen, because at_eof() supplement closing*/
             if (! keep_comments)            /* We'll need a #line   */
                 wrong_line = TRUE;          /*   later...           */
             break;
@@ -1910,7 +1921,8 @@ static char *   get_line(
             != NULL) {
         /* Translation phase 1  */
         src_line++;                 /* Gotten next physical line    */
-        if (standard && src_line == line_limit + 1 && (warn_level & 1))
+        if (standard && src_line == std_limits.line_num + 1
+                && (warn_level & 1))
             cwarn( "Line number %.0s\"%ld\" got beyond range"       /* _W1_ */
                     , NULL, src_line, NULL);
         if (mcpp_debug & (TOKEN | GETC)) {  /* Dump it to DBG       */
@@ -1920,6 +1932,7 @@ static char *   get_line(
         len = strlen( ptr);
         if (NBUFF - 1 <= ptr - infile->buffer + len
                 && *(ptr + len - 1) != '\n') {
+                /* The line does not yet end, though the buffer is full.    */
             if (NBUFF - 1 <= len)
                 cfatal( "Too long source line"              /* _F_  */
                         , NULL, 0L, NULL);
@@ -1939,9 +1952,9 @@ static char *   get_line(
             }
         }
         if (standard) {
-            if (trig_flag)
+            if (option_flags.trig)
                 converted = cnv_trigraph( ptr);
-            if (mcpp_mode == POST_STD && dig_flag)
+            if (mcpp_mode == POST_STD && option_flags.dig)
                 converted += cnv_digraph( ptr);
             if (converted)
                 len = strlen( ptr);
@@ -1966,10 +1979,10 @@ static char *   get_line(
                 }
             }
 #if NBUFF-2 > SLEN90MIN
-            if (ptr - infile->buffer + len + 2 > str_len_min + 1
+            if (ptr - infile->buffer + len + 2 > std_limits.str_len + 1
                     && (warn_level & 4))    /* +1 for '\n'          */
             cwarn( "Logical source line longer than %.0s%ld bytes"  /* _W4_ */
-                        , NULL, str_len_min, NULL);
+                        , NULL, std_limits.str_len, NULL);
 #endif
         }
         if ((mcpp_debug & MACRO_CALL) && compiling) {
@@ -1985,10 +1998,11 @@ static char *   get_line(
     /* End of a (possibly included) source file */
     if (ferror( infile->fp))
         cfatal( "File read error", NULL, 0L, NULL);         /* _F_  */
-    at_eof( in_comment);                    /* Check at end of file */
-    if (zflag) {
+    if ((ptr = at_eof( in_comment)) != NULL)        /* Check at end of file */
+        return  ptr;                        /* Partial line supplemented    */
+    if (option_flags.z) {
         no_output--;                        /* End of included file */
-        keep_comments = cflag && compiling && !no_output;
+        keep_comments = option_flags.c && compiling && !no_output;
     }
     return  NULL;
 }
@@ -2019,7 +2033,7 @@ int     cnv_trigraph(
             ;
         if ((tp = strchr( tritext, *in)) == NULL)
             continue;
-        in[ -2] = tp[ TRIOFFSET];
+        *(in - 2) = *(tp + TRIOFFSET);
         in--;
         memmove( in, in + 2, strlen( in + 1));
         count++;
@@ -2043,7 +2057,7 @@ int     cnv_digraph(
     int     i;
     int     c1, c2;
 
-    while ((i = strcspn( in, "%:<")), (c1 = in[ i]) != '\0') {
+    while ((i = strcspn( in, "%:<")), (c1 = *(in + i)) != '\0') {
         in += i + 1;
         c2 = *in;
         switch (c1) {
@@ -2102,12 +2116,14 @@ static int  last_is_mbchar(
         return  2;
 }
 
-static void at_eof(
+static char *   at_eof(
     int     in_comment
 )
 /*
  * Check the partial line, unterminated comment, unbalanced #if block,
- * uncompleted macro call at end of file or at end of input.
+ * uncompleted macro call at end of a file or at end of input.
+ * Supplement the line terminator, if possible.
+ * Return the supplemented line or NULL on unrecoverable error.
  */
 {
     const char * const  format
@@ -2126,37 +2142,42 @@ static void at_eof(
     const char * const  unterm_asm_format
 = "End of %s with unterminated #asm block started at line %ld"; /* _E_ _W1_ */
     size_t  len;
-    char *  cp = infile->buffer;
-    IFINFO *    ifp;
+    char *  cp;
 
+    cp = infile->buffer;
     len = strlen( cp);
     if (len && *(cp += (len - 1)) != '\n') {
         *++cp = '\n';                       /* Supplement <newline> */
         *++cp = EOS;
-        if (standard && (warn_level & 1))
+        if (mcpp_mode != OLD_PREP && (warn_level & 1))
             cwarn( format, input, 0L, no_newline);
-        else if (mcpp_mode == KR && (warn_level & 1))
-            cwarn( format, input, 0L, no_newline);
+        return  infile->bptr = infile->buffer;
     }
     if (standard && infile->buffer < infile->bptr) {
-        cp += len - 2;
+                            /* No line after <backslash><newline>   */
+        cp = infile->bptr;
         *cp++ = '\n';                       /* Delete the \\        */
         *cp = EOS;
         if (warn_level & 1)
             cwarn( format, input, 0L, backsl);
+        return  infile->bptr = infile->buffer;
     }
-    if (in_comment) {
-        if ((standard || mcpp_mode == KR) && (warn_level & 1))
+    if (in_comment) {               /* End of file within a comment */
+        if (mcpp_mode != OLD_PREP && (warn_level & 1))
             cwarn( format, input, 0L, unterm_com);
+        /* The partial comment line has been already read by        */
+        /* read_a_comment(), so supplement the  next line.          */
+        strcpy( infile->buffer, "*/\n");
+        return  infile->bptr = infile->buffer;
     }
 
     if (infile->initif < ifptr) {
-        ifp = infile->initif + 1;
+        IFINFO *    ifp = infile->initif + 1;
         if (standard) {
             cerror( unterm_if_format, input, ifp->ifline, NULL);
             ifptr = infile->initif;         /* Clear information of */
             compiling = ifptr->stat;        /*   erroneous grouping */
-        } else if (mcpp_mode != OLD_PREP && (warn_level & 1)) {
+        } else if (mcpp_mode == KR && (warn_level & 1)) {
             cwarn( unterm_if_format, input, ifp->ifline, NULL);
         }
     }
@@ -2173,6 +2194,8 @@ static void at_eof(
 
     if (in_asm && mcpp_mode == KR && (warn_level & 1))
         cwarn( unterm_asm_format, input, in_asm, NULL);
+
+    return  NULL;
 }
 
 void    unget_ch( void)
@@ -2195,7 +2218,7 @@ void    unget_ch( void)
                 insert_sep = INSERT_SEP;
                 return;
             case INSERT_SEP:
-                cfatal( "Bug: unget_ch() just after scan_token()"    /* _F_  */
+                cfatal( "Bug: unget_ch() just after scan_token()"   /* _F_  */
                         , NULL, 0L, NULL);
                 break;
             default:
@@ -2213,11 +2236,11 @@ void    unget_ch( void)
 
 FILEINFO *  unget_string(
     const char *    text,               /* Text to unget            */
-    const char *    name                /* Name of the macro        */
+    const char *    name                /* Name of the macro, if any*/
 )
 /*
  * Push a string back on the input stream.  This is done by treating
- * the text as if it were a macro.
+ * the text as if it were a macro or a file.
  */
 {
     FILEINFO *      file;
@@ -2252,8 +2275,8 @@ char *  save_string(
 }
 
 FILEINFO *  get_file(
-    const char *    name,           /* File or macro name string    */
-    size_t      bufsize             /* Line buffer size             */
+    const char *    name,                   /* File or macro name   */
+    size_t      bufsize                     /* Line buffer size     */
 )
 /*
  * Common FILEINFO buffer initialization for a new file or macro.
@@ -2270,7 +2293,7 @@ FILEINFO *  get_file(
     file->pos = 0L;                         /* No pos to remember   */
     file->parent = infile;                  /* Chain files together */
     file->initif = ifptr;                   /* Initial ifstack      */
-    file->dirp = NULL;                      /* No sys-header yet    */
+    file->dirp = NULL;                      /* No include dir yet   */
     file->real_fname = name;                /* Save file/macro name */
     if (name) {
         file->filename = xmalloc( strlen( name) + 1);
@@ -2408,10 +2431,9 @@ static void do_msg(
 )
 /*
  * Print filenames, macro names, line numbers and error messages.
+ * Also print macro definitions on macro expansion problems.
  */
 {
-#define MAX_MACRO_FILE  4
-
     FILEINFO *  file;
     DEFBUF *    defp;
     int         i;
@@ -2455,7 +2477,7 @@ static void do_msg(
             case IN_SRC:
                 if (! standard)
                     *tp++ = ' ';
-                if ((mcpp_debug & MACRO_CALL) && !in_directive)
+                if ((mcpp_debug & MACRO_CALL) && ! in_directive)
                     sp++;               /* Skip one more byte       */
                 break;
             case MAC_INF:
@@ -2488,7 +2510,7 @@ static void do_msg(
         *tp = EOS;
     }
 
-    /* Print diagnostic */
+    /* Print source location and diagnostic */
     file = infile;
     while (file != NULL && (file->fp == NULL || file->fp == (FILE *)-1))
         file = file->parent;                        /* Skip macro   */
@@ -2498,7 +2520,7 @@ static void do_msg(
     }
     mcpp_fprintf( ERR, format, arg_t[ 0], arg2, arg_t[ 1]);
     mcpp_fputc( '\n', ERR);
-    if (no_source_line)
+    if (option_flags.no_source_line)
         goto  free_arg;
 
     /* Print source line, includers and expanding macros    */
@@ -2518,7 +2540,7 @@ static void do_msg(
             if (file->filename) {
                 defp = look_id( file->filename);
                 if ((defp->nargs > DEF_NOARGS_STANDARD)
-                        && ! (file->parent && file->parent->filename
+                    && ! (file->parent && file->parent->filename
                         && str_eq( file->filename, file->parent->filename)))
                         /* If the name is not duplicate of parent   */
                     dump_a_def( "    macro", defp, FALSE, TRUE, fp_err);
@@ -2548,7 +2570,6 @@ static void do_msg(
     expanding_macro[ 0].name = macro_name;
     for (ind = 0; ind <= exp_mac_ind; ind++) {
         int         ind_done;
-        FILEINFO *  file;
 
         for (ind_done = 0; ind_done < ind; ind_done++)
             if (str_eq( expanding_macro[ ind].name
@@ -2644,10 +2665,13 @@ void    dump_string(
 
         switch (c) {
         case MAC_PARM:
-            c = *cp++ & UCHARMAX;
+            c = *cp++ & UCHARMAX;       /* Macro parameter number   */
             mcpp_fprintf( DBG, "<%d>", c);
             break;
         case MAC_INF:
+            if (! (mcpp_mode == STD && (mcpp_debug & MACRO_CALL)))
+                goto  no_magic;
+            /* Macro informations inserted by -K option */
             c = *cp++ & UCHARMAX;
             switch (c) {
             case MAC_CALL_START:
@@ -2713,6 +2737,7 @@ void    dump_string(
                 break;
             }       /* Else fall through    */
         default:
+no_magic:
             if (c < ' ')
                 mcpp_fprintf( DBG, "<^%c>", c + '@');
             else

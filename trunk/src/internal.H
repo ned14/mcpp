@@ -55,23 +55,22 @@
 #define DEF_NOARGS_DYNAMIC  (DEF_NOARGS - 4)/* Standard dynamically defined */
 
 /*
- * The following may need to change if the host system doesn't use ASCII.
  * These magic characters must be control characters which can't be used
  * in source file.
  */
 /* for '#pragma MCPP debug macro_call' and -K option in STD mode.   */
 #define MAC_INF         0x18        /* Magic for macro informations */
 /* In STD and POST_STD modes (IN_SRC and TOK_SEP are for STD mode only).    */
-#define DEF_MAGIC       0x19        /* Magic for #defines           */
+#define DEF_MAGIC       0x19        /* Magic to prevent recursive expansion */
 #define IN_SRC          0x1A        /* Magic of name from source    */
 #define RT_END          0x1C        /* Magic of macro rescan boundary   */
 #define ST_QUOTE        0x1D        /* Magic for stringizing        */
 #define CAT             0x1E        /* Token concatenation delim.   */
 #define TOK_SEP         0x1F        /* Magic to wrap expanded macro */
 /* In OLD_PREP mode.    */
-#define COM_SEP         0x1F        /* Comment as token separator   */
+#define COM_SEP         0x1F        /* Comment of 0-length          */
 
-#define MAC_PARM        0x7F        /* Macro formals signal         */
+#define MAC_PARM        0x7F        /* Macro parameter signal       */
 
 /* Special character types  */
 #define LET             1           /* Letter (alphabet and _)      */
@@ -80,11 +79,11 @@
 #define PUNC            8           /* Punctuators and operators    */
 #define QUO             16          /* Both flavors of quotation ",'*/
 #define SPA             32          /* White spaces                 */
-#define HSP             64          /* Horizontal white spaces (' ', '\t')  */
+#define HSP             64  /* Horizontal white spaces (' ', '\t', TOK_SEP) */
 
 /*
  * Codes for operators used in #if expression.
- * The value is stored in 'openum'.
+ * The value of the scanned operator is stored in 'openum'.
  */
 #define INV             0           /* Invalid, must be zero        */
 #define OP_EOE          INV         /* End of expression            */
@@ -92,7 +91,7 @@
 #define OP_LPA          2           /* (    */
 /* The following are unary.     */
 #define FIRST_UNOP      OP_PLU      /* First unary operator         */
-#define OP_PLU          3           /* + (ANSI Standard)            */
+#define OP_PLU          3           /* +    */ 
 #define OP_NEG          4           /* -    */
 #define OP_COM          5           /* ~    */
 #define OP_NOT          6           /* !    */
@@ -304,30 +303,38 @@ typedef struct line_col {
 /*
  * Externs
  */
+
+/* The minimum translation limits specified by the Standards.       */
+extern struct std_limits_ {
+        long    str_len;            /* Least maximum of string len. */
+        size_t  id_len;             /* Least maximum of ident len.  */
+        int     n_mac_pars;         /* Least maximum of num of pars.*/
+        int     exp_nest;           /* Least maximum of expr nest   */
+        int     blk_nest;           /* Least maximum of block nest  */
+        int     inc_nest;           /* Least maximum of include nest*/
+        long    n_macro;            /* Least maximum of num of macro*/
+        long    line_num;           /* Maximum source line number   */
+} std_limits;    
+/* The boolean flags specified by the execution options.    */
+extern struct option_flags_ {
+        int     c;                  /* -C option (keep comments)    */
+        int     k;                  /* -k option (keep white spaces)*/
+        int     z;      /* -Z option (no-output of included file)   */
+        int     p;                  /* -P option (no #line output)  */
+        int     q;                  /* -Q option (diag to mcpp.err) */
+        int     trig;               /* -3 option (toggle trigraphs) */
+        int     dig;                /* -2 option (toggle digraphs)  */
+        int     lang_asm;           /* -a option (assembler source) */
+        int     no_source_line;     /* Do not output line in diag.  */
+} option_flags;
+
 extern int      mcpp_mode;          /* Mode of preprocessing        */
-extern int      cflag;              /* -C option (keep comments)    */
-extern int      kflag;              /* -k option (keep white spaces)*/
-extern int      zflag;  /* -Z option (no-output of included file)   */
-extern int      pflag;              /* -P option (no #line output)  */
-extern int      qflag;              /* -Q option (diag to mcpp.err) */
-extern int      trig_flag;          /* -3 option (toggle trigraphs) */
-extern int      dig_flag;           /* -2 option (toggle digraphs)  */
 extern int      stdc_val;           /* Value of __STDC__            */
 extern long     stdc_ver;           /* Value of __STDC_VERSION__    */
 extern long     cplus_val;          /* Value of __cplusplus for C++ */
-extern int      stdc2;      /* cplus_val or stdc_ver >= 199901L     */
+extern int      stdc2;      /* cplus_val or (stdc_ver >= 199901L)   */
 extern int      stdc3;      /* (stdc_ver or cplus_val) >= 199901L   */
 extern int      standard;           /* mcpp_mode is STD or POST_STD */
-extern long     str_len_min;        /* Least maxmum of string len.  */
-extern size_t   id_len_min;         /* Least maximum of ident len.  */
-extern int      n_mac_pars_min;     /* Least maximum of num of pars.*/
-extern int      exp_nest_min;       /* Least maximum of expr nest   */
-extern int      blk_nest_min;       /* Least maximum of block nest  */
-extern int      inc_nest_min;       /* Least maximum of include nest*/
-extern long     n_macro_min;        /* Least maximum of num of macro*/
-extern long     line_limit;         /* Maximum source line number   */
-extern int      has_pragma;         /* '_Pragma()' has been expanded*/
-extern int      lang_asm;           /* -a option (assembler source) */
 extern int      std_line_prefix;    /* #line in C source style      */
 extern int      warn_level;         /* Level of warning             */
 extern int      errors;             /* Error counter                */
@@ -345,13 +352,11 @@ extern int      in_directive;       /* In process of #directive     */
 extern int      in_define;          /* In #define line              */
 extern int      in_getarg;          /* Collecting arguments of macro*/
 extern int      in_include;         /* In #include line             */
-extern int      compat_mode;        /* Compatible macro recursion   */
 extern long     macro_line;         /* Line number of macro call    */
 extern char *   macro_name;         /* Currently expanding macro    */
 extern int      openum;             /* Number of operator or punct. */
 extern IFINFO *     ifptr;          /* -> current ifstack item      */
 extern FILEINFO *   infile;         /* Current input file or macro  */
-extern int      no_source_line;     /* Do not output line in diag.  */
 extern FILE *   fp_in;              /* Input stream to preprocess   */
 extern FILE *   fp_out;             /* Output stream preprocessed   */
 extern FILE *   fp_err;             /* Diagnostics stream           */
@@ -374,21 +379,16 @@ extern IFINFO   ifstack[];          /* Information of #if nesting   */
 extern char     cur_fullname[];     /* Full name of current source  */
 extern char     work_buf[];
         /* Temporary buffer for directive line and macro expansion  */
-#if COMPILER == GNUC
-extern int      ansi;               /* __STRICT_ANSI__ flag         */
-#endif
 
 /* main.c   */
 extern void     sharp( void);
                 /* Output # line number         */
 extern void     un_predefine( int clearall);
                 /* Undefine predefined macros   */
-extern void     undef_a_predef( const char * name);
-                /* Remove a non-standard predef */
 
 /* directive.c  */
 extern void     directive( void);
-                /* Process #directive lines     */
+                /* Process #directive line      */
 extern DEFBUF * do_define( int ignore_redef, int predefine);
                 /* Do #define directive         */
 extern DEFBUF * look_id( const char * name);
@@ -401,7 +401,7 @@ extern DEFBUF * look_and_install( const char * name, int numargs
 extern DEFBUF * install_macro( const char * name, int numargs
         , const char * parmnames, const char * repl, DEFBUF ** prevp, int cmp
         , int predefine);
-                /* Install to symbol table      */
+                /* Install a def to symbol table*/
 extern int      undefine( const char * name);
                 /* Delete from symbol table     */
 extern void     dump_a_def( const char * why, const DEFBUF * dp, int newdef
@@ -418,9 +418,9 @@ extern VAL_SIGN *   eval_num( const char * nump);
 
 /* expand.c */
 extern char *   (* expand_macro)( DEFBUF * defp, char * out, char * out_end
-        , long mline, size_t col);
+        , LINE_COL line_col, int * pragma_op);
                 /* Expand a macro completely    */
-extern void     expand_init( void);
+extern void     expand_init( int compat, int strict_ansi);
                 /* Initialize expand_macro()    */
 extern DEFBUF * is_macro( char ** cp);
                 /* The sequence is a macro call?*/
@@ -536,7 +536,6 @@ extern void     init_support( void);
 /* system.c */
 extern void     init_system( void);
 #if NEED_GETOPT
-/* lib.c    */
 extern void     init_lib( void);
 #endif
 #endif
