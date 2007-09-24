@@ -1,16 +1,16 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2007/09/10  kmatsui
+2007/09/24  kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
         on STD mode.  Created get_src_location(), print_macro_inf(),
         print_macro_arg(), close_macro_inf(), chk_magic_balance(),
-        remove_magics(), update_addr(), chk_magics(), some MAC_* macros
-        to define magic characters, struct LINE_COL.  Revised many
-        functions.  (Specifications by Taras Glek, implemented mostly by
-        kmatsui and partly by Taras Glek).  (internal.H, main.c,
-        directive.c, expand.c, support.c, system.c)
+        remove_magics(), update_addr(), some MAC_* macros to define
+        magic characters, struct LINE_COL.  Revised many functions.
+        (Specifications by Taras Glek, implemented mostly by kmatsui and
+        partly by Taras Glek).  (internal.H, main.c, directive.c, expand.
+        c, support.c, system.c)
         * Created -k option to keep horizontal white spaces as they are
         and convert comment to spaces of the same length on STD mode.
         (Specs by Taras Glek, implemented by kmatsui).  (internal,H,
@@ -22,7 +22,7 @@ ChangeLog of MCPP and its accompanying Validation Suite
         (expand.c)
         * Reordered initialization steps and enabled undefining of not-
         Standard-required predefined macros.  Created undef_macros().
-        (main.c, system.c)
+        Removed undef_a_predef().  (main.c, system.c)
         * Enabled non-conforming predefined macros such as 'linux' by
         default on GCC-specific-build for compatibility with GCC.
         Removed undef_gcc_macros().  Created DEF_NOARGS_* macros for
@@ -31,7 +31,13 @@ ChangeLog of MCPP and its accompanying Validation Suite
         by relative path in -include option.  (system.c)
         * Fixed a bug of mcpplib initialization which caused problem on
         CygWIN.  (main.c, system.c, lib.c)
-        * Made open_file() not to open a directory.  (by Taras Glek)
+        * Fixed a bug of unterminated source file handling.  (thanks to
+        Phil Knight) (support.c)
+        * Made norm_path() to check existence of directory/file before
+        normalization.  As its results, non-existent directory specified
+        by -I option was disabled, "non-existent/../existent" was judged
+        as non-existent before wrongly normalizing to "existent", and #
+        include "directory" was made not to open.  (thanks to Taras Glek)
         (system.c)
         * Changed allocation of buffer for -M* options and incdir[],
         fnamelist[], once_list[] from fixed size to dynamically
@@ -42,6 +48,11 @@ ChangeLog of MCPP and its accompanying Validation Suite
         search_framework(), search_subdir().  This is still a
         preliminary porting, because I have no Mac machine.  (system.c,
         directive.c)
+        * Added documentation on source checking of firefox 3.0pre.
+        (mcpp-manual.html)
+        * Bundled some variables into structs (std_limits, option_flags,
+        etc.).  Tidied up the sources removing unused codes, rewriting
+        old comments.  (most of the sources)
         * Updated some documents.  Some parts of the documents are not
         yet updated.  (mainly by kmatsui, partly by Taras Glek)
 

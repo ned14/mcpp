@@ -84,7 +84,7 @@
  * MBCHAR means the default encoding, and you can change the encoding by
  *      #pragma MCPP setlocale, -e <encoding> option or environment variable
  *      LC_ALL, LC_CTYPE, LANG.
- * MBCHAR == 0 means no multi-byte character encoding.
+ * MBCHAR == 0 means not to recognize any multi-byte character encoding.
  */
 
 /*
@@ -99,16 +99,16 @@
  * They should not be #defined to no token or to "".
  *
  * CPU_OLD, CPU_STD1, CPU_STD2, CPU_SP_OLD, CPU_SP_STD
- *      define the target cpu (by name)
+ *      define the target cpu (by name).
  * SYSTEM_OLD, SYSTEM_STD1, SYSTEM_STD2, SYSTEM_EXT, SYSTEM_EXT2
- *      define the target operating system (by name)
+ *      define the target operating system (by name).
  * SYSTEM_SP_OLD, SYSTEM_SP_STD     define the target-OS specific macro name
  * COMPILER_OLD, COMPILER_STD1, COMPILER_STD2, COMPILER_EXT, COMPILER_EXT2
  *          , COMPILER_SP_OLD, COMPILER_SP_STD
- *      define the target compiler (by name)
- * COMPILER_CPLUS        define the target C++ compiler
+ *      define the target compiler (by name).
+ * COMPILER_CPLUS        defines the target C++ compiler.
  * COMPILER_SP1, COMPILER_SP2, COMPILER_SP3, COMPILER_SP4
- *      define the compiler-specific macros
+ *      define the compiler-specific macros.
  *
  * <macro>_VAL      specify the value of the <macro>.
  *      If not specified, these values default to "1".
@@ -215,8 +215,8 @@
 
 #if     SYS_FAMILY == SYS_WIN
 /*
- *      Here we assume that the operating system is WIN32, the
- * processor is an Intel 8086 (or i386, etc.).
+ * Here we assume that the operating system is WIN32, the processor is
+ * an Intel i386.
  */
 #if     SYSTEM == SYS_WIN32
 #define CPU_STD2            "__i386__"
@@ -343,6 +343,7 @@
     /* SYS_FREEBSD: "int", SYS_CYGWIN, SYS_MINGW: "short unsigned int"
             , others: "long int"  */
 #endif  /* GCC_MAJOR_VERSION < 3    */
+/* On GCC V.3.*, V.4.*, these macros are known by mcpp_g*_predef_*.h files. */
 #endif  /* COMPILER_FAMILY == GNUC  */
 
 #if     COMPILER == INDEPENDENT
@@ -448,7 +449,7 @@
  *
  * LONGMAX      should be defined to the LONG_MAX in <limits.h>.
  * ULONGMAX     should be defined to the ULONG_MAX in <limits.h> or LONG_MAX
- *              for the compiler which lacks of unsigned long.
+ *              for the compiler which does not have unsigned long.
  */
 
 #ifndef CHARBIT
@@ -479,8 +480,6 @@
  * SJIS literal.
  * BIGFIVE_IS_ESCAPE_FREE means similar case on BIGFIVE encoding.
  * ISO2022_JP_IS_ESCAPE_FREE means similar case on ISO2022_JP encoding.
- *
- * GCC can handle these encodings if it has been configured so.
  */
 #ifndef SJIS_IS_ESCAPE_FREE
 #define SJIS_IS_ESCAPE_FREE     FALSE   /* or TRUE following your compiler  */
@@ -527,7 +526,7 @@
 #define HAVE_INTMAX_T               FALSE
 #endif
 
-/* The host compilers both have the type long long int ? */
+/* The host compiler has the type long long int ?   */
 #ifndef HOST_HAVE_LONG_LONG
 #define HOST_HAVE_LONG_LONG         FALSE
 #endif

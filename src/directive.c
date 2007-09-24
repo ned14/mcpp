@@ -47,17 +47,17 @@ static int      do_if( int hash);
 static long     do_line( void);
                 /* Process #line directive          */
 static int      get_parm( void);
-                /* Get parm., its nargs, names, lens*/
+                /* Get parameters of macro, its nargs, names, lengths       */
 static int      get_repl( const char * macroname);
-                /* Get replacement embedded parm-no.*/
+                /* Get replacement text embedding parameter number  */
 static char *   is_formal( const char * name, int conv);
-                /* If formal param., save the num.  */
+                /* If formal parameter, save the number     */
 static char *   def_stringization( char * repl_cur);
                 /* Define stringization     */
 static char *   mgtoken_save( const char * macroname);
-                /* Prefix DEF_MAGIC to macro name   */
+                /* Prefix DEF_MAGIC to macro name in repl-text      */
 static char *   str_parm_scan( char * string_end);
-                /* Scan the param. in string        */
+                /* Scan the parameter in quote      */
 static void     do_undef( void);
                 /* Process #undef directive         */
 static void     dump_repl( const DEFBUF * dp, FILE * fp, int gcc2_va);
@@ -119,16 +119,17 @@ void    directive( void)
     if (c == '\n')                              /* 'null' directive */
         goto  ret;
     token_type = scan_token( c, (workp = work_buf, &workp), work_end);
-    if (in_asm && (token_type != NAM            /* In #asm block    */
-            || (! str_eq( identifier, "asm")    /* Ignore #anything */
-                && ! str_eq( identifier, "endasm"))))   /*   other  */
-        goto  skip_line;                /*    than #asm or #endasm  */
+    if (in_asm && (token_type != NAM
+            || (! str_eq( identifier, "asm")
+                && ! str_eq( identifier, "endasm"))))
+        /* In #asm block, ignore #anything other than #asm or #endasm       */
+        goto  skip_line;
     if (token_type != NAM) {
         if (mcpp_mode == OLD_PREP && token_type == NUM) {   /* # 123 [fname]*/
             strcpy( identifier, "line");
         } else {
             if (compiling) {
-                if (lang_asm) {
+                if (option_flags.lang_asm) {
                     if (warn_level & 1)
                         cwarn( illeg_dir, work_buf, 0L, NULL);
                 } else {
@@ -145,6 +146,7 @@ void    directive( void)
     if (strlen( identifier) > 7)
         hash ^= (identifier[ 7] << 1);
 
+    /* hash is set to a unique value corresponding to the directive.*/
     switch (hash) {
     case L_if:      tp = "if";      break;
     case L_ifdef:   tp = "ifdef";   break;
@@ -172,9 +174,6 @@ void    directive( void)
         tp = NULL;                      /*   be handled by do_old() */
     }
 
-    /*
-     * hash is set to a unique value corresponding to the directive.
-     */
     if (! compiling) {                      /* Not compiling now    */
         switch (hash) {
         case L_elif :
@@ -188,21 +187,23 @@ void    directive( void)
             break;
         case L_if   :                       /* These can't turn     */
         case L_ifdef:                       /*  compilation on, but */
-        case L_ifndef:                      /*   we must nest #if's.*/
+        case L_ifndef   :                   /*   we must nest #if's.*/
             if (&ifstack[ BLK_NEST] < ++ifptr)
                 goto  if_nest_err;
             if (standard && (warn_level & 8)
-                    && &ifstack[ blk_nest_min + 1] == ifptr)
-                cwarn( many_nesting, NULL, (long) blk_nest_min, in_skipped);
+                    && &ifstack[ std_limits.blk_nest + 1] == ifptr)
+                cwarn( many_nesting, NULL, (long) std_limits.blk_nest
+                        , in_skipped);
             ifptr->stat = 0;                /* !WAS_COMPILING       */
             ifptr->ifline = src_line;       /* Line at section start*/
             goto  skip_line;
-        default     :                       /* Other directives     */
+        default :                           /* Other directives     */
             if (tp == NULL && (warn_level & 8))
                 do_old();                   /* Unknown directive ?  */
             goto  skip_line;                /* Skip the line        */
         }
     }
+
     macro_line = 0;                         /* Reset error flag     */
     file = infile;                  /* Remember the current file    */
 
@@ -214,8 +215,8 @@ void    directive( void)
         if (&ifstack[ BLK_NEST] < ++ifptr)
             goto  if_nest_err;
         if (standard && (warn_level & 4) &&
-                &ifstack[ blk_nest_min + 1] == ifptr)
-            cwarn( many_nesting, NULL , (long) blk_nest_min, NULL);
+                &ifstack[ std_limits.blk_nest + 1] == ifptr)
+            cwarn( many_nesting, NULL , (long) std_limits.blk_nest, NULL);
         ifptr->stat = WAS_COMPILING;
         ifptr->ifline = src_line;
         goto  ifdo;
@@ -301,7 +302,7 @@ ifdo:
             sharp();    /* Putout the new line number and file name */
             infile->line = --src_line;  /* Next line number is 'src_line'   */
             newlines = -1;
-        } else {            /* Error already diagnosed by do_line()  */
+        } else {            /* Error already diagnosed by do_line() */
             skip_nl();
         }
         break;
@@ -395,8 +396,8 @@ if_nest_err:
 
 ret:
     in_directive = FALSE;
-    keep_comments = cflag && compiling && !no_output;
-    keep_spaces = kflag && compiling;
+    keep_comments = option_flags.c && compiling && !no_output;
+    keep_spaces = option_flags.k && compiling;
        /* keep_spaces is on for #define line even if no_output is TRUE  */
     if (! wrong_line)
         newlines++;
@@ -405,8 +406,7 @@ ret:
 static int  do_if( int hash)
 /*
  * Process an #if (#elif), #ifdef or #ifndef.  The latter two are straight-
- * forward, while #if needs a subroutine of its own to evaluate the
- * expression.
+ * forward, while #if needs a subroutine to evaluate the expression.
  * do_if() is called only if compiling is TRUE.  If false, compilation is
  * always supressed, so we don't need to evaluate anything.  This supresses
  * unnecessary warnings.
@@ -491,12 +491,13 @@ static long do_line( void)
     valp = eval_num( work_buf);             /* Evaluate number      */
     if (valp->sign == VAL_ERROR) {  /* Error diagnosed by eval_num()*/
         return  -1;
-    } else if (standard && (line_limit < valp->val || valp->val <= 0L)) {
+    } else if (standard
+            && (std_limits.line_num < valp->val || valp->val <= 0L)) {
         if (valp->val < LINE99LIMIT && valp->val > 0L) {
             if (warn_level & 1)
-                cwarn( out_of_range, work_buf, line_limit, NULL);
+                cwarn( out_of_range, work_buf, std_limits.line_num, NULL);
         } else {
-            cerror( out_of_range, work_buf, line_limit, NULL);
+            cerror( out_of_range, work_buf, std_limits.line_num, NULL);
             return  -1L;
         }
     }
@@ -569,10 +570,6 @@ not_fname:
 
 /*
  *                  M a c r o  D e f i n i t i o n s
- *
- * Edit History (cpp4.c) of original version
- * 31-Aug-84    MM      USENET net.sources release
- *  2-May-85    MM      Latest revision
  */
 
 /*
@@ -583,19 +580,22 @@ not_fname:
  */
 
 /*
- * Global work_buf[] are used to store #define parameter lists and parlist[]
- * point to them.
+ * Global work_buf[] are used to store #define parameter lists and
+ * parms[].name point to them.
  * 'nargs' contains the actual number of parameters stored.
  */
-static char *   parlist[ NMACPARS]; /* -> Start of each parameter   */
-static size_t   parlen[ NMACPARS];  /* Length of parameter name     */
-static int      nargs;          /* Number of parameters         */
-static char *   token_p;        /* Pointer to the token scanned */
-static char *   repl_base;      /* Base of buffer for repl-text */
-static char *   repl_end;       /* End of buffer for repl-text  */
+typedef struct {
+    char *  name;                   /* -> Start of each parameter   */
+    size_t  len;                    /* Length of parameter name     */
+} PARM;
+static PARM     parms[ NMACPARS];
+static int      nargs;              /* Number of parameters         */
+static char *   token_p;            /* Pointer to the token scanned */
+static char *   repl_base;          /* Base of buffer for repl-text */
+static char *   repl_end;           /* End of buffer for repl-text  */
 static const char * const   no_ident = "No identifier";     /* _E_  */
 #if COMPILER == GNUC
-static int      gcc2_va_arg;    /* GCC2-spec variadic macro     */
+static int      gcc2_va_arg;        /* GCC2-spec variadic macro     */
 #endif
 
 DEFBUF *    do_define(
@@ -669,6 +669,7 @@ DEFBUF *    do_define(
         return  NULL;
     } else {
         prevp = look_prev( identifier, &cmp);
+                /* Find place in the macro list to insert the definition    */
         defp = *prevp;
         if (standard) {
             if (cmp || defp->push) {    /* Not known or 'pushed' macro      */
@@ -717,24 +718,17 @@ DEFBUF *    do_define(
         in_define = FALSE;
         return  NULL;                       /* Syntax error         */
     }
-    if (get_repl( macroname) == FALSE) {
-        /* Get replacement text */
+    if (get_repl( macroname) == FALSE) {    /* Get replacement text */
         in_define = FALSE;
         return  NULL;                       /* Syntax error         */
     }
-    if (mcpp_debug & MACRO_CALL) {      /* Remove trailing blank    */
+    if (mcpp_debug & MACRO_CALL) {  /* Remember location on source  */
         char *  cp;
-        size_t  len;
-
         cp = infile->bptr - 1;              /* Before '\n'          */
         while (char_type[ *cp & UCHARMAX] & HSP)
             cp--;                           /* Trailing space       */
-        cp++;               /* Just after the last space or '\n'    */
+        cp++;                       /* Just after the last token    */
         def_end = cp - infile->buffer;      /* End of definition    */
-        len = strlen( repl_list);
-        if (*(repl_list + len - 1) == ' ')
-            *(repl_list + len - 1) = EOS;
-                            /* Remove trailing blank from repl_list */
     }
 
     in_define = FALSE;
@@ -745,7 +739,7 @@ DEFBUF *    do_define(
             if (warn_level & 1) {
                 cwarn(
             "The macro is redefined", NULL, 0L, NULL);      /* _W1_ */
-                if (! no_source_line)
+                if (! option_flags.no_source_line)
                     dump_a_def( "    previously macro", defp, FALSE, TRUE
                             , fp_err);
             }
@@ -785,7 +779,7 @@ DEFBUF *    do_define(
 static int  get_parm( void)
 /*
  *   Get parameters i.e. numbers into nargs, name into work_buf[], name-length
- * into parlen[].
+ * into parms[].len.  parms[].name point into work_buf.
  *   Return TRUE if the parameters are legal, else return FALSE.
  *   In STD mode preprocessor must remember the parameter names, only for
  * checking the validity of macro redefinitions.  This is required by the
@@ -801,7 +795,7 @@ static int  get_parm( void)
     int     token_type;
     int     c;
 
-    parlist[ 0] = workp = work_buf;
+    parms[ 0].name = workp = work_buf;
     work_buf[ 0] = EOS;
 #if COMPILER == GNUC
     gcc2_va_arg = FALSE;
@@ -823,7 +817,7 @@ static int  get_parm( void)
                 cerror( many_parms, NULL, (long) NMACPARS, NULL);
                 return  FALSE;
             }
-            parlist[ nargs] = workp;        /* Save its start       */
+            parms[ nargs].name = workp;     /* Save its start       */
             if ((token_type = scan_token( c = skip_ws(), &workp, work_end))
                     != NAM) {
                 if (c == '\n') {
@@ -842,26 +836,26 @@ static int  get_parm( void)
                         cerror( misplaced_ellip, NULL, 0L, NULL);
                         return  FALSE;
                     }
-                    parlen[ nargs++] = 3;
+                    parms[ nargs++].len = 3;
                     nargs |= VA_ARGS;
                     goto  ret;
                 } else {
-                    cerror( illeg_parm, parlist[ nargs], 0L, NULL);
+                    cerror( illeg_parm, parms[ nargs].name, 0L, NULL);
                     return  FALSE;          /* Bad parameter syntax */
                 }
             }
             if (standard && (stdc_val || cplus_val)
                     && str_eq( identifier, "__VA_ARGS__")) {
-                cerror( illeg_parm, parlist[ nargs], 0L, NULL);
+                cerror( illeg_parm, parms[ nargs].name, 0L, NULL);
                 return  FALSE;
                 /* __VA_ARGS__ should not be used as a parameter    */
             }
-            if (is_formal( parlist[ nargs], FALSE)) {
+            if (is_formal( parms[ nargs].name, FALSE)) {
                 cerror( "Duplicate parameter name \"%s\""   /* _E_  */
-                        , parlist[ nargs], 0L, NULL);
+                        , parms[ nargs].name, 0L, NULL);
                 return  FALSE;
             }
-            parlen[ nargs] = (size_t) (workp - parlist[ nargs]);
+            parms[ nargs].len = (size_t) (workp - parms[ nargs].name);
                                             /* Save length of param */
             *workp++ = ',';
             nargs++;
@@ -901,8 +895,8 @@ static int  get_parm( void)
     }
 ret:
 #if NMACPARS > NMACPARS90MIN
-    if ((warn_level & 4) && (nargs & ~AVA_ARGS) > n_mac_pars_min)
-        cwarn( many_parms, NULL , (long) n_mac_pars_min , NULL);
+    if ((warn_level & 4) && (nargs & ~AVA_ARGS) > std_limits.n_mac_pars)
+        cwarn( many_parms, NULL , (long) std_limits.n_mac_pars, NULL);
 #endif
     return  TRUE;
 }
@@ -943,9 +937,9 @@ static int  get_repl(
             cwarn( "No space between macro name \"%s\" and repl-text"/* _W1_ */
                 , macroname, 0L, NULL);
     }
-    c = skip_ws();                           /* Get to the body      */
+    c = skip_ws();                          /* Get to the body      */
 
-    while (c != CHAR_EOF && c != '\n') {
+    while (c != '\n') {
         if (standard) {
             prev_prev_token = prev_token;
             prev_token = token_p;
@@ -1063,6 +1057,10 @@ static int  get_repl(
         }
     }
 
+    while (*(repl_cur - 1) == ' ' || *(repl_cur - 1) == '\t')
+        repl_cur--;                     /* Remove trailing spaces   */
+    *repl_cur = EOS;                        /* Terminate work       */
+
     unget_ch();                             /* For syntax check     */
     if (standard) {
         if (token_p && *token_p == CAT) {
@@ -1076,7 +1074,6 @@ static int  get_repl(
             cwarn( "Variable argument macro is defined",    /* _W2_ */
                     NULL, 0L, NULL);
     }
-    *repl_cur = EOS;                        /* Terminate work       */
 
     return  TRUE;
 }
@@ -1093,16 +1090,19 @@ static char *   is_formal(
 {
     char *  repl_cur;
     const char *    va_arg = "__VA_ARGS__";
+    PARM    parm;
     size_t  len;
     int     i;
 
     len = strlen( name);
     for (i = 0; i < (nargs & ~AVA_ARGS); i++) {     /* For each parameter   */
-        if ((len == parlen[ i]      /* Note: parlist[] are comma separated  */
-                    && memcmp( name, parlist[ i], parlen[ i]) == 0)
+        parm = parms[ i];
+        if ((len == parm.len
+                /* Note: parms[].name are comma separated  */
+                    && memcmp( name, parm.name, parm.len) == 0)
                 || (standard && (nargs & VA_ARGS)
                     && i == (nargs & ~AVA_ARGS) - 1 && conv
-                    && str_eq( name, va_arg))) {
+                    && str_eq( name, va_arg))) {    /* __VA_ARGS__  */
                                             /* If it's known        */
 #if COMPILER == GNUC
             if (gcc2_va_arg && str_eq( name, va_arg))
@@ -1114,7 +1114,7 @@ static char *   is_formal(
                 *repl_cur++ = i + 1;        /* Save the parm number */
                 return  repl_cur;           /* Return "gotcha"      */
             } else {
-                return  parlist[ i];        /* Duplicate parm name  */
+                return  parm.name;          /* Duplicate parm name  */
             }
         }
     }
@@ -1125,8 +1125,8 @@ static char *   is_formal(
 static char *   def_stringization( char * repl_cur)
 /*
  * Define token stringization.
- * We store a magic cookie (which becomes " on output) preceding the
- * parameter as an operand of # operator.
+ * We store a magic cookie (which becomes surrouding " on expansion) preceding
+ * the parameter as an operand of # operator.
  * Return the current pointer into replacement text if the token following #
  * is a parameter name, else return NULL.
  */
@@ -1356,10 +1356,9 @@ DEFBUF *    install_macro(
     DEFBUF *    defp;
     size_t      s_name, s_parmnames, s_repl;
 
-    defp = *prevp;
+    defp = *prevp;                  /* Old definition, if cmp == 0  */
     if (cmp == 0 && defp->nargs < DEF_NOARGS - 1)
         return  NULL;                       /* Standard predefined  */
-    s_parmnames = 0;
     if (parmnames == NULL || repl == NULL || (predefine && numargs > 0)
             || (predefine && predefine != DEF_NOARGS_PREDEF
                     && predefine != DEF_NOARGS_PREDEF_OLD))
@@ -1369,6 +1368,8 @@ DEFBUF *    install_macro(
     s_name = strlen( name);
     if (mcpp_mode == STD)
         s_parmnames = strlen( parmnames) + 1;
+    else
+        s_parmnames = 0;
     s_repl = strlen( repl) + 1;
     dp = (DEFBUF *)
         xmalloc( sizeof (DEFBUF) + s_name + s_parmnames + s_repl);
@@ -1393,13 +1394,14 @@ DEFBUF *    install_macro(
     memcpy( dp->name, name, s_name + 1);
     memcpy( dp->repl, repl, s_repl);
     /* Remember where the macro is defined  */
-    dp->dir = *inc_dirp;
-    dp->fname = cur_fname;
+    dp->dir = *inc_dirp;                    /* Include directory    */
+    dp->fname = cur_fname;      /* Fname registered in fnamelist[]  */
     dp->mline = src_line;
-    if (standard && cmp && ++num_of_macro == n_macro_min + 1 && n_macro_min
-            && (warn_level & 4))
+    if (standard && cmp && ++num_of_macro == std_limits.n_macro + 1
+            && std_limits.n_macro && (warn_level & 4))
+        /* '&& std_limits.n_macro' to avoid warning before initialization   */
         cwarn( "More than %.0s%ld macros defined"           /* _W4_ */
-                , NULL , n_macro_min , NULL);
+                , NULL , std_limits.n_macro, NULL);
     return  dp;
 }
 
@@ -1409,17 +1411,18 @@ int undefine(
 /*
  * Delete the macro definition from the symbol table.
  * Returns TRUE, if deleted;
- * Else returns FALSE (when the macro was not defined or was predefined).
+ * Else returns FALSE (when the macro was not defined or was Standard
+ * predefined).
  */
 {
     DEFBUF **   prevp;          /* Preceding definition in list     */
     DEFBUF *    dp;                     /* Definition to delete     */
-    int         cmp;
+    int         cmp;            /* 0 if defined, else not defined   */
 
     prevp = look_prev( name, &cmp);
     dp = *prevp;                        /* Definition to delete     */
     if (cmp || dp->nargs <= DEF_NOARGS_STANDARD)
-        return  FALSE;                      /* Standard predefined  */
+        return  FALSE;      /* Not defined or Standard predefined   */
     if (standard && dp->push)
         return  FALSE;                  /* 'Pushed' macro           */
     *prevp = dp->link;          /* Link the previous and the next   */
@@ -1450,12 +1453,14 @@ static void dump_repl(
         case MAC_PARM:                              /* Parameter    */
             c = (*cp++ & UCHARMAX) - 1;
             if (standard) {
+                PARM    parm = parms[ c];
                 if ((numargs & VA_ARGS) && c == (numargs & ~AVA_ARGS) - 1) {
-                    mcpp_fputs( gcc2_va ? parlist[ c] : "__VA_ARGS__"
+                    mcpp_fputs( gcc2_va ? parm.name : "__VA_ARGS__"
                             , FP2DEST( fp));
+                    /* gcc2_va is possible only in STD mode */
                 } else {
                     if (mcpp_mode == STD) {
-                        for (i = 0, cp1 = parlist[ c]; i < parlen[ c]; i++)
+                        for (i = 0, cp1 = parm.name; i < parm.len; i++)
                             mcpp_fputc( *cp1++, FP2DEST( fp));
                     } else {
                         mcpp_fputc( 'a' + c % 26, FP2DEST( fp));
@@ -1514,7 +1519,7 @@ static void dump_repl(
 void    dump_a_def(
     const char *    why,
     const DEFBUF *  dp,
-    int     newdef,         /* TRUE if parmnames are currently in parlist[] */
+    int     newdef,         /* TRUE if parmnames are currently in parms[] */
     int     comment,        /* Show location of the definition in comment   */
     FILE *  fp
 )
@@ -1542,31 +1547,34 @@ void    dump_a_def(
             dp->name);                      /* Macro name           */
     if (numargs >= 0) {                     /* Parameter list       */
         if (mcpp_mode == STD) {
-            char *  appendix = null;
+            const char *    appendix = null;
             if (! newdef) {
+                /* Make parms[] for dump_repl() */
                 for (i = 0, cp = dp->parmnames; i < numargs;
                         i++, cp = cp1 + 1) {
                     if ((cp1 = strchr( cp, ',')) == NULL)   /* The last arg */
-                        parlen[ i] = strlen( cp);
+                        parms[ i].len = strlen( cp);
                     else
-                        parlen[ i] = (size_t) (cp1 - cp);
-                    parlist[ i] = cp;
+                        parms[ i].len = (size_t) (cp1 - cp);
+                    parms[ i].name = cp;
                 }
             }
 #if COMPILER == GNUC
             if ((dp->nargs & VA_ARGS)
-                    && memcmp( parlist[ numargs - 1], "...", 3) != 0) {
-                appendix = "...";
+                    && memcmp( parms[ numargs - 1].name, "...", 3) != 0) {
+                appendix = "...";   /* Append ... so as to become 'args...' */
                 gcc2_va = TRUE;
             }
 #endif
             mcpp_fprintf( FP2DEST( fp), "(%s%s)", dp->parmnames, appendix);
         } else {
             if (newdef) {
-                mcpp_fprintf( FP2DEST( fp), "(%s)", parlist[0]);
+                mcpp_fprintf( FP2DEST( fp), "(%s)", parms[ 0].name);
             } else if (numargs == 0) {
                 mcpp_fputs( "()", FP2DEST( fp));
             } else {
+                /* Print parameter list automatically made as:      */
+                /* a, b, c, ..., a0, b0, c0, ..., a1, b1, c1, ...   */
                 mcpp_fputc( '(', FP2DEST( fp));
                 for (i = 0; i < numargs; i++) {     /* Make parameter list  */
                     mcpp_fputc( 'a' + i % 26, FP2DEST( fp));
