@@ -330,7 +330,7 @@ int     main
 {
     char *  in_file = NULL;
     char *  out_file = NULL;
-    char *  stdin_name = NULL;
+    char *  stdin_name = "<stdin>";
 
     if (setjmp( error_exit) == -1)
         goto  fatal_error_exit;
@@ -371,7 +371,7 @@ int     main
 #endif
         }
     } else {
-        in_file = stdin_name = save_string( "<stdin>");
+        in_file = stdin_name;
     }
     /* Open output file, "-" means stdout.  */
     if (out_file != NULL && ! str_eq( out_file, "-")) {
@@ -413,8 +413,6 @@ fatal_error_exit:
     /* Free malloced memory */
     clear_filelist();
     clear_symtable();
-    if (stdin_name)
-        free( stdin_name);
 #endif
 
     if (mcpp_debug & MEMORY)

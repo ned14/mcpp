@@ -2910,8 +2910,8 @@ static int  open_include(
         mcpp_fprintf( DBG, "filename:%s\n", filename);
 
 #if COMPILER == GNUC
-    if (!full_path) {
-        if ((!searchlocal && incdir < sys_dirp) /* -I- option is specified  */
+    if (! full_path) {
+        if (incdir < sys_dirp           /* -I- option is specified  */
                 || next)                        /* #include_next    */
         goto  search_dirs;
     }
@@ -3024,7 +3024,7 @@ static int  search_dir(
         if (strlen( *incptr) + strlen( filename) >= FILENAMEMAX)
             cfatal( toolong_fname, *incptr, 0L, filename);  /* _F_  */
 #if SYSTEM == SYS_MAC
-        if (incptr == to_search_framework && ! search_local) {
+        if (incptr == to_search_framework && ! searchlocal) {
                                 /* Now search the framework dirs    */
             if (search_framework( filename)) {          /* Found    */
                 if (in_import)  /* "#import"ed file is once only    */
@@ -3271,7 +3271,7 @@ static int      search_framework(
 
     /*
      * Search subframework dirs searching its possible parent framework
-     * starting from current file's directory to its ancesters.
+     * starting from current file's directory to its ancestors.
      * Header file in subframework directories should be included only
      * by its parent or sibling framework headers.
      */
@@ -3328,7 +3328,9 @@ static int      search_subdir(
          * open_file() which is a pointer to the directory part is remembered
          * by FILEINFO struct.  But, 'fullname' is over-written each time,
          * and the former path-list is lost soon.  Therefore, it cannot be
-         * passed as the first argument.
+         * passed as the first argument.  In addition, though the first
+         * argument to open_file() is needed for #include_next, this directive
+         * has no meaning in framework.
          */
         if ((cp - fullname) + n > FILENAMEMAX)
             cfatal( "Too long framework path", NULL, 0L, NULL); /* _F_  */
