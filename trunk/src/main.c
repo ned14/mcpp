@@ -425,9 +425,13 @@ fatal_error_exit:
     return  IO_SUCCESS;             /* No errors or -E option set   */
 }
 
-void    sharp( void)
+void    sharp(
+    FILEINFO *  sharp_file
+)
 /*
  * Output a line number line.
+ * 'file' is 'sharp_file' if specified,
+ * else (i.e. 'sharp_file' is NULL) 'infile'.
  */
 {
     if (keep_comments)
@@ -438,7 +442,7 @@ void    sharp( void)
         mcpp_fprintf( OUT, "#line %ld", src_line);
     else
         mcpp_fprintf( OUT, "%s%ld", LINE_PREFIX, src_line);
-    cur_file();
+    cur_file( sharp_file);
     mcpp_fputc( '\n', OUT);
 sharp_exit:
     wrong_line = FALSE;
@@ -684,7 +688,7 @@ static void mcpp_main( void)
             wrong_line = FALSE;
         } else {
             if (wrong_line || newlines > 10) {
-                sharp();                    /* Output # line number */
+                sharp( NULL);               /* Output # line number */
             } else {                        /* If just a few, stuff */
                 while (newlines-- > 0)      /* them out ourselves   */
                     mcpp_fputc('\n', OUT);
@@ -934,7 +938,7 @@ static void devide_line(
 
     unget_ch();                 /* Push back the source character   */
     put_a_line( out);                   /* Putout the last tokens   */
-    sharp();                                /* Correct line number  */
+    sharp( NULL);                           /* Correct line number  */
 }
 
 #endif

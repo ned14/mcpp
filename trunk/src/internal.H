@@ -381,7 +381,7 @@ extern char     work_buf[];
         /* Temporary buffer for directive line and macro expansion  */
 
 /* main.c   */
-extern void     sharp( void);
+extern void     sharp( FILEINFO * sharp_file);
                 /* Output # line number         */
 extern void     un_predefine( int clearall);
                 /* Undefine predefined macros   */
@@ -504,7 +504,7 @@ extern int      do_include( int next);
                 /* Process #include directive   */
 extern void     add_file( FILE * fp, const char * filename);
                 /* Chain the included file      */
-extern void     cur_file( void);
+extern void     cur_file( FILEINFO * sharp_file);
                 /* Output current source fname  */
 extern void     conv_case( char * name, char * lim, int upper);
                 /* Convert to upper/lower case  */
