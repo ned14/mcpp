@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2007/09/24  kmatsui
+2007/10/06  kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
@@ -28,7 +28,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         Removed undef_gcc_macros().  Created DEF_NOARGS_* macros for
         diagnostics sake.  (internal.H, system.c)
         * Fixed a bug of file searching failure when a file is specified
-        by relative path in -include option.  (system.c)
+        by relative path in -include option.  (thanks to Benjamin
+        Smedberg) (system.c)
         * Fixed a bug of mcpplib initialization which caused problem on
         CygWIN.  (main.c, system.c, lib.c)
         * Fixed a bug of unterminated source file handling.  (thanks to

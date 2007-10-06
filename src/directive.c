@@ -299,7 +299,7 @@ ifdo:
     case L_line:
         if ((c = do_line()) > 0) {
             src_line = c;
-            sharp();    /* Putout the new line number and file name */
+            sharp( NULL);       /* Putout the new line number and file name */
             infile->line = --src_line;  /* Next line number is 'src_line'   */
             newlines = -1;
         } else {            /* Error already diagnosed by do_line() */
@@ -1610,7 +1610,7 @@ void    dump_def(
     DEFBUF *    dp;
     DEFBUF **   symp;
 
-    sharp();            /* Report the current source file & line    */
+    sharp( NULL);       /* Report the current source file & line    */
     if (comment)
         mcpp_fputs( "/* Currently defined macros. */\n", OUT);
     for (symp = symtab; symp < &symtab[ SBSIZE]; symp++) {

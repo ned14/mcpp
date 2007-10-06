@@ -1608,7 +1608,7 @@ int     get_ch( void)
 #endif
         include_nest--;
         src_line++;                         /* Next line to #include*/
-        sharp();                            /* Need a #line now     */
+        sharp( NULL);                       /* Need a #line now     */
         src_line--;
         newlines = 0;                       /* Clear the blank lines*/
         if (mcpp_debug & MACRO_CALL)    /* Should be re-initialized */
@@ -1832,6 +1832,9 @@ static char *   read_a_comment(
                 continue;                   /*   end, look at next. */
             if (keep_comments) {            /* Put out comment      */
                 mcpp_fputc( c, OUT);        /*   terminator, too.   */
+                mcpp_fputc( '\n', OUT);     /* Append '\n' to avoid */
+                    /*  trouble on some other tools such as rpcgen. */
+                wrong_line = TRUE;
             }
             if (keep_spaces)                /* Save the length      */
                 *sizp = *sizp + (sp - saved_sp);
@@ -1869,8 +1872,7 @@ static char *   read_a_comment(
             if ((saved_sp = sp = get_line( TRUE)) == NULL)
                 return  NULL;       /* End of file within comment   */
                 /* Never happen, because at_eof() supplement closing*/
-            if (! keep_comments)            /* We'll need a #line   */
-                wrong_line = TRUE;          /*   later...           */
+            wrong_line = TRUE;      /* We'll need a #line later     */
             break;
         default:                            /* Anything else is     */
             break;                          /*   just a character   */

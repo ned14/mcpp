@@ -267,6 +267,7 @@ static char *   expand_std(
     int     c, c1;
     char *  cp;
 
+    has_pragma = FALSE;                     /* Have to re-initialize*/
     macro_line = src_line;                  /* Line number for diag */
     macro_name = defp->name;
     rescan_level = mac_num = 0;
@@ -2116,8 +2117,9 @@ static int  collect_args(
         arglist[ c] = argp += strlen( argp) + 1;
     if (trace_macro && m_num) {
         if (in_src_num > UCHARMAX)
-            cfatal( "Too many identifiers in macro arguments"   /* _F_  */
-                    , NULL, 0L, NULL);
+            cerror(
+                "Too many %.0s%ld identifiers in macro arguments"   /* _E_  */
+                    , NULL, in_src_num, NULL);
         mac_inf[ m_num].loc_args        /* Truncate excess memory   */
                 = (LOCATION *) xrealloc( (char *) locs
                         , (loc - locs) * sizeof (LOCATION));
@@ -2259,7 +2261,9 @@ static int  get_an_arg(
                     /* Mark that the name is read from source file  */
                 if (trace_arg) {
                     DEFBUF *    defp;
-                    *(prevp + 1) = ++in_src_num;
+                    if (++in_src_num > UCHARMAX)
+                        break;              /* Avoid confusion      */
+                    *(prevp + 1) = in_src_num;
                     defp = look_id( prevp + 2);
                     if (defp) {             /* Macro name in arg    */
                         in_src[ in_src_num].start_line = s_line_col.line;
