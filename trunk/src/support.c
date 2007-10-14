@@ -622,8 +622,10 @@ static void scan_id(
 
     if (c == IN_SRC) {                  /* Magic character  */
         *bp++ = c;
-        if ((mcpp_debug & MACRO_CALL) && ! in_directive)
-            *bp++ = get_ch();           /* Its argument     */
+        if ((mcpp_debug & MACRO_CALL) && ! in_directive) {
+            *bp++ = get_ch();           /* Its 2-bytes      */
+            *bp++ = get_ch();           /*      argument    */
+        }
         c = get_ch();
     }
 
@@ -2480,7 +2482,7 @@ static void do_msg(
                 if (! standard)
                     *tp++ = ' ';
                 if ((mcpp_debug & MACRO_CALL) && ! in_directive)
-                    sp++;               /* Skip one more byte       */
+                    sp += 2;            /* Skip two more bytes      */
                 break;
             case MAC_INF:
                 if (mcpp_mode != STD) {
@@ -2722,7 +2724,10 @@ void    dump_string(
         case IN_SRC:
             if (standard) {
                 if ((mcpp_debug & MACRO_CALL) && ! in_directive) {
-                    mcpp_fprintf( DBG, "<SRC%d>", *cp++ & UCHARMAX);
+                    int     num;
+                    num = ((*cp++ & UCHARMAX) - 1) * UCHARMAX;
+                    num += (*cp++ & UCHARMAX) - 1;
+                    mcpp_fprintf( DBG, "<SRC%d>", num);
                 } else {
                     chr = "<SRC>";
                 }

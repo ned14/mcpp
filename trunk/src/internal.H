@@ -296,10 +296,6 @@ typedef struct line_col {
 #define IO_ERROR        (errno ? errno : 1)
 #endif
 
-/* For conv_case()  */
-#define UPPER           1           /* To upper */
-#define LOWER           0           /* To lower */
-
 /*
  * Externs
  */
@@ -506,8 +502,6 @@ extern void     add_file( FILE * fp, const char * filename);
                 /* Chain the included file      */
 extern void     cur_file( FILEINFO * sharp_file);
                 /* Output current source fname  */
-extern void     conv_case( char * name, char * lim, int upper);
-                /* Convert to upper/lower case  */
 extern void     do_pragma( void);
                 /* Process #pragma directive    */
 extern void     put_asm( void);
