@@ -72,6 +72,21 @@ extern int      opterr;
 extern char *   optarg;
 #endif
 
+/* Function to compare path-list    */
+#if     FNAME_FOLD
+#if     HOST_COMPILER == GNUC   /* CYGWIN, MINGW, MAC   */
+#include    <strings.h>         /* POSIX 1, 2001        */
+#define str_case_eq( str1, str2)    (strcasecmp( str1, str2) == 0)
+#else   /* MSC, BORLANDC, LCC   */
+#if     HOST_COMPILER == MSC
+#define stricmp( str1, str2)        _stricmp( str1, str2)
+#endif
+#define str_case_eq( str1, str2)    (stricmp( str1, str2) == 0)
+#endif
+#else   /* ! FNAME_FOLD */
+#define str_case_eq( str1, str2)    (strcmp( str1, str2) == 0)
+#endif
+
 /*
  * PATH_DELIM is defined for the O.S. which has single byte path-delimiter.
  * Note: '\\' or any other character identical to second byte of MBCHAR should
@@ -130,7 +145,7 @@ static void     parse_env( const char * env);
                 /* Parse environment variables      */
 static void     set_a_dir( const char * dirname);
                 /* Append an include directory      */
-static char *   norm_path( const char * dir, const char * fname);
+static char *   norm_path( const char * dir, const char * fname, int inf);
                 /* Normalize pathname to compare    */
 #if SYS_FAMILY == SYS_UNIX
 static void     deref_syml( char * slbuf1, char * slbuf2, char * chk_start);
@@ -153,14 +168,14 @@ static char *   md_init( const char * filename, char * output);
                 /* Initialize makefile dependency   */
 static char *   md_quote( char * output);
                 /* 'Quote' special characters       */
-static int      open_include( char * filename, int searchlocal, int next
-        , int include_opt);     /* Open the file to include         */
+static int      open_include( char * filename, int searchlocal, int next);
+                /* Open the file to include         */
 static int      has_directory( const char * source, char * directory);
                 /* Get directory part of fname      */
 static int      is_full_path( const char * path);
                 /* The path is absolute path list ? */
-static int      search_dir( char * filename, int searchlocal, int next
-        , int include_opt);     /* Search the include directories   */
+static int      search_dir( char * filename, int searchlocal, int next);
+                /* Search the include directories   */
 static int      open_file( const char ** dirp, const char * filename
         , int local, int include_opt);  /* Open a source file       */
 static const char *     set_fname( const char * filename);
@@ -199,7 +214,6 @@ static void     do_asm( int asm_start);
 
 static int      mb_changed = FALSE;     /* Flag of -e option        */
 static char     cur_work_dir[ FILENAMEMAX + 1]; /* Current working directory*/
-static char *   cur_work_dirp = cur_work_dir;
 
 /*
  * incdir[] stores the -I directories (and the system-specific #include <...>
@@ -408,9 +422,6 @@ void    do_options(
 
     /* Get current directory for -I option and #pragma once */
     getcwd( cur_work_dir, FILENAMEMAX);
-#if FNAME_FOLD
-    conv_case( cur_work_dir, cur_work_dir + strlen( cur_work_dir), LOWER);
-#endif
 #if SYS_FAMILY == SYS_WIN
     bsl2sl( cur_work_dir);
 #endif
@@ -1614,10 +1625,11 @@ static void     chk_opts(
     }
     if (mcpp_mode != STD && (mcpp_debug & MACRO_CALL))
         incompat = TRUE;
-    if (mcpp_debug & MACRO_CALL) {
-        if (option_flags.c)
-            mcpp_fputs( "Disabled -C option.\n", ERR);
-        option_flags.c = FALSE;
+    if ((mcpp_debug & MACRO_CALL)
+                && (option_flags.lang_asm || option_flags.c)) {
+            mcpp_fputs( "Disabled -K option.\n", ERR);
+            mcpp_debug &= ~MACRO_CALL;
+            /* -a and -C options do not co-exist with -K    */
     }
     if (incompat) {
         mcpp_fputs( "Incompatible options are specified.\n", ERR);
@@ -1838,34 +1850,19 @@ void    at_start( void)
      *   which results the same effect as sequential #includes.
      */
     {
-        const char *    fname_saved = NULL;
         char **         preinc;
 
-        if ((preinclude < preinc_end)) {
             /*
              * Note: Here, 'infile' is the main input file, which is pseudo-
              * parent file of the files to pre-include.  So, we must
              * temporarily set the infile's directory to the current directory
              * in order to preinclude the files relative to it.
              */
-            fname_saved = infile->real_fname;   /* Save name of main file   */
-        }
         preinc = preinc_end;
-        while (preinclude <= --preinc && *preinc != NULL) {
-            infile->real_fname = cur_work_dir;  /* Based on current dir     */
-            open_include( *preinc, TRUE, FALSE, TRUE);
-        }
-        if (fname_saved)
-            file_saved->real_fname = fname_saved;
+        while (preinclude <= --preinc && *preinc != NULL)
+            open_file( &null, *preinc, TRUE, TRUE);
     }
 #endif
-
-    if (mcpp_debug & MACRO_CALL) {
-        if (*(file_saved->real_fname) != PATH_DELIM)
-            /* Convert relative path to absolute for some other tools sake  */
-            /* Note: this should be done after -include processing above    */
-            file_saved->dirp = (const char **) &cur_work_dirp;
-    }
 
     put_info( file_saved);
 }
@@ -2069,7 +2066,7 @@ static void set_a_dir(
 
     if (dirname == NULL)
         return;                     /* Only to initialize incdir[]  */
-    norm_name = norm_path( dirname, NULL);
+    norm_name = norm_path( dirname, NULL, TRUE);
                             /* Normalize the pathname to compare    */
     if (! norm_name) {                      /* Non-existent         */
         mcpp_fprintf( ERR, "Non-existent directory \"%s\" is ignored\n"
@@ -2077,7 +2074,7 @@ static void set_a_dir(
         return;
     }
     for (ip = incdir; ip < incend; ip++) {
-        if (str_eq( *ip, norm_name)) {
+        if (str_case_eq( *ip, norm_name)) {
             free( norm_name);               /* Already registered   */
             return;
         }
@@ -2088,8 +2085,9 @@ static void set_a_dir(
 
 static char *   norm_path(
     const char *    dir,        /* Include directory (maybe "", never NULL) */
-    const char *    fname
+    const char *    fname,
         /* Filename (possibly has directory part, or maybe NULL)    */
+    int     inf     /* If TRUE, output some infs when (mcpp_debug & PATH)   */
 )
 /*
  * Normalize the pathname removing redundant components such as
@@ -2135,6 +2133,8 @@ static char *   norm_path(
     if (! dir || (is_full_path( dir) && is_full_path( fname)))
         cfatal( "Bug: Wrong argument to norm_path()"        /* _F_  */
                 , NULL, 0L, NULL);
+    inf = inf && (mcpp_debug & PATH);       /* Output information   */
+
     strcpy( slbuf1, dir);                   /* Include directory    */
     len = strlen( slbuf1);
     if (fname && len && slbuf1[ len - 1] != PATH_DELIM) {
@@ -2181,7 +2181,7 @@ static char *   norm_path(
             strcpy( cp1, slbuf2);
         }
     }
-    if (mcpp_debug & PATH) {
+    if (inf) {
         if (slbuf2[ 0])
             mcpp_fprintf( DBG, "Dereferenced \"%s%s\" to \"%s\"\n"
                     , dir, fname ? fname : "", slbuf1);
@@ -2192,9 +2192,6 @@ static char *   norm_path(
     strcpy( norm_name, slbuf1);
 #if SYS_FAMILY == SYS_WIN
     bsl2sl( norm_name);
-#endif
-#if FNAME_FOLD
-    conv_case( norm_name, norm_name + len, LOWER);
 #endif
 #if SPECIAL_PATH_DELIM                  /* ':' ?    */
     for (cp1 = norm_name; *cp1 != EOS; cp1++) {
@@ -2217,7 +2214,6 @@ static char *   norm_path(
             /* Convert "X:\DIR-list" to "/cygdrive/x/dir-list"      */
             root_dir = xmalloc( strlen( CYGWIN_ROOT_DIRECTORY) + 1);
             strcpy( root_dir, CYGWIN_ROOT_DIRECTORY);
-            conv_case( root_dir, root_dir + strlen( root_dir), LOWER);
             *(root_dir + 1) = *root_dir;        /* "x:/" to " x/"   */
             cp1 = xmalloc( strlen( cygdrive) + strlen( root_dir));
             strcpy( cp1, cygdrive);
@@ -2247,7 +2243,6 @@ static char *   norm_path(
             mingw_dir_len = strlen( MINGW_DIRECTORY);
             mingw_dir = xmalloc( mingw_dir_len + 1);
             strcpy( mingw_dir, MINGW_DIRECTORY);
-            conv_case( mingw_dir, mingw_dir + mingw_dir_len, LOWER);
         }
         cp1 = xmalloc( mingw_dir_len + len);
         strcpy( cp1, mingw_dir);
@@ -2264,7 +2259,6 @@ static char *   norm_path(
             root_dir_len = strlen( MSYS_ROOT_DIRECTORY);
             root_dir = xmalloc( root_dir_len + 1);
             strcpy( root_dir, MSYS_ROOT_DIRECTORY);
-            conv_case( root_dir, root_dir + root_dir_len, LOWER);
         }
         cp1 = xmalloc( root_dir_len + len + 1);
         strcpy( cp1, root_dir);
@@ -2321,15 +2315,12 @@ static char *   norm_path(
             *cp1 = PATH_DELIM;
     }
 #endif
-    if (mcpp_debug & PATH) {
+    if (inf) {
         char    debug_buf[ FILENAMEMAX+1];
         strcpy( debug_buf, dir);
         strcat( debug_buf, fname ? fname : "");
 #if SYS_FAMILY == SYS_WIN
         bsl2sl( debug_buf);
-#endif
-#if FNAME_FOLD
-        conv_case( debug_buf, debug_buf + strlen( debug_buf), LOWER);
 #endif
         if (! str_eq( debug_buf, norm_name))
             mcpp_fprintf( DBG, "Normalized the path \"%s\" to \"%s\"\n"
@@ -2376,35 +2367,6 @@ static void     deref_syml(
 }
 #endif
 
-void    conv_case(
-    char *  name,                       /* (diretory) Name          */
-    char *  lim,                        /* End of (directory) name  */
-    int     upper                       /* TRUE if to upper         */
-)
-/* Convert a string to upper-case letters or lower-case letters in-place    */
-{
-    int     c;
-    char *  sp;
-
-    for (sp = name; sp < lim; sp++) {
-        c = *sp & UCHARMAX;
-#if MBCHAR
-        if ((char_type[ c] & mbstart)) {
-            char    tmp[ FILENAMEMAX+1];
-            char *  tp = tmp;
-            *tp++ = *sp++;
-            mb_read( c, &sp, &tp);
-        } else
-#endif
-        {
-            if (upper)
-                *sp = toupper( c);
-            else
-                *sp = tolower( c);
-        }
-    }
-}
-
 #if COMPILER == GNUC
 
 static void init_gcc_macro( void)
@@ -2440,7 +2402,7 @@ static void init_gcc_macro( void)
 #else
     sprintf( tmp, "%s/mcpp-gcc", INC_DIR);
 #endif
-    include_dir = norm_path( tmp, NULL);
+    include_dir = norm_path( tmp, NULL, TRUE);
     free( tmp);
 
     for (i = 0; i <= 1; i++) {
@@ -2857,7 +2819,7 @@ found_name:
         }
     }
 
-    if (open_include( fname, (delim == '"'), next, FALSE)) {
+    if (open_include( fname, (delim == '"'), next)) {
         /* 'fname' should not be free()ed, it is used as file->         */
         /*      real_fname and has been registered into fnamelist[]     */
         return  TRUE;
@@ -2878,12 +2840,10 @@ syntax_error:
 static int  open_include(
     char *  filename,               /* File name to include         */
     int     searchlocal,            /* TRUE if #include "file"      */
-    int     next,                   /* TRUE if #include_next        */
-    int     include_opt             /* TRUE if specified by -include option */
+    int     next                    /* TRUE if #include_next        */
 )
 /*
- * Open an include file.  This routine is only called from do_include()
- * above, but was written as a separate subroutine for portability.
+ * Open an include file.  This routine is only called from do_include() above.
  * It searches the list of directories via search_dir() and opens the file
  * via open_file(), linking it into the list of active files.
  * Returns TRUE if the file was opened, FALSE if it fails.
@@ -2896,10 +2856,6 @@ static int  open_include(
 #if SYS_FAMILY == SYS_WIN
     bsl2sl( filename);
 #endif
-#if FNAME_FOLD  /* If O.S. folds upper and lower cases of file-name */
-    /* Convert filename to lower-case-letters   */
-    conv_case( filename, filename + strlen( filename), LOWER);
-#endif
 
     full_path = is_full_path( filename);
 
@@ -2908,9 +2864,6 @@ static int  open_include(
             /* Get directory part of the parent file of the file to include.*/
             /* Note that infile->dirp of main input file is set to "" and   */
             /* remains the same even if -include options are processed.     */
-            /* Though infile->real_fname of main file is temporarily set to */
-            /* the current working directory while processing -include, it  */
-            /* is to normalize the path of -include file as relative to CWD.*/
                 || (**(infile->dirp) != EOS);
     if (mcpp_debug & PATH)
         mcpp_fprintf( DBG, "filename: %s\n", filename);
@@ -2928,8 +2881,7 @@ static int  open_include(
          * Look in local directory first.
          * Try to open filename relative to the "current directory".
          */
-        if (open_file( &null, filename, searchlocal && !full_path
-                , include_opt))
+        if (open_file( &null, filename, searchlocal && !full_path, FALSE))
             return  TRUE;
         if (full_path)
             return  FALSE;
@@ -2941,7 +2893,7 @@ static int  open_include(
          * Try to open filename relative to the "source directory".
          */
         strcat( dir, filename);
-        if (open_file( infile->dirp, dir, TRUE, include_opt))
+        if (open_file( infile->dirp, dir, TRUE, FALSE))
             return  TRUE;
     }
 
@@ -2951,7 +2903,7 @@ static int  open_include(
         FILEINFO *  file = infile;
         while ((file = file->parent) != NULL) {
             /* Search each parent includer's directory  */
-            if (open_file( file->dirp, dir, TRUE, include_opt))
+            if (open_file( file->dirp, dir, TRUE, FALSE))
                 return  TRUE;
         }
     }
@@ -2962,14 +2914,14 @@ search_dirs:
         /* Search the directories specified by -iquote option, if any.  */
         const char **   qdir;
         for (qdir = quote_dir; qdir < quote_dir_end; qdir++) {
-            if (open_file( qdir, filename, FALSE, include_opt))
+            if (open_file( qdir, filename, FALSE, FALSE))
                 /* Now infile has been renewed  */
                 return  TRUE;
         }
     }
 #endif
     /* Search the include directories   */
-    if (search_dir( filename, searchlocal, next, include_opt))
+    if (search_dir( filename, searchlocal, next))
         return  TRUE;
 
     return  FALSE;
@@ -3025,8 +2977,7 @@ static int  is_full_path(
 static int  search_dir(
     char *  filename,               /* File name to include         */
     int     searchlocal,            /* #include "header.h"          */
-    int     next,                   /* TRUE if #include_next        */
-    int     include_opt             /* TRUE if specified by -include option */
+    int     next                    /* TRUE if #include_next        */
 )
 /*
  * Look in any directories specified by -I command line arguments,
@@ -3065,7 +3016,7 @@ static int  search_dir(
             /* Else continue to search incptr   */
         }
 #endif
-        if (open_file( incptr, filename, FALSE, include_opt))
+        if (open_file( incptr, filename, FALSE, FALSE))
             /* Now infile has been renewed  */
             return  TRUE;
     }
@@ -3099,7 +3050,8 @@ static int  open_file(
     errno = 0;      /* Clear errno possibly set by path searching   */
     if (mcpp_debug & PATH)
         mcpp_fprintf( DBG, "Searching %s\n", **dirp == EOS ? filename : *dirp);
-    fullname = norm_path( *dirp, filename);     /* Convert to absolute path */
+    fullname = norm_path( *dirp, filename, TRUE);
+                                    /* Convert to absolute path     */
     if (! fullname)                 /* Non-existent or directory    */
         return  FALSE;
     if (standard && included( fullname))        /* Once included    */
@@ -3154,6 +3106,14 @@ static int  open_file(
      *   by get_ch() when the current includer is finished.
      */
     infile->dirp = inc_dirp = dirp;
+    if (dirp != &null) {
+        const char **   ip;
+        for (ip = incdir; ip < incend; ip++)
+            if (dirp == ip)
+                break;
+        if (ip == incend)
+            cerror( "Bug: *dirp:%s is invalid", *dirp, 0L, NULL);
+    }
     strcpy( cur_fullname, fullname);
 
     if (option_flags.z) {
@@ -3227,7 +3187,7 @@ static const char *     set_fname(
     /* Register the filename in fnamelist[] */
     fnamelen = strlen( filename);
     for (fnamep = fnamelist; fnamep < fname_end; fnamep++) {
-        if (fnamep->len == fnamelen && str_eq( fnamep->name, filename))
+        if (fnamep->len == fnamelen && str_case_eq( fnamep->name, filename))
             return  filename;           /* Already registered       */
     }
     fname_end->name = xmalloc( fnamelen + 1);
@@ -3391,13 +3351,20 @@ void    cur_file(
         file = infile;
     while (file->fp == NULL)
         file = file->parent;
-    cp = stpcpy( work_buf, *(file->dirp));
-    strcpy( cp, file->filename);
-    name = work_buf;
+    if (! str_eq( file->real_fname, file->filename)
+            /* Filename was changed by #line directive  */
+            || (mcpp_debug & MACRO_CALL) == 0) {
+            /* Or not in macro notification mode        */
+        cp = stpcpy( work_buf, *(file->dirp));
+        strcpy( cp, file->filename);
+        name = save_string( work_buf);
+    } else {
+        name = save_string( cur_fullname);      /* Output full-path-list    */
+    }
     if (sharp_filename == NULL || ! str_eq( name, sharp_filename)) {
         if (sharp_filename != NULL)
             free( sharp_filename);
-        sharp_filename = save_string( name);
+        sharp_filename = name;
     }
     if (! no_output)
         mcpp_fprintf( OUT, " \"%s\"", name);
@@ -3705,7 +3672,7 @@ static void do_once(
         once_end = &once_list[ max_once];
         max_once *= 2;
     }
-    filename = norm_path( dir, filename);   /* Normalize path name  */
+    filename = norm_path( dir, filename, TRUE);     /* Normalize path name  */
     once_end->name = filename;
     once_end->len = strlen( filename);
     once_end++;
@@ -3726,7 +3693,7 @@ static int  included(
         return  FALSE;
     fnamelen = strlen( fullname);
     for (inc = once_list; inc < once_end; inc++) {
-        if (inc->len == fnamelen && str_eq( inc->name, fullname)) {
+        if (inc->len == fnamelen && str_case_eq( inc->name, fullname)) {
             /* Already included */
             if (mcpp_debug & PATH)
                 mcpp_fprintf( DBG, "Once included \"%s\"\n", fullname);

@@ -179,19 +179,22 @@ static DEFBUF * is_macro_call(
 #define MAC_E_LEN   2   /* Length of MAC_INF, MAC_CALL_END sequence */
 #define ARG_E_LEN   MAC_E_LEN   /* Lenght of MAC_INF, ARG_CALL_END sequence */
 
-#define INIT_MAC_INF    0x100
-#define MAX_MAC_INF     0x1000
+#define IN_SRC_LEN  3   /* Length of sequence of IN_SRC, num-1, num-2   */
+
+#define INIT_MAC_INF        0x100
+#define MAX_MAC_INF         0x1000
+#define INIT_IN_SRC_NUM     0x100
+#define MAX_IN_SRC_NUM      0x1000
 
 static struct {
     const DEFBUF *  def;            /* Macro definition             */
     int             read_over;      /* Has read over repl-list      */
     /* 'read_over' is never used in POST_STD mode and in compat_mode*/
 } replacing[ RESCAN_LIMIT];         /* Macros currently replacing   */
-
 typedef struct macro_inf {
     const DEFBUF *  defp;               /* Definition of the macro  */
     char *          args;               /* Arguments, if any        */
-    size_t          arglen;             /* Length of args           */
+    int             num_args;           /* Number of real arguments */
     int             recur;              /* Recurrence of this macro */
     LOCATION        locs;               /* Location of macro call   */
     LOCATION *      loc_args;           /* Location of arguments    */
@@ -199,28 +202,27 @@ typedef struct macro_inf {
 static MACRO_INF *  mac_inf;
 static int      max_mac_num;
 static int      mac_num;                /* Index into mac_inf[]     */
-
-static LOCATION in_src[ UCHARMAX+1];    /* Location of identifiers  */
+static LOCATION *   in_src; /* Location of identifiers in macro arguments   */
+static int      max_in_src_num;
 static int      in_src_num;             /* Index into in_src[]      */
 static int      trace_macro;        /* Enable to trace macro infs   */
-
-static int      has_pragma = FALSE;     /* Flag of _Pragma() operator   */
+static int      has_pragma = FALSE;     /* Flag of _Pragma() operator       */
 
 static int      print_macro_inf( int c, char ** cpp, char ** opp);
                 /* Embed macro infs into comments   */
 static char *   print_macro_arg( char *out, MACRO_INF * m_inf, int argn
         , int real_arg);
                 /* Embed macro arg inf into comments*/
+#if 0
+static void     chk_magic_balance( char * buf, char * buf_end);
+                /* Check imbalance of magics        */
+#endif
 static char *   replace( DEFBUF * defp, char * out, char * out_end
         , const DEFBUF * outer, FILEINFO * rt_file, LINE_COL line_col
         , int in_src_n);
                 /* Replace a macro recursively      */
 static char *   close_macro_inf( char *  out_p, int m_num, int in_src_n);
                 /* Put closing mark for a macro call*/
-#if 0
-static void     chk_magic_balance( char * out, char * out_p);
-                /* Check imbalance of magics        */
-#endif
 static DEFBUF * def_special( DEFBUF * defp);
                 /* Re-define __LINE__, __FILE__     */
 static int      prescan( const DEFBUF * defp, const char ** arglist
@@ -270,14 +272,17 @@ static char *   expand_std(
     has_pragma = FALSE;                     /* Have to re-initialize*/
     macro_line = src_line;                  /* Line number for diag */
     macro_name = defp->name;
-    rescan_level = mac_num = 0;
+    rescan_level = 0;
     trace_macro = (mcpp_mode == STD) && (mcpp_debug & MACRO_CALL)
             && ! in_directive;
     if (trace_macro) {
         max_mac_num = INIT_MAC_INF;
         mac_inf = (MACRO_INF *) xmalloc( sizeof (MACRO_INF) * max_mac_num);
-        memset( in_src, 0, sizeof (in_src));
-        in_src_num = 0;                     /* Initialize in_src[]  */
+        memset( mac_inf, 0, sizeof (MACRO_INF) * max_mac_num);
+        max_in_src_num = INIT_IN_SRC_NUM;
+        in_src = (LOCATION *) xmalloc( sizeof (LOCATION) * max_in_src_num);
+        memset( in_src, 0, sizeof (LOCATION) * max_in_src_num);
+        mac_num = in_src_num = 0;           /* Initialize           */
     }
     if (replace( defp, macrobuf, macrobuf + NMACWORK, NULL, infile, line_col
             , 0) == NULL) {                 /* Illegal macro call   */
@@ -294,16 +299,19 @@ static char *   expand_std(
         goto  exp_end;
     }
 
+#if 0
+    chk_magic_balance( macrobuf, macrobuf + strlen( macrobuf));
+#endif
     cp = macrobuf;
     c1 = '\0';                          /* The char previous to 'c' */
     while ((c = *cp++) != EOS) {
         if (c == DEF_MAGIC)
             continue;                       /* Skip DEF_MAGIC       */
         if (mcpp_mode == STD) {
-            if (c == IN_SRC) {
+            if (c == IN_SRC) {              /* Skip IN_SRC          */
                 if (trace_macro)
-                    cp++;                   /* Skip also the number */
-                continue;                   /* Skip IN_SRC          */
+                    cp += 2;    /* Skip also the number (coded in 2 bytes)  */
+                continue;
             } else if (c == TOK_SEP) {
                 /* Remove redundant token separator */
                 if ((char_type[ c1 & UCHARMAX] & HSP)
@@ -344,17 +352,14 @@ exp_end:
     if (trace_macro) {                  /* Clear macro informations */
         int     num;
         for (num = 1; num < mac_num; num++) {   /* 'num' start at 1 */
-            if (mac_inf[ num].arglen) {         /* Macro with args  */
+            if (mac_inf[ num].num_args >= 0) {  /* Macro with args  */
                 free( mac_inf[ num].args);      /* Saved arguments  */
                 free( mac_inf[ num].loc_args);  /* Location of args */
             }
         }
         free( mac_inf);
+        free( in_src);
     }
-#if 0   
-    if (trace_macro && (warn_level & 4))
-        mcpp_fprintf( ERR, "mac_num:%d, in_src_num:%d\n", mac_num, in_src_num);
-#endif
     *pragma_op = has_pragma;
 
     return  out_p;
@@ -371,9 +376,9 @@ static int  print_macro_inf(
  */
 {
     MACRO_INF *     m_inf;
-    int             num;
-    int             nargs;
-    int             i;
+    int     num;
+    int     num_args;   /* Number of actual args (maybe less than expected) */
+    int     i;
 
     if (*((*opp) - 1) == '/' && *((*opp) - 2) != '*')
                     /* Immediately preceding token is '/' (not '*' and '/') */
@@ -385,18 +390,16 @@ static int  print_macro_inf(
         num += (*(*cpp)++ & UCHARMAX) - 1;
         m_inf = & mac_inf[ num];            /* Saved information    */
         *opp += sprintf( *opp, "/*<%s", m_inf->defp->name); /* Macro name   */ 
-        if (m_inf->locs.start_line && m_inf->locs.end_line) {
+        if (m_inf->locs.start_line) {
             /* Location of the macro call in source file        */
-            /* Note: some abnormal macro has not end-location   */
-            /*      even if it has start-location.              */
             *opp += sprintf( *opp, " %ld:%d-%ld:%d"
                     , m_inf->locs.start_line, m_inf->locs.start_col
                     , m_inf->locs.end_line, m_inf->locs.end_col);
         }
         *opp = stpcpy( *opp, "*/");
-        if ((nargs = (m_inf->defp->nargs & ~AVA_ARGS)) >= 0) {
+        if ((num_args = m_inf->num_args) >= 1) {
             /* The macro has arguments.  Show the locations.    */
-            for (i = 0; i < nargs; i++)     /* Arg num begins at 0  */
+            for (i = 0; i < num_args; i++)  /* Arg num begins at 0  */
                 *opp = print_macro_arg( *opp, m_inf, i, TRUE);
         }
         break;
@@ -442,6 +445,59 @@ static char *   print_macro_arg(
     return out;
 }
 
+#if 0
+/* This routine is for debugging only, and should be commented out  */
+/*      on release version.                                         */
+
+static void chk_magic_balance(
+    char *  buf,                            /* Sequence to check    */
+    char *  buf_end                         /* End of the sequence  */
+)
+/*
+ * Check imbalance of macro information magics and warn it.
+ */
+{
+    char *  mesg = "%s %ld %s-closing-comment(s) in tracing macro";
+    int     mac, arg;
+
+    mac = arg = 0;
+
+    while (buf < buf_end) {
+        if (*buf++ != MAC_INF)
+            continue;
+        switch (*buf++) {
+        case MAC_CALL_START :
+            mac++;
+            buf += MAC_S_LEN - 2;
+            break;
+        case MAC_ARG_START  :
+            arg++;
+            buf += ARG_S_LEN - 2;
+            break;
+        case MAC_ARG_END    :
+            arg--;
+            break;
+        case MAC_CALL_END   :
+            mac--;
+            break;
+        }
+    }
+
+    if (warn_level & 1) {
+        if (mac)
+            cwarn( mesg, (mac > 0) ? "Lacking" : "Redundant"
+                    , (mac > 0) ? (long) mac : (long) -mac, "macro");
+        if (arg)
+            cwarn( mesg, (arg > 0) ? "Lacking" : "Redundant"
+                    , (arg > 0) ? (long) arg : (long) -arg, "argument");
+        if ((mac || arg) && (mcpp_debug & EXPAND))
+            mcpp_fputs(
+        "Imbalance of magics occurred, see <expand_std exit> and diagnostics.\n"
+                    , DBG);
+    }
+}
+#endif
+
 static char *   replace(
     DEFBUF *    defp,                       /* Macro to be replaced */
     char *      out,                        /* Output Buffer        */
@@ -463,7 +519,8 @@ static char *   replace(
     char *  expbuf;                 /* Buffer for  substitute()     */
     char *  out_p;                          /* Output pointer       */
     char *  cur_out = out;          /* One more output pointer      */
-    int     arg_len;                /* Length of arglist[ 0]        */
+    int     num_args;
+        /* Number of actual arguments (maybe less than expected)    */
     int     enable_trace_macro;     /* To exclude _Pragma() pseudo macro    */
     int     m_num = 0;              /* 'mac_num' of current macro   */
     MACRO_INF *     m_inf;          /* Pointer into mac_inf[]       */
@@ -483,9 +540,12 @@ static char *   replace(
                     , defp->name, 0L, NULL);
             return  NULL;
         } else if (mac_num >= max_mac_num - 1) {
-            max_mac_num *= 2;               /* Enlarge the array    */
-            mac_inf = (MACRO_INF *) xrealloc( (char *) mac_inf
-                    , sizeof (MACRO_INF) * max_mac_num);
+            size_t  len = sizeof (MACRO_INF) * max_mac_num;
+            /* Enlarge the array    */
+            mac_inf = (MACRO_INF *) xrealloc( (char *) mac_inf, len * 2);
+            memset( mac_inf + max_mac_num, 0, len);
+                                        /* Clear the latter half    */
+            max_mac_num *= 2;
         }
         m_num = ++mac_num;                  /* Remember this number */
                                     /* Note 'mac_num' starts at 1   */
@@ -498,7 +558,7 @@ static char *   replace(
         *cur_out = EOS;
         m_inf = & mac_inf[ m_num];
         m_inf->defp = defp;                 /* The macro definition */
-        m_inf->arglen = 0;                  /* Default num of args  */
+        m_inf->num_args = 0;                /* Default num of args  */
         if (line_col.line) {
             get_src_location( & line_col);
             m_inf->locs.start_line = line_col.line;
@@ -541,7 +601,7 @@ static char *   replace(
         arglist[ 0] = xmalloc( (size_t) (NMACWORK + IDMAX * 2));
                             /* Note: arglist[ n] may be reallocated */
                             /*   and re-written by collect_args()   */
-        if ((arg_len = collect_args( defp, arglist, m_num)) == ARG_ERROR) {
+        if ((num_args = collect_args( defp, arglist, m_num)) == ARG_ERROR) {
             free( arglist[ 0]);             /* Syntax error         */
             free( arglist);
             return  NULL;
@@ -549,7 +609,7 @@ static char *   replace(
         if (enable_trace_macro) {
             /* Save the arglist for later informations  */
             m_inf->args = arglist[ 0];
-            m_inf->arglen = arg_len;        /* Length of arglist    */
+            m_inf->num_args = num_args;     /* Number of actual args*/
         }
         if (mcpp_mode == STD && outer && rt_file != infile) {
                                  /* Has read over replacement-text  */
@@ -621,12 +681,8 @@ static char *   replace(
         has_pragma = TRUE;
                     /* Inform mcpp_main() that _Pragma() was found  */
     free( expbuf);
-    if (enable_trace_macro && out_p) {
+    if (enable_trace_macro && out_p)
         out_p = close_macro_inf( out_p, m_num, in_src_n);
-#if 0
-        chk_magic_balance( out, out_p);
-#endif
-    }
     if (mcpp_debug & EXPAND)
         dump_string( "replace exit", out);
 
@@ -698,55 +754,6 @@ static char *   close_macro_inf(
 
     return  out_p;
 }
-
-#if 0
-/* This routine is for debugging only, and should be commented out  */
-/*      on release version.                                         */
-
-static void chk_magic_balance(
-    char *  out,
-    char *  out_p
-)
-/*
- * Check imbalance of macro information magics and warns it.
- */
-{
-    char *  mesg = "%s %ld %s-closing-comment(s) in tracing macro";
-    int     mac, arg;
-
-    mac = arg = 0;
-
-    while (out < out_p) {
-        if (*out++ != MAC_INF)
-            continue;
-        switch (*out++) {
-        case MAC_CALL_START :
-            mac++;
-            out += MAC_S_LEN - 2;
-            break;
-        case MAC_ARG_START  :
-            arg++;
-            out += ARG_S_LEN - 2;
-            break;
-        case MAC_ARG_END    :
-            arg--;
-            break;
-        case MAC_CALL_END   :
-            mac--;
-            break;
-        }
-    }
-
-    if (warn_level & 4) {
-        if (mac)
-            cwarn( mesg, (mac > 0) ? "Lacking" : "Redundant"
-                    , (mac > 0) ? (long) mac : (long) -mac, "macro");
-        if (arg)
-            cwarn( mesg, (arg > 0) ? "Lacking" : "Redundant"
-                    , (arg > 0) ? (long) arg : (long) -arg, "argument");
-    }
-}
-#endif
 
 static DEFBUF * def_special(
     DEFBUF *    defp                        /* Macro definition     */
@@ -845,7 +852,7 @@ static int  prescan(
                 /* Rare case yet possible after catenate()  */
                 size_t  len = 1;
                 if (*prev_token == IN_SRC && trace_macro)
-                    len = 2;
+                    len = IN_SRC_LEN;
                 memmove( prev_token, prev_token + len
                         , strlen( prev_token + len));
                 out -= len;
@@ -947,7 +954,7 @@ static char *   catenate(
                     || (mcpp_mode == STD && *prev_token == IN_SRC)) {
                 size_t  len = 1;
                 if (trace_macro && *prev_token == IN_SRC)
-                    len = 2;
+                    len = IN_SRC_LEN;
                 memmove( prev_token, prev_token + len
                         , (size_t) ((out -= len) - prev_token));
                 /* Remove DEF_MAGIC enabling the name to replace later      */
@@ -979,8 +986,10 @@ static char *   catenate(
             if ((c = get_ch()) == DEF_MAGIC) {  /* Remove DEF_MAGIC */
                 c = get_ch();               /*  enabling to replace */
             } else if (c == IN_SRC) {       /* Remove IN_SRC        */
-                if (trace_macro)
+                if (trace_macro) {
                     get_ch();               /* Also its number      */
+                    get_ch();
+                }
                 c = get_ch();
             }
             scan_token( c, &out, out_end);  /* The first token      */
@@ -989,8 +998,10 @@ static char *   catenate(
         }
         break;
     case IN_SRC:
-        if (trace_macro)
+        if (trace_macro) {
             get_ch();
+            get_ch();
+        }
         /* Fall through */
     case DEF_MAGIC:
         c = get_ch();                   /* Skip DEF_MAGIC, IN_SRC   */
@@ -1189,7 +1200,7 @@ static const char *     remove_magics(
     }
 #if 0
 /* This is for debugging only, should be commented out on release version.  */
-    if (warn_level & 4)
+    if (warn_level & 1)
         mcpp_fprintf( ERR, "arg_s:%d, arg_e:%d, mac_s:%d, mac_e:%d at:%s:%ld\n"
                 , arg_s, arg_e, mac_s, mac_e, infile->real_fname, src_line);
 #endif
@@ -1283,8 +1294,10 @@ static char *   stringize(
         } else if (c == TOK_SEP) {
             continue;                   /* Skip inserted separator  */
         } else if (c == IN_SRC) {           /* Skip magics          */
-            if (trace_macro)
+            if (trace_macro) {
                 get_ch();
+                get_ch();
+            }
             continue;
         } else if (c == '\\') {
             stray_bsl = TRUE;               /* May cause a trouble  */
@@ -1473,6 +1486,7 @@ static char *   rescan(
     DEFBUF *    inner;              /* Inner macro to replace       */
     int     c;                      /* First character of token     */
     int     token_type;
+    char *  mac_arg_start = NULL;
 #if COMPILER == GNUC
     int     within_defined = FALSE;
     int     within_defined_arg_depth = 0;
@@ -1511,6 +1525,7 @@ static char *   rescan(
             *out_p++ = c = get_ch();
             switch (c) {
             case MAC_ARG_START  :
+                mac_arg_start = out_p - 2;      /* Remember the position    */
                 *out_p++ = get_ch();
                 /* Fall through */
             case MAC_CALL_START :
@@ -1541,11 +1556,12 @@ static char *   rescan(
         } 
 #endif
         if (mcpp_mode == STD && c == IN_SRC)
-            len = trace_macro ? 2 : 1;
+            len = trace_macro ? IN_SRC_LEN : 1;
         if (token_type == NAM && c != DEF_MAGIC 
                 && (inner = look_id( tp + len)) != NULL) {  /* A macro name */
             int     is_able;        /* Macro is not "blue-painted"  */
             char *  inp_save = infile->bptr;        /* Remember current bptr*/
+            char *  name_end = out_p;
 
             if (is_macro_call( inner, &out_p)
                     && ((mcpp_mode == POST_STD && is_able_repl( inner))
@@ -1560,9 +1576,21 @@ static char *   rescan(
                 if (trace_macro) {
                     if (c == IN_SRC) {  /* Macro in argument from source    */
                         /* Get the location in source   */
-                        in_src_n = *(tp + 1) & UCHARMAX;
+                        in_src_n = ((*(tp + 1) & UCHARMAX) - 1) * UCHARMAX;
+                        in_src_n += (*(tp + 2) & UCHARMAX) - 1;
                         in_src_line_col.line = in_src[ in_src_n].start_line;
                         in_src_line_col.col = in_src[ in_src_n].start_col;
+                    }
+                    if (inner->nargs >= 0 && (tp - ARG_S_LEN) == mac_arg_start
+                            && *name_end == MAC_INF
+                            && *(name_end + 1) == MAC_ARG_END) {
+                        /* Name of function-like macro is surrounded by     */
+                        /* magics, which were inserted by outer macro.      */
+                        /* Remove the starting magic. (Closing magic will   */
+                        /* be removed by squeeze_ws() in replace()).        */
+                        memmove( tp - ARG_S_LEN, tp, out_p - tp + 1);
+                        out_p -= ARG_S_LEN;
+                        tp -= ARG_S_LEN;
                     }
                 }
                 if ((out_p = replace( inner, tp, out_end, outer, file
@@ -1957,7 +1985,7 @@ static int  collect_args(
  *   Collect the actual arguments for the macro, checking for correct number
  * of arguments.
  *   Variable arguments (on Standard modes) are read as a merged argument.
- *   Return length of arguments merged, or ARG_ERROR on error of unterminated
+ *   Return number of real arguments, or ARG_ERROR on error of unterminated
  * macro.
  *   collect_args() may read over to the next line unless 'in_directive' is
  * set to TRUE.
@@ -1981,7 +2009,6 @@ static int  collect_args(
     int     nargs = 0;                  /* Number of collected args */
     int     var_arg = defp->nargs & VA_ARGS;    /* Variable args    */
     int     more_to_come = FALSE;       /* Next argument is expected*/
-    int     arg_len = ARG_ERROR;                /* Return value     */
     LOCATION *  locs;           /* Location of args in source file  */
     LOCATION *  loc;                            /* Current locs     */
     int     c;
@@ -2056,6 +2083,7 @@ static int  collect_args(
             diag_macro( CERROR, unterm_macro, sequence, 0L, NULL, defp, NULL);
                                         /* Fall through             */
         case CHAR_EOF:                  /* End of file in macro call*/
+            nargs = ARG_ERROR;
             goto  arg_ret;              /* Diagnosed by at_eof()    */
         default:                        /* Nomal argument           */
             break;
@@ -2072,10 +2100,13 @@ static int  collect_args(
             valid_argp = argp;          /* End of valid arguments   */
         if (c == ')')
             break;
-        if (c == 0)                     /* End of file              */
+        if (c == 0) {                   /* End of file              */
+            nargs = ARG_ERROR;
             goto  arg_ret;              /* Diagnosed by at_eof()    */
+        }
         if (c == -1) {                  /* Untermanated macro call  */
             diag_macro( CERROR, unterm_macro, sequence, 0L, NULL, defp, NULL);
+            nargs = ARG_ERROR;
             goto  arg_ret;
         }
         more_to_come = (c == ',');
@@ -2109,35 +2140,32 @@ static int  collect_args(
         if (c == 0)
             argp++;                     /* Ensure positive length   */
     }
-    arg_len = argp - arglist[ 0];
     arglist[ 0] = argp
-            = xrealloc( arglist[ 0], (size_t) arg_len);
+            = xrealloc( arglist[ 0], (size_t) (argp - arglist[ 0]));
                                         /* Use memory sparingly     */
     for (c = 1; c < args; c++)
         arglist[ c] = argp += strlen( argp) + 1;
-    if (trace_macro && m_num) {
-        if (in_src_num > UCHARMAX)
-            cerror(
-                "Too many %.0s%ld identifiers in macro arguments"   /* _E_  */
-                    , NULL, in_src_num, NULL);
+    if (trace_macro && m_num)
         mac_inf[ m_num].loc_args        /* Truncate excess memory   */
                 = (LOCATION *) xrealloc( (char *) locs
                         , (loc - locs) * sizeof (LOCATION));
-    }
 
-arg_ret:
     if (mcpp_debug & EXPAND) {
-        if (nargs > 0)
-            dump_args( "collect_args exit"
-                    , nargs < args ? nargs : args, (const char **) arglist);
+        if (nargs > 0) {
+            if (nargs > args)
+                nargs = args;
+            dump_args( "collect_args exit", nargs, (const char **) arglist);
+        }
         dump_unget( "collect_args exit");
     }
+arg_ret:
     if (mcpp_mode == STD)
         in_getarg = FALSE;
-
-    return  arg_len;
+    /* Return number of found arguments for function-like macro at most */
+    /* defp->nargs, or return defp->nargs for object-like macro.        */
+    return  defp->nargs <= DEF_NOARGS ? defp->nargs : nargs;
 }
-
+ 
 static int  get_an_arg(
     int     c,
     char ** argpp,      /* Address of pointer into argument list    */
@@ -2255,30 +2283,47 @@ static int  get_an_arg(
         default :                           /* Any token            */
             if (mcpp_mode == STD && token_type == NAM
                     && c != IN_SRC && c != DEF_MAGIC && infile->fp) {
-                len = trace_arg ? 2 : 1;
-                memmove( prevp + len, prevp, (size_t) ((argp += len) - prevp));
+                len = trace_arg ? IN_SRC_LEN : 1;
+                memmove( prevp + len, prevp, (size_t) (argp - prevp));
+                argp += len;
                 *prevp = IN_SRC;
                     /* Mark that the name is read from source file  */
                 if (trace_arg) {
                     DEFBUF *    defp;
-                    if (++in_src_num > UCHARMAX)
-                        break;              /* Avoid confusion      */
-                    *(prevp + 1) = in_src_num;
-                    defp = look_id( prevp + 2);
+
+                    defp = look_id( prevp + IN_SRC_LEN);
+                    if (in_src_num >= MAX_IN_SRC_NUM - 1) {
+                        cerror(
+                        "Too many names in arguments tracing %s"    /* _E_  */
+                                , defp ? defp->name : null, 0L, NULL);
+                        return  0;
+                    } else if (++in_src_num > max_in_src_num) {
+                        size_t  old_len;
+                        old_len = sizeof (LOCATION) * max_in_src_num;
+                        /* Enlarge the array    */
+                        in_src = (LOCATION *) xrealloc( (char *) in_src
+                                , old_len * 2);
+                        /* Have to initialize the enlarged area     */
+                        memset( in_src + max_in_src_num, 0, old_len);
+                        max_in_src_num *= 2;
+                    }
+                    /* Insert the identifier number in 2-bytes-encoding     */
+                    *(prevp + 1) = (in_src_num / UCHARMAX) + 1;
+                    *(prevp + 2) = (in_src_num % UCHARMAX) + 1;
                     if (defp) {             /* Macro name in arg    */
                         in_src[ in_src_num].start_line = s_line_col.line;
                         in_src[ in_src_num].start_col = s_line_col.col;
-                        if (defp->nargs <= DEF_NOARGS) {
-                            /* Object-like macro    */
-                            in_src[ in_src_num].end_line = s_line_col.line;
-                            in_src[ in_src_num].end_col
-                                    = infile->bptr - infile->buffer;
-                        } else {
+                        /* For object-like macro, also for function-like    */
+                        /* macro in case of parens are not found.           */
+                        in_src[ in_src_num].end_line = s_line_col.line;
+                        in_src[ in_src_num].end_col
+                                = infile->bptr - infile->buffer;
+                        if (defp->nargs >= 0) {
                             /* Function-like macro: search parentheses  */
                             n_paren[ ++num_paren].n_par = paren;
                             n_paren[ num_paren].n_in_src = in_src_num;
                         }
-                    }
+                    }   /* Else in_src[ in_src_num].* are 0L        */
                 }
             }
             break;
@@ -2356,7 +2401,7 @@ static int  squeeze_ws(
             if (mcpp_mode == STD)
                 tsep++;
             continue;           /* Skip COM_SEP in OLD_PREP mode    */
-        case MAC_INF    :               /* Copy magics as they are  */
+        case MAC_INF    :       /* Copy magics as they are, or skip */
             if (out)
                 *(*out)++ = c;
             c = get_ch();

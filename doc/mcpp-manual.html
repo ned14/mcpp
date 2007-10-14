@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2007/09)<br>
+<h4>for V.2.7 (2007/10)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -448,12 +448,13 @@ This mode is also enabled by the following pragma:
 #pragma MCPP debug macro_call
 </pre>
 The -K option has almost the same effect with this pragma at top of an input file except predefined macros are notified only by this option.
-About the specs of macro notification, see <a href="#3.5.8">3.5.8. #pragma MCPP debug macro_call</a><br>
-This option implies -k option and disables -C option.<br>
+About the specs of macro notification, see <a href="#3.5.8">3.5.8. #pragma MCPP debug macro_call</a>.<br>
+This option implies -k option.
+On the other hand, -a (-x assembler-with-cpp) or -C options automatically disable -K option. *6<br>
 <li><samp>-k</samp><br>
 Keep horizontal whitespaces ('\t' and space characters) without squeezing them into one space.
 Comment is converted to spaces of the same length.
-This option is to keep column position of source file in preprocessed output except within macro expansion. (Column position of macros are known by -K option.) *6
+This option is to keep column position of source file in preprocessed output except within macro expansion. (Column position of macros are known by -K option.) *7
 </ul>
 <p>Note:</p>
 <p>*1 C++'s <tt>__STDC__</tt> is not desirable and causes many problems.  GCC document says that <tt>__STDC__</tt> needs to be predefined in C++ because many header files expect <tt>__STDC__</tt> to be defined.  The header files should be blamed for this.  For common parts among C90, C99 and C++, "<samp>#if __STDC__ || __cplusplus</samp>" should be used.</p>
@@ -465,7 +466,10 @@ Though this option means that the input is already preprocessed,
 cc1 still processes comment.
 Therefore, you can safely pass output of -K to cc1 with -fpreprocessed.
 Furthermore, if you add -save-temps option to gcc (g++) command, preprocessed output is left as *.i (*.ii) file, and you can read it by some refactoring tool.</p>
-<p>*6 This option fails to keep column position on some particularly complex cases.
+<p>*6 Comment insertion by -K option causes column shifts in sources, and this makes *.S file of GCC, which is not C/C++ source and compiled with -x assembler-with-cpp option, unable to be assembled.
+Also comments kept by -C option are sometimes confusing with that inserted by -K option.
+Therefore these options cannot be used at the same time.</p>
+<p>*7 This option fails to keep column position on some particularly complex cases.
 When line splicing by a &lt;backslash&gt;&lt;newline&gt; and line splicing by a line-crossing comment are intermingled on one output line, or a comment crosses over 256 lines, column position will be lost.
 Note that each '\v' and '\f' is converted to a space with or without this option.</p>
 <br>
@@ -597,6 +601,8 @@ Emit a special line as the second line of preprocessor's output to convey the cu
 Switch the specification of the -I &lt;directory&gt; before and after this option; directories specified with the -I options before -I- are used to search for header files only in the form of #include "header.h"; the directories specified with -I after -I-, if any, are used to search for all #include directives.  In addition, during the former search, includer's directories are not used.<br>
 <li><samp>-include &lt;file&gt;</samp><br>
 include the &lt;file&gt; before processing the main source file.  This is equivalent to writing #include &lt;file&gt; at the beginning of the main source file.<br>
+<li><samp>-iquote &lt;dir&gt;</samp><br>
+Add &lt;dir&gt; to the include path for #include "header.h" form.<br>
 <li><samp>-isystem &lt;dir&gt;</samp><br>
 Add &lt;dir&gt; to the include path immediately before system-specific directories and immediately after site-specific directories.<br>
 <li><samp>-lang-c, -x c</samp><br>
@@ -917,7 +923,8 @@ mcpp &gt; mcpp.H
 <p>Note:</p>
 <p>*1 The normalized result can be seen by <samp>'#pragma MCPP debug path'</samp>.  See <a href="#3.5.1">3.5.1</a>.<br>
 The path-list is not wholly normalized in #line line, <samp>'#pragma MCPP put_defines'</samp> or diagnostic.
-Though the include directories are normalized, file name of #include line such as <samp>'#include "../include/header.h"'</samp> is diplayed as it is in order to show the specified file.</p>
+Though the include directories are normalized, file name of #include line such as <samp>'#include "../include/header.h"'</samp> is usually diplayed as it is in order to show how the file is specified.
+But, if -K option is specified, it is normalized so as to be easily utilized by some other tools.</p>
 <p>*2 On CygWIN, /bin and /usr/bin are the same directory in real, also /lib and /usr/lib are the same, and supposing / is C:/dir/cygwin on Windows, /cygdrive/c/dir/cygwin is the same as /.  <b>mcpp</b> treats these directories as the same, converting the path-list to the format of /cygdrive/c/dir/cygwin/dir-list/file.</p>
 <p>*3 On MinGW, / and /usr are the same directory in real.  Supposing / is C:/dir/msys/1.0, /c/dir/msys/1.0 is the same as /, and supposing /mingw is C:/dir/mingw, /c/dir/mingw is the same with /mingw.  <b>mcpp</b> treats each of these as the same directories, converting the path-list to the format of c:/dir/msys/1.0/dir-list/file or c:/dir/mingw/dir-list/file.</p>
 <p>*4 This is applied at least to Linux/GCC 2.9x, 3.* and 4.*/glibc 2.1, 2.2 and 2.3.  FreeBSD 4, 5, 6 has much simpler system headers because it does not use glibc.</p>
@@ -1143,7 +1150,7 @@ bar = BAZ(BAZ(a,b), c);
 foo(/*&lt;NULL 4:5-4:9*/0L/*&gt;*/);
 foo(/*&lt;BAR 5:5-5:20*//*!BAR:0-0 5:9-5:14*//*!BAR:0-1 5:16-5:19*/some_var/*&gt;*/);
 foo = /*&lt;BAZ 6:7-6:19*//*!BAZ:0-0 6:11-6:15*//*!BAZ:0-1 6:17-6:18*//*&lt;BAZ:0-0*//*&lt;NULL 6:11-6:15*/0L/*&gt;*//*&gt;*/ + /*&lt;BAZ:0-1*/2/*&gt;*//*&gt;*/;
-bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:0-0*//*&lt;BAZ 7:11-7:19*//*!BAZ:1-0*//*!BAZ:1-1*//*&lt;BAZ:1-0*/a/*&gt;*/ + /*&lt;BAZ:1-1*/b/*&gt;*//*&gt;*//*&gt;*/ +  /*&lt;BAZ:0-1*/c/*&gt;*//*&gt;*/;
+bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:0-0*//*&lt;BAZ 7:11-7:19*//*!BAZ:1-0*//*!BAZ:1-1*//*&lt;BAZ:1-0*/a/*&gt;*/ + /*&lt;BAZ:1-1*/b/*&gt;*//*&gt;*//*&gt;*/ + /*&lt;BAZ:0-1*/c/*&gt;*//*&gt;*/;
 </pre>
 <p>Note:</p>
 <p>*1 The specifications of macro notification mode were proposed by Taras Glek.
@@ -1695,18 +1702,18 @@ Hence, editing of sources are not necessarily required.</p>
 <ol>
 <li>To find error messages, enter the following command:<br>
 <pre>
-grep fatal `find . -name mcpp.err`
-grep error `find . -name mcpp.err`
+grep 'fatal:' `find . -name mcpp.err`
+grep 'error:' `find . -name mcpp.err`
 </pre>
 <li>To sort warning messages, enter the following command:<br>
 <pre>
-grep warning `find . -name mcpp.err` | sort -k3 -u > mcpp-warnings-sorted
+grep 'warning:' `find . -name mcpp.err` | sort -k3 -u > mcpp-warnings-sorted
 </pre>
-<li>To find all the source lines causing a warning, enter the following command:<br>
+<li>To find all the source lines causing a 'warning:', enter the following command:<br>
 <pre>
-grep warning `find . -name mcpp.err` | sort -k3 | uniq > mcpp-warnings-all
+grep 'warning:' `find . -name mcpp.err` | sort -k3 | uniq > mcpp-warnings-all
 </pre>
-<li>To find a particular type of warnings, enter the following command, for example:<br>
+<li>To find a particular type of 'warning:'s, enter the following command, for example:<br>
 <pre>
 grep 'warning: Replacement' `find . -name mcpp.err` | sort -k3 | uniq | less
 </pre>
@@ -2605,7 +2612,7 @@ It is portable enough to officially support both of GCC on Linux, Mac OS X and V
 <p>Preprocessing portability of a source is, however, not necessarily sufficient, even if GCC and Visual C pass it.
 In the sections below, I will check some problems, sometimes comparing them with glibc sources.
 I omit explanations on GCC's problems here to avoid duplication.
-For GCC's problems, refer to <a href="#3.9.4">3.9.4</a>, <a href="#3.9.8">3.9.8.
+For GCC's problems, refer to <a href="#3.9.4">3.9.4</a>, <a href="#3.9.8">3.9.8
 </a>, which also comment on glibc sources. *2</p>
 <p>Note:</p>
 <p>*1 I checked out the sources from CVS repository of mozilla.org.
@@ -2665,7 +2672,7 @@ The circumstances has changed since Visual C 2005 implemented it.</p>
 <p>*1 On C++, GCC defaults to "gnu++98" spec, which is explained as "C++98 plus GCC extensions".  It has in actual, however, some C99 specs mixed.
 Meanwhile, Visual C says that it is based on C90 and C++98 for C and C++ respectively.
 In actual, both of C and C++ of Visual C have C99 features mixed in it as well as a few Visual C extensions, especially in Visual C 2005.
-Both of GCC and Visual C have such mixture of versions of Standard and their own extensions, thus bring about some ambiguities.
+Both of GCC and Visual C have such mixture of versions of Standard and their own extensions and modifications, thus bring about some ambiguities.
 The absence of option in Visual C to specify a version of Standard is the most inconvenient problem.</p>
 
 <h4>3.9.10.3. Object-like macro replaced with function-like macro name</h4>
@@ -2832,7 +2839,8 @@ _VARIANT_BOOL bool;
 </ol>
 <br>
 By default, the compiler-specific-builds for UNIX compiler systems, GCC or Visual C begin searching from the source file directory.
-The other compiler-specific-builds begin searching at the current directory.  However, Borland C-specific-build for BC 4 or lower, search begins at current directory.  For BC 5, current first and then source file directory.<br>
+The other compiler-specific-builds begin searching at the current directory.  However, Borland C-specific-build for BC 4 or lower, search begins at current directory.  For BC 5, current first and then source file directory.
+For Visual C, also the directories of each ancestor file of source file are searched one by one.
 The compiler-independent-build of <b>mcpp</b> begins search from the source file directory.<br>
 If <b>mcpp</b> fails to find the desired file, it begins searching as shown in step 4.<br>
 <br>
@@ -2863,7 +2871,6 @@ In case of a nested #include, if search begins at current directory, the base di
 <br>
 <li>In any case, <b>mcpp</b> converts \ to /, although both of "\" and "/" can be used as path delimiters on Windows.<br>
 <br>
-<li>On Windows, all the uppercased letters in file names are converted into lowercased letters.<br>
 </ol>
 <br>
 
@@ -3080,7 +3087,7 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
 <blockquote>
 <table>
   <tr><th>fatal error     </th><td>17 types</td></tr>
-  <tr><th>error           </th><td>75 types</td></tr>
+  <tr><th>error           </th><td>76 types</td></tr>
   <tr><th>warning class 1 </th><td>49 types</td></tr>
   <tr><th>warning class 2 </th><td>15 types</td></tr>
   <tr><th>warning class 4 </th><td>17 types</td></tr>
@@ -3090,7 +3097,6 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
 </blockquote>
 <p>Principally, these messages point the coding in question.  The diagnostic messages below have a sample value embedded in a token or a numeric value from source code.  For the messages with a macro name embedded, a value the macro is expanded into is shown in real messages.</p>
 <p>Depending on cases, a same message is issued as warning or error, in which case, this manual gives the first occurrence a detailed description.  For the subsequent occurrences, the message is only listed.</p>
-<p>Note that under Windows, <b>mcpp</b> converts all path-lists and file names in diagnostic messages into lowercased letters for normalization.</p>
 <br>
 
 <h2><a name="5.2" href="#toc.5.2">5.2. Translation Limits</a></h2>
@@ -3502,9 +3508,13 @@ This error occurs when a file to include does not exist.  Probably, this is due 
 </ul>
 
 <h3><a name="5.4.12" href="#toc.5.4.12">5.4.12. Other Errors</a></h3>
+<p>The following two are checked when <b>mcpp</b> is invoked with the -V199901L option.  The same thing can be said when <b>mcpp</b> is invoked with the -V199901L option in C++ mode.</p>
 <ul>
 <li><samp>Operand of _Pragma() is not a string literal</samp><br>
-The _Pragma() operator must take an argument of one string literal or wide string literal.  This is checked when <b>mcpp</b> invoked with the -V199901L option.  The same thing can be said when <b>mcpp</b> is invoked with the -V199901L option in C++ mode.<br>
+The _Pragma() operator must take an argument of one string literal or wide string literal.
+<li><samp>_Pragma operator found in directive line</samp><br>
+_Pragma() operator is an alternative to #pragma directive.
+It cannot be used in a directive line.
 </ul>
 <br>
 

@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2007/10/06  kmatsui
+2007/10/14  kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
@@ -40,6 +40,9 @@ ChangeLog of MCPP and its accompanying Validation Suite
         as non-existent before wrongly normalizing to "existent", and #
         include "directory" was made not to open.  (thanks to Taras Glek)
         (system.c)
+        * Stopped to convert path-list on Windows to lowercase-letters.
+        Changed path-list comparing function on Windows from strcmp() to
+        strcasecmp() or stricmp().  (system.c)
         * Changed allocation of buffer for -M* options and incdir[],
         fnamelist[], once_list[] from fixed size to dynamically
         enlarging ones.  (system.c)
@@ -49,11 +52,11 @@ ChangeLog of MCPP and its accompanying Validation Suite
         search_framework(), search_subdir().  This is still a
         preliminary porting, because I have no Mac machine.  (system.c,
         directive.c)
-        * Added documentation on source checking of firefox 3.0pre.
-        (mcpp-manual.html)
         * Bundled some variables into structs (std_limits, option_flags,
         etc.).  Tidied up the sources removing unused codes, rewriting
         old comments.  (most of the sources)
+        * Added documentation on source checking of firefox 3.0pre.
+        (mcpp-manual.html)
         * Updated some documents.  Some parts of the documents are not
         yet updated.  (mainly by kmatsui, partly by Taras Glek)
 

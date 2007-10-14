@@ -326,12 +326,17 @@ static const char *     search_encoding( char * norm, int alias);
                 /* Search encoding_name[][] table   */
 static void     strip_bar( char * string);
                 /* Remove '_', '-' or '.' in the string */
+static void     conv_case( char * name, char * lim, int upper);
+                /* Convert to upper/lower case      */
 static size_t   mb_read_iso2022_jp( int c1, char ** in_pp, char ** out_pp);
                 /* For ISO2022_JP encoding          */
 static size_t   mb_read_utf8( int c1, char ** in_pp, char ** out_pp);
                 /* For UTF8 mbchar encoding         */
 
-#define NAMLEN  20
+#define NAMLEN          20
+#define UPPER           1               /* To upper */
+#define LOWER           0               /* To lower */
+
 
 const char *    set_encoding(
     char *  name,       /* Name of encoding specified   */
@@ -448,6 +453,35 @@ static void strip_bar(
             memmove( cp, cp + 1, strlen( cp));
         else
             cp++;
+    }
+}
+
+static void     conv_case(
+    char *  name,                       /* (diretory) Name          */
+    char *  lim,                        /* End of (directory) name  */
+    int     upper                       /* TRUE if to upper         */
+)
+/* Convert a string to upper-case letters or lower-case letters in-place    */
+{
+    int     c;
+    char *  sp;
+
+    for (sp = name; sp < lim; sp++) {
+        c = *sp & UCHARMAX;
+#if MBCHAR
+        if ((char_type[ c] & mbstart)) {
+            char    tmp[ FILENAMEMAX+1];
+            char *  tp = tmp;
+            *tp++ = *sp++;
+            mb_read( c, &sp, &tp);
+        } else
+#endif
+        {
+            if (upper)
+                *sp = toupper( c);
+            else
+                *sp = tolower( c);
+        }
     }
 }
 
