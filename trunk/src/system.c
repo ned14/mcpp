@@ -1205,6 +1205,13 @@ Version:
         dump_path();
         fp_debug = stdout;
     }
+
+    if (mcpp_debug & MACRO_CALL) {      /* Normalize the path-list  */
+        if (*in_pp && ! str_eq( *in_pp, "-"))
+            *in_pp = norm_path( null, *in_pp, FALSE);
+        if (*out_pp && ! str_eq( *out_pp, "-"))
+            *out_pp = norm_path( null, *out_pp, FALSE);
+    }
 }
 
 static void version( void)
