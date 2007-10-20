@@ -414,8 +414,6 @@ fatal_error_exit:
     if (mcpp_debug & MACRO_CALL) {
         if (in_file != stdin_name)
             free( in_file);
-        if (out_file && ! str_eq( out_file, "-")
-            free( out_file);
     }
     clear_filelist();
     clear_symtable();
