@@ -176,8 +176,9 @@ static int      is_full_path( const char * path);
                 /* The path is absolute path list ? */
 static int      search_dir( char * filename, int searchlocal, int next);
                 /* Search the include directories   */
-static int      open_file( const char ** dirp, const char * filename
-        , int local, int include_opt);  /* Open a source file       */
+static int      open_file( const char ** dirp, const char * src_dir
+        , const char * filename, int local, int include_opt);
+                /* Open a source file       */
 static const char *     set_fname( const char * filename);
                 /* Remember the source filename     */
 #if SYSTEM == SYS_MAC
@@ -188,6 +189,10 @@ static int      search_framework( char * filename);
 static int      search_subdir( char * fullname, char * cp, char * frame
         , char * fname);
                 /* Search "Headers" and other dirs  */
+#endif
+#if 0   /* This function is only for debugging use  */
+static int      chk_dirp( const char ** dirp);
+                /* Check validity of dirp arg for open_file()   */
 #endif
 #if SYS_FAMILY == SYS_WIN
 static char *   bsl2sl( char * filename);
@@ -394,7 +399,6 @@ void    do_options(
     char        optlist[ OPTLISTLEN];       /* List of option letter*/
     const char *    warning = "warning: -%c%s option is ignored\n";
     int         opt;
-    int         vflag;                      /* -v option            */
     int         unset_sys_dirs;
         /* Unset system-specific and site-specific include directories ?    */
     int         set_cplus_dir;  /* Set C++ include directory ? (for GCC)*/
@@ -417,7 +421,7 @@ void    do_options(
 #endif
 
     argv0 = argv[ 0];
-    vflag = nflag = unset_sys_dirs = show_path = sflag = trad = FALSE;
+    nflag = unset_sys_dirs = show_path = sflag = trad = FALSE;
     set_cplus_dir = TRUE;
 
     /* Get current directory for -I option and #pragma once */
@@ -868,11 +872,13 @@ plus:
             if (integrated_cpp) {
                 if (*optarg == '-')                 /* No argument  */
                     optind--;
-                else if (! isdigit( *optarg))
-                    usage( opt);
-                else if (*optarg != '0')
+                else if ((isdigit( *optarg) && *optarg != '0')  /* -O1, -O2 */
+                        || *optarg == 's')                  /* -Os  */
                     look_and_install( "__OPTIMIZE__", DEF_NOARGS_PREDEF, ""
                             , "1");
+                else if (! isdigit( *optarg))
+                    usage( opt);
+                /* Else -O0: ignore */
             } else {
                 usage( opt);
             }
@@ -1053,7 +1059,7 @@ Version:
             break;
 
         case 'v':
-            vflag = TRUE;
+            option_flags.v = TRUE;
             show_path = TRUE;
             break;
 
@@ -1198,17 +1204,21 @@ Version:
     else if (mkdep_mt)
         mkdep_target = mkdep_mt;
 
-    if (vflag)
-        version();
-    if (show_path) {
-        fp_debug = stderr;
-        dump_path();
-        fp_debug = stdout;
-    }
-
     if (mcpp_debug & MACRO_CALL) {      /* Normalize the path-list  */
-        if (*in_pp && ! str_eq( *in_pp, "-"))
-            *in_pp = norm_path( null, *in_pp, FALSE);
+        if (*in_pp && ! str_eq( *in_pp, "-")) {
+            char *  tmp = norm_path( null, *in_pp, FALSE);
+            if (tmp)                    /* The file exists          */
+                *in_pp = tmp;
+                /* Else mcpp_main() will diagnose *in_pp and exit   */
+        }
+    } else {            /* -K option alters behavior of -v option   */
+        if (option_flags.v)
+            version();
+        if (show_path) {
+            fp_debug = stderr;
+            dump_path();
+            fp_debug = stdout;
+        }
     }
 }
 
@@ -1225,7 +1235,7 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.7-prerelease (2007/10) "
+        "MCPP V.2.7-prerelease (2007/11) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif
@@ -1856,16 +1866,15 @@ void    at_start( void)
      */
     {
         char **         preinc;
-
-            /*
-             * Note: Here, 'infile' is the main input file, which is pseudo-
-             * parent file of the files to pre-include.  So, we must
-             * temporarily set the infile's directory to the current directory
-             * in order to preinclude the files relative to it.
-             */
+        /*
+         * Note: Here, 'infile' is the main input file, which is pseudo-
+         * parent file of the files to pre-include.  So, we must
+         * temporarily set the infile's directory to the current directory
+         * in order to preinclude the files relative to it.
+         */
         preinc = preinc_end;
         while (preinclude <= --preinc && *preinc != NULL)
-            open_file( &null, *preinc, TRUE, TRUE);
+            open_file( &null, NULL, *preinc, TRUE, TRUE);
     }
 #endif
 
@@ -2854,9 +2863,12 @@ static int  open_include(
  * Returns TRUE if the file was opened, FALSE if it fails.
  */
 {
+    char    src_dir[ FILENAMEMAX] = { EOS, };
+                                    /* Directory part of includer   */
     int     full_path;              /* Filename is full-path-list   */
     int     has_dir = FALSE;        /* Includer has directory part  */
-    char    dir[ FILENAMEMAX] = { EOS, };   /* Directory part of includer   */
+    int     has_dir_src = FALSE;
+    int     has_dir_fname = FALSE;
 
 #if SYS_FAMILY == SYS_WIN
     bsl2sl( filename);
@@ -2864,12 +2876,16 @@ static int  open_include(
 
     full_path = is_full_path( filename);
 
-    if (!full_path && searchlocal && (search_rule & SOURCE))
-        has_dir = has_directory( infile->real_fname, dir)
-            /* Get directory part of the parent file of the file to include.*/
-            /* Note that infile->dirp of main input file is set to "" and   */
-            /* remains the same even if -include options are processed.     */
+    if (!full_path && searchlocal && (search_rule & SOURCE)) {
+        has_dir_src  = has_directory( infile->src_dir, src_dir);
+        has_dir_fname = has_directory( infile->real_fname
+                , src_dir + strlen( src_dir));
+        /* Get directory part of the parent file of the file to include.*/
+        /* Note that infile->dirp of main input file is set to "" and   */
+        /* remains the same even if -include options are processed.     */
+        has_dir = has_dir_src || has_dir_fname
                 || (**(infile->dirp) != EOS);
+    }
     if (mcpp_debug & PATH)
         mcpp_fprintf( DBG, "filename: %s\n", filename);
 
@@ -2886,7 +2902,8 @@ static int  open_include(
          * Look in local directory first.
          * Try to open filename relative to the "current directory".
          */
-        if (open_file( &null, filename, searchlocal && !full_path, FALSE))
+        if (open_file( &null, NULL, filename, searchlocal && !full_path
+                , FALSE))
             return  TRUE;
         if (full_path)
             return  FALSE;
@@ -2897,8 +2914,7 @@ static int  open_include(
          * Look in local directory of source file.
          * Try to open filename relative to the "source directory".
          */
-        strcat( dir, filename);
-        if (open_file( infile->dirp, dir, TRUE, FALSE))
+        if (open_file( infile->dirp, src_dir, filename, TRUE, FALSE))
             return  TRUE;
     }
 
@@ -2908,7 +2924,7 @@ static int  open_include(
         FILEINFO *  file = infile;
         while ((file = file->parent) != NULL) {
             /* Search each parent includer's directory  */
-            if (open_file( file->dirp, dir, TRUE, FALSE))
+            if (open_file( file->dirp, src_dir, filename, TRUE, FALSE))
                 return  TRUE;
         }
     }
@@ -2919,8 +2935,7 @@ search_dirs:
         /* Search the directories specified by -iquote option, if any.  */
         const char **   qdir;
         for (qdir = quote_dir; qdir < quote_dir_end; qdir++) {
-            if (open_file( qdir, filename, FALSE, FALSE))
-                /* Now infile has been renewed  */
+            if (open_file( qdir, NULL, filename, FALSE, FALSE))
                 return  TRUE;
         }
     }
@@ -2946,10 +2961,12 @@ static int  has_directory(
     const char *    sp;
     size_t  len;
 
+    if (! source)
+        return  FALSE;
     if ((sp = strrchr( source, PATH_DELIM)) == NULL) {
         return  FALSE;
     } else {
-        len = (size_t)(sp - source) + 1;
+        len = (size_t)(sp - source) + 1;    /* With path-delimiter  */
         memcpy( directory, source, len);
         directory[ len] = EOS;
         return  TRUE;
@@ -3021,7 +3038,7 @@ static int  search_dir(
             /* Else continue to search incptr   */
         }
 #endif
-        if (open_file( incptr, filename, FALSE, FALSE))
+        if (open_file( incptr, NULL, filename, FALSE, FALSE))
             /* Now infile has been renewed  */
             return  TRUE;
     }
@@ -3031,6 +3048,7 @@ static int  search_dir(
 
 static int  open_file(
     const char **   dirp,           /* Pointer to include directory */
+    const char *    src_dir,        /* Source directory of includer */
     const char *    filename,       /* Filename (possibly has directory)    */
     int         local,                      /* #include "file"      */
     int         include_opt         /* Specified by -include option */
@@ -3041,6 +3059,7 @@ static int  open_file(
  * This is called from open_include() and at_start().
  */
 {
+    char        dir_fname[ FILENAMEMAX] = { EOS, };
 #if HOST_COMPILER == BORLANDC
     /* Borland's fopen() does not set errno.    */
     static int  max_open = FOPEN_MAX - 5;
@@ -3051,11 +3070,22 @@ static int  open_file(
     FILEINFO *  file = infile;
     FILE *      fp;
     char *      fullname;
+    const char *    fname;
 
     errno = 0;      /* Clear errno possibly set by path searching   */
     if (mcpp_debug & PATH)
-        mcpp_fprintf( DBG, "Searching %s\n", **dirp == EOS ? filename : *dirp);
-    fullname = norm_path( *dirp, filename, TRUE);
+        mcpp_fprintf( DBG, "Searching %s%s%s\n", *dirp
+                , src_dir ? src_dir : null, filename);
+    /* src_dir is usually NULL.  This is specified to   */
+    /* search the source directory of the includer.     */
+    if (src_dir && *src_dir != EOS) {
+        strcpy( dir_fname, src_dir);
+        strcat( dir_fname, filename);
+        fname = dir_fname;
+    } else {
+        fname = filename;
+    }
+    fullname = norm_path( *dirp, fname, TRUE);
                                     /* Convert to absolute path     */
     if (! fullname)                 /* Non-existent or directory    */
         return  FALSE;
@@ -3103,7 +3133,7 @@ static int  open_file(
     if (mkdep && ((mkdep & MD_SYSHEADER) || local))
         put_depend( fullname);          /* Output dependency line   */
 
-    add_file( fp, filename);    /* Add file-info to the linked list */
+    add_file( fp, src_dir, filename);   /* Add file-info to the linked list */
     /* infile has been just renewed */
     /*
      * Remember the directory for #include_next.
@@ -3111,14 +3141,9 @@ static int  open_file(
      *   by get_ch() when the current includer is finished.
      */
     infile->dirp = inc_dirp = dirp;
-    if (dirp != &null) {
-        const char **   ip;
-        for (ip = incdir; ip < incend; ip++)
-            if (dirp == ip)
-                break;
-        if (ip == incend)
-            cerror( "Bug: *dirp:%s is invalid", *dirp, 0L, NULL);
-    }
+#if 0   /* This part is only for debugging  */
+    chk_dirp( dirp);
+#endif
     strcpy( cur_fullname, fullname);
 
     if (option_flags.z) {
@@ -3138,6 +3163,7 @@ false:
 
 void    add_file(
     FILE *      fp,                         /* Open file pointer    */
+    const char *    src_dir,                /* Directory of source  */
     const char *    filename                /* Name of the file     */
 )
 /*
@@ -3152,7 +3178,8 @@ void    add_file(
             "More than %.0s%ld nesting of #include";    /* _F_ _W4_ */
 
     filename = set_fname( filename);    /* Search or append to fnamelist[]  */
-    file = get_file( filename, (size_t) NBUFF); /* file == infile   */
+    file = get_file( filename, src_dir, (size_t) NBUFF);
+                                        /* file == infile           */
     file->fp = fp;                      /* Better remember FILE *   */
     cur_fname = filename;
 
@@ -3331,13 +3358,59 @@ static int      search_subdir(
          */
         if ((cp - fullname) + n > FILENAMEMAX)
             cfatal( "Too long framework path", NULL, 0L, NULL); /* _F_  */
-        if (open_file( &null, fullname, FALSE))
+        if (open_file( &null, NULL, fullname, FALSE, FALSE))
             return  TRUE;
     }
     return  FALSE;
 }
 
 #endif  /* SYSTEM == SYS_MAC    */
+
+#if 0   /* This part is only for debugging  */
+static int  chk_dirp(
+    const char **   dirp
+)
+/*
+ * Check the validity of include directory specified for open_file().
+ * Called only from open_file().
+ */
+{
+    const char **   ip;
+
+    if (dirp == &null)
+        return  TRUE;
+
+    for (ip = incdir; ip < incend; ip++)
+        if (dirp == ip)
+            break;
+    if (ip == incend) {
+#if COMPILER == MSC
+        FILEINFO *  pfile = infile->parent;
+        if (pfile) {
+            while ((pfile = pfile->parent) != NULL) {
+                /* Search each parent includer's directory  */
+                if (dirp == pfile->dirp)
+                    break;
+            }
+        }
+        if (! pfile)
+#endif
+#if COMPILER == GNUC
+        const char **   qdir;
+        for (qdir = quote_dir; qdir < quote_dir_end; qdir++) {
+            if (dirp == qdir)
+                break;
+        }
+        if (qdir == quote_dir_end)
+#endif
+        {
+            cfatal( "Bug: *dirp:%s is invalid", *dirp, 0L, NULL);
+            return  FALSE;
+        }
+    }
+    return  TRUE;
+}
+#endif
 
 void    cur_file(
     FILEINFO *  sharp_file              /* The 'file' or NULL   */
@@ -3356,15 +3429,12 @@ void    cur_file(
         file = infile;
     while (file->fp == NULL)
         file = file->parent;
-    if (! str_eq( file->real_fname, file->filename)
-            /* Filename was changed by #line directive  */
-            || (mcpp_debug & MACRO_CALL) == 0) {
-            /* Or not in macro notification mode        */
-        cp = stpcpy( work_buf, *(file->dirp));
-        strcpy( cp, file->filename);
-        name = save_string( work_buf);
-    } else {
-        name = save_string( cur_fullname);      /* Output full-path-list    */
+    if (mcpp_debug & MACRO_CALL) {  /* In macro notification mode   */
+        /* Output full-path-list    */
+        name = save_string( cur_fullname);
+    } else {    /* Usually, as the name specified '#include "file"' */
+        /* Possibly changed by '#line fname' directive  */
+        name = save_string( file->filename);
     }
     if (sharp_filename == NULL || ! str_eq( name, sharp_filename)) {
         if (sharp_filename != NULL)

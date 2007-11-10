@@ -53,6 +53,7 @@
         FALSE,          /* z:   -z (no output of included files)    */
         FALSE,          /* p:   -P (no #line output)                */
         FALSE,          /* q:   -Q (output diagnosis to mcpp.err)   */
+        FALSE,          /* v:   -v (verbose, affects macro notification)    */
         TRIGRAPHS_INIT, /* trig:    -3 (toggle trigraphs)           */
         DIGRAPHS_INIT,  /* dig: -2 (toggle digraphs recognition)    */
         /*
@@ -249,6 +250,13 @@
     char * const     work_end = & work_buf[ NWORK];
                                     /* End of buffer of work_buf[]  */
 
+/*
+ * src_col      is the current input column number, but is rarely used.
+ *              It is used to put spaces after #line line in keep_spaces mode
+ *              on some special cases.
+ */
+static int      src_col = 0;        /* Column number of source line */
+
 #define MBCHAR_IS_ESCAPE_FREE   (SJIS_IS_ESCAPE_FREE && \
             BIGFIVE_IS_ESCAPE_FREE && ISO2022_JP_IS_ESCAPE_FREE)
 
@@ -297,7 +305,7 @@ static void     init_main( void)
     stdc_val = 0;
     standard = TRUE;
     std_line_prefix = STD_LINE_PREFIX;
-    errors = 0;
+    errors = src_col = 0;
     warn_level = -1;
     infile = NULL;
     in_directive = in_define = in_getarg = in_include = FALSE;
@@ -313,7 +321,7 @@ static void     init_main( void)
     std_limits.id_len = IDMAX;
     std_limits.n_mac_pars =  NMACPARS;
     option_flags.c = option_flags.k = option_flags.z = option_flags.p
-            = option_flags.q = option_flags.lang_asm
+            = option_flags.q = option_flags.v = option_flags.lang_asm
             = option_flags.no_source_line = FALSE;
     option_flags.trig = TRIGRAPHS_INIT;
     option_flags.dig = DIGRAPHS_INIT;
@@ -395,7 +403,7 @@ int     main
         }
     }
     init_sys_macro();       /* Initialize system-specific macros    */
-    add_file( fp_in, in_file);      /* "open" main input file       */
+    add_file( fp_in, NULL, in_file);    /* "open" main input file   */
     infile->dirp = inc_dirp;
     strcpy( cur_fullname, in_file);
     if (mkdep && str_eq( infile->real_fname, stdin_name) == FALSE)
@@ -448,6 +456,11 @@ void    sharp(
         mcpp_fprintf( OUT, "%s%ld", LINE_PREFIX, src_line);
     cur_file( sharp_file);
     mcpp_fputc( '\n', OUT);
+    if (keep_spaces && src_col) {
+        while (src_col--)
+            mcpp_fputc( ' ', OUT);
+        src_col = 0;
+    }
 sharp_exit:
     wrong_line = FALSE;
 }
@@ -731,6 +744,12 @@ static void mcpp_main( void)
                     wrong_line = TRUE;      /* Line-num out of sync */
                 } else {
                     out_ptr = wp;
+                }
+                if (keep_spaces && wrong_line && infile
+                        && *(infile->bptr) != '\n' && *(infile->bptr) != EOS) {
+                    src_col = infile->bptr - infile->buffer;
+                    /* Inform to sharp() the current colums */
+                    break;                  /* Do sharp() now       */
                 }
             } else {                        /* Not a macro call     */
                 out_ptr = wp;               /* Advance the place    */

@@ -41,7 +41,8 @@ int exec_program( int argc, char ** argv) {
     temp[ len] = '\0';
     tp = temp + len;
     for (i = 1; i < argc; i++)
-        if (strcmp( argv[ i], "-fpreprocessed") == 0)
+        if ((strcmp( argv[ i], "-fpreprocessed") == 0)
+                || (strncmp( argv[ i], "-traditional", 12) == 0))
             break;                  /* Invoke cc1 or cc1plus    */
     if (i < argc) {
         strcpy( tp, plus ? "cc1plus_gnuc.exe" : "cc1_gnuc.exe");

@@ -1580,8 +1580,8 @@ int     get_ch( void)
     infile = file->parent;                  /* Unwind file chain    */
     free( file->buffer);                    /* Free buffer          */
     if (infile == NULL) {                   /* If at end of input,  */
-        if (file->filename)
-            free( file->filename);
+        free( file->filename);
+        free( file->src_dir);
         free( file);
         return  CHAR_EOF;                   /*   return end of file.*/
     }
@@ -1590,8 +1590,12 @@ int     get_ch( void)
 
         free( file->filename);              /* Free filename        */
         file->filename = NULL;
+        free( file->src_dir);               /* Free src_dir         */
+        file->src_dir = NULL;
         fclose( file->fp);                  /* Close finished file  */
         cp = stpcpy( cur_fullname, *(infile->dirp));
+        if (infile->src_dir)
+            cp = stpcpy( cp, infile->src_dir);
         strcpy( cp, infile->real_fname);
         cur_fname = infile->real_fname;     /* Restore current fname*/
         if (infile->pos != 0L) {            /* Includer was closed  */
@@ -2254,7 +2258,7 @@ FILEINFO *  unget_string(
         size = strlen( text) + 1;
     else
         size = 1;
-    file = get_file( name, size);
+    file = get_file( name, NULL, size);
     if (text)
         memcpy( file->buffer, text, size);
     else
@@ -2280,6 +2284,7 @@ char *  save_string(
 
 FILEINFO *  get_file(
     const char *    name,                   /* File or macro name   */
+    const char *    src_dir,                /* Source file directory*/
     size_t      bufsize                     /* Line buffer size     */
 )
 /*
@@ -2304,6 +2309,12 @@ FILEINFO *  get_file(
         strcpy( file->filename, name);      /* Copy for #line       */
     } else {
         file->filename = NULL;
+    }
+    if (src_dir) {
+        file->src_dir = xmalloc( strlen( src_dir) + 1);
+        strcpy( file->src_dir, src_dir);
+    } else {
+        file->src_dir = NULL;
     }
 #if MCPP_LIB
     file->last_fputc = mcpp_lib_fputc;
@@ -2494,8 +2505,17 @@ static void do_msg(
                         sp++;
                         /* Fall through */
                     case MAC_CALL_START :
-                        sp++;
-                        sp++;
+                        sp += 2;
+                        break;
+                    case MAC_ARG_END    :
+                        if (! option_flags.v)
+                            break;
+                        else
+                            sp++;
+                            /* Fall through */
+                    case MAC_CALL_END   :
+                        if (option_flags.v)
+                            sp += 2;
                         break;
                     }
                 }
@@ -2653,7 +2673,7 @@ void    dump_string(
 {
     const char *    cp;
     const char *    chr;
-    int     c, c1;
+    int     c, c1, c2;
 
     if (why != NULL)
         mcpp_fprintf( DBG, " (%s)", why);
@@ -2676,28 +2696,33 @@ void    dump_string(
             if (! (mcpp_mode == STD && (mcpp_debug & MACRO_CALL)))
                 goto  no_magic;
             /* Macro informations inserted by -K option */
-            c = *cp++ & UCHARMAX;
-            switch (c) {
-            case MAC_CALL_START:
+            c2 = *cp++ & UCHARMAX;
+            if (option_flags.v || c2 == MAC_CALL_START
+                    || c2 == MAC_ARG_START) {
                 c = ((*cp++ & UCHARMAX) - 1) * UCHARMAX;
                 c += (*cp++ & UCHARMAX) - 1;
+            }
+            switch (c2) {
+            case MAC_CALL_START:
                 mcpp_fprintf( DBG, "<MAC%d>", c);
                 break;
             case MAC_CALL_END:
-                chr = "<MAC_END>";
+                if (option_flags.v)
+                    mcpp_fprintf( DBG, "<MAC_END%d>", c);
+                else
+                    chr = "<MAC_END>";
                 break;
             case MAC_ARG_START:
-                c = ((*cp++ & UCHARMAX) - 1) * UCHARMAX;
-                c += (*cp++ & UCHARMAX) - 1;
                 c1 = *cp++ & UCHARMAX;
                 mcpp_fprintf( DBG, "<MAC%d:ARG%d>", c, c1 - 1);
                 break;
             case MAC_ARG_END:
-                chr = "<ARG_END>";
-                break;
-            case EOS    :
-                chr = "<MAC_INF>";
-                cp--;
+                if (option_flags.v) {
+                    c1 = *cp++ & UCHARMAX;
+                    mcpp_fprintf( DBG, "<ARG_END%d-%d>", c, c1 - 1);
+                } else {
+                    chr = "<ARG_END>";
+                }
                 break;
             }
             break;
