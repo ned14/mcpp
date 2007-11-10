@@ -82,7 +82,7 @@ if test ${host_system} != SYS_MINGW; then
 for i in \$@
     do
     case \$i in
-        -fpreprocessed)
+        -fpreprocessed|-traditional*)
             ${cpp_path}/${cpp_base}_gnuc "\$@"
             exit ;;
     esac
@@ -93,7 +93,7 @@ _EOF
 for i in \$@
     do
     case \$i in
-        -fpreprocessed)
+        -fpreprocessed|traditional*)
             ${cpp_path}/cc1plus_gnuc "\$@"
             exit ;;
     esac

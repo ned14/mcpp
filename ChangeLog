@@ -1,13 +1,13 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2007/10/14  kmatsui
+2007/11/10  kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
         on STD mode.  Created get_src_location(), print_macro_inf(),
         print_macro_arg(), close_macro_inf(), chk_magic_balance(),
-        remove_magics(), update_addr(), some MAC_* macros to define
-        magic characters, struct LINE_COL.  Revised many functions.
+        remove_magics(), some MAC_* macros to define magic characters,
+        struct LINE_COL, MACRO_INF.  Revised many functions.
         (Specifications by Taras Glek, implemented mostly by kmatsui and
         partly by Taras Glek).  (internal.H, main.c, directive.c, expand.
         c, support.c, system.c)
@@ -28,8 +28,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         Removed undef_gcc_macros().  Created DEF_NOARGS_* macros for
         diagnostics sake.  (internal.H, system.c)
         * Fixed a bug of file searching failure when a file is specified
-        by relative path in -include option.  (thanks to Benjamin
-        Smedberg) (system.c)
+        by relative path in -include option.  Split is_full_path() from
+        open_include().  (thanks to Benjamin Smedberg) (system.c)
         * Fixed a bug of mcpplib initialization which caused problem on
         CygWIN.  (main.c, system.c, lib.c)
         * Fixed a bug of unterminated source file handling.  (thanks to
@@ -49,9 +49,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         * Added porting to Mac OS X.  Enabled searching of "framework"
         directories for #include.  Enabled #import, which is #include
         with unconditional once only feature.  Created init_framework(),
-        search_framework(), search_subdir().  This is still a
-        preliminary porting, because I have no Mac machine.  (system.c,
-        directive.c)
+        search_framework(), search_subdir().  Note that this is still a
+        preliminary implementation.  (system.c, directive.c)
         * Bundled some variables into structs (std_limits, option_flags,
         etc.).  Tidied up the sources removing unused codes, rewriting
         old comments.  (most of the sources)

@@ -226,6 +226,7 @@ typedef struct fileinfo {
         const char **   dirp;       /* Include directory the file resides   */
         const char *    real_fname; /* Real file name               */
         char *          filename;   /* File/macro name (maybe changed)      */
+        const char *    src_dir;    /* Directory of source file     */
         char *          buffer;     /* Buffer of current input line */
 #if MCPP_LIB
         /* Save output functions during push/pop of #includes   */
@@ -318,6 +319,7 @@ extern struct option_flags_ {
         int     z;      /* -Z option (no-output of included file)   */
         int     p;                  /* -P option (no #line output)  */
         int     q;                  /* -Q option (diag to mcpp.err) */
+        int     v;                  /* -v option (verbose)          */
         int     trig;               /* -3 option (toggle trigraphs) */
         int     dig;                /* -2 option (toggle digraphs)  */
         int     lang_asm;           /* -a option (assembler source) */
@@ -460,8 +462,8 @@ extern FILEINFO *   unget_string( const char * text, const char * name);
                 /* Push back the string to input*/
 extern char *   save_string( const char * text);
                 /* Stuff string in malloc mem.  */
-extern FILEINFO *   get_file( const char * name, size_t bufsize);
-                /* New FILEINFO initialization  */
+extern FILEINFO *   get_file( const char * name, const char * src_dir
+        , size_t bufsize);          /* New FILEINFO initialization  */
 extern char *   (xmalloc)( size_t size);
                 /* Get memory or die            */
 extern char *   (xrealloc)( char * ptr, size_t size);
@@ -498,8 +500,8 @@ extern void     put_depend( const char * filename);
                 /* Output source dependency line*/
 extern int      do_include( int next);
                 /* Process #include directive   */
-extern void     add_file( FILE * fp, const char * filename);
-                /* Chain the included file      */
+extern void     add_file( FILE * fp, const char * src_dir
+        , const char * filename);   /* Chain the included file      */
 extern void     cur_file( FILEINFO * sharp_file);
                 /* Output current source fname  */
 extern void     do_pragma( void);

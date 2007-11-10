@@ -380,11 +380,11 @@ Undefine predefined macro named "macro".  This option cannot undefine <tt>__FILE
 <br>
 <li><samp>-v</samp><br>
 Output the <b>mcpp</b> version and a search order of include directories to stderr.<br>
+However, when -K option, explained at <a href="#2.4">2.4</a>, is specified or #pragma MCPP macro_call directive, explained at <a href="#3.5.8">3.5.8</a>, is specified, this option changes its meaning.<br>
 <br>
 <li><samp>-W &lt;level&gt;</samp><br>
 Specify a warning level with &lt;level&gt;.  &lt;level&gt; should be 0 or "OR" of any one or more values of 1, 2, 4, 8 and 16.  1, 2, 4, 8 or 16 indicates a warning class.  For example, if -W 5 is specified, warnings of classes 1 and 4 are output.  If 0 is specified, no warnings are output.  If this option is specified several times, all the specified values are "ORed" together.  For example, -W 1 -W 2 -W 4 is equivalent to -W 7.  Instead of -W 7 you can also write as -W "1|2|4". (Enclose with " and " so as | is not interpreted as a pipe.)  If this option is omitted, -W 1 is assumed.  For warning messages, refer from
-<a href="#5.5"> 5.5</a> through
-<a href="#5.9"> 5.9</a>.<br>
+<a href="#5.5"> 5.5</a> through <a href="#5.9"> 5.9</a>.<br>
 <br>
 <li><samp>-z</samp><br>
 The preprocessing result of the #included files is not output, but macros are defined.  This option is used in debug of preprocessing.<br>
@@ -450,6 +450,7 @@ This mode is also enabled by the following pragma:
 The -K option has almost the same effect with this pragma at top of an input file except predefined macros are notified only by this option.
 About the specs of macro notification, see <a href="#3.5.8">3.5.8. #pragma MCPP debug macro_call</a>.<br>
 This option implies -k option.
+The -v option changes its meaning in this mode, and outouts more verbose notations.
 On the other hand, -a (-x assembler-with-cpp) or -C options automatically disable -K option. *6<br>
 <li><samp>-k</samp><br>
 Keep horizontal whitespaces ('\t' and space characters) without squeezing them into one space.
@@ -922,8 +923,8 @@ mcpp &gt; mcpp.H
 <p>Another problem is that the recent GCC/GLIBC system has header files, like &lt;stddef.h&gt;, which are repeatedly #included by other system headers.  They define  macros, such as <tt>__need_NULL</tt>, <tt>__need_size_t</tt>, and <tt>__need_ptrdiff_t</tt>, and then #include &lt;stddef.h&gt;.  Each time they do so, definitions such as <tt>NULL</tt>, size_t, and ptrdiff_t are defined in the &lt;stddef.h&gt;.  The same thing can be said with &lt;errno.h&gt; and &lt;signal.h&gt;, and even with &lt;stdio.h&gt;.  Other system headers define macros, such as <tt>__need_FILE, __need___FILE</tt>, and then #include &lt;stdio.h&gt;.  Each time they do so, definitions such as FILE may be defined in &lt;stdio.h&gt;.  #pragma once can not be used in such header files. *4</p>
 <p>Note:</p>
 <p>*1 The normalized result can be seen by <samp>'#pragma MCPP debug path'</samp>.  See <a href="#3.5.1">3.5.1</a>.<br>
-The path-list is not wholly normalized in #line line, <samp>'#pragma MCPP put_defines'</samp> or diagnostic.
-Though the include directories are normalized, file name of #include line such as <samp>'#include "../include/header.h"'</samp> is usually diplayed as it is in order to show how the file is specified.
+The path-list is not normalized usually in #line line, <samp>'#pragma MCPP put_defines'</samp> or diagnostic.
+By default, the #line line is output as specified by #include line.
 But, if -K option is specified, it is normalized so as to be easily utilized by some other tools.</p>
 <p>*2 On CygWIN, /bin and /usr/bin are the same directory in real, also /lib and /usr/lib are the same, and supposing / is C:/dir/cygwin on Windows, /cygdrive/c/dir/cygwin is the same as /.  <b>mcpp</b> treats these directories as the same, converting the path-list to the format of /cygdrive/c/dir/cygwin/dir-list/file.</p>
 <p>*3 On MinGW, / and /usr are the same directory in real.  Supposing / is C:/dir/msys/1.0, /c/dir/msys/1.0 is the same as /, and supposing /mingw is C:/dir/mingw, /c/dir/mingw is the same with /mingw.  <b>mcpp</b> treats each of these as the same directories, converting the path-list to the format of c:/dir/msys/1.0/dir-list/file or c:/dir/mingw/dir-list/file.</p>
@@ -1152,6 +1153,18 @@ foo(/*&lt;BAR 5:5-5:20*//*!BAR:0-0 5:9-5:14*//*!BAR:0-1 5:16-5:19*/some_var/*&gt
 foo = /*&lt;BAZ 6:7-6:19*//*!BAZ:0-0 6:11-6:15*//*!BAZ:0-1 6:17-6:18*//*&lt;BAZ:0-0*//*&lt;NULL 6:11-6:15*/0L/*&gt;*//*&gt;*/ + /*&lt;BAZ:0-1*/2/*&gt;*//*&gt;*/;
 bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:0-0*//*&lt;BAZ 7:11-7:19*//*!BAZ:1-0*//*!BAZ:1-1*//*&lt;BAZ:1-0*/a/*&gt;*/ + /*&lt;BAZ:1-1*/b/*&gt;*//*&gt;*//*&gt;*/ + /*&lt;BAZ:0-1*/c/*&gt;*//*&gt;*/;
 </pre>
+<p>Moreover, when -v option is specified, the marker for end of macro expansion and the marker for end of an argument expansion also output the same macro name and its number with their starting markers as:</p>
+<pre>
+foo(/*&lt;NULL 4:5-4:9*/0L/*NULL&gt;*/);
+foo(/*&lt;BAR 5:5-5:20*//*!BAR:0-0 5:9-5:14*//*!BAR:0-1 5:16-5:19*/some_var/*BAR&gt;*/);
+foo = /*&lt;BAZ 6:7-6:19*//*!BAZ:0-0 6:11-6:15*//*!BAZ:0-1 6:17-6:18*//*&lt;BAZ:0-0*//*&lt;NULL 6:11-6:15*/0L/*NULL&gt;*//*BAZ:0-0&gt;*/ + /*&lt;BAZ:0-1*/2/*BAZ:0-1&gt;*//*BAZ&gt;*/;
+bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:0-0*//*&lt;BAZ 7:11-7:19*//*!BAZ:1-0*//*!BAZ:1-1*//*&lt;BAZ:1-0*/a/*BAZ:1-0&gt;*/ + /*&lt;BAZ:1-1*/b/*BAZ:1-1&gt;*//*BAZ&gt;*//*BAZ:0-0&gt;*/ + /*&lt;BAZ:0-1*/c/*BAZ:0-1&gt;*//*BAZ&gt;*/;
+</pre>
+<p>As you see in this example, all the ending markers correspond to the last preceding starting markers of the same nesting level.
+Hence, you can judge their correspondence automatically even without -v option.</p>
+<p>In addition, on the macro notification mode, the output format of filename in #line line differs from the default.
+While by default <b>mcpp</b> outputs the filename as specified in #include directive, on this mode it outputs the filename converting to an absolute path.
+This is for the convenience of refactoring tool making.</p>
 <p>Note:</p>
 <p>*1 The specifications of macro notification mode were proposed by Taras Glek.
 He is working on refactoring of sources at mozilla project:</p>
@@ -2840,8 +2853,9 @@ _VARIANT_BOOL bool;
 <br>
 By default, the compiler-specific-builds for UNIX compiler systems, GCC or Visual C begin searching from the source file directory.
 The other compiler-specific-builds begin searching at the current directory.  However, Borland C-specific-build for BC 4 or lower, search begins at current directory.  For BC 5, current first and then source file directory.
-For Visual C, also the directories of each ancestor file of source file are searched one by one.
 The compiler-independent-build of <b>mcpp</b> begins search from the source file directory.<br>
+For GCC, the directories specified by -iqoute option are searched next.
+For Visual C, also the directories of each ancestor file of source file are searched one by one.<br>
 If <b>mcpp</b> fails to find the desired file, it begins searching as shown in step 4.<br>
 <br>
 In case of a nested #include, if search begins at current directory, the base directory is always the same.  If search begins at a source file directory, the base directory changes each time a header file resides in other directory.<br>
