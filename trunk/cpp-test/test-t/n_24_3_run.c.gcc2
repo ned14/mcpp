@@ -21,7 +21,7 @@ c"), "\"abc\"") == 0);
 }
 
 /* { dg-do run }
- * { dg-options "-ansi" }
+ * { dg-options "-ansi -w" }
  */
 
 /*

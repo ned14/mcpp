@@ -250,7 +250,7 @@ static char *   catenate( const DEFBUF * defp, const char ** arglist
                 /* Catenate tokens                  */
 static const char * remove_magics( const char * argp, int from_last);
                 /* Remove pair of magic characters  */
-#if 0   /* For debugging only   */
+#if 1   /* For debugging only   */
 static void     chk_symmetry( char *  start_id, char *  end_id, size_t  len);
                 /* Check if a pair of magics are symmetrical    */
 #endif
@@ -319,7 +319,7 @@ static char *   expand_std(
         goto  exp_end;
     }
 
-#if 0
+#if 1
     chk_magic_balance( macrobuf, macrobuf + strlen( macrobuf), FALSE, TRUE);
 #endif
     cp = macrobuf;
@@ -861,7 +861,7 @@ static char *   replace(
         }
         *out_p = EOS;
     }
-#if 0
+#if 1
     chk_magic_balance( out, out_p, FALSE, TRUE);
 #endif
 
@@ -1390,7 +1390,7 @@ static const char *     remove_magics(
                         nest_e--;
                         /* Search after the token   */
                         if (token < mac_loc[ mac_e] && nest_e == nest_s - 1) {
-#if 0   /* For debugging only   */
+#if 1   /* For debugging only   */
                             if (option_flags.v)
                                 chk_symmetry( mac_id[ mac_s], mac_id[ mac_e]
                                         , MAC_E_LEN - 2);
@@ -1427,7 +1427,7 @@ static const char *     remove_magics(
                     } else {
                         nest_e--;
                         if (token < arg_loc[ arg_e] && nest_e == nest_s - 1) {
-#if 0   /* For debugging only   */
+#if 1   /* For debugging only   */
                             if (option_flags.v)
                                 chk_symmetry( arg_id[ arg_s], arg_id[ arg_e]
                                         , ARG_E_LEN_V - 2);
@@ -1514,7 +1514,7 @@ static const char *     remove_magics(
     return  arg_p;
 }
 
-#if 0   /* For debugging only. Should not be enabled on release version.    */
+#if 1   /* For debugging only. Should not be enabled on release version.    */
 static void     chk_symmetry(
     char *  start_id,   /* Sequence of macro (or arg) starting inf  */
     char *  end_id,     /* Sequence of macro (or arg) closing inf   */
@@ -2339,7 +2339,7 @@ static void substitute_pre(
     char *      in_p;                       /* -> replacement text  */
     char *      out_p;                      /* -> macro output buff */
 
-    file = get_file( defp->name, NULL, (size_t) (NMACWORK + 1));
+    file = get_file( defp->name, NULL, NULL, (size_t) (NMACWORK + 1), FALSE);
                                             /* file == infile       */
     in_p = defp->repl;                      /* -> macro replacement */
     out_p = file->buffer;                   /* -> output buffer     */

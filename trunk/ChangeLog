@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2007/11/10  kmatsui
+2007/11/20  kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
@@ -46,6 +46,10 @@ ChangeLog of MCPP and its accompanying Validation Suite
         * Changed allocation of buffer for -M* options and incdir[],
         fnamelist[], once_list[] from fixed size to dynamically
         enlarging ones.  (system.c)
+        * Made #line output for GCC-specific-build more closer to GCC.
+        Changed FILEINFO and DEFBUF struct, moved sharp() from main.c to
+        system.c, revised many functions.  (system.c, support.c, main.c,
+        directive.c)
         * Added porting to Mac OS X.  Enabled searching of "framework"
         directories for #include.  Enabled #import, which is #include
         with unconditional once only feature.  Created init_framework(),

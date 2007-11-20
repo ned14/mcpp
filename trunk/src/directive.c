@@ -299,7 +299,7 @@ ifdo:
     case L_line:
         if ((c = do_line()) > 0) {
             src_line = c;
-            sharp( NULL);       /* Putout the new line number and file name */
+            sharp( NULL, 0);    /* Putout the new line number and file name */
             infile->line = --src_line;  /* Next line number is 'src_line'   */
             newlines = -1;
         } else {            /* Error already diagnosed by do_line() */
@@ -1394,8 +1394,7 @@ DEFBUF *    install_macro(
     memcpy( dp->name, name, s_name + 1);
     memcpy( dp->repl, repl, s_repl);
     /* Remember where the macro is defined  */
-    dp->dir = *inc_dirp;                    /* Include directory    */
-    dp->fname = cur_fname;      /* Fname registered in fnamelist[]  */
+    dp->fname = cur_fullname;   /* Full-path-list of current file   */
     dp->mline = src_line;
     if (standard && cmp && ++num_of_macro == std_limits.n_macro + 1
             && std_limits.n_macro && (warn_level & 4))
@@ -1595,8 +1594,7 @@ void    dump_a_def(
             /* Standard predefined or one-pass-compiler-predefined  */
         mcpp_fputs( " */", FP2DEST( fp));
     if (comment)                            /* Not -dM option       */
-        mcpp_fprintf( FP2DEST( fp), " \t/* %s%s:%ld\t*/", dp->dir, dp->fname
-                , dp->mline);
+        mcpp_fprintf( FP2DEST( fp), " \t/* %s:%ld\t*/", dp->fname, dp->mline);
     mcpp_fputc( '\n', FP2DEST( fp));
 }
 
@@ -1610,7 +1608,7 @@ void    dump_def(
     DEFBUF *    dp;
     DEFBUF **   symp;
 
-    sharp( NULL);       /* Report the current source file & line    */
+    sharp( NULL, 0);    /* Report the current source file & line    */
     if (comment)
         mcpp_fputs( "/* Currently defined macros. */\n", OUT);
     for (symp = symtab; symp < &symtab[ SBSIZE]; symp++) {

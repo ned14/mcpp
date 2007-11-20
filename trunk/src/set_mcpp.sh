@@ -93,7 +93,7 @@ _EOF
 for i in \$@
     do
     case \$i in
-        -fpreprocessed|traditional*)
+        -fpreprocessed|-traditional*)
             ${cpp_path}/cc1plus_gnuc "\$@"
             exit ;;
     esac

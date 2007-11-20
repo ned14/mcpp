@@ -21,7 +21,7 @@ c"), "\"abc\"") == 0);
 }
 
 /* { dg-do run }
- * { dg-options "-ansi -no-integrated-cpp" }
+ * { dg-options "-ansi -no-integrated-cpp -w" }
  */
 
 /*

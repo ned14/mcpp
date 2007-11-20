@@ -110,8 +110,8 @@
     const char **   inc_dirp;       /* Directory of #includer       */
     const char *    cur_fname;      /* Current source file name     */
                 /* cur_fname is not rewritten by #line directive    */
-    char        cur_fullname[ FILENAMEMAX + 1];
-        /* Full path of current source file (i.e. *inc_dirp/cur_fname)      */
+    char *      cur_fullname;
+        /* Full path of current source file (i.e. infile->full_fname)       */
     int         no_source_line;     /* Do not output line in diag.  */
     char        identifier[ IDMAX + IDMAX/8];       /* Current identifier   */
     int         mcpp_debug = 0;     /* != 0 if debugging now        */
@@ -363,7 +363,7 @@ int     main
          */
 
     inc_dirp = &null;   /* Initialize to current (null) directory   */
-    cur_fname = "(predefined)";     /* For predefined macros        */
+    cur_fname = cur_fullname = "(predefined)";  /* For predefined macros    */
     init_defines();                         /* Predefine macros     */
     mb_init();      /* Should be initialized prior to get options   */
     do_options( argc, argv, &in_file, &out_file);   /* Command line options */
@@ -403,9 +403,11 @@ int     main
         }
     }
     init_sys_macro();       /* Initialize system-specific macros    */
-    add_file( fp_in, NULL, in_file);    /* "open" main input file   */
+    add_file( fp_in, NULL, in_file, in_file, FALSE);
+                                        /* "open" main input file   */
     infile->dirp = inc_dirp;
-    strcpy( cur_fullname, in_file);
+    infile->sys_header = FALSE;
+    cur_fullname = in_file;
     if (mkdep && str_eq( infile->real_fname, stdin_name) == FALSE)
         put_depend( in_file);       /* Putout target file name      */
     at_start();                     /* Do the pre-main commands     */
@@ -435,34 +437,6 @@ fatal_error_exit:
         return  IO_ERROR;
     }
     return  IO_SUCCESS;             /* No errors or -E option set   */
-}
-
-void    sharp(
-    FILEINFO *  sharp_file
-)
-/*
- * Output a line number line.
- * 'file' is 'sharp_file' if specified,
- * else (i.e. 'sharp_file' is NULL) 'infile'.
- */
-{
-    if (keep_comments)
-        mcpp_fputc( '\n', OUT);         /* Ensure to be on line top */
-    if (no_output || option_flags.p || infile == NULL)
-        goto  sharp_exit;
-    if (std_line_prefix)
-        mcpp_fprintf( OUT, "#line %ld", src_line);
-    else
-        mcpp_fprintf( OUT, "%s%ld", LINE_PREFIX, src_line);
-    cur_file( sharp_file);
-    mcpp_fputc( '\n', OUT);
-    if (keep_spaces && src_col) {
-        while (src_col--)
-            mcpp_fputc( ' ', OUT);
-        src_col = 0;
-    }
-sharp_exit:
-    wrong_line = FALSE;
 }
 
 /*
@@ -655,6 +629,8 @@ static void mcpp_main( void)
         while (1) {                         /* For each line, ...   */
             out_ptr = output;               /* Top of the line buf  */
             c = get_ch();
+            if (src_col)
+                break;  /* There is a residual tokens on the line   */
             while (char_type[ c] & HSP) {   /* ' ' or '\t'          */
                 if (c != COM_SEP)
                     *out_ptr++ = c; /* Retain line top white spaces */
@@ -705,7 +681,12 @@ static void mcpp_main( void)
             wrong_line = FALSE;
         } else {
             if (wrong_line || newlines > 10) {
-                sharp( NULL);               /* Output # line number */
+                sharp( NULL, 0);            /* Output # line number */
+                if (keep_spaces && src_col) {
+                    while (src_col--)       /* Adjust columns       */
+                        mcpp_fputc( ' ', OUT);
+                    src_col = 0;
+                }
             } else {                        /* If just a few, stuff */
                 while (newlines-- > 0)      /* them out ourselves   */
                     mcpp_fputc('\n', OUT);
@@ -748,7 +729,7 @@ static void mcpp_main( void)
                 if (keep_spaces && wrong_line && infile
                         && *(infile->bptr) != '\n' && *(infile->bptr) != EOS) {
                     src_col = infile->bptr - infile->buffer;
-                    /* Inform to sharp() the current colums */
+                    /* Remember the current colums  */
                     break;                  /* Do sharp() now       */
                 }
             } else {                        /* Not a macro call     */
@@ -961,7 +942,7 @@ static void devide_line(
 
     unget_ch();                 /* Push back the source character   */
     put_a_line( out);                   /* Putout the last tokens   */
-    sharp( NULL);                           /* Correct line number  */
+    sharp( NULL, 0);                        /* Correct line number  */
 }
 
 #endif

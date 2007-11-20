@@ -205,8 +205,7 @@ typedef struct defbuf {
         short           nargs;      /* Number of parameters         */
         char *          parmnames;  /* -> Parameter names catenated by ','  */
         char *          repl;       /* Pointer to replacement text  */
-        const char *    dir;        /* The macro is defined in      */
-        const char *    fname;      /*      dir/fname source file   */
+        const char *    fname;      /* Macro is defined in the source file  */
         long            mline;      /*          at the line.        */
         char            push;       /* Push level indicator         */
         char            name[1];    /* Macro name                   */
@@ -223,10 +222,13 @@ typedef struct fileinfo {
         long            pos;        /* Position next to #include    */
         struct fileinfo *   parent; /* Link to includer             */
         struct ifinfo *     initif; /* Initial ifstack (return there on EOF)*/
+        int             sys_header; /* System header file or not    */
+        int             include_opt;        /* Specified by -include option */
         const char **   dirp;       /* Include directory the file resides   */
-        const char *    real_fname; /* Real file name               */
-        char *          filename;   /* File/macro name (maybe changed)      */
         const char *    src_dir;    /* Directory of source file     */
+        const char *    real_fname; /* Real file name               */
+        const char *    full_fname; /* Real full path list          */
+        char *          filename;   /* File/macro name (maybe changed)      */
         char *          buffer;     /* Buffer of current input line */
 #if MCPP_LIB
         /* Save output functions during push/pop of #includes   */
@@ -369,18 +371,16 @@ extern int      bsl_need_escape;/* '\\' in mbchar should be escaped */
 extern int      mcpp_debug;         /* Class of debug information   */
 extern long     in_asm;             /* In #asm - #endasm block      */
 extern jmp_buf  error_exit;         /* Exit on fatal error          */
+extern char *   cur_fullname;       /* Full name of current source  */
+extern short *  char_type;          /* Character classifier         */
 extern char *   workp;              /* Free space in work[]         */
 extern char * const     work_end;   /* End of work[] buffer         */
 extern char     identifier[];       /* Lastly scanned name          */
-extern short *  char_type;          /* Character classifier         */
 extern IFINFO   ifstack[];          /* Information of #if nesting   */
-extern char     cur_fullname[];     /* Full name of current source  */
 extern char     work_buf[];
         /* Temporary buffer for directive line and macro expansion  */
 
 /* main.c   */
-extern void     sharp( FILEINFO * sharp_file);
-                /* Output # line number         */
 extern void     un_predefine( int clearall);
                 /* Undefine predefined macros   */
 
@@ -463,7 +463,8 @@ extern FILEINFO *   unget_string( const char * text, const char * name);
 extern char *   save_string( const char * text);
                 /* Stuff string in malloc mem.  */
 extern FILEINFO *   get_file( const char * name, const char * src_dir
-        , size_t bufsize);          /* New FILEINFO initialization  */
+        , const char * fullname, size_t bufsize, int include_opt);
+                /* New FILEINFO initialization  */
 extern char *   (xmalloc)( size_t size);
                 /* Get memory or die            */
 extern char *   (xrealloc)( char * ptr, size_t size);
@@ -501,9 +502,10 @@ extern void     put_depend( const char * filename);
 extern int      do_include( int next);
                 /* Process #include directive   */
 extern void     add_file( FILE * fp, const char * src_dir
-        , const char * filename);   /* Chain the included file      */
-extern void     cur_file( FILEINFO * sharp_file);
-                /* Output current source fname  */
+        , const char * filename, const char * fullname, int include_opt);
+                /* Chain the included file      */
+extern void     sharp( FILEINFO * sharp_file, int marker);
+                /* Output # line number         */
 extern void     do_pragma( void);
                 /* Process #pragma directive    */
 extern void     put_asm( void);
