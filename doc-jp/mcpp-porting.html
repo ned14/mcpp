@@ -11,7 +11,7 @@
 <h2>== How to Port MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2007/08)<br>
+<h4>for V.2.7 (2007/10)<br>
 松井  潔 (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -457,7 +457,7 @@ PART 1 はＯＳと target 処理系に依存する定義で、PART 2 は host 処理系に依存する定
 <br>
 
 <h2><a name="3.5" href="#toc.3.5">3.5. lib.c</a></h2>
-<p>ライブラリ関数のうち、Standard C にない getopt(), stpcpy() のＣによるソースをここに書いてあります。<b>mcpp</b> は getcwd() も使い、UNIX 系では readlink() も使いますが、この２つは OS に依存する関数であり portable に書くことができないので、<samp>lib.c</samp> には含めていません。この２つは Standard C にはありませんが、POSIX では規定されています。<b>mcpp</b> の使う低水準関数はこの２つだけです。これらを持たない処理系はないでしょう。*1, *2<br>
+<p>ライブラリ関数のうち、Standard C にない getopt(), stpcpy() のＣによるソースをここに書いてあります。<b>mcpp</b> は getcwd(), stat() も使い、UNIX 系では readlink() も使いますが、この３つは OS に依存する関数であり portable に書くことができないので、<samp>lib.c</samp> には含めていません。この３つは Standard C にはありませんが、POSIX では規定されています。<b>mcpp</b> の使う低水準関数はこの３つだけです。これらを持たない処理系はないでしょう。*1, *2<br>
 ライブラリ関数はいずれも、処理系によって微妙に違う恐れのある仕様に依存した使い方はしていないので、どの処理系のものでもバグさえなければ大丈夫です。</p>
 <p><samp>lib.c</samp> 中の xyz という関数を使うには、<samp>noconfig.H (configed.H)</samp> の PART 2 にある <i>HOST_HAVE_XYZ</i> というマクロを <i>FALSE</i> に定義します。</p>
 <p>注:</p>
@@ -467,7 +467,7 @@ PART 1 はＯＳと target 処理系に依存する定義で、PART 2 は host 処理系に依存する定
 <br>
 
 <h2><a name="3.6" href="#toc.3.6">3.6. 標準ヘッダ</a></h2>
-<p><b>mcpp</b> のソースでは <samp>stdio.h, ctype.h, errno.h, stdlib.h, string.h, stddef.h, time.h</samp> を無条件で include しています。UNIX 系のシステムでは <samp>unistd.h</samp> も include します。configure して make する場合は、<samp>limits.h</samp> も include します。これらを持たない処理系はまずないでしょう。</p>
+<p><b>mcpp</b> のソースでは <samp>stdio.h, ctype.h, errno.h, stdlib.h, string.h, stddef.h, time.h, sys/types.h, sys/stat.h</samp> を無条件で include しています。UNIX 系のシステムでは <samp>unistd.h</samp> も include します。configure して make する場合は、<samp>limits.h</samp> も include します。これらを持たない処理系はまずないでしょう。</p>
 <br>
 
 <h2><a name="3.7" href="#toc.3.7">3.7. makefile と <b>mcpp</b> を使ったリコンパイル</a></h2>

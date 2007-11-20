@@ -1579,24 +1579,20 @@ int     get_ch( void)
      */
     infile = file->parent;                  /* Unwind file chain    */
     free( file->buffer);                    /* Free buffer          */
-    if (infile == NULL) {                   /* If at end of input,  */
+    if (infile == NULL) {                   /* If at end of input   */
         free( file->filename);
         free( file->src_dir);
-        free( file);
-        return  CHAR_EOF;                   /*   return end of file.*/
+        free( file);    /* full_fname is the same with filename for main file*/
+        return  CHAR_EOF;                   /* Return end of file   */
     }
     if (file->fp) {                         /* Source file included */
         char *  cp;
 
         free( file->filename);              /* Free filename        */
-        file->filename = NULL;
         free( file->src_dir);               /* Free src_dir         */
-        file->src_dir = NULL;
+        free( file->full_fname);    /* malloc()ed by norm_path()    */
         fclose( file->fp);                  /* Close finished file  */
-        cp = stpcpy( cur_fullname, *(infile->dirp));
-        if (infile->src_dir)
-            cp = stpcpy( cp, infile->src_dir);
-        strcpy( cp, infile->real_fname);
+        cur_fullname = infile->full_fname;
         cur_fname = infile->real_fname;     /* Restore current fname*/
         if (infile->pos != 0L) {            /* Includer was closed  */
             infile->fp = fopen( cur_fullname, "r");
@@ -1614,7 +1610,8 @@ int     get_ch( void)
 #endif
         include_nest--;
         src_line++;                         /* Next line to #include*/
-        sharp( NULL);                       /* Need a #line now     */
+        sharp( NULL, (infile->include_opt || file->include_opt) ? 1 : 2);
+            /* Need a #line now.  Marker depends on include_opt.    */
         src_line--;
         newlines = 0;                       /* Clear the blank lines*/
         if (mcpp_debug & MACRO_CALL)    /* Should be re-initialized */
@@ -2258,7 +2255,7 @@ FILEINFO *  unget_string(
         size = strlen( text) + 1;
     else
         size = 1;
-    file = get_file( name, NULL, size);
+    file = get_file( name, NULL, NULL, size, FALSE);
     if (text)
         memcpy( file->buffer, text, size);
     else
@@ -2285,7 +2282,9 @@ char *  save_string(
 FILEINFO *  get_file(
     const char *    name,                   /* File or macro name   */
     const char *    src_dir,                /* Source file directory*/
-    size_t      bufsize                     /* Line buffer size     */
+    const char *    fullname,               /* Full path list       */
+    size_t      bufsize,                    /* Line buffer size     */
+    int         include_opt         /* Specified by -include opt (for GCC)  */
 )
 /*
  * Common FILEINFO buffer initialization for a new file or macro.
@@ -2302,8 +2301,10 @@ FILEINFO *  get_file(
     file->pos = 0L;                         /* No pos to remember   */
     file->parent = infile;                  /* Chain files together */
     file->initif = ifptr;                   /* Initial ifstack      */
+    file->include_opt = include_opt;        /* Specified by -include*/
     file->dirp = NULL;                      /* No include dir yet   */
     file->real_fname = name;                /* Save file/macro name */
+    file->full_fname = fullname;            /* Full path list       */
     if (name) {
         file->filename = xmalloc( strlen( name) + 1);
         strcpy( file->filename, name);      /* Copy for #line       */
@@ -2330,6 +2331,7 @@ FILEINFO *  get_file(
 #endif
     }
     infile = file;                          /* New current file     */
+
     return  file;                           /* All done.            */
 }
 
@@ -2573,15 +2575,14 @@ static void do_msg(
             if (file->buffer[ 0] == '\0')
                 strcpy( file->buffer, "\n");
             if (mcpp_mode != OLD_PREP) {
-                mcpp_fprintf( ERR, "    from %s%s: %ld:    %s",
-                    file->line ? *(file->dirp) : "",/* Include directory    */
-                    file->line ? file->real_fname   /* Current file name    */
+                mcpp_fprintf( ERR, "    from %s: %ld:    %s",
+                    file->line ? file->full_fname       /* Full-path-list   */
                         : "<stdin>",        /* Included by -include */
                     file->line,             /* Current line number  */
                     file->buffer);          /* The source line      */
             } else {
-                mcpp_fprintf( ERR, "    from %s%s: %ld:    ",
-                    *(file->dirp), file->real_fname, file->line);
+                mcpp_fprintf( ERR, "    from %s: %ld:    ", file->full_fname
+                        , file->line);
                 put_line( file->buffer, fp_err);
             }
         }

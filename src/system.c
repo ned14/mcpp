@@ -177,7 +177,7 @@ static int      is_full_path( const char * path);
 static int      search_dir( char * filename, int searchlocal, int next);
                 /* Search the include directories   */
 static int      open_file( const char ** dirp, const char * src_dir
-        , const char * filename, int local, int include_opt);
+        , const char * filename, int local, int include_opt, int sys_frame);
                 /* Open a source file       */
 static const char *     set_fname( const char * filename);
                 /* Remember the source filename     */
@@ -187,13 +187,15 @@ static void     init_framework( void);
 static int      search_framework( char * filename);
                 /* Search "Framework" directories   */
 static int      search_subdir( char * fullname, char * cp, char * frame
-        , char * fname);
+        , char * fname, int sys_frame);
                 /* Search "Headers" and other dirs  */
 #endif
-#if 0   /* This function is only for debugging use  */
+#if 1   /* This function is only for debugging use  */
 static int      chk_dirp( const char ** dirp);
                 /* Check validity of dirp arg for open_file()   */
 #endif
+static void     cur_file( FILEINFO * file, FILEINFO * sharp_file, int marker);
+                /* Output current source file name  */
 #if SYS_FAMILY == SYS_WIN
 static char *   bsl2sl( char * filename);
                 /* Convert \ to / in path-list      */
@@ -299,7 +301,8 @@ static int      compat_mode;
 static const char *     quote_dir[ N_QUOTE_DIR];
 static const char **    quote_dir_end = quote_dir;
 /* sys_dirp indicates the first directory to search for system headers.     */
-static const char **    sys_dirp = NULL;        /* For -I- option   */
+static const char **    sys_dirp = NULL;        /* System header directory  */
+static int      i_split = FALSE;                /* For -I- option   */
 static int      gcc_work_dir = FALSE;           /* For -fworking-directory  */
 static int      no_exceptions = FALSE;  /* For -fno-deprecated option       */
 static int      gcc_maj_ver;                    /* __GNUC__         */
@@ -333,6 +336,7 @@ static int      no_cygwin = FALSE;          /* -mno-cygwin          */
 #define         MAX_FRAMEWORK   8
 static char *   framework[ MAX_FRAMEWORK];  /* Framework directories*/
 static int      num_framework;          /* Current number of framework[]    */
+static int      sys_framework;          /* System framework dir     */
 static const char **    to_search_framework;
                         /* Search framework[] next to the directory */
 static int      in_import;          /* #import rather than #include */
@@ -354,7 +358,8 @@ void    init_system( void)
     def_cnt = undef_cnt = 0;
 #if COMPILER == GNUC
     sys_dirp = NULL;
-    gcc_work_dir = no_exceptions = FALSE;
+    gcc_work_dir = no_exceptions = i_split = FALSE;
+    quote_dir_end = quote_dir;
     dDflag = dMflag = FALSE;
 #endif
 #if COMPILER == MSC
@@ -366,7 +371,7 @@ void    init_system( void)
 #if SYSTEM == SYS_CYGWIN
     no_cygwin = FALSE;
 #elif   SYSTEM == SYS_MAC
-    num_framework = 0;
+    num_framework = sys_framework = 0;
     to_search_framework = NULL;
 #endif
 }
@@ -501,6 +506,9 @@ plus:
                         , "1");
                 ansi = TRUE;
                 break;
+            } else if (memcmp( optarg, "uxbase", 6) == 0) {
+               optind++;
+               break;	        /* Ignore '-auxbase some' or such nonsence  */
             }
             usage( opt);
 #elif   COMPILER == MSC
@@ -682,6 +690,7 @@ plus:
             if (str_eq( optarg, "-")) {     /* -I-                  */
 #if COMPILER == GNUC
                 sys_dirp = incend;  /* Split include directories    */
+                i_split = TRUE;
 #else
                 unset_sys_dirs = TRUE;
                         /* Unset pre-specified include directories  */
@@ -735,7 +744,10 @@ plus:
                     || str_eq( optarg, "withprefix")    /* -iwithprefix     */
                     || str_eq( optarg, "withprefixbefore")
                                             /* -iwithprefixbefore   */
-                    || str_eq( optarg, "dirafter")) {   /* -idirafter       */
+                    || str_eq( optarg, "dirafter")      /* -idirafter       */
+                    || str_eq( optarg, "sysroot")       /* -isysroot        */
+                        /* nonsence since sysroot has been configured       */
+			) {
                 optind++;                   /* Skip the argument    */
                 /* Ignore these options */
             } else {
@@ -873,7 +885,7 @@ plus:
                 if (*optarg == '-')                 /* No argument  */
                     optind--;
                 else if ((isdigit( *optarg) && *optarg != '0')  /* -O1, -O2 */
-                        || *optarg == 's')                  /* -Os  */
+                        || *optarg == 's' || *optarg == 'z')    /* -Os, -Oz */
                     look_and_install( "__OPTIMIZE__", DEF_NOARGS_PREDEF, ""
                             , "1");
                 else if (! isdigit( *optarg))
@@ -1182,6 +1194,8 @@ Version:
 #if COMPILER == GNUC
     if (sysdir < sysdir_end) {
         char **     dp = sysdir;
+        if (! sys_dirp || sys_dirp == incdir)
+            sys_dirp = dp;
         while (dp < sysdir_end)
             set_a_dir( *dp++);
     }
@@ -1189,6 +1203,8 @@ Version:
         option_flags.lang_asm = TRUE;   /* Input file name is *.S   */
     if (option_flags.lang_asm)
         look_and_install( "__ASSEMBLER__", DEF_NOARGS_PREDEF, null, "1");
+    if (! sys_dirp || sys_dirp == incdir)
+        sys_dirp = incend;
 #endif
     set_env_dirs();
     if (! unset_sys_dirs)
@@ -1204,14 +1220,15 @@ Version:
     else if (mkdep_mt)
         mkdep_target = mkdep_mt;
 
-    if (mcpp_debug & MACRO_CALL) {      /* Normalize the path-list  */
-        if (*in_pp && ! str_eq( *in_pp, "-")) {
-            char *  tmp = norm_path( null, *in_pp, FALSE);
-            if (tmp)                    /* The file exists          */
-                *in_pp = tmp;
-                /* Else mcpp_main() will diagnose *in_pp and exit   */
-        }
-    } else {            /* -K option alters behavior of -v option   */
+    /* Normalize the path-list  */
+    if (*in_pp && ! str_eq( *in_pp, "-")) {
+        char *  tmp = norm_path( null, *in_pp, FALSE);
+        if (tmp)                        /* The file exists          */
+            *in_pp = tmp;
+            /* Else mcpp_main() will diagnose *in_pp and exit   */
+    }
+    if (! (mcpp_debug & MACRO_CALL)) {
+        /* -K option alters behavior of -v option   */
         if (option_flags.v)
             version();
         if (show_path) {
@@ -1874,7 +1891,7 @@ void    at_start( void)
          */
         preinc = preinc_end;
         while (preinclude <= --preinc && *preinc != NULL)
-            open_file( &null, NULL, *preinc, TRUE, TRUE);
+            open_file( &null, NULL, *preinc, TRUE, TRUE, FALSE);
     }
 #endif
 
@@ -1890,9 +1907,9 @@ static void put_info(
 {
     if (no_output || option_flags.p)
         return;
-    src_line++;
-    sharp( sharp_file);
-    src_line--;
+    sharp_file->line++;
+    sharp( sharp_file, 0);
+    sharp_file->line--;
 #if COMPILER == GNUC
     if (gcc_work_dir)
         mcpp_fprintf( OUT, "%s%ld \"%s%c\"\n"
@@ -1901,11 +1918,11 @@ static void put_info(
         /* Putout the current directory as a #line line as: */
         /* '# 1 "/abs-path/cur_dir//"'.                     */
     mcpp_fprintf( OUT, "%s%ld \"<built-in>\"\n"
-                , std_line_prefix ? "#line " : LINE_PREFIX , src_line + 1);
+                , std_line_prefix ? "#line " : LINE_PREFIX , 1);
     mcpp_fprintf( OUT, "%s%ld \"<command line>\"\n"
-                , std_line_prefix ? "#line " : LINE_PREFIX , src_line + 1);
+                , std_line_prefix ? "#line " : LINE_PREFIX , 1);
     src_line++;
-    sharp( NULL);
+    sharp( NULL, 1);
     src_line--;
 #endif
 }
@@ -2066,14 +2083,19 @@ static void set_a_dir(
 #endif
     } else if (incend - incdir >= max_inc) {        /* Buffer full  */
 #if COMPILER == GNUC
-        int     sys_pos;
-        sys_pos = sys_dirp - incdir;
+        size_t  sys_pos = sys_dirp - incdir;
+#endif
+#if SYSTEM == SYS_MAC
+        size_t  framework_pos = to_search_framework - incdir;
 #endif
         incdir = (const char **) xrealloc( (void *) incdir
                 , sizeof (char *) * max_inc * 2);
         incend = &incdir[ max_inc];
 #if COMPILER == GNUC
         sys_dirp = &incdir[ sys_pos];
+#endif
+#if SYSTEM == SYS_MAC
+        to_search_framework = &incdir[ framework_pos];
 #endif
         max_inc *= 2;                   
     }
@@ -2144,7 +2166,7 @@ static char *   norm_path(
     struct stat     st_buf;
 #endif
 
-    if (! dir || (is_full_path( dir) && is_full_path( fname)))
+    if (! dir || (*dir && is_full_path( fname)))
         cfatal( "Bug: Wrong argument to norm_path()"        /* _F_  */
                 , NULL, 0L, NULL);
     inf = inf && (mcpp_debug & PATH);       /* Output information   */
@@ -2554,15 +2576,15 @@ void    put_depend(
 #define MKDEP_MAX       (MKDEP_INIT * 0x10)
 #define MKDEP_MAXLEN    (MKDEP_INITLEN * 0x10)
 
-    static char *   output = NULL;                  /* File names   */
-    static char **  pos = NULL;             /* Pointers to filenames*/
+    static char *   output = NULL;          /* File names           */
+    static size_t * pos = NULL;             /* Offset to filenames  */
     static int      pos_num;                /* Index of pos[]       */
     static char *   out_p;                  /* Pointer to output[]  */
     static size_t   mkdep_len;              /* Size of output[]     */
     static size_t   pos_max;                /* Size of pos[]        */
     static FILE *   fp;         /* Path to output dependency line   */
     static size_t   llen;       /* Length of current physical output line   */
-    char **         pos_pp;                 /* Pointer to pos       */
+    size_t *        pos_p;                  /* Index into pos[]     */
     size_t          fnamlen;                /* Length of filename   */
 
     if (fp == NULL) {   /* Main source file.  Have to initialize.   */
@@ -2572,8 +2594,8 @@ void    put_depend(
             free( pos);
         }
 #endif
-        output = xmalloc( (mkdep_len = MKDEP_INITLEN) * sizeof (char *));
-        pos = (char **) xmalloc( (pos_max = MKDEP_INIT) * sizeof (char **));
+        output = xmalloc( mkdep_len = MKDEP_INITLEN);
+        pos = (size_t *) xmalloc( (pos_max = MKDEP_INIT) * sizeof (size_t));
         out_p = md_init( filename, output);
         fp = mkdep_fp;
         llen = strlen( output);
@@ -2595,23 +2617,24 @@ void    put_depend(
                 return;
             } else if (strlen( output) * 2 + (pos_num * 2) >= mkdep_len) {
                 /* Enlarge the buffer   */
-                out_p = output = xrealloc( output,
-                        (mkdep_len *= 2) * sizeof (char *));
+                size_t  len = out_p - output;
+                output = xrealloc( output, mkdep_len *= 2);
+                out_p = output + len;
             }
             pos_num--;
-            for (pos_pp = &pos[ 0]; pos_pp <= &pos[ pos_num]; pos_pp++) {
-                if (pos_pp == &pos[ pos_num]) {
-                    for (cp = *pos_pp; *cp != '\n'; cp++)
+            for (pos_p = &pos[ 0]; pos_p <= &pos[ pos_num]; pos_p++) {
+                if (pos_p == &pos[ pos_num]) {      /* End of output    */
+                    for (cp = output + *pos_p; *cp != '\n'; cp++)
                         ;
-                    c = '\n';
+                    c = '\n';                       /* Append newline   */
                 } else {
-                    cp = *(pos_pp + 1) - 1;
+                    cp = output + *(pos_p + 1) - 1;
                     while( *cp == ' ' || *cp == '\\' || *cp == '\n')
-                        cp--;
+                        cp--;               /* Remove trailing spaces   */
                     c = *(++cp);
                 }
                 *cp = EOS;
-                out_p = stpcpy( out_p, *pos_pp);
+                out_p = stpcpy( out_p, output + *pos_p);
                 out_p = stpcpy( out_p, ":\n\n");
                 *cp = c;
             }
@@ -2626,8 +2649,8 @@ void    put_depend(
 
     fnamlen = strlen( filename);
     /* Check the recorded filename  */
-    for (pos_pp = pos; pos_pp < &pos[ pos_num]; pos_pp++) {
-        if (memcmp( *pos_pp, filename, fnamlen) == 0)
+    for (pos_p = pos; pos_p < &pos[ pos_num]; pos_p++) {
+        if (memcmp( output + *pos_p, filename, fnamlen) == 0)
             return;                 /* Already recorded filename    */
     }
     /* Any new header.  Append its name to output.  */
@@ -2642,15 +2665,18 @@ void    put_depend(
     if (pos_num >= pos_max
             || out_p + fnamlen + 1 >= output + mkdep_len) {
         /* Need to enlarge the buffer   */
-        if (pos_num >= pos_max)
-            pos = (char **) xrealloc( (char *) pos
-                    , (pos_max *= 2) * sizeof (char *));
-        else
-            out_p = output = xrealloc( output,
-                    (mkdep_len *= 2) * sizeof (char **));
+        if (pos_num >= pos_max) {
+            pos = (size_t *) xrealloc( (char *) pos
+                    , (pos_max *= 2) * sizeof (size_t *));
+        } else {
+            size_t  len = out_p - output;
+            output = xrealloc( output, mkdep_len *= 2);
+            out_p = output + len;
+        }
     }
     *out_p++ = ' ';
-    pos[ pos_num++] = out_p;
+    pos[ pos_num++] = out_p - output;       /* Remember the offset  */
+            /* Don't use pointer, since 'output' may be reallocated later.  */
     out_p = stpcpy( out_p, filename);
 }
 
@@ -2891,7 +2917,7 @@ static int  open_include(
 
 #if COMPILER == GNUC
     if (! full_path) {
-        if (incdir < sys_dirp           /* -I- option is specified  */
+        if (i_split                     /* -I- option is specified  */
                 || next)                        /* or #include_next */
         goto  search_dirs;
     }
@@ -2903,7 +2929,7 @@ static int  open_include(
          * Try to open filename relative to the "current directory".
          */
         if (open_file( &null, NULL, filename, searchlocal && !full_path
-                , FALSE))
+                , FALSE, FALSE))
             return  TRUE;
         if (full_path)
             return  FALSE;
@@ -2914,7 +2940,7 @@ static int  open_include(
          * Look in local directory of source file.
          * Try to open filename relative to the "source directory".
          */
-        if (open_file( infile->dirp, src_dir, filename, TRUE, FALSE))
+        if (open_file( infile->dirp, src_dir, filename, TRUE, FALSE, FALSE))
             return  TRUE;
     }
 
@@ -2924,7 +2950,7 @@ static int  open_include(
         FILEINFO *  file = infile;
         while ((file = file->parent) != NULL) {
             /* Search each parent includer's directory  */
-            if (open_file( file->dirp, src_dir, filename, TRUE, FALSE))
+            if (open_file( file->dirp, src_dir, filename, TRUE, FALSE, FALSE))
                 return  TRUE;
         }
     }
@@ -2935,7 +2961,7 @@ search_dirs:
         /* Search the directories specified by -iquote option, if any.  */
         const char **   qdir;
         for (qdir = quote_dir; qdir < quote_dir_end; qdir++) {
-            if (open_file( qdir, NULL, filename, FALSE, FALSE))
+            if (open_file( qdir, NULL, filename, FALSE, FALSE, FALSE))
                 return  TRUE;
         }
     }
@@ -3008,20 +3034,11 @@ static int  search_dir(
 {
     const char **   incptr;                 /* -> inlcude directory */
 
+    incptr = incdir;
 #if COMPILER == GNUC
-    if (next && **inc_dirp != EOS) {
+    if (next && **inc_dirp != EOS)
         incptr = inc_dirp + 1;
         /* In case of include_next search after the includer's directory    */
-    } else {
-    /* If (next && **inc_dirp == EOS), it should be #include_next "header.h"*/
-        if (searchlocal || next)
-            /* #include_next does not distinguish "header.h" and <header.h> */
-            incptr = incdir;
-        else
-            incptr = sys_dirp;
-    }
-#else
-    incptr = incdir;
 #endif
 
     for ( ; incptr < incend; incptr++) {
@@ -3038,7 +3055,7 @@ static int  search_dir(
             /* Else continue to search incptr   */
         }
 #endif
-        if (open_file( incptr, NULL, filename, FALSE, FALSE))
+        if (open_file( incptr, NULL, filename, FALSE, FALSE, FALSE))
             /* Now infile has been renewed  */
             return  TRUE;
     }
@@ -3051,7 +3068,8 @@ static int  open_file(
     const char *    src_dir,        /* Source directory of includer */
     const char *    filename,       /* Filename (possibly has directory)    */
     int         local,                      /* #include "file"      */
-    int         include_opt         /* Specified by -include option */
+    int         include_opt,        /* Specified by -include option */
+    int         sys_frame           /* System framework header (for SYS_MAC)*/
 )
 /*
  * Open a file, add it to the linked list of open files, close the includer
@@ -3133,28 +3151,39 @@ static int  open_file(
     if (mkdep && ((mkdep & MD_SYSHEADER) || local))
         put_depend( fullname);          /* Output dependency line   */
 
-    add_file( fp, src_dir, filename);   /* Add file-info to the linked list */
-    /* infile has been just renewed */
+    if (! include_opt)
+        sharp( NULL, 0);    /* Print includer's line num and fname  */
+    add_file( fp, src_dir, filename, fullname, include_opt);
+    /* Add file-info to the linked list.  'infile' has been just renewed    */
     /*
      * Remember the directory for #include_next.
      * Note: inc_dirp is restored to the parent includer's directory
      *   by get_ch() when the current includer is finished.
      */
     infile->dirp = inc_dirp = dirp;
-#if 0   /* This part is only for debugging  */
+#if 1   /* This part is only for debugging  */
     chk_dirp( dirp);
 #endif
-    strcpy( cur_fullname, fullname);
+#if COMPILER == GNUC
+    if ((**dirp != EOS && sys_dirp <= dirp && dirp <= incend)
+#if SYSTEM == SYS_MAC
+            || sys_frame
+#endif
+            )
+        infile->sys_header = TRUE;      /* Found in a system header dir     */
+    else
+        infile->sys_header = FALSE;
+#endif
+    cur_fullname = fullname;
 
     if (option_flags.z) {
         no_output++;        /* Don't output the included file       */
     } else if (! include_opt) {     /* Do not sharp() on -include   */
         src_line = 1;                   /* Working on line 1 now    */
-        sharp( NULL);       /* Print out the included file name     */
+        sharp( NULL, 1);    /* Print out the included file name     */
     }
     src_line = 0;                       /* To read the first line   */
 true:
-    free( fullname);
     return  TRUE;
 false:
     free( fullname);
@@ -3164,7 +3193,9 @@ false:
 void    add_file(
     FILE *      fp,                         /* Open file pointer    */
     const char *    src_dir,                /* Directory of source  */
-    const char *    filename                /* Name of the file     */
+    const char *    filename,               /* Name of the file     */
+    const char *    fullname,               /* Full path list       */
+    int         include_opt         /* File specified by -include option    */
 )
 /*
  * Initialize tables for this open file.  This is called from open_file()
@@ -3178,7 +3209,7 @@ void    add_file(
             "More than %.0s%ld nesting of #include";    /* _F_ _W4_ */
 
     filename = set_fname( filename);    /* Search or append to fnamelist[]  */
-    file = get_file( filename, src_dir, (size_t) NBUFF);
+    file = get_file( filename, src_dir, fullname, (size_t) NBUFF, include_opt);
                                         /* file == infile           */
     file->fp = fp;                      /* Better remember FILE *   */
     cur_fname = filename;
@@ -3239,6 +3270,7 @@ static void     init_framework( void)
  */
 {
 /* Some frameworks may have been already specified by -F option.    */
+    sys_framework = num_framework;  /* These are system frameworks  */
 #ifdef  FRAMEWORK1
     framework[ num_framework++] = FRAMEWORK1;
 #endif
@@ -3270,6 +3302,7 @@ static int      search_framework(
     char        fullname[ FILENAMEMAX + 1];
     FILEINFO *  file;
     char *      frame, * fname, * cp1, * cp2;
+    int         sys_frame = FALSE;
     int         i;
 
     cp1 = cp2 = strchr( filename, PATH_DELIM);
@@ -3289,7 +3322,7 @@ static int      search_framework(
     for (i = 0; i < num_framework; i++) {
         cp1 = stpcpy( fullname, framework[ i]);
                     /* 'fullname' e.g.: /System/Library/Frameworks  */
-        if (search_subdir( fullname, cp1, frame, fname))
+        if (search_subdir( fullname, cp1, frame, fname, sys_framework <= i))
             return  TRUE;
     }
 
@@ -3299,6 +3332,17 @@ static int      search_framework(
      * Header file in subframework directories should be included only
      * by its parent or sibling framework headers.
      */
+    for (i = sys_framework; i < num_framework; i++) {
+        size_t  frame_len, fname_len;
+        frame_len = strlen( framework[ i]);
+        fname_len = strlen( infile->real_fname);
+        if (fname_len < frame_len)
+            continue;
+        if (memcmp( framework[ i], infile->real_fname, frame_len) == 0) {
+            sys_frame = TRUE;
+            break;
+        }
+    }
     for (file = infile; file; file = file->parent) {
         const char *    dot;
         size_t  len;
@@ -3314,11 +3358,12 @@ static int      search_framework(
         cp1 = stpcpy( cp1, "Frameworks");
         /* 'fullname' e.g.:                                             */
         /* /System/Library/Frameworks/Foundation.framework/Frameworks   */
-        if (search_subdir( fullname, cp1, frame, fname))
+        if (search_subdir( fullname, cp1, frame, fname, sys_frame))
             return  TRUE;
     }
 
     *cp2 = PATH_DELIM;      /* Restore original include file format */ 
+
     return  FALSE;
 }
 
@@ -3326,8 +3371,9 @@ static int      search_subdir(
     char *  fullname,               /* Buffer for path-list to open */
     char *  cp,                     /* Latter half of 'fullname'    */
     char *  frame,                  /* 'frame' of <frame/header>    */
-    char *  fname                   /* 'header' of <frame/header>   */
+    char *  fname,                  /* 'header' of <frame/header>   */
                 /* or sometimes 'dir/header' of <frame/dir/header>  */
+    int     sys_frame               /* System framework header ?    */
 )
 /*
  * Make path-list and try to open.
@@ -3358,7 +3404,7 @@ static int      search_subdir(
          */
         if ((cp - fullname) + n > FILENAMEMAX)
             cfatal( "Too long framework path", NULL, 0L, NULL); /* _F_  */
-        if (open_file( &null, NULL, fullname, FALSE, FALSE))
+        if (open_file( &null, NULL, fullname, FALSE, FALSE, sys_frame))
             return  TRUE;
     }
     return  FALSE;
@@ -3366,7 +3412,7 @@ static int      search_subdir(
 
 #endif  /* SYSTEM == SYS_MAC    */
 
-#if 0   /* This part is only for debugging  */
+#if 1   /* This part is only for debugging  */
 static int  chk_dirp(
     const char **   dirp
 )
@@ -3412,40 +3458,83 @@ static int  chk_dirp(
 }
 #endif
 
-void    cur_file(
-    FILEINFO *  sharp_file              /* The 'file' or NULL   */
+void    sharp(
+    FILEINFO *  sharp_file,
+    int         marker              /* Marker to append to the line for GCC */
 )
 /*
- * Output current source file name.
+ * Output a line number line.
+ * 'file' is 'sharp_file' if specified,
+ * else (i.e. 'sharp_file' is NULL) 'infile'.
  */
 {
-    FILEINFO *      file;
+    static FILEINFO *   sh_file;
+    static int  sh_line;
+    FILEINFO *  file;
+    int         line;
+
+    file = sharp_file ? sharp_file : infile;
+    while (! file->fp)
+        file = file->parent;
+    line = sharp_file ? sharp_file->line : src_line;
+    if (no_output || option_flags.p || file == NULL
+            || (file == sh_file && line == sh_line))
+        goto  sharp_exit;
+    sh_file = file;
+    sh_line = line;
+    if (keep_comments)
+        mcpp_fputc( '\n', OUT);         /* Ensure to be on line top */
+    if (std_line_prefix)
+        mcpp_fprintf( OUT, "#line %ld", line);
+    else
+        mcpp_fprintf( OUT, "%s%ld", LINE_PREFIX, line);
+    cur_file( file, sharp_file, marker);
+    mcpp_fputc( '\n', OUT);
+sharp_exit:
+    wrong_line = FALSE;
+}
+
+static void	cur_file(
+    FILEINFO *  file,                   /* infile or sharp_file     */
+    FILEINFO *  sharp_file,             /* The 'file' or NULL       */
+    int         marker                  /* Marker to append for GCC */
+)
+/*
+ * Output current source file name and line number.
+ * Called only from sharp() above.
+ */
+{
     const char *    name;
     char *  cp;
 
-    if (sharp_file)
-        file = sharp_file;
-    else
-        file = infile;
-    while (file->fp == NULL)
-        file = file->parent;
     if (mcpp_debug & MACRO_CALL) {  /* In macro notification mode   */
-        /* Output full-path-list    */
-        name = save_string( cur_fullname);
-    } else {    /* Usually, as the name specified '#include "file"' */
-        /* Possibly changed by '#line fname' directive  */
-        name = save_string( file->filename);
+        if (sharp_file)                         /* Main input file  */
+            name = file->filename;
+        else                /* Output full-path-list, normalized    */
+            name = cur_fullname;
+    } else {                /* Usually, the path not "normalized"   */
+        if (str_eq( file->filename, file->real_fname)) {
+            sprintf( work_buf, "%s%s", *(file->dirp), cur_fname);
+            name = work_buf;
+        } else {            /* Changed by '#line fname' directive   */
+            name = file->filename;
+        }
     }
     if (sharp_filename == NULL || ! str_eq( name, sharp_filename)) {
         if (sharp_filename != NULL)
             free( sharp_filename);
-        sharp_filename = name;
+        sharp_filename = save_string( name);
     }
-    if (! no_output)
-        mcpp_fprintf( OUT, " \"%s\"", name);
+    mcpp_fprintf( OUT, " \"%s\"", name);
 #if COMPILER == GNUC
-    if (sys_dirp <= file->dirp && file->dirp <= incend)
-        mcpp_fputs( " 3", OUT);
+    if (! std_line_prefix) {
+        if (marker) {
+            mcpp_fputc( ' ', OUT);
+            mcpp_fputc( '0' + marker, OUT);
+        }
+        if (file->sys_header)
+            mcpp_fputs( " 3", OUT);
+    }
 #endif
 }
 
@@ -3641,14 +3730,17 @@ void    do_pragma( void)
 #if COMPILER == GNUC
     /* The #pragma lines for GCC is skipped not to confuse cc1.     */
     } else if (str_eq( identifier, "GCC")) {    /* #pragma GCC *    */
-        if ((scan_token( skip_ws(), (tp = work_buf, &tp), work_end) == NAM)
-                && (str_eq( identifier, "poison")
-                    || str_eq( identifier, "dependency")
-                    || str_eq( identifier, "system_header"))) {
-            if (warn_level & 2)
-                cwarn( "Skipped the #pragma line"           /*_W2_  */
-                        , NULL, 0L, NULL);
-            goto skip_nl;
+        if (scan_token( skip_ws(), (tp = work_buf, &tp), work_end) == NAM) {
+            if (str_eq( identifier, "poison")
+                    || str_eq( identifier, "dependency")) {
+                if (warn_level & 2)
+                    cwarn( "Skipped the #pragma line"       /*_W2_  */
+                            , NULL, 0L, NULL);
+                goto skip_nl;
+            } else if (str_eq( identifier, "system_header")) {
+                infile->sys_header = TRUE;      /* Mark as a system header  */
+                goto skip_nl;
+            }
         }
 #endif
 
@@ -3717,7 +3809,7 @@ void    do_pragma( void)
         goto  skip_nl;                  /* Do not putout the line   */
     }
 
-    sharp( NULL);       /* Synchronize line number before output    */
+    sharp( NULL, 0);    /* Synchronize line number before output    */
     if (! no_output) {
         mcpp_fputs( "#pragma ", OUT);
         mcpp_fputs( bp, OUT);           /* Line is put out          */

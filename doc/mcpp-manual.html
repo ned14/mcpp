@@ -336,8 +336,8 @@ Almost the same with -M, except that the following header files are not output.<
 <li>Files specified in the format of #include &lt;stdio.h&gt;.<br>
 <li>Files specified using an absolute path name, such as #include "/usr/include/stdio.h".<br>
 <li>Files specified in the format of #include "stdio.h" that are found not in the current or source directory, depending on compiler systems or the -I &lt;n&gt; option, but in system include directories, including those specified with the -I &lt;directory&gt; option or with environment variables.<br>
-<br>
 </ol>
+But, GCC-specific-build differs from this, it output the header files excluding only system headers, as GCC does.<br><br>
 <li><samp>-MD [FILE]</samp><br>
 Almost the same with -M, except that the preprocessing result is output to the specified file on a command line or stdout.  If FILE is specified, <b>mcpp</b> outputs dependency description lines to that file.  Otherwise, they are output to a file having the same base filename with the source file and the suffix of ".d" instead of ".c".<br>
 <br>
@@ -393,7 +393,7 @@ The preprocessing result of the #included files is not output, but macros are de
 <p>*1 <b>mcpp</b> differs from GCC in that:</p>
 <ol>
 <li><b>mcpp</b> does not provide the -MG option because its option specification is too complicated. (Therefore, I will omit its explanation.)  The -M option can substitute for the -MG option because when include files cannot be found using the -M option, <b>mcpp</b> fails but outputs dependency description lines.<br>
-<li><b>mcpp</b> excludes a wider range of header files when using the -MM and -MMD options.  The GCC 2 does not exclude the header files shown in 2 and 3 of the -MM option.  The GCC 3 now excludes the header files shown in 3 that are found in the system header directory.<br>
+<li><b>mcpp</b>, other than GCC-specific-build, excludes a wider range of header files when using the -MM and -MMD options.<br>
 </ol>
 <br>
 
@@ -922,9 +922,10 @@ mcpp &gt; mcpp.H
 <a href="cpp-test.html#5.1.2"> cpp-test.html#5.1.2</a>.  The same thing can be said with &lt;cassert&gt; and &lt;cassert.h&gt; of C++.</p>
 <p>Another problem is that the recent GCC/GLIBC system has header files, like &lt;stddef.h&gt;, which are repeatedly #included by other system headers.  They define  macros, such as <tt>__need_NULL</tt>, <tt>__need_size_t</tt>, and <tt>__need_ptrdiff_t</tt>, and then #include &lt;stddef.h&gt;.  Each time they do so, definitions such as <tt>NULL</tt>, size_t, and ptrdiff_t are defined in the &lt;stddef.h&gt;.  The same thing can be said with &lt;errno.h&gt; and &lt;signal.h&gt;, and even with &lt;stdio.h&gt;.  Other system headers define macros, such as <tt>__need_FILE, __need___FILE</tt>, and then #include &lt;stdio.h&gt;.  Each time they do so, definitions such as FILE may be defined in &lt;stdio.h&gt;.  #pragma once can not be used in such header files. *4</p>
 <p>Note:</p>
-<p>*1 The normalized result can be seen by <samp>'#pragma MCPP debug path'</samp>.  See <a href="#3.5.1">3.5.1</a>.<br>
-The path-list is not normalized usually in #line line, <samp>'#pragma MCPP put_defines'</samp> or diagnostic.
-By default, the #line line is output as specified by #include line.
+<p>*1 The normalized result can be seen by <samp>'#pragma MCPP debug path'</samp>.  See <a href="#3.5.1">3.5.1</a>.
+<samp>'#pragma MCPP put_defines'</samp> and diagnostics use the same result, too.<br>
+However, the path-list is not normalized usually in #line line.
+By default, the #line line is output as specified by #include line, prepending the normalized include path, if any.
 But, if -K option is specified, it is normalized so as to be easily utilized by some other tools.</p>
 <p>*2 On CygWIN, /bin and /usr/bin are the same directory in real, also /lib and /usr/lib are the same, and supposing / is C:/dir/cygwin on Windows, /cygdrive/c/dir/cygwin is the same as /.  <b>mcpp</b> treats these directories as the same, converting the path-list to the format of /cygdrive/c/dir/cygwin/dir-list/file.</p>
 <p>*3 On MinGW, / and /usr are the same directory in real.  Supposing / is C:/dir/msys/1.0, /c/dir/msys/1.0 is the same as /, and supposing /mingw is C:/dir/mingw, /c/dir/mingw is the same with /mingw.  <b>mcpp</b> treats each of these as the same directories, converting the path-list to the format of c:/dir/msys/1.0/dir-list/file or c:/dir/mingw/dir-list/file.</p>
@@ -1080,6 +1081,7 @@ These magic characters are displayed as:</p>
   <tr><th>&lt;ARG_END&gt;  </th><td>The end of the argument started by previous MACm:ARGn</td></tr>
 </table>
 </blockquote>
+<p>If you specify -v option too, the MAC_END and the ARG_END markers also display the same numbers with corresponding starting markers.</p>
 <p>For #debug expand, <b>mcpp</b> uses internal routines considerably different from those used for Standard mode.  The explanations are omitted.</p>
 
 <h3><a name="3.5.4" href="#toc.3.5.4">3.5.4. #pragma MCPP debug if, #debug if</a></h3>
@@ -1163,7 +1165,8 @@ bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:
 <p>As you see in this example, all the ending markers correspond to the last preceding starting markers of the same nesting level.
 Hence, you can judge their correspondence automatically even without -v option.</p>
 <p>In addition, on the macro notification mode, the output format of filename in #line line differs from the default.
-While by default <b>mcpp</b> outputs the filename as specified in #include directive, on this mode it outputs the filename converting to an absolute path.
+It outputs the filename in the "normalized" full-path-list.
+See <a href="#3.2">3.2</a>.
 This is for the convenience of refactoring tool making.</p>
 <p>Note:</p>
 <p>*1 The specifications of macro notification mode were proposed by Taras Glek.

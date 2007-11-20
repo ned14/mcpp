@@ -11,7 +11,7 @@
 <h2>== How to Port MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2007/08)<br>
+<h4>for V.2.7 (2007/10)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -419,7 +419,7 @@ For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.</p>
 <br>
 
 <h2><a name="3.5" href="#toc.3.5">3.5. lib.c</a></h2>
-<p>Of library functions, C source code for getopt() and stpcpy(), which are not in Standard, are written in this file.  Though <b>mcpp</b> uses also getcwd() and in UNIXes readlink(), they are not included in <samp>lib.c</samp>, because they are functions dependent on OS, so cannot be written portably.  They are only two low-level functions used in <b>mcpp</b>.  Though they are not Standard C function, they are required by POSIX.  Every compiler system seems to provide it. *1, *2</p>
+<p>Of library functions, C source code for getopt() and stpcpy(), which are not in Standard, are written in this file.  Though <b>mcpp</b> uses also getcwd(), stat() and in UNIXes readlink(), they are not included in <samp>lib.c</samp>, because they are functions dependent on OS, so cannot be written portably.  They are only three low-level functions used in <b>mcpp</b>.  Though they are not Standard C function, they are required by POSIX.  Every compiler system seems to provide it. *1, *2</p>
 <p>Usage of library functions in <b>mcpp</b> does not depend on the specification difference on different compiler systems, so those functions of any compiler systems will not cause a problem unless there is a bug.</p>
 <p>To use the function called xyz in <samp>lib.c</samp>, the macro <i>HOST_HAVE_XYZ</i>, in PART 2 of <samp>noconfig.H</samp> (<samp>configed.H</samp>), should be defined to <i>FALSE</i>.</p>
 <p>Note:</p>
@@ -428,7 +428,7 @@ For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.</p>
 <br>
 
 <h2><a name="3.6" href="#toc.3.6">3.6. Standard headers</a></h2>
-<p>In the source code of <b>mcpp</b>, stdio.h, string.h, stdlib.h, ctype.h, errno.h and time.h are included unconditionally.  For UNIX-like systems, unistd.h is also included.  When you build <b>mcpp</b> with configure and make, limits.h is also included.  There should not be a compiler system which does not have these.</p>
+<p>In the source code of <b>mcpp</b>, stdio.h, string.h, stdlib.h, ctype.h, errno.h, time.h, sys/types.h, sys/stat.h are included unconditionally.  For UNIX-like systems, unistd.h is also included.  When you build <b>mcpp</b> with configure and make, limits.h is also included.  There should not be a compiler system which does not have these.</p>
 <br>
 
 <h2><a name="3.7" href="#toc.3.7">3.7. Makefile and recompilation using <b>mcpp</b></a></h2>
@@ -587,7 +587,7 @@ See 3.12.2.</p>
 
 <h3><a name="3.12.2" href="#toc.3.12.2">3.12.2. Using noconfig/*.mak</a></h3>
 
-<p>If you use <samp>'noconfig.H'</samp> and the makefiles in <samp>'noconfig'</samp> directory, (after applying an apropriate patch to noconfig.H according to the compiler and its version, and adjusting the directory settings in the makefile), do:</p>
+<p>If you use <samp>'noconfig.H'</samp> and the makefiles in <samp>'noconfig'</samp> directory, (after applying an appropriate patch to noconfig.H according to the compiler and its version, and adjusting the directory settings in the makefile), do:</p>
 <pre>
 make MCPP_LIB=1 mcpplib
 make MCPP_LIB=1 mcpplib_install
