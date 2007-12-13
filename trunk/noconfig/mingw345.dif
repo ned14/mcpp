@@ -1,5 +1,5 @@
-*** noconfig.H	2007-08-26 22:00:08.000000000 +0900
---- noconfig.H.mingw345	2007-08-26 23:00:37.000000000 +0900
+*** noconfig.H	2007-12-03 18:55:29.000000000 +0900
+--- noconfig.H.mingw345	2007-12-04 14:34:28.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -18,7 +18,7 @@
   /* Define target compiler.          */
   #ifndef COMPILER
 ***************
-*** 313,322 ****
+*** 316,325 ****
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
   #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */
@@ -29,7 +29,7 @@
   /* #define C_INCLUDE_DIR2   */
   #ifndef INC_DIR
   #ifdef  C_INCLUDE_DIR1
---- 313,322 ----
+--- 316,325 ----
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
   #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */

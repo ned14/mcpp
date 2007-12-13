@@ -194,6 +194,12 @@
 /* MB_ERROR signals wrong multi-byte character sequence.    */
 #define MB_ERROR        0x8000
 
+#if MCPP_LIB && HOST_COMPILER == GNUC   \
+        && (SYS_FAMILY == SYS_UNIX && SYSTEM != SYS_CYGWIN)
+    /* For GCC 4.* on UNIXes    */
+#pragma GCC visibility push( hidden)    /* Hide these names from outside    */
+#endif
+
 /*
  * The DEFBUF structure stores information about #defined macros.
  * Note that DEFBUF->parmnames is parameter names catenated with commas,
@@ -405,7 +411,7 @@ extern int      undefine( const char * name);
 extern void     dump_a_def( const char * why, const DEFBUF * dp, int newdef
         , int comment, FILE * fp);
                 /* Dump a specific macro def    */
-extern void     dump_def( int comment);
+extern void     dump_def( int comment, int K_opt);
                 /* Dump current macro defs      */
 
 /* eval.c   */
@@ -536,5 +542,8 @@ extern void     init_system( void);
 #if NEED_GETOPT
 extern void     init_lib( void);
 #endif
-#endif
 
+#if HOST_COMPILER == GNUC && (SYS_FAMILY == SYS_UNIX && SYSTEM != SYS_CYGWIN)
+#pragma GCC visibility pop
+#endif
+#endif

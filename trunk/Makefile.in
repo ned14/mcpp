@@ -140,6 +140,7 @@ REPLACE_CPP_TRUE = @REPLACE_CPP_TRUE@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+Target_Cpu = @Target_Cpu@
 VERSION = @VERSION@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_AS = @ac_ct_AS@

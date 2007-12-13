@@ -1,5 +1,5 @@
-*** noconfig.H	2007-08-26 23:06:23.000000000 +0900
---- noconfig.H.bc40	2007-08-26 23:31:30.000000000 +0900
+*** noconfig.H	2007-12-03 18:55:29.000000000 +0900
+--- noconfig.H.bc40	2007-12-04 14:40:12.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -43,7 +43,7 @@
       "LCC-Win32 2006-03"
       "Visual C 2005"
 ***************
-*** 274,288 ****
+*** 277,291 ****
   #define ONE_PASS            TRUE
   #define COMPILER_STD2       "__TURBOC__"
   #if     __BORLANDC__        /* Borland C    */
@@ -59,7 +59,7 @@
       /* BC++ 5.*: (CURRENT & SOURCE), BC++ 4.* or former: CURRENT    */
   #if     __BORLANDC__ >= 0x550
   #define TARGET_HAVE_LONG_LONG       TRUE    /* __int64 instead of long long */
---- 274,288 ----
+--- 277,291 ----
   #define ONE_PASS            TRUE
   #define COMPILER_STD2       "__TURBOC__"
   #if     __BORLANDC__        /* Borland C    */

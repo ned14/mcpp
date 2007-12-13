@@ -1586,12 +1586,10 @@ int     get_ch( void)
         return  CHAR_EOF;                   /* Return end of file   */
     }
     if (file->fp) {                         /* Source file included */
-        char *  cp;
-
         free( file->filename);              /* Free filename        */
         free( file->src_dir);               /* Free src_dir         */
-        free( file->full_fname);    /* malloc()ed by norm_path()    */
         fclose( file->fp);                  /* Close finished file  */
+        /* Do not free file->real_fname and file->full_fname        */
         cur_fullname = infile->full_fname;
         cur_fname = infile->real_fname;     /* Restore current fname*/
         if (infile->pos != 0L) {            /* Includer was closed  */
@@ -1673,6 +1671,7 @@ static char *   parse_line( void)
         case '/':
             switch (*sp++) {
             case '*':                       /* Start of a comment   */
+com_start:
                 if ((sp = read_a_comment( sp, &com_size)) == NULL) {
                     free( temp);            /* End of file with un- */
                     return  NULL;           /*   terminated comment */
@@ -1758,6 +1757,21 @@ not_comment:
             }
             sp = infile->bptr;
             break;
+#if SYSTEM == SYS_MAC && COMPILER == GNUC
+        case '\\':
+            if (*sp == '*' && mcpp_mode != POST_STD) {   
+                /* Some system headers in MAC have illogical "comment"      */
+                /* starting with '\\''*' and ending with '*''/'.    */
+                /* This is a bug-to-bug implementation.             */
+                /* '\\''*' sequence does not exist in C/C++ other   */
+                /* than in string literal.                          */
+                if (warn_level & 1)
+                    cwarn( "Parsed '\\''*' sequence as start of a comment"
+                            , NULL, 0L, NULL);
+                sp++;
+                goto  com_start;
+            }   /* Else fall through    */
+#endif
         default:
             if (iscntrl( c)) {
                 cerror(             /* Skip the control character   */

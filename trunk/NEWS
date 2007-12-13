@@ -1,14 +1,17 @@
 This file summarizes new major features of each MCPP release.  (kmatsui)
 
-MCPP V.2.7-prerelease (2007/08)
+MCPP V.2.7-prerelease (2007/12)
 
 1. Implemented -K option to enable macro notification mode.  This mode
     is designed for C/C++ refactoring tools and embeds macro annotations
     into comments.  This mode is also enabled by '#pragma MCPP debug
     macro_call' sub-directive.
 
-2. Implemented -k option to keep horizontal spaces and tabs as they are.
-    The -K option implies -k.
+2. Fixed several bugs of the previous release.
+
+3. Ported to Mac OS X / GCC.
+
+4. Added documentation on source checking of firefox 3.0pre.
 
 
 MCPP V.2.6.4 (2007/05)

@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7 and later for CygWIN / GCC / GNU make
-# 2007/08   kmatsui
+# 2007/12   kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -40,7 +40,7 @@ LINKFLAGS = -o $(NAME)
 ifeq    ($(COMPILER), )
 # compiler-independent-build
 CPPOPTS =
-# BINDIR:   /usr/bin or /usr/local/bin
+# BINDIR:   directory to install mcpp: /usr/bin or /usr/local/bin
 BINDIR = /usr/local/bin
 # INCDIR:   empty
 INCDIR =
@@ -63,6 +63,7 @@ CPPOPTS = -DCOMPILER=$(COMPILER)
 # BINDIR:   the directory where cpp0 or cc1 resides
 #BINDIR = /usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5
 BINDIR = /usr/lib/gcc/i686-pc-cygwin/3.4.4
+target = i686-pc-cygwin
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0.exe
 else
@@ -136,9 +137,9 @@ DLL_VER = 0
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so lib.so
 .SUFFIXES: .so
 .c.so   :
-	$(CC) $(CFLAGS) $(MEM_MACRO) -c -DPIC -save-temps -o$*.so $*.c
+	$(CC) $(CFLAGS) $(MEM_MACRO) -c -DPIC -save-temps -o $*.so $*.c
 mcpplib_dll: $(SOBJS)
-	$(CC) -shared -ocygmcpp-$(DLL_VER).dll $(SOBJS) -Wl,--enable-auto-image-base,--out-implib,libmcpp.dll.a
+	$(CC) -shared -o cygmcpp-$(DLL_VER).dll $(SOBJS) -Wl,--enable-auto-image-base,--out-implib,libmcpp.dll.a
 
 mcpplib_install:
 	cp libmcpp.a libmcpp.dll.a $(LIBDIR)
@@ -153,7 +154,7 @@ ifeq    ($(OUT2MEM), 1)
 # output to memory buffer
 CFLAGS += -DOUT2MEM
 endif
-LINKFLAGS = $(NAME).o -o$(NAME).exe
+LINKFLAGS = $(NAME).o -o $(NAME).exe
 ifeq    ($(DLL_IMPORT), 1)
 LINKFLAGS += $(LIBDIR)/libmcpp.dll.a
 CFLAGS += -DDLL_IMPORT

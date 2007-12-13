@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.7 or later for Linux / GCC / GNU make
-#       2007/08 kmatsui
+# makefile to compile MCPP version 2.7 for Linux / GCC / GNU make
+#       2007/12 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP:
@@ -43,7 +43,7 @@ LINKFLAGS = -o $(NAME)
 ifeq    ($(COMPILER), )
 # compiler-independent-build
 CPPOPTS =
-# BINDIR:   /usr/bin or /usr/local/bin
+# BINDIR:   directory to install mcpp: /usr/bin or /usr/local/bin
 BINDIR = /usr/local/bin
 # INCDIR:   empty
 INCDIR =
@@ -56,8 +56,8 @@ ifeq    ($(COMPILER), GNUC)
 GCCDIR = /usr/bin
 #GCCDIR = /usr/local/bin
 # set GCC version
-gcc_maj_ver = 4
-gcc_min_ver = 1
+gcc_maj_ver = 3
+gcc_min_ver = 3
 # INCDIR:   GCC's version specific include directory
 #INCDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include
 #INCDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2/include
@@ -75,6 +75,9 @@ BINDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6
 #BINDIR = /usr/local/libexec/gcc/i686-pc-linux-gnu/4.1.1
 # Debian 4.0
 #BINDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2
+target = i386-vine-linux
+#target = i686-pc-linux-gnu
+#target = i486-linux-gnu
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0
 else
@@ -128,7 +131,7 @@ endif
 install :
 	install -s $(NAME) $(BINDIR)/$(NAME)
 ifeq    ($(COMPILER), GNUC)
-	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
+	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
             '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)' SYS_LINUX
 endif
 
@@ -138,8 +141,8 @@ clean	:
 uninstall:
 	rm -f $(BINDIR)/$(NAME)
 ifeq    ($(COMPILER), GNUC)
-	@./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'  \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)' SYS_LINUX
+	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'  \
+            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)'
 endif
 
 ifeq    ($(COMPILER), )
@@ -154,16 +157,19 @@ mcpplib_a:	$(OBJS)
 	ar -rv libmcpp.a $(OBJS)
 
 # shared library
-CUR = 0
-REV = 1         # mcpp 2.6.3: 0, mcpp 2.6.4 and later: 1
-AGE = 0
-SHLIB_VER = $(CUR).$(AGE).$(REV)
+# mcpp 2.6.*: 0, mcpp 2.7: 1
+CUR = 1
+# mcpp 2.6.3: 0, mcpp 2.6.4: 1, mcpp 2.7: 0
+REV = 0
+# mcpp 2.6.*: 0, mcpp 2.7: 1
+AGE = 1
+SHLIB_VER = 0.$(CUR).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so lib.so
 .SUFFIXES: .so
 .c.so	:
-	$(CC) $(CFLAGS) $(MEM_MACRO) -c -fpic -o$*.so $*.c
+	$(CC) $(CFLAGS) $(MEM_MACRO) -c -fpic -o $*.so $*.c
 mcpplib_so: $(SOBJS)
-	$(CC) -shared -olibmcpp.so.$(SHLIB_VER) $(SOBJS) # -fstack-protector
+	$(CC) -shared -o libmcpp.so.$(SHLIB_VER) $(SOBJS) # -fstack-protector
 	chmod a+x libmcpp.so.$(SHLIB_VER)
 
 mcpplib_install:
@@ -181,7 +187,7 @@ ifeq    ($(OUT2MEM), 1)
 # output to memory buffer
 CFLAGS += -DOUT2MEM
 endif
-LINKFLAGS = $(NAME).o -o$(NAME) -lmcpp
+LINKFLAGS = $(NAME).o -o $(NAME) -lmcpp
 ifeq	($(MALLOC), KMMALLOC)
 	LINKFLAGS += -lkmmalloc_debug
 endif

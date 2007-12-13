@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2007/11/20  kmatsui
+2007/12/13  kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
@@ -38,8 +38,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         normalization.  As its results, non-existent directory specified
         by -I option was disabled, "non-existent/../existent" was judged
         as non-existent before wrongly normalizing to "existent", and #
-        include "directory" was made not to open.  (thanks to Taras Glek)
-        (system.c)
+        include "directory" was made not to open.  Created norm_dir().
+        (thanks to Taras Glek) (system.c)
         * Stopped to convert path-list on Windows to lowercase-letters.
         Changed path-list comparing function on Windows from strcmp() to
         strcasecmp() or stricmp().  (system.c)
@@ -50,11 +50,12 @@ ChangeLog of MCPP and its accompanying Validation Suite
         Changed FILEINFO and DEFBUF struct, moved sharp() from main.c to
         system.c, revised many functions.  (system.c, support.c, main.c,
         directive.c)
-        * Added porting to Mac OS X.  Enabled searching of "framework"
-        directories for #include.  Enabled #import, which is #include
-        with unconditional once only feature.  Created init_framework(),
-        search_framework(), search_subdir().  Note that this is still a
-        preliminary implementation.  (system.c, directive.c)
+        * Added porting to Mac OS X / GCC.  Enabled searching of
+        "framework" directories for #include.  Enabled #import, which is
+        #include with unconditional once only feature.  Implemented
+        -arch, -isysroot options.  Created init_framework(),
+        search_framework(), search_subdir().  (system.c, directive.c,
+        set_mcpp.sh, unset_mcpp.sh, configure.ac, src/Makefile.am)
         * Bundled some variables into structs (std_limits, option_flags,
         etc.).  Tidied up the sources removing unused codes, rewriting
         old comments.  (most of the sources)

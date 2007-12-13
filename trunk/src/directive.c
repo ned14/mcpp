@@ -658,7 +658,7 @@ DEFBUF *    do_define(
     repl_base = repl_list;
     repl_end = & repl_list[ NMACWORK];
     c = skip_ws();
-    if (mcpp_debug & MACRO_CALL)            /* Start of definition  */
+    if ((mcpp_debug & MACRO_CALL) && src_line)      /* Start of definition  */
         def_start = infile->bptr - infile->buffer - 1;
     if (c == '\n') {
         cerror( no_ident, NULL, 0L, NULL);
@@ -722,7 +722,8 @@ DEFBUF *    do_define(
         in_define = FALSE;
         return  NULL;                       /* Syntax error         */
     }
-    if (mcpp_debug & MACRO_CALL) {  /* Remember location on source  */
+    if ((mcpp_debug & MACRO_CALL) && src_line) {
+                                    /* Remember location on source  */
         char *  cp;
         cp = infile->bptr - 1;              /* Before '\n'          */
         while (char_type[ *cp & UCHARMAX] & HSP)
@@ -749,23 +750,20 @@ DEFBUF *    do_define(
     }                                   /* Else new or re-definition*/
     defp = install_macro( macroname, nargs, work_buf, repl_list, prevp, cmp
             , predefine);
-    if (mcpp_debug & MACRO_CALL) {  /* Get location on source file  */        
+    if ((mcpp_debug & MACRO_CALL) && src_line) {
+                                    /* Get location on source file  */        
         LINE_COL    s_line_col, e_line_col;
-        if (src_line) {
-            s_line_col.line = src_line;
-            s_line_col.col = def_start;
-            get_src_location( & s_line_col);
+        s_line_col.line = src_line;
+        s_line_col.col = def_start;
+        get_src_location( & s_line_col);
                             /* Convert to pre-line-splicing data    */
-            e_line_col.line = src_line;
-            e_line_col.col = def_end;
-            get_src_location( & e_line_col);
-            /* Putout the macro definition information embedded in comment  */
-            mcpp_fprintf( OUT, "/*m%s %ld:%d-%ld:%d*/\n", defp->name
-                    , s_line_col.line, s_line_col.col
-                    , e_line_col.line, e_line_col.col);
-        } else {                                /* Predefined macro */
-            mcpp_fprintf( OUT, "/*m%s*/\n", defp->name);
-        }
+        e_line_col.line = src_line;
+        e_line_col.col = def_end;
+        get_src_location( & e_line_col);
+        /* Putout the macro definition information embedded in comment  */
+        mcpp_fprintf( OUT, "/*m%s %ld:%d-%ld:%d*/\n", defp->name
+                , s_line_col.line, s_line_col.col
+                , e_line_col.line, e_line_col.col);
         wrong_line = TRUE;                      /* Need #line later */
     }
     if (mcpp_mode == STD && cplus_val && id_operator( macroname)
@@ -1599,7 +1597,8 @@ void    dump_a_def(
 }
 
 void    dump_def(
-    int     comment         /* Location of definition in comment    */
+    int     comment,        /* Location of definition in comment    */
+    int     K_opt                       /* -K option is specified   */
 )
 /*
  * Dump all the current macro definitions to output stream.
@@ -1614,7 +1613,10 @@ void    dump_def(
     for (symp = symtab; symp < &symtab[ SBSIZE]; symp++) {
         if ((dp = *symp) != NULL) {
             do {
-                dump_a_def( NULL, dp, FALSE, comment, fp_out);
+                if (K_opt)
+                    mcpp_fprintf( OUT, "/*m%s*/\n", dp->name);
+                else
+                    dump_a_def( NULL, dp, FALSE, comment, fp_out);
             } while ((dp = dp->link) != NULL);
         }
     }

@@ -1,7 +1,7 @@
 #!/bin/sh
 # script to set MCPP to be called from gcc
 # ./set_mcpp.sh ${gcc_path} ${gcc_maj_ver} ${gcc_min_ver} ${cpp_call} ${CC} \
-#       ${CXX} x${EXEEXT} ${LN_S} ${inc_dir} ${host_system}
+#       ${CXX} x${EXEEXT} ${LN_S} ${inc_dir} ${host_system} ${target} ${cpu}
 
 gcc_maj_ver=$2
 gcc_min_ver=$3
@@ -11,6 +11,10 @@ CXX=$6
 LN_S=$8
 inc_dir=$9
 host_system=${10}
+if test ${host_system} = SYS_MAC; then
+    target=${11}
+    cpu=${12}
+fi
 cpp_name=`echo ${cpp_call} | sed 's,.*/,,'`
 cpp_path=`echo ${cpp_call} | sed "s,/${cpp_name},,"`
 gcc_path=`echo $1 | sed "s,/${CC}\$,,"`
@@ -29,41 +33,60 @@ if test ${host_system} = SYS_MINGW && test ! -f cc1${EXEEXT}; then
     exit 1
 fi
 
-cwd=`pwd`
-
-mkdir -p ${inc_dir}/mcpp-gcc
-echo "  cd ${inc_dir}/mcpp-gcc"
-cd ${inc_dir}/mcpp-gcc
-if test ! -f gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h; then
-    echo "  generating g*.h header files"
-    ${CC} -E -xc -dM /dev/null | sort | grep ' *#define *_'       \
-            > gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h
-    ${CC} -E -xc -dM /dev/null | sort | grep -E ' *#define *[A-Za-z]+'    \
-            > gcc${gcc_maj_ver}${gcc_min_ver}_predef_old.h
-    ${CXX} -E -xc++ -dM /dev/null | sort | grep ' *#define *_'    \
-            > gxx${gcc_maj_ver}${gcc_min_ver}_predef_std.h
-    ${CXX} -E -xc++ -dM /dev/null | sort | grep -E ' *#define *[A-Za-z]+' \
-            > gxx${gcc_maj_ver}${gcc_min_ver}_predef_old.h
-fi
-if test ${host_system} = SYS_CYGWIN; then
-    cd ..
-    mkdir -p mingw/mcpp-gcc
-    cd mingw/mcpp-gcc
-    if test ! -f gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h; then
-        echo "  generating g*.h header files for cygwin/mingw"
-        ${CC} -E -xc -dM -mno-cygwin /dev/null | sort |   \
-                grep ' *#define *_'       \
-                > gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h
-        ${CC} -E -xc -dM -mno-cygwin /dev/null | sort |   \
-                grep -E ' *#define *[A-Za-z]+'    \
-                > gcc${gcc_maj_ver}${gcc_min_ver}_predef_old.h
-        ${CXX} -E -xc++ -dM -mno-cygwin /dev/null | sort |    \
-                grep ' *#define *_'    \
-                > gxx${gcc_maj_ver}${gcc_min_ver}_predef_std.h
-        ${CXX} -E -xc++ -dM -mno-cygwin /dev/null | sort |    \
-                grep -E ' *#define *[A-Za-z]+' \
-                > gxx${gcc_maj_ver}${gcc_min_ver}_predef_old.h
+gen_headers() {
+    echo "  mkdir -p ${hdir}"
+    mkdir -p ${hdir}
+    if test ! -f ${hdir}/gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h; then
+        echo "  generating g*.h header files"
+        ${CC} -E -xc ${arg} -dM /dev/null | sort | grep ' *#define *_'  \
+                > ${hdir}/gcc${gcc_maj_ver}${gcc_min_ver}_predef_std.h
+        ${CC} -E -xc ${arg} -dM /dev/null | sort |              \
+                grep -E ' *#define *[A-Za-z]+'                  \
+                > ${hdir}/gcc${gcc_maj_ver}${gcc_min_ver}_predef_old.h
+        ${CXX} -E -xc++ ${arg} -dM /dev/null | sort | grep ' *#define *_'   \
+                > ${hdir}/gxx${gcc_maj_ver}${gcc_min_ver}_predef_std.h
+        ${CXX} -E -xc++ ${arg} -dM /dev/null | sort |           \
+                grep -E ' *#define *[A-Za-z]+'                  \
+                > ${hdir}/gxx${gcc_maj_ver}${gcc_min_ver}_predef_old.h
     fi
+}
+
+cwd=`pwd`
+echo "  cd ${inc_dir}"
+cd ${inc_dir}
+
+if test ${host_system} = SYS_MAC; then
+## Apple-GCC changes architecture and predefined macros by -arch * option
+    if test ${cpu} = i386 || test ${cpu} = x86_64; then
+        arch0=i386
+        arch1=x86_64
+    else
+        arch0=ppc
+        arch1=ppc64
+    fi
+    for arch in $arch0 $arch1
+    do                              ## generate headers for 2 architectures
+        hdir=mcpp-gcc-${arch}
+        arg="-arch ${arch}"
+        gen_headers
+    done
+else
+if test ${host_system} = SYS_CYGWIN; then
+    ## CYGWIN has 'mingw' include directory for '-mno-cygwin' option
+    for hdir in mcpp-gcc mingw/mcpp-gcc
+    do
+        if test ${hdir} = mingw/mcpp-gcc; then
+            arg='-mno-cygwin'
+        else
+            arg=
+        fi
+        gen_headers
+    done
+else
+    hdir=mcpp-gcc
+    arg=
+    gen_headers
+fi
 fi
 
 # write shell-script to call of 'cpp0', 'cc1 -E' or so is replaced to call of
@@ -74,53 +97,55 @@ cd ${cpp_path}
 # other than MinGW
 if test ${host_system} != SYS_MINGW; then
 
-    echo '#!/bin/sh'        >  mcpp.sh
 
     # for GCC V.3.3 and later
     if test x${cpp_base} = xcc1; then
-        cat >> mcpp.sh <<_EOF
-for i in \$@
-    do
-    case \$i in
-        -fpreprocessed|-traditional*)
-            ${cpp_path}/${cpp_base}_gnuc "\$@"
-            exit ;;
-    esac
-done
-_EOF
-        cat > mcpp_plus.sh <<_EOF
+        for cpp in cc1 cc1plus
+        do
+            if test ${cpp} = cc1; then
+                shname=mcpp
+            else
+                shname=mcpp_plus
+            fi
+            cat > ${shname}.sh <<_EOF
 #!/bin/sh
 for i in \$@
     do
     case \$i in
         -fpreprocessed|-traditional*)
-            ${cpp_path}/cc1plus_gnuc "\$@"
+            ${cpp_path}/${cpp}_gnuc "\$@"
             exit ;;
     esac
 done
 _EOF
+        done
     fi
     
     # for GCC V.2, V.3 and V.4
-    echo ${cpp_path}/mcpp '"$@"'   >>  mcpp.sh
+    mcpp_name=mcpp
+    if test ${host_system} = SYS_MAC && test -f ${target}-mcpp; then
+        mcpp_name=${target}-mcpp    ## long name of Mac OS X cross-compiler
+    fi
+    echo ${cpp_path}/${mcpp_name} '"$@"'   >>  mcpp.sh
     chmod a+x mcpp.sh
     if test x${cpp_base} = xcc1; then
-        echo ${cpp_path}/mcpp -+ '"$@"'  >> mcpp_plus.sh
+        echo ${cpp_path}/${mcpp_name} -+ '"$@"'  >> mcpp_plus.sh
         chmod a+x mcpp_plus.sh
     fi
 fi
 
 # backup GCC / cpp or cc1, cc1plus
-if test `${cpp_call} -v /dev/null 2>&1 | grep 'MCPP' > /dev/null; echo $?`;
-        then
+mcpp_installed=`${cpp_call} -v /dev/null 2>&1 | grep "MCPP"`
+if test "x${mcpp_installed}" = x; then          # mcpp has not installed
+    sym_link=
     if test ${host_system} = SYS_MINGW; then
         if test -f cc1_gnuc${EXEEXT}; then
             sym_link=l          ## cc1.exe already moved to cc1_gnuc.exe
-        else
-            sym_link=
         fi
     else
-        sym_link=`ls -l ${cpp_name} | sed 's/^l.*/l/; s/^[^l].*//'`
+        if test -h ${cpp_name}; then
+            sym_link=l
+        fi
     fi
     if test x${sym_link} != xl; then
         echo "  mv ${cpp_name} ${cpp_base}_gnuc${EXEEXT}"
@@ -166,64 +191,43 @@ fi
 echo "  cd ${gcc_path}"
 cd ${gcc_path}
 
-if test ${host_system} != SYS_MINGW; then
-    ref=${CC}${EXEEXT}
-    while ref=`readlink ${ref}`
-    do
-        c_entity=${ref};
-    done
-fi
-if test x${c_entity} != x; then     # symbolic linked file dereferenced
-    if test ${c_entity} = ${CC}.sh; then    # gcc.sh already installed
-        exit 0
+for cc in ${CC} ${CXX}
+do
+    entity=${cc}${EXEEXT}
+    if test ${host_system} != SYS_MINGW; then
+        ref=${cc}${EXEEXT}
+        while ref=`readlink ${ref}`
+        do
+            entity=${ref};
+        done
+    fi
+    if test x${entity} != x; then       # symbolic linked file dereferenced
+        if test ${entity} = ${cc}.sh; then      # gcc.sh already installed
+            exit 0
+        fi
     fi
     if test x${EXEEXT} != x; then
-        c_entity_base=`echo ${c_entity} | sed "s/${EXEEXT}//"`
+        entity_base=`echo ${entity} | sed "s/${EXEEXT}//"`
     else
-        c_entity_base=${c_entity}
+        entity_base=${entity}
     fi
-else                                # not symbolic link
-    if test ! ${host_system} = SYS_MINGW || test ! -f ${CC}_proper${EXEEXT};
-            then
-        echo "  mv ${CC}${EXEEXT} ${CC}_proper${EXEEXT}"
-        mv -f ${CC}${EXEEXT} ${CC}_proper${EXEEXT}
+    if test ! ${host_system} = SYS_MINGW    \
+            || test ! -f ${entity_base}_proper${EXEEXT}; then
+        echo "  mv ${entity} ${entity_base}_proper${EXEEXT}"
+        mv -f ${entity} ${entity_base}_proper${EXEEXT}
     fi
-    c_entity_base=${gcc_path}/${CC}_proper
-fi
-
-if test ${host_system} != SYS_MINGW; then
-    ref=${CXX}${EXEEXT}
-    while ref=`readlink ${ref}`
-    do
-        cxx_entity=${ref};
-    done
-fi
-if test x${cxx_entity} != x; then      # symbolic linked file dereferenced
-    if test ${cxx_entity} = ${CXX}.sh; then
-        exit 0
+    if test x"`echo ${entity} | grep '^/'`" = x; then   # not absolute path
+        path=${gcc_path}/
+    else                                # absolute path
+        path=
     fi
-    if test x${EXEEXT} != x; then
-        cxx_entity_base=`echo ${cxx_entity} | sed "s/${EXEEXT}//"`
-    else
-        cxx_entity_base=${cxx_entity}
+    echo '#!/bin/sh' > ${cc}.sh
+    echo ${path}${entity_base}_proper -no-integrated-cpp '"$@"' >> ${cc}.sh
+    chmod a+x ${cc}.sh
+    echo "  ${LN_S} ${cc}.sh ${cc}"
+    ${LN_S} -f ${cc}.sh ${cc}
+    if test ${cc} != ${entity}; then
+        ${LN_S} -f ${cc}.sh ${entity}
     fi
-else
-    if test ${host_system} != SYS_MINGW || test ! -f ${CXX}_proper${EXEEXT};
-            then
-        echo "  mv ${CXX}${EXEEXT} ${CXX}_proper${EXEEXT}"
-        mv -f ${CXX}${EXEEXT} ${CXX}_proper${EXEEXT}
-    fi
-    cxx_entity_base=${gcc_path}/${CXX}_proper
-fi
-
-echo '#!/bin/sh' > ${CC}.sh
-echo ${c_entity_base} -no-integrated-cpp '"$@"' >> ${CC}.sh
-echo '#!/bin/sh' > ${CXX}.sh
-echo ${cxx_entity_base} -no-integrated-cpp '"$@"' >> ${CXX}.sh
-chmod a+x ${CC}.sh ${CXX}.sh
-
-echo "  ${LN_S} ${CC}.sh ${CC}"
-${LN_S} -f ${CC}.sh ${CC}
-echo "  ${LN_S} ${CXX}.sh ${CXX}"
-${LN_S} -f ${CXX}.sh ${CXX}
+done
 

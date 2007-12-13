@@ -181,7 +181,10 @@
 
 #if     SYSTEM == SYS_MAC   /* Mac OS X */
 #define SYSTEM_EXT          "__APPLE__"
+#define CPU_OLD             "i386"  /* Necessary to check arch      */
 #define FNAME_FOLD          TRUE    /* Case-insensitive file-system */
+#define FRAMEWORK1          "/System/Library/Frameworks"
+#define FRAMEWORK2          "/Library/Frameworks"
 #endif
 
 #if     SYSTEM == SYS_CYGWIN
@@ -507,6 +510,9 @@
 #if     HOST_SYSTEM == SYS_LINUX
 #define HOST_HAVE_STPCPY            TRUE
 #define HOST_LIB_IS_GLIBC           TRUE
+#endif
+#if     HOST_SYSTEM == SYS_MAC
+#define HOST_HAVE_STPCPY            TRUE
 #endif
 
 #elif   HOST_COMPILER == LCC
