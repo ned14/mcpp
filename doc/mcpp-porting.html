@@ -11,7 +11,7 @@
 <h2>== How to Port MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2007/10)<br>
+<h4>for V.2.7 (2007/12)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -47,7 +47,8 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.3.11" href="#3.11">3.11. Making compiler-independent-build of <b>mcpp</b></a>
 <dd><dl><dt><a name="toc.3.12" href="#3.12">3.12. Making subroutine-build of <b>mcpp</b></a>
 <dd><a name="toc.3.12.1" href="#3.12.1">3.12.1. Using configure</a>
-<dd><a name="toc.3.12.2" href="#3.12.2">3.12.2. Using noconfig/*.mak</a></dl>
+<dd><a name="toc.3.12.2" href="#3.12.2">3.12.2. Using noconfig/*.mak</a>
+<dd><a name="toc.3.12.3" href="#3.12.3">3.12.3. Static library and shared library or DLL</a></dl>
 <br>
 <dt><a name="toc.4" href="#4">4. How to port <b>mcpp</b> to each compiler system: Details</a>
 <dd><dl><dt><a name="toc.4.1" href="#4.1">4.1. Setting of noconfig.H, configed.H, system.H</a>
@@ -167,9 +168,8 @@ In November 2006, V.2.6.2 was released.  In this version, most of the text file 
 In April 2007, V.2.6.3 was released.  In this version, compatibility of GCC-specific-build to GCC was increased, and output to memory buffer was implemented in subroutine-build by contribution from Greg Kress.  In addition, binary packages for some systems were begun to be provided.<br>
 In May 2007, V.2.6.4 was released.  This is a bug-fixed version of V.2.6.3.<br>
 <br>
-<li>In August 2007, V.2.7 was released.
-In this version, 'macro notification mode' to embed macro informations into comments was implemented.
-The version number was incremented to 2.7, because the updates since V.2.6.2 accumulated very large.<br>
+<li>In December 2007, V.2.7 was released.
+In this version, 'macro notification mode' to embed macro informations into comments was implemented, and much codes are added.<br>
 </ol>
 <p>Note:</p>
 <p>*1 The outline of the "Exploratory Software Project" can be seen at the following site (the documents are only in Japanese).</p>
@@ -576,7 +576,7 @@ sudo make install
 Then libmcpp.so and libmcpp.so.0 will be created as links to libmcpp.so.$(SHLIB_VER).
 The *.a is a static library, and the *.so is a shared library.
 The file named libmcpp.la will also be created, which is for the tool 'libtool'.
-$(SHLIB_VER) is 0.0.0 on <b>mcpp</b> V.2.6.3, and 0.0.1 on V.2.6.4 and later.</p>
+$(SHLIB_VER) is 0.0.0 on <b>mcpp</b> V.2.6.3, 0.0.1 on V.2.6.4, 0.1.0 on V.2.7 and later.</p>
 <p>On CygWIN and MinGW, DLL named *.dll will be generated instead of *.so.
 On CygWIN, libmcpp.a, libmcpp.dll.a, libmcpp.la will be generated and installed into /usr/local/lib, and cygmcpp-0.dll will be generated and installed into /usr/local/bin.
 On MinGW, those are the same with CygWIN, except cygmcpp-0.dll changes to libmcpp-0.dll.
@@ -605,7 +605,8 @@ On Windows, the name of the libraries are different from those on Linux as shown
   <tr><th>import library of DLL</th><td></td><td>libmcpp-$(DLL_VER).dll.a</td><td>libmcpp-$(DLL_VER).dll.a</td><td>mcpp$(DLL_VER).lib</td></tr>
 </table>
 </blockquote>
-<p>$(SHLIB_VER) is 0.0.0, 0.0.1 on <b>mcpp</b> V.2.6.3, V.2.6.4 and later, respectively.  $(DLL_VER) is 0 on both of <b>mcpp</b> V.2.6.3 and V.2.6.4.</p>
+<p>$(SHLIB_VER) is 0.0.0, 0.0.1, 0.1.0 on <b>mcpp</b> V.2.6.3, V.2.6.4, V.2.7 and later, respectively.  $(DLL_VER) is 0 on any of <b>mcpp</b> V.2.6.3, V.2.6.4 and V.2.7 and later.
+If the first digit of $(SHLIB_VER) or $(DLL_VER) is the same, the versions with the higher second or third digit of $(SHLIB_VER) are upper-compatible to the one with lower second or third digit.</p>
 <p>On Windows, so-called 'import library' is generated too, which is to use the DLL.
 In order to use the DLL, you must link your main program against this import library.
 The static library and the import library are installed into the $(LIBDIR) specified in the makefile, and the DLL itself is installed into the $(BINDIR).
@@ -621,6 +622,22 @@ To enable the memory buffer, include the header file <samp>'mcpp_lib.h'</samp> i
 The option <samp>'OUT2MEM=1'</samp> will enable this in testmain.c.
 Note that the macro <samp>OUT2MEM</samp> is only for testmain.c, not for <b>mcpp</b>.
 <p>When you use the library-build of <b>mcpp</b>, write your makefile referring to noconfig/*.mak, and write your main program referring to testmain.c.</p>
+
+<h3><a name="3.12.3" href="#toc.3.12.3">3.12.3. Static library and shared library or DLL</a></h3>
+<p>There are two kinds of library: static and shared.
+On Windows the latter is called DLL (dynamically-linked library).
+A static library is a collection of *.o (*.obj) files, which is linked (i.e. copied) to an executable at compile time.
+All the global names of functions and data in the static library are visible to the executable, and face to danger of name collisions.
+This is a problem for <b>mcpp</b>, since it had been developed without considering library use until V.2.6.1.
+On the other hand, a shared library (or a DLL) is linked at run time, and shared by several executables, if any, at the same time.</p>
+<p>On Windows, the global names in the DLL are not visible from outside, and only the names explicitly exported can be imported.
+From the DLL of <b>mcpp</b>, for example, only the names in mcpp_lib.h can be imported.</p>
+<p>On UNIXes, the global names in the shared library are all visible from outside by default, hence you should be sensitive to name collisions.
+GCC 4.0 and later, however, can cope with this problem.
+From the shared library of <b>mcpp</b> V.2.7 and later, compiled by GCC V.4.0 or later, only the names in mcpp_lib.h are visible. *1</p>
+<p>To sum up, it is recommended to use DLL on Windows and shared library compiled by GCC 4.0 or later on UNIXes, because you need not to worry about name collision on these libraries.</p>
+<p>Note:</p>
+<p>*1 <b>mcpp</b> V.2.7 and later uses <samp>'#pragma GCC visibility *'</samp> directive which has been implemented since GCC V.4.0.</p>
 <br>
 
 <h1><a name="4" href="#toc.4">4. How to port <b>mcpp</b> to each compiler system: Details</a></h1>

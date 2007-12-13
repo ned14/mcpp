@@ -1,4 +1,4 @@
-dnl configure.ac for MCPP   2003/11, 2007/09  kmatsui
+dnl configure.ac for MCPP   2003/11, 2007/12  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
@@ -25,8 +25,8 @@ dnl MCPP may modify the behavior of the target compiler-system.
 dnl You must uninstall MCPP before re-configuring.
 
 AC_MSG_CHECKING( [whether the cpp is target preprocessor])
-if test `${CPP} -xc -v /dev/null 2>&1 | grep 'MCPP' > /dev/null; echo $?` = 0;
-        then
+mcpp=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | grep 'MCPP'`
+if test "x${mcpp}" != x; then
     AC_MSG_ERROR( Do 'make uninstall' before configuring again.)
 fi
 AC_MSG_RESULT( yes)
@@ -194,27 +194,36 @@ case $target_cpu in
 i?86*)
     Target_Cpu=i386
     ;;
+x86_64|amd64)
+    Target_Cpu=x86_64
+    ;;
+powerpc64|ppc64)
+    Target_Cpu=ppc64
+    ;;
+powerpc|ppc)
+    Target_Cpu=ppc
+    ;;
 *)
     Target_Cpu=$target_cpu
     ;;
 esac
 
-if test x$mcpp_ac_c_define_CPU_STD != x__${Target_Cpu}; then
+if test x${mcpp_ac_c_define_CPU_STD} != x__${Target_Cpu}; then
     AC_DEFINE_UNQUOTED( [CPU_STD1], "__${Target_Cpu}",
         [Define the cpu-specific-predefined-macro.])
 fi
-if test x$mcpp_ac_c_define_CPU_STD != x__${Target_Cpu}__; then
+if test x${mcpp_ac_c_define_CPU_STD} != x__${Target_Cpu}__; then
     AC_DEFINE_UNQUOTED( [CPU_STD2], "__${Target_Cpu}__",
         [Define the cpu-specific-predefined-macro.])
 fi
-if test x$mcpp_ac_c_define_CPU_OLD != x${Target_Cpu}; then
+if test x${mcpp_ac_c_define_CPU_OLD} != x${Target_Cpu}; then
     AC_DEFINE_UNQUOTED( [CPU_OLD], "${Target_Cpu}",
         [Define the cpu-specific-predefined-macro.])
 fi
 
 if test ${ac_c_define_HOST_SYSTEM} = SYS_FREEBSD &&   \
         test x$mcpp_ac_c_define_SYSTEM_SP_STD != x__FreeBSD__; then
-    fbsd_ver=`echo '__FreeBSD__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`
+    fbsd_ver=`echo '__FreeBSD__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`
     AC_DEFINE_UNQUOTED( [SYSTEM_EXT_VAL], "${fbsd_ver}",
         [Define the version of FreeBSD.])
 fi
@@ -226,12 +235,12 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
     AC_DEFINE( [HOST_CMP_NAME], "GCC", [Define the host compiler name.])
 
     AC_MSG_CHECKING( for value of __GNUC__)
-    gcc_maj_ver=`echo '__GNUC__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
+    gcc_maj_ver=`echo '__GNUC__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
     AC_MSG_RESULT( ${gcc_maj_ver})
     AC_DEFINE_UNQUOTED( [GCC_MAJOR_VERSION], "${gcc_maj_ver}",
         [Define gcc major version.])
     AC_MSG_CHECKING( for value of __GNUC_MINOR__)
-    gcc_min_ver=`echo __GNUC_MINOR__ | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
+    gcc_min_ver=`echo __GNUC_MINOR__ | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
     AC_MSG_RESULT( ${gcc_min_ver})
     AC_DEFINE_UNQUOTED( [GCC_MINOR_VERSION], "${gcc_min_ver}",
         [Define gcc minor version.])
@@ -298,7 +307,7 @@ else    # not gcc
 AC_DEFUN([mcpp_AC_C_DEFINE], [
     name=`echo $3 | sed 's/=.*//'`
     mcpp_macro=$1_SP_$2
-    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
     if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
         stripped_name=`echo ${name} | sed 's/^_//'`
         if test x${stripped_name} = x${name}; then
@@ -354,7 +363,7 @@ fi
 ## MacOS has "framework" directories.
 if test ${ac_c_define_HOST_SYSTEM} = SYS_MAC; then
     AC_MSG_CHECKING( for the MacOS-specific framework directory)
-    frameworks=`${CPP} -xc -v /dev/null 2>&1 | sed 's/^ *//' | sed 's/ *$//' | $EGREP '/Frameworks$'`
+    frameworks=`${CPP} -xc -v /dev/null 2>&1 | sed 's/^ *//' | sed 's/ .*$//' | ${EGREP} '/Frameworks$'`
     n=1
     for dir in ${frameworks}
     do
@@ -504,7 +513,7 @@ AC_DEFINE_UNQUOTED( [STD_LINE_PREFIX], ${ac_cv_c_std_line_prefix},
 
 AC_CACHE_CHECK( default value of __STDC__,
     ac_cv_c_stdc,
-    [stdc=`echo '__STDC__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`]
+    [stdc=`echo '__STDC__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`]
     if test x"${stdc}" = x"__STDC__"; then
         [ac_cv_c_stdc=0]
     else
@@ -516,7 +525,7 @@ AC_DEFINE_UNQUOTED( [STDC], ${ac_cv_c_stdc},
 
 AC_CACHE_CHECK( default value of __STDC_VERSION__,
     ac_cv_c_stdc_ver,
-    [stdc_ver=`echo '__STDC_VERSION__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`]
+    [stdc_ver=`echo '__STDC_VERSION__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`]
     if test x"${stdc_ver}" = x"__STDC_VERSION__"; then
         [ac_cv_c_stdc_ver=0]
     else
@@ -561,7 +570,7 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
 
     AC_DEFINE( [COMPILER], [GNUC], [Define the target compiler.])
 
-    cpp_call=`${CPP} -xc -v /dev/null 2>&1 | $EGREP '/cpp|/cc1' | sed 's/^ *//; s/ .*//'` 
+    cpp_call=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | ${EGREP} '/cpp|/cc1' | sed 's/^ *//; s/ .*//'` 
     AC_MSG_CHECKING( for the directory to install mcpp)
     cpp_name=`expr ${cpp_call} : '.*/\(.*\)'`
     bindir=`expr ${cpp_call} : "\(.*\)/${cpp_name}"`
@@ -571,7 +580,7 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
     export LANG=C
 
     AC_MSG_CHECKING( for the compiler-specific C include directory)
-    c_include_dirs=`${CPP} -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | $EGREP -v '^/usr(/local|)/include$|/Frameworks$|End of search list'`
+    c_include_dirs=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | ${EGREP} -v '^/usr(/local|)/include$|/Frameworks|End of search list'`
     n=1
     for dir in ${c_include_dirs}
     do
@@ -598,7 +607,7 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
     AC_PROG_CXXCPP
     AC_LANG_PUSH( C++)
     AC_MSG_CHECKING( for the compiler-specific C++ include directory)
-    cxx_include_dirs=`${CXXCPP} -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | $EGREP -v "^/usr(/local|)/include\$|/Frameworks\$|^${c_include_dir1}\$|^${c_include_dir2}\$"`
+    cxx_include_dirs=`${CXXCPP} ${CXXFLAGS} -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | ${EGREP} -v "^/usr(/local|)/include\$|/Frameworks|^${c_include_dir1}\$|^${c_include_dir2}\$"`
     n=1
     for dir in ${cxx_include_dirs}
     do
@@ -650,6 +659,8 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
         [Define include directory to install mcpp_g*.h header files.])
 
     AC_SUBST( [host_system])
+    AC_SUBST( [target])
+    AC_SUBST( [Target_Cpu])
     AC_SUBST( [inc_dir])
     AC_SUBST( [gcc_maj_ver])
     AC_SUBST( [gcc_min_ver])
@@ -661,21 +672,21 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
 
         AC_CACHE_CHECK( for value of predefined macro '__SIZE_TYPE__',
             size_type,
-            [size_type=`echo '__SIZE_TYPE__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`]
+            [size_type=`echo '__SIZE_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`]
         )
         AC_DEFINE_UNQUOTED( [COMPILER_SP1_VAL], "${size_type}",
             [Define the type of size_t.])
 
         AC_CACHE_CHECK( for value of predefined macro '__PTRDIFF_TYPE__',
             ptrdiff_type,
-            [ptrdiff_type=`echo '__PTRDIFF_TYPE__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *$//'`]
+            [ptrdiff_type=`echo '__PTRDIFF_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *$//'`]
         )
         AC_DEFINE_UNQUOTED( [COMPILER_SP2_VAL], "${ptrdiff_type}",
             [Define the type of ptrdiff_t.])
 
         AC_CACHE_CHECK( for value of predefined macro '__WCHAR_TYPE__',
             wchar_type,
-            [wchar_type=`echo '__WCHAR_TYPE__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *$//'`]
+            [wchar_type=`echo '__WCHAR_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *$//'`]
         )
         AC_DEFINE_UNQUOTED( [COMPILER_SP3_VAL], "${wchar_type}",
         [Define the type of wchar_t.])

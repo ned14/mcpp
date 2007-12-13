@@ -21,9 +21,9 @@ else
     cpp_base=${cpp_name}
 fi
 
-echo "  rm -fr ${inc_dir}/mcpp-gcc"
-rm -fr ${inc_dir}/mcpp-gcc
-if test ${host_system} = SYS_CYGWIN; then
+echo "  rm -fr ${inc_dir}/mcpp-gcc*"
+rm -fr ${inc_dir}/mcpp-gcc*
+if test x${host_system} = xSYS_CYGWIN; then
     echo "  rm -fr ${inc_dir}/mingw/mcpp-gcc"
     rm -fr ${inc_dir}/mingw/mcpp-gcc
 fi
@@ -31,8 +31,7 @@ fi
 echo "  cd ${cpp_path}"
 cd ${cpp_path}
 
-sym_link=`ls -l ${cpp_name} | sed 's/^l.*/l/; s/^[^l].*//'`;
-if (test x${sym_link} = xl || test ${host_system} = SYS_MINGW)  \
+if (test -h ${cpp_name} || test x${host_system} = xSYS_MINGW)  \
         && test -f ${cpp_base}_gnuc${EXEEXT}; then
     rm -f ${cpp_name} mcpp.sh
     echo "  mv ${cpp_base}_gnuc${EXEEXT} ${cpp_name}"
@@ -50,37 +49,22 @@ fi
 
 echo "  cd ${gcc_path}"
 cd ${gcc_path}
-if test ${host_system} != SYS_MINGW; then
-    c_sh=`readlink ${CC}`
-fi
-if test x${c_sh} = x${CC}.sh || test ${host_system} = SYS_MINGW; then
-    if test `grep _proper ${CC}.sh > /dev/null; echo $? = 0`; then
-        c_entity=`grep ${gcc_path} ${CC}.sh | sed "s,${gcc_path}/,,"  \
-                | sed 's/_proper.*$//'`
-        rm -f ${c_entity}
-        echo "  mv ${c_entity}_proper${EXEEXT} ${c_entity}${EXEEXT}"
-        mv -f ${c_entity}_proper${EXEEXT} ${c_entity}${EXEEXT}
-    else
-        c_entity=`grep integrated ${CC}.sh | sed "s, .*,,"`
-        echo "  ${LN_S} ${c_entity} ${CC}"
-        ${LN_S} -f ${c_entity} ${CC}
+
+for cc in ${CC} ${CXX}
+do
+    if test x${host_system} != xSYS_MINGW; then
+        ref=`readlink ${cc}`
     fi
-    rm -f ${CC}.sh
-fi
-if test ${host_system} != SYS_MINGW; then
-    cxx_sh=`readlink ${CXX}`
-fi
-if test x${cxx_sh} = x${CXX}.sh || test ${host_system} = SYS_MINGW; then
-    if test `cat ${CXX}.sh | grep _proper > /dev/null; echo $? = 0`; then
-        cxx_entity=`grep ${gcc_path} ${CXX}.sh | sed "s,${gcc_path}/,,"  \
+    if test x${ref} = x${cc}.sh || test x${host_system} = xSYS_MINGW; then
+        entity=`grep ${gcc_path} ${cc}.sh | sed "s,${gcc_path}/,,"  \
                 | sed 's/_proper.*$//'`
-        rm -f ${cxx_entity}
-        echo "  mv ${cxx_entity}_proper${EXEEXT} ${cxx_entity}${EXEEXT}"
-        mv -f ${cxx_entity}_proper${EXEEXT} ${cxx_entity}${EXEEXT}
-    else
-        cxx_entity=`grep integrated ${CXX}.sh | sed "s, .*,,"`
-        echo "  ${LN_S} ${cxx_entity} ${CXX}"
-        ${LN_S} -f ${cxx_entity} ${CXX}
+        rm -f ${entity}
+        echo "  mv ${entity}_proper${EXEEXT} ${entity}${EXEEXT}"
+        mv -f ${entity}_proper${EXEEXT} ${entity}${EXEEXT}
+        if test ${entity} != ${cc}; then
+            echo "  ${LN_S} ${entity} ${cc}"
+            ${LN_S} -f ${entity} ${cc}
+        fi
+        rm -f ${cc}.sh
     fi
-    rm -f ${CXX}.sh
-fi
+done

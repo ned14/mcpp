@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2007/10)<br>
+<h4>for V.2.7 (2007/12)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -57,7 +57,8 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><dl><dt><a name="toc.3.8" href="#3.8">3.8. Particular specifications for certain compiler system</a>
 <dd><a name="toc.3.8.1" href="#3.8.1">3.8.1. Variadic macro of GCC and Visual C</a>
 <dd><a name="toc.3.8.2" href="#3.8.2">3.8.2. Handling of 'defined' by GCC</a>
-<dd><a name="toc.3.8.3" href="#3.8.3">3.8.3. Asm Statement in Borland C and Other Special Syntaxes</a></dl>
+<dd><a name="toc.3.8.3" href="#3.8.3">3.8.3. Asm Statement in Borland C and Other Special Syntaxes</a>
+<dd><a name="toc.3.8.4" href="#3.8.4">3.8.4. #import and Others</a></dl>
 <dd><dl><dt><a name="toc.3.9" href="#3.9">3.9. Problems of GCC and Compatibility with GCC</a>
 <dd><a name="toc.3.9.1" href="#3.9.1">3.9.1. Preprocessing FreeBSD 2/Kernel Sources</a>
 <dd><a name="toc.3.9.2" href="#3.9.2">3.9.2. Preprocessing FreeBSD 2/Libc</a>
@@ -526,6 +527,7 @@ gcc -Wp,-W31,-Q23
 <a href="#2.9"> 2.9</a> and 
 <a href="#2.10"> 2.10</a>.</p>
 <p>The following options are available for some compiler-specific-builds.  The compiler-independent-build has not these options, of course.</p>
+
 <p>The following options are available for the LCC-Win32-specific-build.</p>
 <ul>
 <li><samp>-g &lt;n&gt;</samp><br>
@@ -570,6 +572,17 @@ Define the macros <tt>_NATIVE_WCHAR_T_DEFINED</tt> and  <tt>_WCHAR_T_DEFINED</tt
 <li><samp>-Zl</samp><br>
 Define the macro <tt>_VC_NODEFAULTLIB</tt> to 1.<br>
 </ul>
+
+<p><b>mcpp</b> on Mac OS X accepts the following options, on both of GCC-specific-build and compiler-independent-build.</p>
+<ul>
+<li><samp>-arch &lt;arch&gt;</samp><br>
+Change the target architecture of machine as &lt;arch&gt; from the default one.
+This causes changes of many predefined macros.
+&lt;arch&gt; should be one of <samp>i386, x86_64, ppc, ppc64</samp>.
+<li><samp>-F &lt;framework&gt;</samp><br>
+Put the &lt;framework&gt; directory to top of the framework directories to search.
+The standard framework directories are /System/Library/Frameworks and /Library/Frameworks by default.
+</ul>
 <p>The following options (until at the end of this 2.6 section) are available for the GCC-specific-build.  Note that since <tt>__STDC__</tt> is set to 1 for GCC, the result is same with or without the -S1 option.</p>
 <p>The followings are available across the modes.</p>
 <ul>
@@ -604,6 +617,10 @@ Switch the specification of the -I &lt;directory&gt; before and after this optio
 include the &lt;file&gt; before processing the main source file.  This is equivalent to writing #include &lt;file&gt; at the beginning of the main source file.<br>
 <li><samp>-iquote &lt;dir&gt;</samp><br>
 Add &lt;dir&gt; to the include path for #include "header.h" form.<br>
+<li><samp>-isysroot=&lt;dir&gt;, -isysroot &lt;dir&gt;, --sysroot=&lt;dir&gt;, --sysroot &lt;dir&gt;</samp><br>
+Use &lt;dir&gt; as the logical root directory for system headers,
+that is, prefix &lt;dir&gt; to the path-list of system header directory.
+For example, if the default include directory is /usr/include and &lt;dir&gt; is /Developer/SDKs/MacOSX10.4u.sdk, then alter the include directory to /Developer/SDKs/MacOSX10.4u.sdk/usr/include.<br>
 <li><samp>-isystem &lt;dir&gt;</samp><br>
 Add &lt;dir&gt; to the include path immediately before system-specific directories and immediately after site-specific directories.<br>
 <li><samp>-lang-c, -x c</samp><br>
@@ -828,10 +845,13 @@ vcexpress &lt;Project File&gt; /useenv
 <h1><a name="3" href="#toc.3">3. Enhancements and Compatibility</a></h1>
 <p><b>mcpp</b> has its own enhancements.  Each compiler-system-resident preprocessor has its own enhancements, some of which are not available in <b>mcpp</b>.  This section covers these enhancements and their compatibility problems.</p>
 <p>Principally, <b>mcpp</b> outputs #pragma lines as they are.  This principle is applied to the #pragma lines processed by <b>mcpp</b> itself.  This is because the compiler-proper may interpret the same #pragma for itself.</p>
-<p>However, <b>mcpp</b> does not outputs the lines beginning with '#pragma MCPP', since these are for <b>mcpp</b> only.  Also, <b>mcpp</b> does not outputs lines of '#pragma GCC' followed by either 'poison', 'dependency' or 'system_header'.  Moreover, <b>mcpp</b> outputs neither of '#pragma once', '#pragma push_macro', nor '#pragma pop_macro' because they are useless on the later phases.</p>
+<p>However, <b>mcpp</b> does not outputs the lines beginning with '#pragma MCPP', since these are for <b>mcpp</b> only.  Also, <b>mcpp</b> does not outputs lines of '#pragma GCC' followed by either 'poison', 'dependency' or 'system_header'.  Moreover, <b>mcpp</b> outputs neither of '#pragma once', '#pragma push_macro', nor '#pragma pop_macro' because they are useless on the later phases.
+On the other hand, '#pragma GCC visibility *' is outputted, because it is for the compiler and the linker. *1</p>
 <p><b>mcpp</b> compiled with <i>EXPAND_PRAGMA</i> == <i>TRUE</i> expands macros in #pragma line (in actual, <i>EXPAND_PRAGMA</i> is set <i>TRUE</i> only for Visual C-specific-build).  However, #pragma lines followed by STDC, MCPP or GCC are never expanded.</p>
 <p>#pragma sub-directives are implementation-defined, hence there are risks of same name sub-directive having different meanings to different compiler-systems.  Some device is necessary to avoid name collision.  Moreover, when <i>EXPAND_PRAGMA</i> == <i>TRUE</i>, there should be a device to avoid the name of #pragma sub-directive itself being macro expanded.  This is why <b>mcpp</b>-specific sub-directives begin with '#pragma MCPP' and are not subject to macro expansion.  This device is adopted from '#pragma STDC' of C99 and '#pragma GCC' of GCC 3.</p>
 <p>'#pragma once' is, however, implemented as it is, since this pragma has been implemented in many preprocessors and has now no risk of name collision.  '#pragma __setlocale' is prefixed with "__" instead of MCPP, because it has also meaning for compiler-proper, and because the prefix avoids user-name-space.</p>
+<p>Note:</p>
+<p>*1 The GCC-specific-build of <b>mcpp</b> only supports '#pragma GCC system_header' of the pragmas starting with GCC.  It does not support '#pragma GCC poison' and '#pragma GCC dependency'.</p>
 <br>
 
 <h2><a name="3.1" href="#toc.3.1">3.1. #pragma MCPP put_defines, #pragma MCPP preprocess and others</a></h2>
@@ -1294,6 +1314,19 @@ asm {
 <b>mcpp</b> does not treat this specially.</p>
 <p>Visual C++ also has the <samp>__asm</samp> keyword, which provides the similar functionality to this.</p>
 <p>GCC provide a Standard-conforming built-in function <samp>asm()</samp> which is used as <samp>asm( " mov x,4\n")</samp>.</p>
+
+<h3><a name="3.8.4" href="#toc.3.8.4">3.8.4. #import and Others</a></h3>
+
+<h4>3.8.4.1. #import of Mac OS X / GCC</h4>
+<p>GCC has <samp>#import</samp> directive, which is a feature of Objective-C and imported to C/C++.
+<samp>#import</samp> is a <samp>#include</samp> with an implicit '<samp>#pragma once</samp>'.
+It is occasionally used in C/C++ sources on Mac OS X.</p>
+<p><b>mcpp</b> V.2.7 and later implements this directive only on Mac OS X, in both of GCC-specific-build and compiler-independent-build.</p>
+
+<h4>3.8.4.2. #import and #using of Visual C</h4>
+<p>Visual C has peculiar directives named <samp>#import</samp> and <samp>#using</samp>, which have form of preprocessing-directive, in fact, they are directives for compiler and linker.
+The <samp>#import</samp> of Visual C has no relation to that of GCC.</p>
+<p><b>mcpp</b> of Visual-C-specific-build outputs these lines as they are.</p>
 <br>
 
 <h2><a name="3.9" href="#toc.3.9">3.9. Problems of GCC and Compatibility with GCC</a></h2>
@@ -1301,9 +1334,13 @@ asm {
 <p>First of all, as shown in Chapter 2, there are many differences in execution options.  <b>mcpp</b> implements neither -A option nor non-conforming directives, including #assert and #ident. *1</p>
 <p>Fortunately, there seems to be quite few sources that cannot be compiled due to a lack of this compatibility.</p>
 <p>It is more problematic that there are some sources that assume special behaviors of old preprocessors.  Most of such source code receives a warning when -pedantic is specified in GCC.  <b>mcpp</b> in Standard mode, by default, provides almost the same behavior as GCC's -pedantic since it implements Standard conforming error checking.  However, since GCC/cpp, by default, allows such Standard violations without issuing a diagnostic, there are some sources that take advantage of this.</p>
-<p>It is very easy to rewrite such non-conforming code to Standard-conforming code in most cases, so it is meaningless to take the trouble to write non-conforming code only to impair portability and, what is worse, to provide a hotbed of bugs.  When you find such code, do not hesitate to correct it.</p>
+<p>It is very easy to rewrite such non-conforming code to Standard-conforming code in most cases, so it is meaningless to take the trouble to write non-conforming code only to impair portability and, what is worse, to provide a hotbed of bugs.  When you find such code, do not hesitate to correct it. *2</p>
 <p>Note:</p>
 <p>*1 The functionality of #assert and #ident should be implemented using #pragma, if necessary.  The same can be said with #include_next and #warning, but these directives seem to be sometimes used in GCC system, so I grudgingly implemented them in GCC-specific-build, however, a warning is issued when they are used.</p>
+<p>*2 From 3.9 through 3.9.3 sections of this document was written in 1998, when the sources depending on traditional preprocessors were frequently found.
+After that time, such sources have greatly decreased, 
+and on the other hand, sources depending on the local features and implementation trivials of GCC have much increased.
+The 3.9.4 and later, especially 3.9.8 and later sections describe mainly such problems. (2007/12)</p>
 
 <h3><a name="3.9.1" href="#toc.3.9.1">3.9.1. Preprocessing FreeBSD 2/Kernel Source</a></h3>
 <p>Taking FreeBSD 2.2.2-R (1997/05) kernel source code as an example, this section explains some preprocessing problems.  All the directories that appear in this section are installed in /sys (/usr/src/sys).  Of the items I point out below, 3.9.1.7 and 3.9.1.8 are not necessarily Standard violations and work as expected in <b>mcpp</b>, but <b>mcpp</b> issues a warning because their coding is confusing.  3.9.1.6 is an enhancement and C99 provides the same functionality, but it differs from GNUC/cpp in notation.</p>
@@ -1856,11 +1893,13 @@ macro facilities.</blockquote>
 #pragma GCC dependency
 #pragma GCC system_header
 </pre>
-<p>Of these, GCC 3.2 sources use poison and system_header.  <b>mcpp</b> does not support these #pragmas because I do not think them necessary. (I omit explanation of their specifications.)</p>
+<p>Of these, GCC 3.2 sources use poison and system_header.  <b>mcpp</b> does not support these #pragmas because I do not think them necessary. (I omit explanation of their specifications.) *1</p>
 <p>GCC 3 deprecates assertion directives, such as #assert, although gcc, by default, specifies the -A option.</p>
 <p>In GCC 2, the -traditional option is implemented in one and the same cpp, result in a strange mixture of very old specifications and C99 ones.  In GCC 3, its preprocessor was divided into two: non-traditional cpp0 and tradcpp0. The -traditional option is valid only for gcc.  cpp0 does not provides it.  gcc -traditional invokes tradcpp0 for preprocessing.</p>
 <p>tradcpp0 is getting closer to a true traditional preprocessor before C90. They say that they no longer maintain tradcpp0 except for serious bugs.</p>
 <p>The strange specifications of GCC 2/cpp seem to have been significantly revised.</p>
+<p>Note:</p>
+<p>*1 <b>mcpp</b> V.2.7 onward supports <samp>#pragma GCC system_header</samp> on GCC-specific-build.</p>
 
 <h3><a name="3.9.7" href="#toc.3.9.7">3.9.7. To Use <b>mcpp</b> with GCC 3 or 4</a></h3>
 <p>As seen above, as far as preprocessing is concerned, GCC 3.2 sources have been much improved than glibc 2.1.3 sources in that the traditional way of writing has been almost eliminated and that meaningless options are no longer used.</p>
@@ -3554,7 +3593,7 @@ It cannot be used in a directive line.
 <br>
 <li>Compiler system's own built-in macros will not cause warning.<br>
 <br>
-<li>#pragma sub-directive: Principally, <b>mcpp</b> does not issue a warning to #pragma sub-directive, however, for #pragma once, #pragma __setlocale, #pragma MCPP * which <b>mcpp</b> itself processes, it issues a warning if they have an invalid argument.  In addition, <b>mcpp</b> issues a warning to GCC V.3's #pragmas, such as #pragma GCC poison (dependency, system_header), that resident preprocessor processes but <b>mcpp</b> does not.<br>
+<li>#pragma sub-directive: Principally, <b>mcpp</b> does not issue a warning to #pragma sub-directive, however, for #pragma once, #pragma __setlocale, #pragma MCPP * which <b>mcpp</b> itself processes, it issues a warning if they have an invalid argument.  In addition, <b>mcpp</b> issues a warning to GCC V.3's #pragmas, such as #pragma GCC poison (dependency), that resident preprocessor processes but <b>mcpp</b> does not.<br>
 <br>
 <li>Doubled \: Although it is implementation-defined in C99 whether a single \ is changed into double \ (\\) when the # operator converts a UCN sequence into a string, <b>mcpp</b> does not issue a warning to this.  <b>mcpp</b> does not double \.<br>
 </ol>
@@ -3675,7 +3714,10 @@ and issues a warning.  Of course, this is a quite rare case.<br>
 <li><samp>Unknown #directive "pseudo-directive"</samp><br>
 Though these are usually errors, lang-asm mode issues only warnings.<br>
 </ul>
-<p>The following warnings on #pragma line are issued only in Standard mode.</p>
+<p>The following warnings on #pragma line are issued only in Standard mode.
+The lines are outputted in principle in spite of the warnings.
+However, the lines to be processed by preprocessor such as most of the lines starting with #pragma MCPP or #pragma GCC are not outputted.
+The pragmas for compiler or linker such as <samp>#pragma GCC visibility *</samp> are outputted without warning.</p>
 <ul>
 <li><samp>No sub-directive</samp><br>
 A #pragma line does not have any argument.  The line is ignored.<br>
@@ -3704,7 +3746,7 @@ MACRO in #pragma MCPP pop_macro( "MACRO") has not been pushed.  It may have been
 <li><samp>Ignored #sccs</samp><br>
 #ident or #sccs lines are ignored.<br>
 </ul>
-<p>GCC-specific-build issues a Class 2 warning to a line with #pragma GCC followed by either poison, dependency or system_header and does not output the line.  GCC V.3 resident preprocessor process the line but <b>mcpp</b> does not.</p>
+<p>GCC-specific-build issues a Class 2 warning to a line with #pragma GCC followed by either poison or dependency and does not output the line.  GCC V.3 resident preprocessor process the line but <b>mcpp</b> does not.</p>
 <p>The following warnings are issued only in pre-Standard mode.  Standard mode regards them as errors.</p>
 <ul>
 <li><samp>Not in a #if (#ifdef) section in a source file</samp><br>
@@ -3838,7 +3880,7 @@ A macro invocation has an empty argument, in which case, <b>mcpp</b> regards the
 , if possible, and then write <tt>EMPTY</tt> where an empty argument is written.<br>
 <br>
 <li><samp>Skipped the #pragma line</samp><br>
-GCC V.3 provides several #pragma directives in the form of #pragma GCC &lt;args&gt;.  Its preprocessor processes some of them, but <b>mcpp</b> does not support them.  This warning is issued to a #pragma directive compiler-specific preprocessors process but <b>mcpp</b> does not.<br>
+GCC V.3 provides several #pragma directives in the form of #pragma GCC &lt;args&gt;.  Its preprocessor processes some of them, but <b>mcpp</b> does not support #pragma GCC poison and #pragma GCC dependency.  This warning is issued to a #pragma directive compiler-specific preprocessors process but <b>mcpp</b> does not.<br>
 <br>
 <li><samp>Not a valid preprocessing token "+12"</samp><br>
 Concatenating two pp-tokens with the ## operator results in an invalid token "+12", which normally causes an error.  However, <b>mcpp</b> invoked with the -lang-asm  (-x assembler-with-cpp, -a) option does not regard it as an error.<br>

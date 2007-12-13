@@ -465,7 +465,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB DLLTOOL ac_ct_DLLTOOL AS ac_ct_AS OBJDUMP ac_ct_OBJDUMP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL host_system inc_dir gcc_maj_ver gcc_min_ver cpp_call gcc_path gcc_testsuite_dir GNUC_TRUE GNUC_FALSE MCPP_LIB_TRUE MCPP_LIB_FALSE REPLACE_CPP_TRUE REPLACE_CPP_FALSE MINGW_TRUE MINGW_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB DLLTOOL ac_ct_DLLTOOL AS ac_ct_AS OBJDUMP ac_ct_OBJDUMP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL host_system Target_Cpu inc_dir gcc_maj_ver gcc_min_ver cpp_call gcc_path gcc_testsuite_dir GNUC_TRUE GNUC_FALSE MCPP_LIB_TRUE MCPP_LIB_FALSE REPLACE_CPP_TRUE REPLACE_CPP_FALSE MINGW_TRUE MINGW_FALSE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -18705,8 +18705,8 @@ LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 
 echo "$as_me:$LINENO: checking whether the cpp is target preprocessor" >&5
 echo $ECHO_N "checking whether the cpp is target preprocessor... $ECHO_C" >&6
-if test `${CPP} -xc -v /dev/null 2>&1 | grep 'MCPP' > /dev/null; echo $?` = 0;
-        then
+mcpp=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | grep 'MCPP'`
+if test "x${mcpp}" != x; then
     { { echo "$as_me:$LINENO: error: Do 'make uninstall' before configuring again." >&5
 echo "$as_me: error: Do 'make uninstall' before configuring again." >&2;}
    { (exit 1); exit 1; }; }
@@ -19416,26 +19416,35 @@ case $target_cpu in
 i?86*)
     Target_Cpu=i386
     ;;
+x86_64|amd64)
+    Target_Cpu=x86_64
+    ;;
+powerpc64|ppc64)
+    Target_Cpu=ppc64
+    ;;
+powerpc|ppc)
+    Target_Cpu=ppc
+    ;;
 *)
     Target_Cpu=$target_cpu
     ;;
 esac
 
-if test x$mcpp_ac_c_define_CPU_STD != x__${Target_Cpu}; then
+if test x${mcpp_ac_c_define_CPU_STD} != x__${Target_Cpu}; then
 
 cat >>confdefs.h <<_ACEOF
 #define CPU_STD1 "__${Target_Cpu}"
 _ACEOF
 
 fi
-if test x$mcpp_ac_c_define_CPU_STD != x__${Target_Cpu}__; then
+if test x${mcpp_ac_c_define_CPU_STD} != x__${Target_Cpu}__; then
 
 cat >>confdefs.h <<_ACEOF
 #define CPU_STD2 "__${Target_Cpu}__"
 _ACEOF
 
 fi
-if test x$mcpp_ac_c_define_CPU_OLD != x${Target_Cpu}; then
+if test x${mcpp_ac_c_define_CPU_OLD} != x${Target_Cpu}; then
 
 cat >>confdefs.h <<_ACEOF
 #define CPU_OLD "${Target_Cpu}"
@@ -19445,7 +19454,7 @@ fi
 
 if test ${ac_c_define_HOST_SYSTEM} = SYS_FREEBSD &&   \
         test x$mcpp_ac_c_define_SYSTEM_SP_STD != x__FreeBSD__; then
-    fbsd_ver=`echo '__FreeBSD__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`
+    fbsd_ver=`echo '__FreeBSD__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`
 
 cat >>confdefs.h <<_ACEOF
 #define SYSTEM_EXT_VAL "${fbsd_ver}"
@@ -19469,7 +19478,7 @@ _ACEOF
 
     echo "$as_me:$LINENO: checking for value of __GNUC__" >&5
 echo $ECHO_N "checking for value of __GNUC__... $ECHO_C" >&6
-    gcc_maj_ver=`echo '__GNUC__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
+    gcc_maj_ver=`echo '__GNUC__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
     echo "$as_me:$LINENO: result: ${gcc_maj_ver}" >&5
 echo "${ECHO_T}${gcc_maj_ver}" >&6
 
@@ -19479,7 +19488,7 @@ _ACEOF
 
     echo "$as_me:$LINENO: checking for value of __GNUC_MINOR__" >&5
 echo $ECHO_N "checking for value of __GNUC_MINOR__... $ECHO_C" >&6
-    gcc_min_ver=`echo __GNUC_MINOR__ | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
+    gcc_min_ver=`echo __GNUC_MINOR__ | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
     echo "$as_me:$LINENO: result: ${gcc_min_ver}" >&5
 echo "${ECHO_T}${gcc_min_ver}" >&6
 
@@ -19628,7 +19637,7 @@ echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
 
     name=`echo ${enableval} | sed 's/=.*//'`
     mcpp_macro=SYSTEM_SP_STD
-    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
     if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
         stripped_name=`echo ${name} | sed 's/^_//'`
         if test x${stripped_name} = x${name}; then
@@ -19678,7 +19687,7 @@ echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
 
     name=`echo ${enableval} | sed 's/=.*//'`
     mcpp_macro=SYSTEM_SP_OLD
-    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
     if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
         stripped_name=`echo ${name} | sed 's/^_//'`
         if test x${stripped_name} = x${name}; then
@@ -19728,7 +19737,7 @@ echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
 
     name=`echo ${enableval} | sed 's/=.*//'`
     mcpp_macro=CPU_SP_STD
-    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
     if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
         stripped_name=`echo ${name} | sed 's/^_//'`
         if test x${stripped_name} = x${name}; then
@@ -19778,7 +19787,7 @@ echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
 
     name=`echo ${enableval} | sed 's/=.*//'`
     mcpp_macro=CPU_SP_OLD
-    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
     if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
         stripped_name=`echo ${name} | sed 's/^_//'`
         if test x${stripped_name} = x${name}; then
@@ -19828,7 +19837,7 @@ echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
 
     name=`echo ${enableval} | sed 's/=.*//'`
     mcpp_macro=COMPILER_SP_STD
-    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
     if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
         stripped_name=`echo ${name} | sed 's/^_//'`
         if test x${stripped_name} = x${name}; then
@@ -19878,7 +19887,7 @@ echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
 
     name=`echo ${enableval} | sed 's/=.*//'`
     mcpp_macro=COMPILER_SP_OLD
-    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
     if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
         stripped_name=`echo ${name} | sed 's/^_//'`
         if test x${stripped_name} = x${name}; then
@@ -19923,7 +19932,7 @@ fi
 if test ${ac_c_define_HOST_SYSTEM} = SYS_MAC; then
     echo "$as_me:$LINENO: checking for the MacOS-specific framework directory" >&5
 echo $ECHO_N "checking for the MacOS-specific framework directory... $ECHO_C" >&6
-    frameworks=`${CPP} -xc -v /dev/null 2>&1 | sed 's/^ *//' | sed 's/ *$//' | $EGREP '/Frameworks$'`
+    frameworks=`${CPP} -xc -v /dev/null 2>&1 | sed 's/^ *//' | sed 's/ .*$//' | ${EGREP} '/Frameworks$'`
     n=1
     for dir in ${frameworks}
     do
@@ -20239,7 +20248,7 @@ echo $ECHO_N "checking default value of __STDC__... $ECHO_C" >&6
 if test "${ac_cv_c_stdc+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  stdc=`echo '__STDC__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`
+  stdc=`echo '__STDC__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`
     if test x"${stdc}" = x"__STDC__"; then
         ac_cv_c_stdc=0
     else
@@ -20260,7 +20269,7 @@ echo $ECHO_N "checking default value of __STDC_VERSION__... $ECHO_C" >&6
 if test "${ac_cv_c_stdc_ver+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  stdc_ver=`echo '__STDC_VERSION__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`
+  stdc_ver=`echo '__STDC_VERSION__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`
     if test x"${stdc_ver}" = x"__STDC_VERSION__"; then
         ac_cv_c_stdc_ver=0
     else
@@ -20331,7 +20340,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-    cpp_call=`${CPP} -xc -v /dev/null 2>&1 | $EGREP '/cpp|/cc1' | sed 's/^ *//; s/ .*//'`
+    cpp_call=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | ${EGREP} '/cpp|/cc1' | sed 's/^ *//; s/ .*//'`
     echo "$as_me:$LINENO: checking for the directory to install mcpp" >&5
 echo $ECHO_N "checking for the directory to install mcpp... $ECHO_C" >&6
     cpp_name=`expr ${cpp_call} : '.*/\(.*\)'`
@@ -20344,7 +20353,7 @@ echo "${ECHO_T}${bindir}" >&6
 
     echo "$as_me:$LINENO: checking for the compiler-specific C include directory" >&5
 echo $ECHO_N "checking for the compiler-specific C include directory... $ECHO_C" >&6
-    c_include_dirs=`${CPP} -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | $EGREP -v '^/usr(/local|)/include$|/Frameworks$|End of search list'`
+    c_include_dirs=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | ${EGREP} -v '^/usr(/local|)/include$|/Frameworks|End of search list'`
     n=1
     for dir in ${c_include_dirs}
     do
@@ -20969,7 +20978,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
     echo "$as_me:$LINENO: checking for the compiler-specific C++ include directory" >&5
 echo $ECHO_N "checking for the compiler-specific C++ include directory... $ECHO_C" >&6
-    cxx_include_dirs=`${CXXCPP} -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | $EGREP -v "^/usr(/local|)/include\$|/Frameworks\$|^${c_include_dir1}\$|^${c_include_dir2}\$"`
+    cxx_include_dirs=`${CXXCPP} ${CXXFLAGS} -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | ${EGREP} -v "^/usr(/local|)/include\$|/Frameworks|^${c_include_dir1}\$|^${c_include_dir2}\$"`
     n=1
     for dir in ${cxx_include_dirs}
     do
@@ -21049,6 +21058,8 @@ _ACEOF
 
 
 
+
+
     # Extract the first word of "${CC}", so it can be a program name with args.
 set dummy ${CC}; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
@@ -21107,7 +21118,7 @@ echo $ECHO_N "checking for value of predefined macro '__SIZE_TYPE__'... $ECHO_C"
 if test "${size_type+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  size_type=`echo '__SIZE_TYPE__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
+  size_type=`echo '__SIZE_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
 
 fi
 echo "$as_me:$LINENO: result: $size_type" >&5
@@ -21123,7 +21134,7 @@ echo $ECHO_N "checking for value of predefined macro '__PTRDIFF_TYPE__'... $ECHO
 if test "${ptrdiff_type+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ptrdiff_type=`echo '__PTRDIFF_TYPE__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *$//'`
+  ptrdiff_type=`echo '__PTRDIFF_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *$//'`
 
 fi
 echo "$as_me:$LINENO: result: $ptrdiff_type" >&5
@@ -21139,7 +21150,7 @@ echo $ECHO_N "checking for value of predefined macro '__WCHAR_TYPE__'... $ECHO_C
 if test "${wchar_type+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  wchar_type=`echo '__WCHAR_TYPE__' | ${CPP} - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *$//'`
+  wchar_type=`echo '__WCHAR_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *$//'`
 
 fi
 echo "$as_me:$LINENO: result: $wchar_type" >&5
@@ -22131,6 +22142,7 @@ s,@FFLAGS@,$FFLAGS,;t t
 s,@ac_ct_F77@,$ac_ct_F77,;t t
 s,@LIBTOOL@,$LIBTOOL,;t t
 s,@host_system@,$host_system,;t t
+s,@Target_Cpu@,$Target_Cpu,;t t
 s,@inc_dir@,$inc_dir,;t t
 s,@gcc_maj_ver@,$gcc_maj_ver,;t t
 s,@gcc_min_ver@,$gcc_min_ver,;t t
