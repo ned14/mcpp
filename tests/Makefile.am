@@ -13,7 +13,7 @@ check-DEJAGNU:
         echo "ERROR: testsuite directory is not specified.  Do './configure --with-gcc-testsuite-dir=directory' prior to 'make check'"; \
         exit 1; \
     fi
-	@if test `echo '' | $(cpp_call) -v - 2>&1 | grep 'MCPP' > /dev/null; echo $$?` != 0; \
+	@if test `$(cpp_call) -v /dev/null 2>&1 | grep 'MCPP' > /dev/null; echo $$?` != 0; \
             then \
         echo "ERROR: Do 'make install' prior to 'make check'"; \
         exit 1; \
@@ -24,9 +24,9 @@ check-DEJAGNU:
         echo '  cp -Rp $(top_srcdir)/cpp-test $(gcc_testsuite_dir)/gcc.dg'; \
         cp -Rp $(top_srcdir)/cpp-test "$(gcc_testsuite_dir)/gcc.dg"; \
     fi
-	@$(top_srcdir)/tests/set_test.sh '$(CC)' '$(gcc_path)' '$(gcc_testsuite_dir)' $(gcc_maj_ver) '$(LN_S)' '$(cpp_call)'
+	@$(top_srcdir)/tests/set_test.sh '$(CC)' '$(gcc_path)' '$(gcc_testsuite_dir)' $(gcc_maj_ver) '$(LN_S)' '$(cpp_call)' '$(target_cc)'
 	-$(RUNTEST) --tool gcc --srcdir $(gcc_testsuite_dir) cpp-test.exp
-	@$(top_srcdir)/tests/after_test.sh '$(CC)' '$(gcc_path)' '$(cpp_call)'
+	@$(top_srcdir)/tests/after_test.sh '$(CC)' '$(gcc_path)' '$(cpp_call)' '$(target_cc)'
 
 uninstall:
 	@if test x"$(gcc_testsuite_dir)" != x""; then \

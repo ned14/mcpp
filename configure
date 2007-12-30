@@ -465,7 +465,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB DLLTOOL ac_ct_DLLTOOL AS ac_ct_AS OBJDUMP ac_ct_OBJDUMP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL host_system Target_Cpu inc_dir gcc_maj_ver gcc_min_ver cpp_call gcc_path gcc_testsuite_dir GNUC_TRUE GNUC_FALSE MCPP_LIB_TRUE MCPP_LIB_FALSE REPLACE_CPP_TRUE REPLACE_CPP_FALSE MINGW_TRUE MINGW_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB DLLTOOL ac_ct_DLLTOOL AS ac_ct_AS OBJDUMP ac_ct_OBJDUMP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL target_cc host_system Target_Cpu inc_dir gcc_maj_ver gcc_min_ver cpp_call gcc_path gcc_testsuite_dir GNUC_TRUE GNUC_FALSE MCPP_LIB_TRUE MCPP_LIB_FALSE REPLACE_CPP_TRUE REPLACE_CPP_FALSE MINGW_TRUE MINGW_FALSE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1035,6 +1035,7 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-replace-cpp    Replace the resident preprocessor with mcpp
   --enable-SYSTEM-STD-macro=name[=replace]
                           specify the SYSTEM-specific STD-style predefined
                           macro. In all this and the following 5 options,
@@ -1056,7 +1057,6 @@ Optional Features:
                           macro.
   --enable-mcpplib        Build libmcpp rather than stand-alone mcpp
 
-  --enable-replace-cpp    Replace the resident preprocessor with mcpp
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1066,6 +1066,8 @@ Optional Packages:
                           both]
   --with-tags[=TAGS]
                           include additional configurations [automatic]
+  --with-target-cc        Specify the target compiler to build mcpp into on
+                          Mac OS X
   --with-compiler-name=NAME
                           specify the compiler name which is used as the
                           definition of COMPILER macro
@@ -3879,7 +3881,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 3882 "configure"' > conftest.$ac_ext
+  echo '#line 3884 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5377,7 +5379,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:5380:" \
+echo "$as_me:5382:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -6440,11 +6442,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6443: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6445: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6447: \$? = $ac_status" >&5
+   echo "$as_me:6449: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -6708,11 +6710,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6711: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6713: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6715: \$? = $ac_status" >&5
+   echo "$as_me:6717: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -6812,11 +6814,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6815: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6817: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:6819: \$? = $ac_status" >&5
+   echo "$as_me:6821: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8281,7 +8283,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 8284 "configure"' > conftest.$ac_ext
+    echo '#line 8286 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9178,7 +9180,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9181 "configure"
+#line 9183 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9278,7 +9280,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9281 "configure"
+#line 9283 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11618,11 +11620,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11621: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11623: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:11625: \$? = $ac_status" >&5
+   echo "$as_me:11627: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -11722,11 +11724,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11725: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11727: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11729: \$? = $ac_status" >&5
+   echo "$as_me:11731: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12258,7 +12260,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 12261 "configure"' > conftest.$ac_ext
+    echo '#line 12263 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -13313,11 +13315,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13316: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13318: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13320: \$? = $ac_status" >&5
+   echo "$as_me:13322: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13417,11 +13419,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13420: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13422: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13424: \$? = $ac_status" >&5
+   echo "$as_me:13426: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14866,7 +14868,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 14869 "configure"' > conftest.$ac_ext
+    echo '#line 14871 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -15641,11 +15643,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15644: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15646: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15648: \$? = $ac_status" >&5
+   echo "$as_me:15650: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15909,11 +15911,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15912: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15914: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15916: \$? = $ac_status" >&5
+   echo "$as_me:15918: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16013,11 +16015,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16016: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16018: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16020: \$? = $ac_status" >&5
+   echo "$as_me:16022: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17482,7 +17484,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 17485 "configure"' > conftest.$ac_ext
+    echo '#line 17487 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -18705,8 +18707,8 @@ LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 
 echo "$as_me:$LINENO: checking whether the cpp is target preprocessor" >&5
 echo $ECHO_N "checking whether the cpp is target preprocessor... $ECHO_C" >&6
-mcpp=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | grep 'MCPP'`
-if test "x${mcpp}" != x; then
+mcpp=`$CPP $CFLAGS -xc -v /dev/null 2>&1 | grep 'MCPP'`
+if test x$mcpp != x; then
     { { echo "$as_me:$LINENO: error: Do 'make uninstall' before configuring again." >&5
 echo "$as_me: error: Do 'make uninstall' before configuring again." >&2;}
    { (exit 1); exit 1; }; }
@@ -18805,6 +18807,106 @@ _ACEOF
 
     ;;
 esac
+
+## --enable-replace-cpp option
+# Check whether --enable-replace-cpp or --disable-replace-cpp was given.
+if test "${enable_replace_cpp+set}" = set; then
+  enableval="$enable_replace_cpp"
+
+else
+  ## the compiler name will be defined later
+
+cat >>confdefs.h <<\_ACEOF
+#define COMPILER INDEPENDENT
+_ACEOF
+
+            ## else define COMPILER as INDEPENDENT
+
+fi;
+
+## Generally this configure does not support cross-compiling.
+## Nevertheless, it can configure cross-compiler of Apple-GCC (i686 vs ppc).
+if test x$enable_replace_cpp = xyes    \
+        && test $ac_c_define_HOST_SYSTEM = SYS_MAC    \
+        && test $host_cpu != $target_cpu; then
+## Enable to build mcpp into cross-compiler of Apple-GCC
+## --with-target-cc option
+
+# Check whether --with-target_cc or --without-target_cc was given.
+if test "${with_target_cc+set}" = set; then
+  withval="$with_target_cc"
+  if test x${withval+set} = xset; then
+        target_cc=$withval
+        target_name=`echo $target_cc | sed 's/-gcc.*$//'`
+        if test $target_name != $target_alias; then
+            { { echo "$as_me:$LINENO: error: The argument of --with-target-cc option conflicts with --target option" >&5
+echo "$as_me: error: The argument of --with-target-cc option conflicts with --target option" >&2;}
+   { (exit 1); exit 1; }; }
+        fi
+
+    fi
+
+fi;
+fi
+
+## compiler-specific or not Mac OS
+## To enable "universal binary" by Apple-GCC, CPU-dependent macros should be
+## defined at compile time rather than configuration time.
+if test x$enable_replace_cpp = xyes    \
+        || test $ac_c_define_HOST_SYSTEM != SYS_MAC; then
+
+
+{ echo "$as_me:$LINENO: setting predefined macros for target cpu" >&5
+echo "$as_me: setting predefined macros for target cpu" >&6;}
+
+case $target_cpu in
+i?86*)
+    Target_Cpu=i386
+    ;;
+x86_64|amd64)
+    Target_Cpu=x86_64
+    ;;
+powerpc64|ppc64)
+    Target_Cpu=ppc64
+    ;;
+powerpc|ppc)
+    Target_Cpu=ppc
+    ;;
+*)
+    Target_Cpu=$target_cpu
+    ;;
+esac
+
+if test x$mcpp_ac_c_define_CPU_STD != x__$Target_Cpu; then
+
+cat >>confdefs.h <<_ACEOF
+#define CPU_STD1 "__$Target_Cpu"
+_ACEOF
+
+fi
+if test x$mcpp_ac_c_define_CPU_STD != x__${Target_Cpu}__; then
+
+cat >>confdefs.h <<_ACEOF
+#define CPU_STD2 "__${Target_Cpu}__"
+_ACEOF
+
+fi
+if test x$mcpp_ac_c_define_CPU_OLD != x$Target_Cpu; then
+
+cat >>confdefs.h <<_ACEOF
+#define CPU_OLD "$Target_Cpu"
+_ACEOF
+
+fi
+
+fi  ## compiler-specific or not Mac OS
+
+## Build into cross-compiler on Mac OS
+if test x$enable_replace_cpp = xyes    \
+        && test $ac_c_define_HOST_SYSTEM = SYS_MAC    \
+        && test x${target_cc+set} = xset; then
+    arch_opt="-arch $Target_Cpu"
+fi
 
 
 
@@ -19246,7 +19348,7 @@ fi
 fi
 echo "$as_me:$LINENO: result: $ac_cv_fname_fold" >&5
 echo "${ECHO_T}$ac_cv_fname_fold" >&6
-if test x${ac_cv_fname_fold} = xyes; then
+if test x$ac_cv_fname_fold = xyes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define FNAME_FOLD 1
@@ -19257,7 +19359,7 @@ fi
 
 
 cat >>confdefs.h <<_ACEOF
-#define OBJEXT "${ac_cv_objext}"
+#define OBJEXT "$ac_cv_objext"
 _ACEOF
 
 
@@ -19266,7 +19368,7 @@ _ACEOF
 # Try the printf length modifier for the longest integer.
 
 
-if test x${ac_cv_type_intmax_t} = xyes; then
+if test x$ac_cv_type_intmax_t = xyes; then
 
     echo "$as_me:$LINENO: checking printf length modifier for the longest integer" >&5
 echo $ECHO_N "checking printf length modifier for the longest integer... $ECHO_C" >&6
@@ -19324,13 +19426,13 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_c_printf_modifier" >&5
 echo "${ECHO_T}$ac_cv_c_printf_modifier" >&6
 
-    if test ${ac_c_define_HOST_SYSTEM} = SYS_CYGWIN \
-            || test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
+    if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN \
+            || test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
         sleep 1         # wait for cleanup
     fi
 fi
 
-if test x${ac_cv_type_long_long} = xyes; then
+if test x$ac_cv_type_long_long = xyes; then
     for modifier in ll I64 q L
     do
 
@@ -19393,8 +19495,8 @@ echo "${ECHO_T}$ac_cv_c_printf_modifier" >&6
         if test x${ac_cv_c_printf_modifier+set} = xset; then
             break
         fi
-        if test ${ac_c_define_HOST_SYSTEM} = SYS_CYGWIN \
-                || test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
+        if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN \
+                || test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
             sleep 1         # wait for cleanup
         fi
     done
@@ -19403,66 +19505,22 @@ fi
 if test x${ac_cv_c_printf_modifier+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define LL_FORM "${ac_cv_c_printf_modifier}"
+#define LL_FORM "$ac_cv_c_printf_modifier"
 _ACEOF
 
 fi
 
-
-{ echo "$as_me:$LINENO: setting predefined macros for target cpu" >&5
-echo "$as_me: setting predefined macros for target cpu" >&6;}
-
-case $target_cpu in
-i?86*)
-    Target_Cpu=i386
-    ;;
-x86_64|amd64)
-    Target_Cpu=x86_64
-    ;;
-powerpc64|ppc64)
-    Target_Cpu=ppc64
-    ;;
-powerpc|ppc)
-    Target_Cpu=ppc
-    ;;
-*)
-    Target_Cpu=$target_cpu
-    ;;
-esac
-
-if test x${mcpp_ac_c_define_CPU_STD} != x__${Target_Cpu}; then
-
-cat >>confdefs.h <<_ACEOF
-#define CPU_STD1 "__${Target_Cpu}"
-_ACEOF
-
-fi
-if test x${mcpp_ac_c_define_CPU_STD} != x__${Target_Cpu}__; then
-
-cat >>confdefs.h <<_ACEOF
-#define CPU_STD2 "__${Target_Cpu}__"
-_ACEOF
-
-fi
-if test x${mcpp_ac_c_define_CPU_OLD} != x${Target_Cpu}; then
-
-cat >>confdefs.h <<_ACEOF
-#define CPU_OLD "${Target_Cpu}"
-_ACEOF
-
-fi
-
-if test ${ac_c_define_HOST_SYSTEM} = SYS_FREEBSD &&   \
+if test $ac_c_define_HOST_SYSTEM = SYS_FREEBSD &&   \
         test x$mcpp_ac_c_define_SYSTEM_SP_STD != x__FreeBSD__; then
-    fbsd_ver=`echo '__FreeBSD__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`
+    fbsd_ver=`echo '__FreeBSD__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`
 
 cat >>confdefs.h <<_ACEOF
-#define SYSTEM_EXT_VAL "${fbsd_ver}"
+#define SYSTEM_EXT_VAL "$fbsd_ver"
 _ACEOF
 
 fi
 
-if test x${ac_cv_c_compiler_gnu} = xyes; then
+if test x$ac_cv_c_compiler_gnu = xyes; then
 
 
 cat >>confdefs.h <<\_ACEOF
@@ -19478,22 +19536,22 @@ _ACEOF
 
     echo "$as_me:$LINENO: checking for value of __GNUC__" >&5
 echo $ECHO_N "checking for value of __GNUC__... $ECHO_C" >&6
-    gcc_maj_ver=`echo '__GNUC__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
-    echo "$as_me:$LINENO: result: ${gcc_maj_ver}" >&5
-echo "${ECHO_T}${gcc_maj_ver}" >&6
+    gcc_maj_ver=`echo '__GNUC__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
+    echo "$as_me:$LINENO: result: $gcc_maj_ver" >&5
+echo "${ECHO_T}$gcc_maj_ver" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define GCC_MAJOR_VERSION "${gcc_maj_ver}"
+#define GCC_MAJOR_VERSION "$gcc_maj_ver"
 _ACEOF
 
     echo "$as_me:$LINENO: checking for value of __GNUC_MINOR__" >&5
 echo $ECHO_N "checking for value of __GNUC_MINOR__... $ECHO_C" >&6
-    gcc_min_ver=`echo __GNUC_MINOR__ | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
-    echo "$as_me:$LINENO: result: ${gcc_min_ver}" >&5
-echo "${ECHO_T}${gcc_min_ver}" >&6
+    gcc_min_ver=`echo __GNUC_MINOR__ | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
+    echo "$as_me:$LINENO: result: $gcc_min_ver" >&5
+echo "${ECHO_T}$gcc_min_ver" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define GCC_MINOR_VERSION "${gcc_min_ver}"
+#define GCC_MINOR_VERSION "$gcc_min_ver"
 _ACEOF
 
 
@@ -19540,7 +19598,7 @@ rm -f conftest.err conftest.$ac_ext
 fi
 echo "$as_me:$LINENO: result: $gcc_cv_glibc" >&5
 echo "${ECHO_T}$gcc_cv_glibc" >&6
-    if test x${gcc_cv_glibc} = xyes; then
+    if test x$gcc_cv_glibc = xyes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define LIB_IS_GLIBC 1
@@ -19548,7 +19606,7 @@ _ACEOF
 
     fi
 
-    if test ${ac_c_define_HOST_SYSTEM} = SYS_CYGWIN; then
+    if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN; then
         echo "$as_me:$LINENO: checking the root directory" >&5
 echo $ECHO_N "checking the root directory... $ECHO_C" >&6
 if test "${ac_cv_cygwin_root+set}" = set; then
@@ -19561,11 +19619,11 @@ echo "$as_me:$LINENO: result: $ac_cv_cygwin_root" >&5
 echo "${ECHO_T}$ac_cv_cygwin_root" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define CYGWIN_ROOT_DIRECTORY "${ac_cv_cygwin_root}"
+#define CYGWIN_ROOT_DIRECTORY "$ac_cv_cygwin_root"
 _ACEOF
 
     fi
-    if test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
+    if test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
         echo "$as_me:$LINENO: checking the root directory" >&5
 echo $ECHO_N "checking the root directory... $ECHO_C" >&6
 if test "${ac_cv_msys_root+set}" = set; then
@@ -19583,7 +19641,7 @@ int main( int argc, char ** argv)
     return 0;
 }
 _EOF
-            ${CC} getcwd.c
+            $CC getcwd.c
             ac_cv_msys_root=`./a.exe | tr '\\\', '/'`
             ## redundant \ to work around MinGW's problem
 
@@ -19602,22 +19660,22 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_mingw_dir" >&5
 echo "${ECHO_T}$ac_cv_mingw_dir" >&6
         rm -f /getcwd.c /a.exe
-        cd ${cw}
+        cd $cw
 
 cat >>confdefs.h <<_ACEOF
-#define MSYS_ROOT_DIRECTORY "${ac_cv_msys_root}"
+#define MSYS_ROOT_DIRECTORY "$ac_cv_msys_root"
 _ACEOF
 
 
 cat >>confdefs.h <<_ACEOF
-#define MINGW_DIRECTORY "${ac_cv_mingw_dir}"
+#define MINGW_DIRECTORY "$ac_cv_mingw_dir"
 _ACEOF
 
     fi
 
 else    # not gcc
 
-# mcpp_AC_C_DEFINE( SYSTEM | CPU | COMPILER, STD | OLD, ${enableval})
+# mcpp_AC_C_DEFINE( SYSTEM | CPU | COMPILER, STD | OLD, $enableval)
 # Specify the target-specific predefined macro.
 
 
@@ -19629,44 +19687,44 @@ else    # not gcc
     # Check whether --enable-SYSTEM-STD-macro or --disable-SYSTEM-STD-macro was given.
 if test "${enable_SYSTEM_STD_macro+set}" = set; then
   enableval="$enable_SYSTEM_STD_macro"
-  if test x${enableval} = xyes || test x${enableval} = xno; then
+  if test x$enableval = xyes || test x$enableval = xno; then
             { { echo "$as_me:$LINENO: error: This option requires an argument as 'name[=replace]'" >&5
 echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
    { (exit 1); exit 1; }; }
         fi
 
-    name=`echo ${enableval} | sed 's/=.*//'`
+    name=`echo $enableval | sed 's/=.*//'`
     mcpp_macro=SYSTEM_SP_STD
-    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
-    if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
-        stripped_name=`echo ${name} | sed 's/^_//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with '_'" >&5
-echo "$as_me: error: the macro name '${name}' should begin with '_'" >&2;}
+    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    if test x$stripped_mcpp_macro != x$mcpp_macro; then
+        stripped_name=`echo $name | sed 's/^_//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with '_'" >&5
+echo "$as_me: error: the macro name '$name' should begin with '_'" >&2;}
    { (exit 1); exit 1; }; }
         fi
     else
-        stripped_name=`echo ${name} | sed 's/^[A-Za-z]//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with an alphabetic letter" >&5
-echo "$as_me: error: the macro name '${name}' should begin with an alphabetic letter" >&2;}
+        stripped_name=`echo $name | sed 's/^[A-Za-z]//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with an alphabetic letter" >&5
+echo "$as_me: error: the macro name '$name' should begin with an alphabetic letter" >&2;}
    { (exit 1); exit 1; }; }
         fi
     fi
-    if test x${name} = x${enableval}; then
+    if test x$name = x$enableval; then
         replace=1
     else
-        replace=`echo ${enableval} | sed 's/^.*=//'`
+        replace=`echo $enableval | sed 's/^.*=//'`
     fi
     cat >>confdefs.h <<_ACEOF
-#define $mcpp_macro "${name}"
+#define $mcpp_macro "$name"
 _ACEOF
 
     cat >>confdefs.h <<_ACEOF
-#define ${mcpp_macro}_VAL "${replace}"
+#define ${mcpp_macro}_VAL "$replace"
 _ACEOF
 
-    mcpp_ac_c_define_SYSTEM_STD=${name}
+    mcpp_ac_c_define_SYSTEM_STD=$name
 
 
 
@@ -19679,44 +19737,44 @@ fi;
     # Check whether --enable-SYSTEM-OLD-macro or --disable-SYSTEM-OLD-macro was given.
 if test "${enable_SYSTEM_OLD_macro+set}" = set; then
   enableval="$enable_SYSTEM_OLD_macro"
-  if test x${enableval} = xyes || test x${enableval} = xno; then
+  if test x$enableval = xyes || test x$enableval = xno; then
             { { echo "$as_me:$LINENO: error: This option requires an argument as 'name[=replace]'" >&5
 echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
    { (exit 1); exit 1; }; }
         fi
 
-    name=`echo ${enableval} | sed 's/=.*//'`
+    name=`echo $enableval | sed 's/=.*//'`
     mcpp_macro=SYSTEM_SP_OLD
-    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
-    if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
-        stripped_name=`echo ${name} | sed 's/^_//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with '_'" >&5
-echo "$as_me: error: the macro name '${name}' should begin with '_'" >&2;}
+    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    if test x$stripped_mcpp_macro != x$mcpp_macro; then
+        stripped_name=`echo $name | sed 's/^_//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with '_'" >&5
+echo "$as_me: error: the macro name '$name' should begin with '_'" >&2;}
    { (exit 1); exit 1; }; }
         fi
     else
-        stripped_name=`echo ${name} | sed 's/^[A-Za-z]//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with an alphabetic letter" >&5
-echo "$as_me: error: the macro name '${name}' should begin with an alphabetic letter" >&2;}
+        stripped_name=`echo $name | sed 's/^[A-Za-z]//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with an alphabetic letter" >&5
+echo "$as_me: error: the macro name '$name' should begin with an alphabetic letter" >&2;}
    { (exit 1); exit 1; }; }
         fi
     fi
-    if test x${name} = x${enableval}; then
+    if test x$name = x$enableval; then
         replace=1
     else
-        replace=`echo ${enableval} | sed 's/^.*=//'`
+        replace=`echo $enableval | sed 's/^.*=//'`
     fi
     cat >>confdefs.h <<_ACEOF
-#define $mcpp_macro "${name}"
+#define $mcpp_macro "$name"
 _ACEOF
 
     cat >>confdefs.h <<_ACEOF
-#define ${mcpp_macro}_VAL "${replace}"
+#define ${mcpp_macro}_VAL "$replace"
 _ACEOF
 
-    mcpp_ac_c_define_SYSTEM_OLD=${name}
+    mcpp_ac_c_define_SYSTEM_OLD=$name
 
 
 
@@ -19729,44 +19787,44 @@ fi;
     # Check whether --enable-CPU-STD-macro or --disable-CPU-STD-macro was given.
 if test "${enable_CPU_STD_macro+set}" = set; then
   enableval="$enable_CPU_STD_macro"
-  if test x${enableval} = xyes || test x${enableval} = xno; then
+  if test x$enableval = xyes || test x$enableval = xno; then
             { { echo "$as_me:$LINENO: error: This option requires an argument as 'name[=replace]'" >&5
 echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
    { (exit 1); exit 1; }; }
         fi
 
-    name=`echo ${enableval} | sed 's/=.*//'`
+    name=`echo $enableval | sed 's/=.*//'`
     mcpp_macro=CPU_SP_STD
-    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
-    if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
-        stripped_name=`echo ${name} | sed 's/^_//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with '_'" >&5
-echo "$as_me: error: the macro name '${name}' should begin with '_'" >&2;}
+    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    if test x$stripped_mcpp_macro != x$mcpp_macro; then
+        stripped_name=`echo $name | sed 's/^_//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with '_'" >&5
+echo "$as_me: error: the macro name '$name' should begin with '_'" >&2;}
    { (exit 1); exit 1; }; }
         fi
     else
-        stripped_name=`echo ${name} | sed 's/^[A-Za-z]//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with an alphabetic letter" >&5
-echo "$as_me: error: the macro name '${name}' should begin with an alphabetic letter" >&2;}
+        stripped_name=`echo $name | sed 's/^[A-Za-z]//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with an alphabetic letter" >&5
+echo "$as_me: error: the macro name '$name' should begin with an alphabetic letter" >&2;}
    { (exit 1); exit 1; }; }
         fi
     fi
-    if test x${name} = x${enableval}; then
+    if test x$name = x$enableval; then
         replace=1
     else
-        replace=`echo ${enableval} | sed 's/^.*=//'`
+        replace=`echo $enableval | sed 's/^.*=//'`
     fi
     cat >>confdefs.h <<_ACEOF
-#define $mcpp_macro "${name}"
+#define $mcpp_macro "$name"
 _ACEOF
 
     cat >>confdefs.h <<_ACEOF
-#define ${mcpp_macro}_VAL "${replace}"
+#define ${mcpp_macro}_VAL "$replace"
 _ACEOF
 
-    mcpp_ac_c_define_CPU_STD=${name}
+    mcpp_ac_c_define_CPU_STD=$name
 
 
 
@@ -19779,44 +19837,44 @@ fi;
     # Check whether --enable-CPU-OLD-macro or --disable-CPU-OLD-macro was given.
 if test "${enable_CPU_OLD_macro+set}" = set; then
   enableval="$enable_CPU_OLD_macro"
-  if test x${enableval} = xyes || test x${enableval} = xno; then
+  if test x$enableval = xyes || test x$enableval = xno; then
             { { echo "$as_me:$LINENO: error: This option requires an argument as 'name[=replace]'" >&5
 echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
    { (exit 1); exit 1; }; }
         fi
 
-    name=`echo ${enableval} | sed 's/=.*//'`
+    name=`echo $enableval | sed 's/=.*//'`
     mcpp_macro=CPU_SP_OLD
-    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
-    if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
-        stripped_name=`echo ${name} | sed 's/^_//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with '_'" >&5
-echo "$as_me: error: the macro name '${name}' should begin with '_'" >&2;}
+    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    if test x$stripped_mcpp_macro != x$mcpp_macro; then
+        stripped_name=`echo $name | sed 's/^_//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with '_'" >&5
+echo "$as_me: error: the macro name '$name' should begin with '_'" >&2;}
    { (exit 1); exit 1; }; }
         fi
     else
-        stripped_name=`echo ${name} | sed 's/^[A-Za-z]//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with an alphabetic letter" >&5
-echo "$as_me: error: the macro name '${name}' should begin with an alphabetic letter" >&2;}
+        stripped_name=`echo $name | sed 's/^[A-Za-z]//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with an alphabetic letter" >&5
+echo "$as_me: error: the macro name '$name' should begin with an alphabetic letter" >&2;}
    { (exit 1); exit 1; }; }
         fi
     fi
-    if test x${name} = x${enableval}; then
+    if test x$name = x$enableval; then
         replace=1
     else
-        replace=`echo ${enableval} | sed 's/^.*=//'`
+        replace=`echo $enableval | sed 's/^.*=//'`
     fi
     cat >>confdefs.h <<_ACEOF
-#define $mcpp_macro "${name}"
+#define $mcpp_macro "$name"
 _ACEOF
 
     cat >>confdefs.h <<_ACEOF
-#define ${mcpp_macro}_VAL "${replace}"
+#define ${mcpp_macro}_VAL "$replace"
 _ACEOF
 
-    mcpp_ac_c_define_CPU_OLD=${name}
+    mcpp_ac_c_define_CPU_OLD=$name
 
 
 
@@ -19829,44 +19887,44 @@ fi;
     # Check whether --enable-COMPILER-STD-macro or --disable-COMPILER-STD-macro was given.
 if test "${enable_COMPILER_STD_macro+set}" = set; then
   enableval="$enable_COMPILER_STD_macro"
-  if test x${enableval} = xyes || test x${enableval} = xno; then
+  if test x$enableval = xyes || test x$enableval = xno; then
             { { echo "$as_me:$LINENO: error: This option requires an argument as 'name[=replace]'" >&5
 echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
    { (exit 1); exit 1; }; }
         fi
 
-    name=`echo ${enableval} | sed 's/=.*//'`
+    name=`echo $enableval | sed 's/=.*//'`
     mcpp_macro=COMPILER_SP_STD
-    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
-    if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
-        stripped_name=`echo ${name} | sed 's/^_//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with '_'" >&5
-echo "$as_me: error: the macro name '${name}' should begin with '_'" >&2;}
+    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    if test x$stripped_mcpp_macro != x$mcpp_macro; then
+        stripped_name=`echo $name | sed 's/^_//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with '_'" >&5
+echo "$as_me: error: the macro name '$name' should begin with '_'" >&2;}
    { (exit 1); exit 1; }; }
         fi
     else
-        stripped_name=`echo ${name} | sed 's/^[A-Za-z]//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with an alphabetic letter" >&5
-echo "$as_me: error: the macro name '${name}' should begin with an alphabetic letter" >&2;}
+        stripped_name=`echo $name | sed 's/^[A-Za-z]//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with an alphabetic letter" >&5
+echo "$as_me: error: the macro name '$name' should begin with an alphabetic letter" >&2;}
    { (exit 1); exit 1; }; }
         fi
     fi
-    if test x${name} = x${enableval}; then
+    if test x$name = x$enableval; then
         replace=1
     else
-        replace=`echo ${enableval} | sed 's/^.*=//'`
+        replace=`echo $enableval | sed 's/^.*=//'`
     fi
     cat >>confdefs.h <<_ACEOF
-#define $mcpp_macro "${name}"
+#define $mcpp_macro "$name"
 _ACEOF
 
     cat >>confdefs.h <<_ACEOF
-#define ${mcpp_macro}_VAL "${replace}"
+#define ${mcpp_macro}_VAL "$replace"
 _ACEOF
 
-    mcpp_ac_c_define_COMPILER_STD=${name}
+    mcpp_ac_c_define_COMPILER_STD=$name
 
 
 
@@ -19879,44 +19937,44 @@ fi;
     # Check whether --enable-COMPILER-OLD-macro or --disable-COMPILER-OLD-macro was given.
 if test "${enable_COMPILER_OLD_macro+set}" = set; then
   enableval="$enable_COMPILER_OLD_macro"
-  if test x${enableval} = xyes || test x${enableval} = xno; then
+  if test x$enableval = xyes || test x$enableval = xno; then
             { { echo "$as_me:$LINENO: error: This option requires an argument as 'name[=replace]'" >&5
 echo "$as_me: error: This option requires an argument as 'name[=replace]'" >&2;}
    { (exit 1); exit 1; }; }
         fi
 
-    name=`echo ${enableval} | sed 's/=.*//'`
+    name=`echo $enableval | sed 's/=.*//'`
     mcpp_macro=COMPILER_SP_OLD
-    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
-    if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
-        stripped_name=`echo ${name} | sed 's/^_//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with '_'" >&5
-echo "$as_me: error: the macro name '${name}' should begin with '_'" >&2;}
+    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    if test x$stripped_mcpp_macro != x$mcpp_macro; then
+        stripped_name=`echo $name | sed 's/^_//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with '_'" >&5
+echo "$as_me: error: the macro name '$name' should begin with '_'" >&2;}
    { (exit 1); exit 1; }; }
         fi
     else
-        stripped_name=`echo ${name} | sed 's/^[A-Za-z]//'`
-        if test x${stripped_name} = x${name}; then
-            { { echo "$as_me:$LINENO: error: the macro name '${name}' should begin with an alphabetic letter" >&5
-echo "$as_me: error: the macro name '${name}' should begin with an alphabetic letter" >&2;}
+        stripped_name=`echo $name | sed 's/^[A-Za-z]//'`
+        if test x$stripped_name = x$name; then
+            { { echo "$as_me:$LINENO: error: the macro name '$name' should begin with an alphabetic letter" >&5
+echo "$as_me: error: the macro name '$name' should begin with an alphabetic letter" >&2;}
    { (exit 1); exit 1; }; }
         fi
     fi
-    if test x${name} = x${enableval}; then
+    if test x$name = x$enableval; then
         replace=1
     else
-        replace=`echo ${enableval} | sed 's/^.*=//'`
+        replace=`echo $enableval | sed 's/^.*=//'`
     fi
     cat >>confdefs.h <<_ACEOF
-#define $mcpp_macro "${name}"
+#define $mcpp_macro "$name"
 _ACEOF
 
     cat >>confdefs.h <<_ACEOF
-#define ${mcpp_macro}_VAL "${replace}"
+#define ${mcpp_macro}_VAL "$replace"
 _ACEOF
 
-    mcpp_ac_c_define_COMPILER_OLD=${name}
+    mcpp_ac_c_define_COMPILER_OLD=$name
 
 
 
@@ -19929,28 +19987,28 @@ fi;
 fi
 
 ## MacOS has "framework" directories.
-if test ${ac_c_define_HOST_SYSTEM} = SYS_MAC; then
+if test $ac_c_define_HOST_SYSTEM = SYS_MAC; then
     echo "$as_me:$LINENO: checking for the MacOS-specific framework directory" >&5
 echo $ECHO_N "checking for the MacOS-specific framework directory... $ECHO_C" >&6
-    frameworks=`${CPP} -xc -v /dev/null 2>&1 | sed 's/^ *//' | sed 's/ .*$//' | ${EGREP} '/Frameworks$'`
+    frameworks=`$CPP $CFLAGS $arch_opt -xc -v /dev/null 2>&1 | sed 's/^ *//' | sed 's/ .*$//' | $EGREP '/Frameworks$'`
     n=1
-    for dir in ${frameworks}
+    for dir in $frameworks
     do
         case $n in
-        1)  framework1=${dir};;
-        2)  framework2=${dir};;
-        3)  framework3=${dir};;
+        1)  framework1=$dir;;
+        2)  framework2=$dir;;
+        3)  framework3=$dir;;
         esac
         let n=n+1
     done
     if test x${framework1+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define FRAMEWORK1 "${framework1}"
+#define FRAMEWORK1 "$framework1"
 _ACEOF
 
-        echo "$as_me:$LINENO: result: ${framework1}" >&5
-echo "${ECHO_T}${framework1}" >&6
+        echo "$as_me:$LINENO: result: $framework1" >&5
+echo "${ECHO_T}$framework1" >&6
     else
         echo "$as_me:$LINENO: result: none" >&5
 echo "${ECHO_T}none" >&6
@@ -19958,20 +20016,20 @@ echo "${ECHO_T}none" >&6
     if test x${framework2+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define FRAMEWORK2 "${framework2}"
+#define FRAMEWORK2 "$framework2"
 _ACEOF
 
-        echo "$as_me:$LINENO: result: ${framework2}" >&5
-echo "${ECHO_T}${framework2}" >&6
+        echo "$as_me:$LINENO: result: $framework2" >&5
+echo "${ECHO_T}$framework2" >&6
     fi
     if test x${framework3+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define FRAMEWORK3 "${framework3}"
+#define FRAMEWORK3 "$framework3"
 _ACEOF
 
-        echo "$as_me:$LINENO: result: ${framework3}" >&5
-echo "${ECHO_T}${framework3}" >&6
+        echo "$as_me:$LINENO: result: $framework3" >&5
+echo "${ECHO_T}$framework3" >&6
     fi
 fi  ## SYS_MAC
 
@@ -19982,29 +20040,13 @@ if test "${enable_mcpplib+set}" = set; then
 
 fi;
 
-## --enable-replace-cpp option
-# Check whether --enable-replace-cpp or --disable-replace-cpp was given.
-if test "${enable_replace_cpp+set}" = set; then
-  enableval="$enable_replace_cpp"
-
-else
-  ## the compiler name will be defined later
-
-cat >>confdefs.h <<\_ACEOF
-#define COMPILER INDEPENDENT
-_ACEOF
-
-            ## else define COMPILER as INDEPENDENT
-
-fi;
-
-if test x${enable_mcpplib} = xyes; then             ## mcpplib mode
+if test x$enable_mcpplib = xyes; then               ## mcpplib mode
 
 cat >>confdefs.h <<\_ACEOF
 #define MCPP_LIB 1
 _ACEOF
 
-    if test x${enable_replace_cpp} = xyes; then
+    if test x$enable_replace_cpp = xyes; then
         { echo "$as_me:$LINENO: WARNING: Ignores enable-replace-cpp option" >&5
 echo "$as_me: WARNING: Ignores enable-replace-cpp option" >&2;}
         enable_replace_cpp=no
@@ -20012,7 +20054,7 @@ echo "$as_me: WARNING: Ignores enable-replace-cpp option" >&2;}
 
 else
 
-if test x${enable_replace_cpp} = xyes; then         ## replace-cpp mode
+if test x$enable_replace_cpp = xyes; then           ## replace-cpp mode
 
 
 
@@ -20051,7 +20093,7 @@ fi
 rm -f conftest*
 
 
-    if test x${ac_cv_c_include_pref} != xSOURCE; then
+    if test x$ac_cv_c_include_pref != xSOURCE; then
 
     cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -20070,7 +20112,7 @@ fi
 rm -f conftest*
 
 
-        if test x${ac_cv_c_include_pref} = xCURRENT; then
+        if test x$ac_cv_c_include_pref = xCURRENT; then
 
     cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -20089,7 +20131,7 @@ fi
 rm -f conftest*
 
 
-            if test x${ac_cv_c_include_pref} = xNEXT; then
+            if test x$ac_cv_c_include_pref = xNEXT; then
                 ac_cv_c_include_pref="(CURRENT & SOURCE)"
             fi
         else
@@ -20110,7 +20152,7 @@ echo "$as_me:$LINENO: result: $ac_cv_c_include_pref" >&5
 echo "${ECHO_T}$ac_cv_c_include_pref" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define SEARCH_INIT ${ac_cv_c_include_pref}
+#define SEARCH_INIT $ac_cv_c_include_pref
 _ACEOF
 
 
@@ -20159,7 +20201,7 @@ rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 echo "$as_me:$LINENO: result: $ac_cv_c_pragma_is_expanded" >&5
 echo "${ECHO_T}$ac_cv_c_pragma_is_expanded" >&6
-if test x${ac_cv_c_pragma_is_expanded} = xyes; then
+if test x$ac_cv_c_pragma_is_expanded = xyes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define EXPAND_PRAGMA 1
@@ -20208,7 +20250,7 @@ rm -f conftest.err conftest.$ac_ext
 fi
 echo "$as_me:$LINENO: result: $ac_cv_c_digraph" >&5
 echo "${ECHO_T}$ac_cv_c_digraph" >&6
-if test x${ac_cv_c_digraph} = xyes; then
+if test x$ac_cv_c_digraph = xyes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_DIGRAPHS 1
@@ -20221,7 +20263,7 @@ echo $ECHO_N "checking preprocessor output format of line directive... $ECHO_C" 
 if test "${ac_cv_c_line_format+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ac_cv_c_line_format=\"`echo '#line 4321' | ${CPP} - | grep 432 | sed 's/432.*$//'`\"
+  ac_cv_c_line_format=\"`echo '#line 4321' | $CPP - | grep 432 | sed 's/432.*$//'`\"
 ## Note: the output line number may be 4320 on GCC 2.* or other preprocessors.
 
 fi
@@ -20229,17 +20271,17 @@ echo "$as_me:$LINENO: result: $ac_cv_c_line_format" >&5
 echo "${ECHO_T}$ac_cv_c_line_format" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define LINE_PREFIX ${ac_cv_c_line_format}
+#define LINE_PREFIX $ac_cv_c_line_format
 _ACEOF
 
-if test "x${ac_cv_c_line_format}" = "x\"#line \""; then
+if test "x$ac_cv_c_line_format" = "x\"#line \""; then
     ac_cv_c_std_line_prefix=1
 else
     ac_cv_c_std_line_prefix=0
 fi
 
 cat >>confdefs.h <<_ACEOF
-#define STD_LINE_PREFIX ${ac_cv_c_std_line_prefix}
+#define STD_LINE_PREFIX $ac_cv_c_std_line_prefix
 _ACEOF
 
 
@@ -20248,11 +20290,11 @@ echo $ECHO_N "checking default value of __STDC__... $ECHO_C" >&6
 if test "${ac_cv_c_stdc+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  stdc=`echo '__STDC__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`
-    if test x"${stdc}" = x"__STDC__"; then
+  stdc=`echo '__STDC__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`
+    if test x"$stdc" = x"__STDC__"; then
         ac_cv_c_stdc=0
     else
-        ac_cv_c_stdc=${stdc}
+        ac_cv_c_stdc=$stdc
     fi
 
 fi
@@ -20260,7 +20302,7 @@ echo "$as_me:$LINENO: result: $ac_cv_c_stdc" >&5
 echo "${ECHO_T}$ac_cv_c_stdc" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define STDC ${ac_cv_c_stdc}
+#define STDC $ac_cv_c_stdc
 _ACEOF
 
 
@@ -20269,11 +20311,11 @@ echo $ECHO_N "checking default value of __STDC_VERSION__... $ECHO_C" >&6
 if test "${ac_cv_c_stdc_ver+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  stdc_ver=`echo '__STDC_VERSION__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`
-    if test x"${stdc_ver}" = x"__STDC_VERSION__"; then
+  stdc_ver=`echo '__STDC_VERSION__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`
+    if test x"$stdc_ver" = x"__STDC_VERSION__"; then
         ac_cv_c_stdc_ver=0
     else
-        ac_cv_c_stdc_ver=${stdc_ver}
+        ac_cv_c_stdc_ver=$stdc_ver
     fi
 
 fi
@@ -20281,7 +20323,7 @@ echo "$as_me:$LINENO: result: $ac_cv_c_stdc_ver" >&5
 echo "${ECHO_T}$ac_cv_c_stdc_ver" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define STDC_VERSION ${ac_cv_c_stdc_ver}
+#define STDC_VERSION $ac_cv_c_stdc_ver
 _ACEOF
 
 
@@ -20294,7 +20336,7 @@ if test "${with_compiler_name+set}" = set; then
   withval="$with_compiler_name"
 
 cat >>confdefs.h <<_ACEOF
-#define COMPILER ${compiler_name}
+#define COMPILER $compiler_name
 _ACEOF
 
 else
@@ -20311,15 +20353,15 @@ if test "${with_cxx_include_dir+set}" = set; then
   withval="$with_cxx_include_dir"
   case "${withval}" in
     \\/* | A-Za-z:\\/*)
-        cxx_include_dir=`echo ${withval} | sed 's,/$,,'; 's,\\$,,'`
+        cxx_include_dir=`echo $withval | sed 's,/$,,'; 's,\\$,,'`
 
 cat >>confdefs.h <<_ACEOF
-#define CPLUS_INCLUDE_DIR1 ${cxx_include_dir}
+#define CPLUS_INCLUDE_DIR1 $cxx_include_dir
 _ACEOF
 
         ;;
-    *)  { { echo "$as_me:$LINENO: error: ${withval} should be an absolute path" >&5
-echo "$as_me: error: ${withval} should be an absolute path" >&2;}
+    *)  { { echo "$as_me:$LINENO: error: $withval should be an absolute path" >&5
+echo "$as_me: error: $withval should be an absolute path" >&2;}
    { (exit 1); exit 1; }; } ;;
     esac
 
@@ -20332,7 +20374,7 @@ fi  # not gcc
 echo "$as_me: checking for some compiler specific elements" >&6;}
 
 # Define GCC specific elements.
-if test x${ac_cv_c_compiler_gnu} = xyes; then
+if test x$ac_cv_c_compiler_gnu = xyes; then
 
 
 cat >>confdefs.h <<\_ACEOF
@@ -20340,37 +20382,37 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-    cpp_call=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | ${EGREP} '/cpp|/cc1' | sed 's/^ *//; s/ .*//'`
+    cpp_call=`$CPP $CFLAGS $arch_opt -xc -v /dev/null 2>&1 | $EGREP '/cpp|/cc1' | sed 's/^ *//; s/ .*//'`
     echo "$as_me:$LINENO: checking for the directory to install mcpp" >&5
 echo $ECHO_N "checking for the directory to install mcpp... $ECHO_C" >&6
-    cpp_name=`expr ${cpp_call} : '.*/\(.*\)'`
-    bindir=`expr ${cpp_call} : "\(.*\)/${cpp_name}"`
-    echo "$as_me:$LINENO: result: ${bindir}" >&5
-echo "${ECHO_T}${bindir}" >&6
+    cpp_name=`expr $cpp_call : '.*/\(.*\)'`
+    bindir=`expr $cpp_call : "\(.*\)/$cpp_name"`
+    echo "$as_me:$LINENO: result: $bindir" >&5
+echo "${ECHO_T}$bindir" >&6
 
-    lang_save=${LANG}
+    lang_save=$LANG
     export LANG=C
 
     echo "$as_me:$LINENO: checking for the compiler-specific C include directory" >&5
 echo $ECHO_N "checking for the compiler-specific C include directory... $ECHO_C" >&6
-    c_include_dirs=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | ${EGREP} -v '^/usr(/local|)/include$|/Frameworks|End of search list'`
+    c_include_dirs=`$CPP $CFLAGS $arch_opt -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | $EGREP -v '^/usr(/local|)/include$|/Frameworks|End of search list'`
     n=1
-    for dir in ${c_include_dirs}
+    for dir in $c_include_dirs
     do
         case $n in
-        1)  c_include_dir1=${dir};;
-        2)  c_include_dir2=${dir};;
+        1)  c_include_dir1=$dir;;
+        2)  c_include_dir2=$dir;;
         esac
         let n=n+1
     done
     if test x${c_include_dir1+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define C_INCLUDE_DIR1 "${c_include_dir1}"
+#define C_INCLUDE_DIR1 "$c_include_dir1"
 _ACEOF
 
-        echo "$as_me:$LINENO: result: ${c_include_dir1}" >&5
-echo "${ECHO_T}${c_include_dir1}" >&6
+        echo "$as_me:$LINENO: result: $c_include_dir1" >&5
+echo "${ECHO_T}$c_include_dir1" >&6
     else
         echo "$as_me:$LINENO: result: none" >&5
 echo "${ECHO_T}none" >&6
@@ -20378,11 +20420,11 @@ echo "${ECHO_T}none" >&6
     if test x${c_include_dir2+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define C_INCLUDE_DIR2 "${c_include_dir2}"
+#define C_INCLUDE_DIR2 "$c_include_dir2"
 _ACEOF
 
-        echo "$as_me:$LINENO: result: ${c_include_dir2}" >&5
-echo "${ECHO_T}${c_include_dir2}" >&6
+        echo "$as_me:$LINENO: result: $c_include_dir2" >&5
+echo "${ECHO_T}$c_include_dir2" >&6
     fi
 
     ac_ext=cc
@@ -20978,53 +21020,53 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
     echo "$as_me:$LINENO: checking for the compiler-specific C++ include directory" >&5
 echo $ECHO_N "checking for the compiler-specific C++ include directory... $ECHO_C" >&6
-    cxx_include_dirs=`${CXXCPP} ${CXXFLAGS} -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | ${EGREP} -v "^/usr(/local|)/include\$|/Frameworks|^${c_include_dir1}\$|^${c_include_dir2}\$"`
+    cxx_include_dirs=`${CXXCPP} ${CXXFLAGS} $arch_opt -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | $EGREP -v "^/usr(/local|)/include\$|/Frameworks|^${c_include_dir1}\$|^${c_include_dir2}\$"`
     n=1
     for dir in ${cxx_include_dirs}
     do
         case $n in
-        1)  cxx_include_dir1=${dir};;
-        2)  cxx_include_dir2=${dir};;
-        3)  cxx_include_dir3=${dir};;
-        4)  cxx_include_dir4=${dir};;
+        1)  cxx_include_dir1=$dir;;
+        2)  cxx_include_dir2=$dir;;
+        3)  cxx_include_dir3=$dir;;
+        4)  cxx_include_dir4=$dir;;
         esac
         let n=n+1
     done
     if test x${cxx_include_dir1+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define CPLUS_INCLUDE_DIR1 "${cxx_include_dir1}"
+#define CPLUS_INCLUDE_DIR1 "$cxx_include_dir1"
 _ACEOF
 
-        echo "$as_me:$LINENO: result: ${cxx_include_dir1}" >&5
-echo "${ECHO_T}${cxx_include_dir1}" >&6
+        echo "$as_me:$LINENO: result: $cxx_include_dir1" >&5
+echo "${ECHO_T}$cxx_include_dir1" >&6
     fi
     if test x${cxx_include_dir2+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define CPLUS_INCLUDE_DIR2 "${cxx_include_dir2}"
+#define CPLUS_INCLUDE_DIR2 "$cxx_include_dir2"
 _ACEOF
 
-        echo "$as_me:$LINENO: result: ${cxx_include_dir2}" >&5
-echo "${ECHO_T}${cxx_include_dir2}" >&6
+        echo "$as_me:$LINENO: result: $cxx_include_dir2" >&5
+echo "${ECHO_T}$cxx_include_dir2" >&6
     fi
     if test x${cxx_include_dir3+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define CPLUS_INCLUDE_DIR3 "${cxx_include_dir3}"
+#define CPLUS_INCLUDE_DIR3 "$cxx_include_dir3"
 _ACEOF
 
-        echo "$as_me:$LINENO: result: ${cxx_include_dir3}" >&5
-echo "${ECHO_T}${cxx_include_dir3}" >&6
+        echo "$as_me:$LINENO: result: $cxx_include_dir3" >&5
+echo "${ECHO_T}$cxx_include_dir3" >&6
     fi
     if test x${cxx_include_dir4+set} = xset; then
 
 cat >>confdefs.h <<_ACEOF
-#define CPLUS_INCLUDE_DIR4 "${cxx_include_dir4}"
+#define CPLUS_INCLUDE_DIR4 "$cxx_include_dir4"
 _ACEOF
 
-        echo "$as_me:$LINENO: result: ${cxx_include_dir4}" >&5
-echo "${ECHO_T}${cxx_include_dir4}" >&6
+        echo "$as_me:$LINENO: result: $cxx_include_dir4" >&5
+echo "${ECHO_T}$cxx_include_dir4" >&6
     fi
     ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -21033,15 +21075,15 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-    export LANG=${lang_save}
+    export LANG=$lang_save
 
     ## the directory into which mcpp_g*.h header files are generated
     ## '/mcpp-gcc' will be appended to 'inc_dir'
-    if test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
-        inc_dir=${c_include_dir2}
+    if test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
+        inc_dir=$c_include_dir2
     else
         if test x${c_include_dir1+set} = xset; then
-            inc_dir=${c_include_dir1}
+            inc_dir=$c_include_dir1
         else
             test "x$prefix" = xNONE && prefix=$ac_default_prefix
             inc_dir="$prefix"/include
@@ -21049,7 +21091,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
     fi
 
 cat >>confdefs.h <<_ACEOF
-#define INC_DIR "${inc_dir}"
+#define INC_DIR "$inc_dir"
 _ACEOF
 
 
@@ -21059,9 +21101,8 @@ _ACEOF
 
 
 
-
-    # Extract the first word of "${CC}", so it can be a program name with args.
-set dummy ${CC}; ac_word=$2
+    # Extract the first word of "$CC", so it can be a program name with args.
+set dummy $CC; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
 if test "${ac_cv_path_gcc_path+set}" = set; then
@@ -21073,7 +21114,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in ${PATH}
+for as_dir in $PATH
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -21111,21 +21152,21 @@ echo "${ECHO_T}no, using $LN_S" >&6
 fi
 
 
-    if test x${gcc_maj_ver} = x2; then
+    if test x$gcc_maj_ver = x2; then
 
         echo "$as_me:$LINENO: checking for value of predefined macro '__SIZE_TYPE__'" >&5
 echo $ECHO_N "checking for value of predefined macro '__SIZE_TYPE__'... $ECHO_C" >&6
 if test "${size_type+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  size_type=`echo '__SIZE_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
+  size_type=`echo '__SIZE_TYPE__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
 
 fi
 echo "$as_me:$LINENO: result: $size_type" >&5
 echo "${ECHO_T}$size_type" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define COMPILER_SP1_VAL "${size_type}"
+#define COMPILER_SP1_VAL "$size_type"
 _ACEOF
 
 
@@ -21134,14 +21175,14 @@ echo $ECHO_N "checking for value of predefined macro '__PTRDIFF_TYPE__'... $ECHO
 if test "${ptrdiff_type+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ptrdiff_type=`echo '__PTRDIFF_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *$//'`
+  ptrdiff_type=`echo '__PTRDIFF_TYPE__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *$//'`
 
 fi
 echo "$as_me:$LINENO: result: $ptrdiff_type" >&5
 echo "${ECHO_T}$ptrdiff_type" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define COMPILER_SP2_VAL "${ptrdiff_type}"
+#define COMPILER_SP2_VAL "$ptrdiff_type"
 _ACEOF
 
 
@@ -21150,33 +21191,33 @@ echo $ECHO_N "checking for value of predefined macro '__WCHAR_TYPE__'... $ECHO_C
 if test "${wchar_type+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  wchar_type=`echo '__WCHAR_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *$//'`
+  wchar_type=`echo '__WCHAR_TYPE__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *$//'`
 
 fi
 echo "$as_me:$LINENO: result: $wchar_type" >&5
 echo "${ECHO_T}$wchar_type" >&6
 
 cat >>confdefs.h <<_ACEOF
-#define COMPILER_SP3_VAL "${wchar_type}"
+#define COMPILER_SP3_VAL "$wchar_type"
 _ACEOF
 
 
     fi
 fi
 
-if test x${ac_cv_c_compiler_gnu} = xyes; then
+if test x$ac_cv_c_compiler_gnu = xyes; then
 
 
 
     ## The following 3 mb_* files are separated from this file, since
     ## the editors do not allow multiple encodings of multi-byte characters.
 
-    if test x${ac_cv_c_compiler_gnu} = xyes; then
-        lang_save=${LANG}
+    if test x$ac_cv_c_compiler_gnu = xyes; then
+        lang_save=$LANG
     fi
 
     ## Set the environment variable, though this is seldom enabled in GCC.
-    if test x${ac_cv_c_compiler_gnu} = xyes; then
+    if test x$ac_cv_c_compiler_gnu = xyes; then
         export LANG=C-SJIS
     fi
 
@@ -21232,7 +21273,7 @@ echo "${ECHO_T}$ac_cv_c_sjis_escape_free" >&6
 
 
 
-    if test x${ac_cv_c_sjis_escape_free} = xyes; then
+    if test x$ac_cv_c_sjis_escape_free = xyes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define SJIS_IS_ESCAPE_FREE 1
@@ -21240,7 +21281,7 @@ _ACEOF
 
     fi
 
-    if test x${ac_cv_c_compiler_gnu} = xyes; then
+    if test x$ac_cv_c_compiler_gnu = xyes; then
         export LANG=C-JIS
     fi
 
@@ -21296,7 +21337,7 @@ echo "${ECHO_T}$ac_cv_c_iso2022_jp_escape_free" >&6
 
 
 
-    if test x${ac_cv_c_iso2022_jp_escape_free} = xyes; then
+    if test x$ac_cv_c_iso2022_jp_escape_free = xyes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define ISO2022_JP_IS_ESCAPE_FREE 1
@@ -21304,8 +21345,8 @@ _ACEOF
 
     fi
 
-    if test x${ac_cv_c_compiler_gnu} = xyes; then
-        export LANG=${lang_save}
+    if test x$ac_cv_c_compiler_gnu = xyes; then
+        export LANG=$lang_save
     fi
 
 
@@ -21361,7 +21402,7 @@ echo "${ECHO_T}$ac_cv_c_bigfive_escape_free" >&6
 
 
 
-    if test x${ac_cv_c_bigfive_escape_free} = xyes; then
+    if test x$ac_cv_c_bigfive_escape_free = xyes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define BIGFIVE_IS_ESCAPE_FREE 1
@@ -21378,9 +21419,9 @@ fi ## build-cpp mode or replace-cpp mode
 # Check whether --with-gcc-testsuite-dir or --without-gcc-testsuite-dir was given.
 if test "${with_gcc_testsuite_dir+set}" = set; then
   withval="$with_gcc_testsuite_dir"
-  if test x"${withval+set}" = x"set"; then
-        if test x"${enable_replace_cpp}" = x"yes"; then
-            gcc_testsuite_dir=`echo ${withval} | sed 's,/$,,'`
+  if test x${withval+set} = xset; then
+        if test x$enable_replace_cpp = xyes; then
+            gcc_testsuite_dir=`echo $withval | sed 's,/$,,'`
         else
             { { echo "$as_me:$LINENO: error: --with-gcc-testsuite-dir option requires --enable-replace-cpp option" >&5
 echo "$as_me: error: --with-gcc-testsuite-dir option requires --enable-replace-cpp option" >&2;}
@@ -21396,7 +21437,7 @@ fi;
 
 
 
-if test x${ac_cv_c_compiler_gnu} = xyes; then
+if test x$ac_cv_c_compiler_gnu = xyes; then
   GNUC_TRUE=
   GNUC_FALSE='#'
 else
@@ -21406,7 +21447,7 @@ fi
 
 
 
-if test x${enable_mcpplib} = xyes; then
+if test x$enable_mcpplib = xyes; then
   MCPP_LIB_TRUE=
   MCPP_LIB_FALSE='#'
 else
@@ -21416,7 +21457,7 @@ fi
 
 
 
-if test x${enable_replace_cpp} = xyes; then
+if test x$enable_replace_cpp = xyes; then
   REPLACE_CPP_TRUE=
   REPLACE_CPP_FALSE='#'
 else
@@ -21426,7 +21467,7 @@ fi
 
 
 
-if test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
+if test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
   MINGW_TRUE=
   MINGW_FALSE='#'
 else
@@ -22141,6 +22182,7 @@ s,@F77@,$F77,;t t
 s,@FFLAGS@,$FFLAGS,;t t
 s,@ac_ct_F77@,$ac_ct_F77,;t t
 s,@LIBTOOL@,$LIBTOOL,;t t
+s,@target_cc@,$target_cc,;t t
 s,@host_system@,$host_system,;t t
 s,@Target_Cpu@,$Target_Cpu,;t t
 s,@inc_dir@,$inc_dir,;t t

@@ -36,13 +36,13 @@ cc1dir = $(bindir)
 endif
 
 install-exec-hook:
-	if test x"$(gcc_path)" = x""; then	exit 1; fi
+	@if test x"$(gcc_path)" = x""; then	exit 1; fi
 	@$(srcdir)/set_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver)  \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)'       \
-            '$(inc_dir)' $(host_system) $(target) $(Target_Cpu)
+            '$(inc_dir)' $(host_system) $(Target_Cpu) $(target_cc)
 uninstall-hook:
 	@$(srcdir)/unset_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver)\
              '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)'      \
-             '$(inc_dir)' $(host_system)
+             '$(inc_dir)' $(host_system) $(target_cc)
 endif
 endif

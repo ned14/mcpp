@@ -176,66 +176,104 @@ uninstall するのは少し手間がかかるからです。
 では足りません。そこで、Mac OS X / Apple-GCC の場合を、別にとりあげて説
 明します。私は Intel-Mac の Mac OS X Leopard を使っているのでそれを例に
 とりますが、Powerpc-Mac では i686 と powerpc を逆にして読んでください。
+また、Tiger では darwin9 を darwin8 に読み替えてください。
+  なお、ここでとりあげるのは GCC 4.0.1 です。そのほか GCC 3.3 も Apple
+によって用意されていますが、少なくとも Leopard 上のものは正しくコンパイ
+ルされていないので、とりあげません。
 
 2、2、2、1、ネイティブコンパイラとクロスコンパイラ
 
   まず、native コンパイラ（Intel-Mac なら i686 用 GCC）用の MCPP をイン
 ストールのは簡単で、2、2、1、の方法ですみます。
-  しかし、クロスコンパイラ用の MCPP をインストールするには、configure で
-いくつかのオプションを指定しなければなりません。まず、CC および CXX とい
-う環境変数で C コンパイラと C++ コンパイラを指定します。Mac OS X の /usr
-/bin にはいくつもの gcc や g++ がありますが、Intel-Mac の Mac OS X
-Leopard では powerpc-apple-darwin9-gcc-4.0.1, powerpc-apple-darwin9-g++-
-4.0.1 というのが powerpc 用の C コンパイラと C++ コンパイラなので、これ
-を指定します（実際には /usr/bin の gcc, g++ はすべて i386, ppc 双方のバ
-イナリを合わせた universal binary ですが）。さらに、ターゲットシステムを
---target オプションで指定します。この場合はコンパイラの名前から -gcc-4.0.
-1 等の部分を削除した powerpc-apple-darwin9 を使います。
-  結局、compiler-independent-build ではこうなります。
+  しかし、クロスコンパイラ用の MCPP をインストールするのは、そう簡単では
+ありません。MCPP の configure は一般にはクロスコンパイリングに対応してい
+ません。サンプルプログラムをコンパイルして run させるテストがいくつか含
+まれているからです。ターゲット環境用のバイナリをビルド環境で実行すること
+は、普通はできません。また、ビルド環境のテストをしても、その結果はターゲ
+ット環境とは違っているかもしれません。
+  しかし、Mac OS X の場合は例外的に、クロスコンパイルに対応できる場合が
+多くあります。まず、Intel-Mac は ppc 用のバイナリをエミュレータで自動実
+行させるようになっています。また、CPU が違っても OS とそのバージョンも
+GCC のバージョンも同じであれば、ビルド環境でのテストでターゲット環境のテ
+ストの多くを代用できます。
+  Intel-Mac 上での compiler-independent-build ではまず、CC, CXX という環
+境変数で C コンパイラと C++ コンパイラを指定します。Mac OS X の /usr/bin
+にはいくつもの gcc や g++ がありますが、Intel-Mac の Mac OS X Leopard で
+は powerpc-apple-darwin9-gcc-4.0.1, powerpc-apple-darwin9-g++-4.0.1 とい
+うのが powerpc 用の C コンパイラと C++ コンパイラです（実際には /usr/bin
+の gcc, g++ はすべて i386, ppc 双方のバイナリを合わせた universal binary
+ですが）。さらに、ターゲットシステムを --target オプションで指定します。
+この場合はコンパイラの名前から -gcc-4.0.1 等の部分を削除した powerpc-
+apple-darwin9 を使います。結局、こうなります。
 
-    ${mcpp-dir}/configure CC=powerpc-apple-darwin9-gcc-4.0.1    \
-            CXX=powerpc-apple-darwin9-g++-4.0.1     \
-            --target=powerpc-apple-darwin9
+    ${mcpp-dir}/configure --target=powerpc-apple-darwin9    \
+            CC=powerpc-apple-darwin9-gcc-4.0.1  \
+            CXX=powerpc-apple-darwin9-g++-4.0.1
 
-  GCC-specific-build ではこうです。
+  他方で ppc-Mac では x86 のバイナリを実行できないので、この configure
+では compiler-independent-build のクロスコンパイルはできません。差分ファ
+イルと mac_osx.mak を使った手動コンパイルであればクロスコンパイルもでき
+るので、必要なら mcpp-porting.html#3.1.4, #3.11 を見てください。また、
+configure でも次節の方法を使えば、ppc-Mac の native compiler で
+universal binary を作ることはできます。
+  GCC-specific-build では CC, CXX は使わず、次のように --with-target-cc=
+というオプションで C コンパイラを指定します（その名前の gcc を g++ に変
+えたものを C++ コンパイラと解釈します）。
 
-    ${mcpp-dir}/configure CC=powerpc-apple-darwin9-gcc-4.0.1    \
-            CXX=powerpc-apple-darwin9-g++-4.0.1                 \
-            --target=powerpc-apple-darwin9 --enable-replace-cpp
+    ${mcpp-dir}/configure --target=powerpc-apple-darwin9    \
+            --with-target-cc=powerpc-apple-darwin9-gcc-4.0.1    \
+            --enable-replace-cpp
 
+  これはターゲット環境の実行テストは含まないので、powerpc を i686 に置き
+換えれば ppcMac で使えるはずです。
+  デフォルトのネイティブコンパイラ（gcc, g++）と --with-target-cc= で指
+定するクロスコンパイラとで大きくバージョンが違っている場合は、そのクロス
+コンパイラになるべく近いバージョンのネイティブコンパイラを環境変数 CC,
+CXX で指定してください。CC (CXX) で指定するのは MCPP をビルドするための
+コンパイラであり、--with-target-cc= で指定するのは MCPP をインストールす
+るターゲットのコンパイラです。
   クロスコンパイラはネイティブコンパイラとは libexec directory, compiler-
 specific include directory, 事前定義マクロ等が異なりますが、それらがこの
 オプション指定によって適切に設定されます。これらのオプションは make では
 なく configure で指定する必要があります。
-  MCPP の configure は一般にはクロスコンパイラには対応していませんが、こ
-の場合は CPU とそれに伴う差異があるだけで OS とそのバージョンは同じで、
-しかも Mac OS X のクロスコンパイラの生成した実行プログラムはホストシステ
-ムの上でも動くという特殊な性質を持っているので、この configure で対応で
-きます。
   なお、クロスコンパイラはホストシステム上で動作するものなので、その「ク
 ロスコンパイラに」インストールされる compiler-specific-build の MCPP も
 同様です。他方で「クロスコンパイラで」コンパイルされた compiler-
-independent-build の MCPP は、ターゲットシステムで動くものになります。
+independent-build の MCPP は、ターゲットシステムで動くものになります。ま
+た、GCC-specific-build はネイティブコンパイラにインストールされるものも
+クロスコンパイラにインストールされるものも、ともにネイティブコンパイラで
+コンパイルされます。このため、この双方をインストールする場合は、クロスコ
+ンパイラ用を先にインストールする必要があります。
 
-2、2、2、2、sysroot オプションを使う場合
+2、2、2、2、Universal binary の make
 
+  Universal binary を作るには、make する時に CFLAGS+='-arch i386 -arch
+ppc' というように、対象とする CPU を -arch オプションで指定します。指定
+できる CPU は i386, x86_64, ppc, ppc64 の４種類です。make CFLAGS+='-arch
+i386 -arch x86_64 -arch ppc -arch ppc64' とすると４種の CPU に対応したも
+のができます。configure は universal binary でない場合と同じで、特別なオ
+プションは必要ありません。
   GCC には -isysroot DIR（または --sysroot=DIR）というオプションがありま
 す。これが指定されると、システムヘッダの include directory としてデフォ
 ルトの include directory に DIR を頭に付けたものが使われます。このオプシ
 ョンは Mac OS に限ったものではありませんが、Mac OS では universal binary
-のコンパイルにこれが使われています。例えば、-isysroot /Developer/SDKs/
-MacOSX10.4u.sdk とすると、/usr/include が /Developer/SDKs/MacOSX10.4u.
-sdk/usr/include となります。この例は Mac OS X 10.5 (Leopard) 上で 10.4
-(Tiger) と互換の universal binary をコンパイルするためのものです。
-  GCC-specific-build の MCPP でこのオプションを使うためには、それで指定
-されるディレクトリの中の compiler-specific include directory に MCPP の
-mcpp-gcc* ディレクトリのヘッダファイルを手動でコピーしておかなければなり
-ません。上記の例では次のようにします。
+のコンパイルにこれが使われています。Mac OS のバージョン間の互換性の範囲
+を広げるためです。例えば、-isysroot /Developer/SDKs/MacOSX10.4u.sdk とす
+ると、/usr/include が /Developer/SDKs/MacOSX10.4u.sdk/usr/include となり
+ます。この例は Mac OS X 10.5 (Leopard) 上で 10.4 (Tiger) と互換の
+universal binary をコンパイルするためのものです。MCPP の make でこれを使
+うためには、さらに -mmacosx-version-min= というオプションで SDK と同じバ
+ージョンを指定する必要があります。
+  MCPP の universal binary は、上記の configure オプションとこれらの
+make オプションを組み合わせることで、compiler-independent-build, GCC-
+specific-build のどちらでも、native-compiler, cross-compiler のどちらで
+も生成することができます。例えば compiler-independent-build で Tiger 互
+換の i386 と ppc 用のものを作るにはこうします。
 
-    sudo cp -rp /usr/lib/gcc/i686-apple-darwin9/4.0.1/include/mcpp-gcc-* \\
-        /Developer/SDKs/MacOSX10.4u.sdk/usr/lib/gcc/i686-apple-darwin9/4.0.1/include
-    sudo cp -rp /usr/lib/gcc/powerpc-apple-darwin9/4.0.1/include/mcpp-gcc-* \\
-        /Developer/SDKs/MacOSX10.4u.sdk/usr/lib/gcc/powerpc-apple-darwin9/4.0.1/include
+    ${mcpp-dir}/configure
+    make CFLAGS+='-isysroot /Developer/SDKs/MacOSX10.4u.sdk     \
+            -mmacosx-version-min=10.4 -arch i386 -arch ppc'
+    sudo make install
 
 2、2、3、処理系が GCC でない場合
 

@@ -149,12 +149,28 @@
 #if     SYSTEM == SYS_FREEBSD
 #define SYSTEM_EXT          "__FreeBSD__"
 #endif
+
 #if     SYSTEM == SYS_LINUX
 #define SYSTEM_EXT          "__linux__"
 #endif
+
 #if     SYSTEM == SYS_MAC
 #define SYSTEM_EXT          "__APPLE__"
+#if     COMPILER == INDEPENDENT
+/* Apple-GCC changes CPU-specific macros by -arch option.  These    */
+/* should be defined at compile time rather than configuration time.*/
+#if     defined (__i386__)
+#define CPU_OLD             "i386"
+#define CPU_STD2            "__i386__"
+#elif   defined (__x86_64__)
+#define CPU_STD2            "__x86_64__"
+#elif   defined (__ppc__)
+#define CPU_STD2            "__ppc__"
+#elif   defined (__ppc64__)
+#define CPU_STD2            "__ppc64__"
 #endif
+#endif
+#endif  /* SYSTEM == SYS_MAC    */
 
 #if     SYSTEM == SYS_CYGWIN
 #define SYSTEM_EXT          "__CYGWIN__"

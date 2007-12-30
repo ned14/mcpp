@@ -1,5 +1,5 @@
-*** noconfig.H	2007-12-03 18:55:29.000000000 +0900
---- noconfig.H.cyg1518	2007-12-04 14:33:16.000000000 +0900
+*** noconfig.H	2007-12-23 21:34:39.000000000 +0900
+--- noconfig.H.cyg1518	2007-12-23 22:05:25.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -18,7 +18,7 @@
   /* Define target compiler.          */
   #ifndef COMPILER
 ***************
-*** 316,326 ****
+*** 331,341 ****
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
   #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */
@@ -30,7 +30,7 @@
   #ifndef INC_DIR
   #ifdef  C_INCLUDE_DIR1
   #define INC_DIR             C_INCLUDE_DIR1  /* GNUC version specific dir    */
---- 316,326 ----
+--- 331,341 ----
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
   #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */

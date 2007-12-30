@@ -25,8 +25,8 @@ dnl MCPP may modify the behavior of the target compiler-system.
 dnl You must uninstall MCPP before re-configuring.
 
 AC_MSG_CHECKING( [whether the cpp is target preprocessor])
-mcpp=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | grep 'MCPP'`
-if test "x${mcpp}" != x; then
+mcpp=`$CPP $CFLAGS -xc -v /dev/null 2>&1 | grep 'MCPP'`
+if test x$mcpp != x; then
     AC_MSG_ERROR( Do 'make uninstall' before configuring again.)
 fi
 AC_MSG_RESULT( yes)
@@ -84,6 +84,86 @@ mingw*)
     ;;
 esac
 
+## --enable-replace-cpp option
+AC_ARG_ENABLE( replace-cpp,
+    AC_HELP_STRING( [--enable-replace-cpp],
+        [Replace the resident preprocessor with mcpp]),
+    ,       ## the compiler name will be defined later
+    AC_DEFINE( [COMPILER], [INDEPENDENT], [Define the target compiler.])
+            ## else define COMPILER as INDEPENDENT
+)
+
+## Generally this configure does not support cross-compiling.
+## Nevertheless, it can configure cross-compiler of Apple-GCC (i686 vs ppc).
+if test x$enable_replace_cpp = xyes    \
+        && test $ac_c_define_HOST_SYSTEM = SYS_MAC    \
+        && test $host_cpu != $target_cpu; then
+## Enable to build mcpp into cross-compiler of Apple-GCC
+## --with-target-cc option
+AC_ARG_WITH( target_cc,
+    AC_HELP_STRING( [--with-target-cc],
+        [Specify the target compiler to build mcpp into on Mac OS X]),
+    if test x${withval+set} = xset; then
+        target_cc=$withval
+        target_name=`echo $target_cc | sed 's/-gcc.*$//'`
+        if test $target_name != $target_alias; then
+            AC_MSG_ERROR( [The argument of --with-target-cc option conflicts with --target option])
+        fi
+        AC_SUBST( [target_cc])
+    fi
+)
+fi
+
+## compiler-specific or not Mac OS
+## To enable "universal binary" by Apple-GCC, CPU-dependent macros should be
+## defined at compile time rather than configuration time.
+if test x$enable_replace_cpp = xyes    \
+        || test $ac_c_define_HOST_SYSTEM != SYS_MAC; then
+
+dnl Define target specific predefined macros.
+
+AC_MSG_NOTICE( [setting predefined macros for target cpu])
+
+case $target_cpu in
+i?86*)
+    Target_Cpu=i386
+    ;;
+x86_64|amd64)
+    Target_Cpu=x86_64
+    ;;
+powerpc64|ppc64)
+    Target_Cpu=ppc64
+    ;;
+powerpc|ppc)
+    Target_Cpu=ppc
+    ;;
+*)
+    Target_Cpu=$target_cpu
+    ;;
+esac
+
+if test x$mcpp_ac_c_define_CPU_STD != x__$Target_Cpu; then
+    AC_DEFINE_UNQUOTED( [CPU_STD1], "__$Target_Cpu",
+        [Define the cpu-specific-predefined-macro.])
+fi
+if test x$mcpp_ac_c_define_CPU_STD != x__${Target_Cpu}__; then
+    AC_DEFINE_UNQUOTED( [CPU_STD2], "__${Target_Cpu}__",
+        [Define the cpu-specific-predefined-macro.])
+fi
+if test x$mcpp_ac_c_define_CPU_OLD != x$Target_Cpu; then
+    AC_DEFINE_UNQUOTED( [CPU_OLD], "$Target_Cpu",
+        [Define the cpu-specific-predefined-macro.])
+fi
+
+fi  ## compiler-specific or not Mac OS
+
+## Build into cross-compiler on Mac OS
+if test x$enable_replace_cpp = xyes    \
+        && test $ac_c_define_HOST_SYSTEM = SYS_MAC    \
+        && test x${target_cc+set} = xset; then
+    arch_opt="-arch $Target_Cpu"
+fi
+
 dnl Checks for header files.
 
 AC_CHECK_HEADERS( [unistd.h, stdint.h, inttypes.h])
@@ -119,14 +199,14 @@ int main( void)
     )
     rm hJkL],
 )
-if test x${ac_cv_fname_fold} = xyes; then
+if test x$ac_cv_fname_fold = xyes; then
     AC_DEFINE( [FNAME_FOLD], 1,
         [Define if the cases of file name are folded.])
 fi
 
 dnl Checks for some host compiler characteristics.
 
-AC_DEFINE_UNQUOTED( [OBJEXT], ["${ac_cv_objext}"],
+AC_DEFINE_UNQUOTED( [OBJEXT], ["$ac_cv_objext"],
     [Define the suffix of object file.])
 
 dnl Check printf length modifier of the longest integer.
@@ -159,90 +239,55 @@ int main( void)
     )
 ] )
 
-if test x${ac_cv_type_intmax_t} = xyes; then
+if test x$ac_cv_type_intmax_t = xyes; then
     AC_CHECK_MOD_LL( [intmax_t], [j], [#include <stdint.h>])
-    if test ${ac_c_define_HOST_SYSTEM} = SYS_CYGWIN \
-            || test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
+    if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN \
+            || test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
         sleep 1         # wait for cleanup
     fi
 fi
 
-if test x${ac_cv_type_long_long} = xyes; then
+if test x$ac_cv_type_long_long = xyes; then
     for modifier in ll I64 q L
     do
         AC_CHECK_MOD_LL( [long long], ${modifier})
         if test x${ac_cv_c_printf_modifier+set} = xset; then
             break
         fi
-        if test ${ac_c_define_HOST_SYSTEM} = SYS_CYGWIN \
-                || test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
+        if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN \
+                || test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
             sleep 1         # wait for cleanup
         fi
     done
 fi
 
 if test x${ac_cv_c_printf_modifier+set} = xset; then
-    AC_DEFINE_UNQUOTED( [LL_FORM], "${ac_cv_c_printf_modifier}",
+    AC_DEFINE_UNQUOTED( [LL_FORM], "$ac_cv_c_printf_modifier",
         [Define printf length modifier for the longest integer.])
 fi
 
-dnl Define target specific predefined macros.
-
-AC_MSG_NOTICE( [setting predefined macros for target cpu])
-
-case $target_cpu in
-i?86*)
-    Target_Cpu=i386
-    ;;
-x86_64|amd64)
-    Target_Cpu=x86_64
-    ;;
-powerpc64|ppc64)
-    Target_Cpu=ppc64
-    ;;
-powerpc|ppc)
-    Target_Cpu=ppc
-    ;;
-*)
-    Target_Cpu=$target_cpu
-    ;;
-esac
-
-if test x${mcpp_ac_c_define_CPU_STD} != x__${Target_Cpu}; then
-    AC_DEFINE_UNQUOTED( [CPU_STD1], "__${Target_Cpu}",
-        [Define the cpu-specific-predefined-macro.])
-fi
-if test x${mcpp_ac_c_define_CPU_STD} != x__${Target_Cpu}__; then
-    AC_DEFINE_UNQUOTED( [CPU_STD2], "__${Target_Cpu}__",
-        [Define the cpu-specific-predefined-macro.])
-fi
-if test x${mcpp_ac_c_define_CPU_OLD} != x${Target_Cpu}; then
-    AC_DEFINE_UNQUOTED( [CPU_OLD], "${Target_Cpu}",
-        [Define the cpu-specific-predefined-macro.])
-fi
-
-if test ${ac_c_define_HOST_SYSTEM} = SYS_FREEBSD &&   \
+if test $ac_c_define_HOST_SYSTEM = SYS_FREEBSD &&   \
         test x$mcpp_ac_c_define_SYSTEM_SP_STD != x__FreeBSD__; then
-    fbsd_ver=`echo '__FreeBSD__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`
-    AC_DEFINE_UNQUOTED( [SYSTEM_EXT_VAL], "${fbsd_ver}",
+    fbsd_ver=`echo '__FreeBSD__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`
+    AC_DEFINE_UNQUOTED( [SYSTEM_EXT_VAL], "$fbsd_ver",
         [Define the version of FreeBSD.])
 fi
 
-if test x${ac_cv_c_compiler_gnu} = xyes; then
+if test x$ac_cv_c_compiler_gnu = xyes; then
 
     AC_DEFINE( [HOST_COMPILER], [GNUC], [Define the host compiler.])
 
     AC_DEFINE( [HOST_CMP_NAME], "GCC", [Define the host compiler name.])
 
     AC_MSG_CHECKING( for value of __GNUC__)
-    gcc_maj_ver=`echo '__GNUC__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
-    AC_MSG_RESULT( ${gcc_maj_ver})
-    AC_DEFINE_UNQUOTED( [GCC_MAJOR_VERSION], "${gcc_maj_ver}",
+    gcc_maj_ver=`echo '__GNUC__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
+    AC_MSG_RESULT( $gcc_maj_ver)
+    AC_DEFINE_UNQUOTED( [GCC_MAJOR_VERSION], "$gcc_maj_ver",
         [Define gcc major version.])
     AC_MSG_CHECKING( for value of __GNUC_MINOR__)
-    gcc_min_ver=`echo __GNUC_MINOR__ | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`
-    AC_MSG_RESULT( ${gcc_min_ver})
-    AC_DEFINE_UNQUOTED( [GCC_MINOR_VERSION], "${gcc_min_ver}",
+    gcc_min_ver=`echo __GNUC_MINOR__ | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`
+    AC_MSG_RESULT( $gcc_min_ver)
+    AC_DEFINE_UNQUOTED( [GCC_MINOR_VERSION], "$gcc_min_ver",
         [Define gcc minor version.])
 
     AC_CACHE_CHECK( if the library is glibc,
@@ -256,19 +301,19 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
             [gcc_cv_glibc=no]
         )]
     )
-    if test x${gcc_cv_glibc} = xyes; then
+    if test x$gcc_cv_glibc = xyes; then
         AC_DEFINE( [LIB_IS_GLIBC], 1, [Define if the library is glibc.])
     fi
 
-    if test ${ac_c_define_HOST_SYSTEM} = SYS_CYGWIN; then
+    if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN; then
         AC_CACHE_CHECK( the root directory,
             ac_cv_cygwin_root,
             [ac_cv_cygwin_root=`mount | grep ' on / ' | sed 's, on / .*,,' | tr '\\\' '/'`]
         )
-        AC_DEFINE_UNQUOTED( [CYGWIN_ROOT_DIRECTORY], "${ac_cv_cygwin_root}",
+        AC_DEFINE_UNQUOTED( [CYGWIN_ROOT_DIRECTORY], "$ac_cv_cygwin_root",
             [Define root directory of CYGWIN.])
     fi
-    if test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
+    if test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
         AC_CACHE_CHECK( the root directory,
             ac_cv_msys_root,
             cw=`pwd`
@@ -283,7 +328,7 @@ int main( int argc, char ** argv)
     return 0;
 }
 _EOF
-            ${CC} getcwd.c
+            $CC getcwd.c
             [ac_cv_msys_root=`./a.exe | tr '\\\', '/'`]
             ## redundant \ to work around MinGW's problem
         )
@@ -293,40 +338,40 @@ _EOF
             [ac_cv_mingw_dir=`/a.exe | tr '\\\', '/'`]
         )
         rm -f /getcwd.c /a.exe
-        cd ${cw}
-        AC_DEFINE_UNQUOTED( [MSYS_ROOT_DIRECTORY], "${ac_cv_msys_root}",
+        cd $cw
+        AC_DEFINE_UNQUOTED( [MSYS_ROOT_DIRECTORY], "$ac_cv_msys_root",
             [Define root directory of MSYS.])
-        AC_DEFINE_UNQUOTED( [MINGW_DIRECTORY], "${ac_cv_mingw_dir}",
+        AC_DEFINE_UNQUOTED( [MINGW_DIRECTORY], "$ac_cv_mingw_dir",
             [Define /mingw directory.])
     fi
 
 else    # not gcc
 
-# mcpp_AC_C_DEFINE( SYSTEM | CPU | COMPILER, STD | OLD, ${enableval})
+# mcpp_AC_C_DEFINE( SYSTEM | CPU | COMPILER, STD | OLD, $enableval)
 # Specify the target-specific predefined macro.
 AC_DEFUN([mcpp_AC_C_DEFINE], [
     name=`echo $3 | sed 's/=.*//'`
     mcpp_macro=$1_SP_$2
-    stripped_mcpp_macro=`echo ${mcpp_macro} | sed 's/STD//'`
-    if test x${stripped_mcpp_macro} != x${mcpp_macro}; then
-        stripped_name=`echo ${name} | sed 's/^_//'`
-        if test x${stripped_name} = x${name}; then
-            AC_MSG_ERROR( the macro name '${name}' should begin with '_')
+    stripped_mcpp_macro=`echo $mcpp_macro | sed 's/STD//'`
+    if test x$stripped_mcpp_macro != x$mcpp_macro; then
+        stripped_name=`echo $name | sed 's/^_//'`
+        if test x$stripped_name = x$name; then
+            AC_MSG_ERROR( the macro name '$name' should begin with '_')
         fi
     else
-        stripped_name=`echo ${name} | sed 's/^@<:@A-Za-z@:>@//'`
-        if test x${stripped_name} = x${name}; then
-            AC_MSG_ERROR( the macro name '${name}' should begin with an alphabetic letter)
+        stripped_name=`echo $name | sed 's/^@<:@A-Za-z@:>@//'`
+        if test x$stripped_name = x$name; then
+            AC_MSG_ERROR( the macro name '$name' should begin with an alphabetic letter)
         fi
     fi
-    if test x${name} = x$3; then
+    if test x$name = x$3; then
         [replace=1]
     else
         [replace=`echo $3 | sed 's/^.*=//'`]
     fi
-    AC_DEFINE_UNQUOTED( [$mcpp_macro], "${name}")
-    AC_DEFINE_UNQUOTED( [${mcpp_macro}_VAL], "${replace}")
-    mcpp_ac_c_define_$1_$2=${name}
+    AC_DEFINE_UNQUOTED( [$mcpp_macro], "$name")
+    AC_DEFINE_UNQUOTED( [${mcpp_macro}_VAL], "$replace")
+    mcpp_ac_c_define_$1_$2=$name
 ])
 
 # mcpp_AC_C_PREDEF( SYSTEM | CPU | COMPILER, STD | OLD, additional description)
@@ -335,10 +380,10 @@ AC_DEFUN([mcpp_AC_C_PREDEF], [
     AC_ARG_ENABLE( $1-$2-macro,
         AC_HELP_STRING( --enable-$1-$2-macro=name@<:@=replace@:>@,
             [specify the $1-specific $2-style predefined macro.  $3]),
-        if test x${enableval} = xyes || test x${enableval} = xno; then
+        if test x$enableval = xyes || test x$enableval = xno; then
             AC_MSG_ERROR( This option requires an argument as 'name@<:@=replace@:>@')
         fi
-        mcpp_AC_C_DEFINE( $1, $2, ${enableval})
+        mcpp_AC_C_DEFINE( $1, $2, $enableval)
         AH_TEMPLATE( [$1_SP_$2],
             [Define the name of $1-specific $2-style predefined macro.])
         AH_TEMPLATE( [$1_SP_$2_VAL],
@@ -361,35 +406,35 @@ mcpp_AC_C_PREDEF( [COMPILER], [OLD])
 fi
 
 ## MacOS has "framework" directories.
-if test ${ac_c_define_HOST_SYSTEM} = SYS_MAC; then
+if test $ac_c_define_HOST_SYSTEM = SYS_MAC; then
     AC_MSG_CHECKING( for the MacOS-specific framework directory)
-    frameworks=`${CPP} -xc -v /dev/null 2>&1 | sed 's/^ *//' | sed 's/ .*$//' | ${EGREP} '/Frameworks$'`
+    frameworks=`$CPP $CFLAGS $arch_opt -xc -v /dev/null 2>&1 | sed 's/^ *//' | sed 's/ .*$//' | $EGREP '/Frameworks$'`
     n=1
-    for dir in ${frameworks}
+    for dir in $frameworks
     do
         case $n in
-        1)  framework1=${dir};;
-        2)  framework2=${dir};;
-        3)  framework3=${dir};;
+        1)  framework1=$dir;;
+        2)  framework2=$dir;;
+        3)  framework3=$dir;;
         esac
         let n=n+1
     done
     if test x${framework1+set} = xset; then
-        AC_DEFINE_UNQUOTED( [FRAMEWORK1], "${framework1}",
+        AC_DEFINE_UNQUOTED( [FRAMEWORK1], "$framework1",
             [Define MacOS-specific framework directory 1.])
-        AC_MSG_RESULT( ${framework1})
+        AC_MSG_RESULT( $framework1)
     else
         AC_MSG_RESULT( none)
     fi
     if test x${framework2+set} = xset; then
-        AC_DEFINE_UNQUOTED( [FRAMEWORK2], "${framework2}",
+        AC_DEFINE_UNQUOTED( [FRAMEWORK2], "$framework2",
             [Define MacOS-specific framework directory 2.])
-        AC_MSG_RESULT( ${framework2})
+        AC_MSG_RESULT( $framework2)
     fi
     if test x${framework3+set} = xset; then
-        AC_DEFINE_UNQUOTED( [FRAMEWORK3], "${framework3}",
+        AC_DEFINE_UNQUOTED( [FRAMEWORK3], "$framework3",
             [Define MacOS-specific framework directory 3.])
-        AC_MSG_RESULT( ${framework3})
+        AC_MSG_RESULT( $framework3)
     fi
 fi  ## SYS_MAC
 
@@ -399,25 +444,16 @@ AC_ARG_ENABLE( mcpplib,
         [Build libmcpp rather than stand-alone mcpp])
 )
 
-## --enable-replace-cpp option
-AC_ARG_ENABLE( replace-cpp,
-    AC_HELP_STRING( [--enable-replace-cpp],
-        [Replace the resident preprocessor with mcpp]),
-    ,       ## the compiler name will be defined later
-    AC_DEFINE( [COMPILER], [INDEPENDENT], [Define the target compiler.])
-            ## else define COMPILER as INDEPENDENT
-)
-
-if test x${enable_mcpplib} = xyes; then             ## mcpplib mode
+if test x$enable_mcpplib = xyes; then               ## mcpplib mode
     AC_DEFINE( [MCPP_LIB], 1, [Define if build libmcpp])
-    if test x${enable_replace_cpp} = xyes; then
+    if test x$enable_replace_cpp = xyes; then
         AC_MSG_WARN( Ignores enable-replace-cpp option)
         [enable_replace_cpp=no]
     fi
 
 else
 
-if test x${enable_replace_cpp} = xyes; then         ## replace-cpp mode
+if test x$enable_replace_cpp = xyes; then           ## replace-cpp mode
 
 dnl Check the characteristics of target compiler.
 dnl Note: The following 3 hundred and more lines are for replace-cpp-mode.
@@ -448,11 +484,11 @@ AC_CACHE_CHECK( include preference - relative to current or source directory,
     echo 'SOURCE'   > ../next/dir/what.h
     echo 'NEXT'     > ../next/next.h
     AC_C_INCLUDE_PREF( [SOURCE])
-    if test x${ac_cv_c_include_pref} != xSOURCE; then
+    if test x$ac_cv_c_include_pref != xSOURCE; then
         AC_C_INCLUDE_PREF( [CURRENT])
-        if test x${ac_cv_c_include_pref} = xCURRENT; then
+        if test x$ac_cv_c_include_pref = xCURRENT; then
             AC_C_INCLUDE_PREF( [NEXT])
-            if test x${ac_cv_c_include_pref} = xNEXT; then
+            if test x$ac_cv_c_include_pref = xNEXT; then
                 [ac_cv_c_include_pref="(CURRENT & SOURCE)"]
             fi
         else
@@ -466,7 +502,7 @@ AC_CACHE_CHECK( include preference - relative to current or source directory,
         sleep 1         # wait for cleanup
     fi
 )
-AC_DEFINE_UNQUOTED( [SEARCH_INIT], ${ac_cv_c_include_pref},
+AC_DEFINE_UNQUOTED( [SEARCH_INIT], $ac_cv_c_include_pref,
     [Define include preference.])
  
 AC_CACHE_CHECK( if the argument of pragma is macro expanded,
@@ -478,7 +514,7 @@ AC_CACHE_CHECK( if the argument of pragma is macro expanded,
         [ac_cv_c_pragma_is_expanded=yes]
     )
 )
-if test x${ac_cv_c_pragma_is_expanded} = xyes; then
+if test x$ac_cv_c_pragma_is_expanded = xyes; then
     AC_DEFINE( [EXPAND_PRAGMA], 1,
         [Define if the argument of pragma is macro expanded.])
 fi
@@ -492,47 +528,47 @@ AC_CACHE_CHECK( if digraphs can be used,
         [ac_cv_c_digraph=no]
     )]
 )
-if test x${ac_cv_c_digraph} = xyes; then
+if test x$ac_cv_c_digraph = xyes; then
     AC_DEFINE( [HAVE_DIGRAPHS], 1, [Define if digraphs are available.])
 fi
 
 AC_CACHE_CHECK( preprocessor output format of line directive,
     ac_cv_c_line_format,
-    [ac_cv_c_line_format=\"`echo '#line 4321' | ${CPP} - | grep 432 | sed 's/432.*$//'`\"]
+    [ac_cv_c_line_format=\"`echo '#line 4321' | $CPP - | grep 432 | sed 's/432.*$//'`\"]
 ## Note: the output line number may be 4320 on GCC 2.* or other preprocessors.
 )
-AC_DEFINE_UNQUOTED( [LINE_PREFIX], ${ac_cv_c_line_format},
+AC_DEFINE_UNQUOTED( [LINE_PREFIX], $ac_cv_c_line_format,
     [Define output format of line directive.])
-if test "x${ac_cv_c_line_format}" = "x\"#line \""; then
+if test "x$ac_cv_c_line_format" = "x\"#line \""; then
     ac_cv_c_std_line_prefix=1
 else
     ac_cv_c_std_line_prefix=0
 fi
-AC_DEFINE_UNQUOTED( [STD_LINE_PREFIX], ${ac_cv_c_std_line_prefix},
+AC_DEFINE_UNQUOTED( [STD_LINE_PREFIX], $ac_cv_c_std_line_prefix,
     [Define whether output format of line directive is C source style.])
 
 AC_CACHE_CHECK( default value of __STDC__,
     ac_cv_c_stdc,
-    [stdc=`echo '__STDC__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`]
-    if test x"${stdc}" = x"__STDC__"; then
+    [stdc=`echo '__STDC__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`]
+    if test x"$stdc" = x"__STDC__"; then
         [ac_cv_c_stdc=0]
     else
-        [ac_cv_c_stdc=${stdc}]
+        [ac_cv_c_stdc=$stdc]
     fi
 )
-AC_DEFINE_UNQUOTED( [STDC], ${ac_cv_c_stdc},
+AC_DEFINE_UNQUOTED( [STDC], $ac_cv_c_stdc,
     [Define the default value of __STDC__.])
 
 AC_CACHE_CHECK( default value of __STDC_VERSION__,
     ac_cv_c_stdc_ver,
-    [stdc_ver=`echo '__STDC_VERSION__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ .*//'`]
-    if test x"${stdc_ver}" = x"__STDC_VERSION__"; then
+    [stdc_ver=`echo '__STDC_VERSION__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ .*//'`]
+    if test x"$stdc_ver" = x"__STDC_VERSION__"; then
         [ac_cv_c_stdc_ver=0]
     else
-        [ac_cv_c_stdc_ver=${stdc_ver}]
+        [ac_cv_c_stdc_ver=$stdc_ver]
     fi
 )
-AC_DEFINE_UNQUOTED( [STDC_VERSION], ${ac_cv_c_stdc_ver},
+AC_DEFINE_UNQUOTED( [STDC_VERSION], $ac_cv_c_stdc_ver,
     [Define the default value of __STDC_VERSION__.])
 
 if test x${ac_cv_c_compiler_gnu} != xyes; then
@@ -541,7 +577,7 @@ if test x${ac_cv_c_compiler_gnu} != xyes; then
 AC_ARG_WITH( compiler-name,
     AC_HELP_STRING( [--with-compiler-name=NAME],
         [specify the compiler name which is used as the definition of COMPILER macro]),
-    AC_DEFINE_UNQUOTED( [COMPILER], ${compiler_name}, [specify the compiler name]),
+    AC_DEFINE_UNQUOTED( [COMPILER], $compiler_name, [specify the compiler name]),
     AC_MSG_ERROR( --with-compiler-name=NAME option should be specified to define [COMPILER] macro)
 )
 
@@ -551,11 +587,11 @@ AC_ARG_WITH( cxx-include-dir,
         [specify the C++ include directory by absolute path [[none]]]),
     [case "${withval}" in
     [\\/]* | [A-Za-z]:[\\/]*)
-        cxx_include_dir=`echo ${withval} | sed 's,/$,,'; 's,\\$,,'`
-        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR1], ${cxx_include_dir},
+        cxx_include_dir=`echo $withval | sed 's,/$,,'; 's,\\$,,'`
+        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR1], $cxx_include_dir,
             [Define the C++ include directory.])
         ;;
-    *)  AC_MSG_ERROR( ${withval} should be an absolute path) ;;
+    *)  AC_MSG_ERROR( $withval should be an absolute path) ;;
     esac]
 )
 
@@ -566,135 +602,134 @@ dnl Define compiler specific elements.
 AC_MSG_NOTICE( checking for some compiler specific elements)
 
 # Define GCC specific elements.
-if test x${ac_cv_c_compiler_gnu} = xyes; then
+if test x$ac_cv_c_compiler_gnu = xyes; then
 
     AC_DEFINE( [COMPILER], [GNUC], [Define the target compiler.])
 
-    cpp_call=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | ${EGREP} '/cpp|/cc1' | sed 's/^ *//; s/ .*//'` 
+    cpp_call=`$CPP $CFLAGS $arch_opt -xc -v /dev/null 2>&1 | $EGREP '/cpp|/cc1' | sed 's/^ *//; s/ .*//'` 
     AC_MSG_CHECKING( for the directory to install mcpp)
-    cpp_name=`expr ${cpp_call} : '.*/\(.*\)'`
-    bindir=`expr ${cpp_call} : "\(.*\)/${cpp_name}"`
-    AC_MSG_RESULT( ${bindir})
+    cpp_name=`expr $cpp_call : '.*/\(.*\)'`
+    bindir=`expr $cpp_call : "\(.*\)/$cpp_name"`
+    AC_MSG_RESULT( $bindir)
 
-    lang_save=${LANG}
+    lang_save=$LANG
     export LANG=C
 
     AC_MSG_CHECKING( for the compiler-specific C include directory)
-    c_include_dirs=`${CPP} ${CFLAGS} -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | ${EGREP} -v '^/usr(/local|)/include$|/Frameworks|End of search list'`
+    c_include_dirs=`$CPP $CFLAGS $arch_opt -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | $EGREP -v '^/usr(/local|)/include$|/Frameworks|End of search list'`
     n=1
-    for dir in ${c_include_dirs}
+    for dir in $c_include_dirs
     do
         case $n in
-        1)  c_include_dir1=${dir};;
-        2)  c_include_dir2=${dir};;
+        1)  c_include_dir1=$dir;;
+        2)  c_include_dir2=$dir;;
         esac
         let n=n+1
     done
     if test x${c_include_dir1+set} = xset; then
-        AC_DEFINE_UNQUOTED( [C_INCLUDE_DIR1], "${c_include_dir1}",
+        AC_DEFINE_UNQUOTED( [C_INCLUDE_DIR1], "$c_include_dir1",
             [Define compiler-specific C include directory 1.])
-        AC_MSG_RESULT( ${c_include_dir1})
+        AC_MSG_RESULT( $c_include_dir1)
     else
         AC_MSG_RESULT( none)
     fi
     if test x${c_include_dir2+set} = xset; then
-        AC_DEFINE_UNQUOTED( [C_INCLUDE_DIR2], "${c_include_dir2}",
+        AC_DEFINE_UNQUOTED( [C_INCLUDE_DIR2], "$c_include_dir2",
             [Define compiler-specific C include directory 2.])
-        AC_MSG_RESULT( ${c_include_dir2})
+        AC_MSG_RESULT( $c_include_dir2)
     fi
 
     AC_PROG_CXX
     AC_PROG_CXXCPP
     AC_LANG_PUSH( C++)
     AC_MSG_CHECKING( for the compiler-specific C++ include directory)
-    cxx_include_dirs=`${CXXCPP} ${CXXFLAGS} -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | ${EGREP} -v "^/usr(/local|)/include\$|/Frameworks|^${c_include_dir1}\$|^${c_include_dir2}\$"`
+    cxx_include_dirs=`${CXXCPP} ${CXXFLAGS} $arch_opt -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | $EGREP -v "^/usr(/local|)/include\$|/Frameworks|^${c_include_dir1}\$|^${c_include_dir2}\$"`
     n=1
     for dir in ${cxx_include_dirs}
     do
         case $n in
-        1)  cxx_include_dir1=${dir};;
-        2)  cxx_include_dir2=${dir};;
-        3)  cxx_include_dir3=${dir};;
-        4)  cxx_include_dir4=${dir};;
+        1)  cxx_include_dir1=$dir;;
+        2)  cxx_include_dir2=$dir;;
+        3)  cxx_include_dir3=$dir;;
+        4)  cxx_include_dir4=$dir;;
         esac
         let n=n+1
     done
     if test x${cxx_include_dir1+set} = xset; then
-        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR1], "${cxx_include_dir1}",
+        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR1], "$cxx_include_dir1",
             [Define compiler-specific C++ include directory 1.])
-        AC_MSG_RESULT( ${cxx_include_dir1})
+        AC_MSG_RESULT( $cxx_include_dir1)
     fi
     if test x${cxx_include_dir2+set} = xset; then
-        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR2], "${cxx_include_dir2}",
+        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR2], "$cxx_include_dir2",
             [Define compiler-specific C++ include directory 2.])
-        AC_MSG_RESULT( ${cxx_include_dir2})
+        AC_MSG_RESULT( $cxx_include_dir2)
     fi
     if test x${cxx_include_dir3+set} = xset; then
-        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR3], "${cxx_include_dir3}",
+        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR3], "$cxx_include_dir3",
             [Define compiler-specific C++ include directory 3.])
-        AC_MSG_RESULT( ${cxx_include_dir3})
+        AC_MSG_RESULT( $cxx_include_dir3)
     fi
     if test x${cxx_include_dir4+set} = xset; then
-        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR4], "${cxx_include_dir4}",
+        AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR4], "$cxx_include_dir4",
             [Define compiler-specific C++ include directory 4.])
-        AC_MSG_RESULT( ${cxx_include_dir4})
+        AC_MSG_RESULT( $cxx_include_dir4)
     fi
     AC_LANG_POP( C++)
 
-    export LANG=${lang_save}
+    export LANG=$lang_save
 
     ## the directory into which mcpp_g*.h header files are generated
     ## '/mcpp-gcc' will be appended to 'inc_dir'
-    if test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW; then
-        inc_dir=${c_include_dir2}
+    if test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
+        inc_dir=$c_include_dir2
     else
         if test x${c_include_dir1+set} = xset; then
-            inc_dir=${c_include_dir1}
+            inc_dir=$c_include_dir1
         else
             test "x$prefix" = xNONE && prefix=$ac_default_prefix
             inc_dir="$prefix"/include
         fi
     fi
-    AC_DEFINE_UNQUOTED( [INC_DIR], "${inc_dir}",
+    AC_DEFINE_UNQUOTED( [INC_DIR], "$inc_dir",
         [Define include directory to install mcpp_g*.h header files.])
 
     AC_SUBST( [host_system])
-    AC_SUBST( [target])
     AC_SUBST( [Target_Cpu])
     AC_SUBST( [inc_dir])
     AC_SUBST( [gcc_maj_ver])
     AC_SUBST( [gcc_min_ver])
     AC_SUBST( [cpp_call])
-    AC_PATH_PROG( [gcc_path], [${CC}], , [${PATH}])
+    AC_PATH_PROG( [gcc_path], [$CC], , [$PATH])
     AC_PROG_LN_S
 
-    if test x${gcc_maj_ver} = x2; then
+    if test x$gcc_maj_ver = x2; then
 
         AC_CACHE_CHECK( for value of predefined macro '__SIZE_TYPE__',
             size_type,
-            [size_type=`echo '__SIZE_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *//'`]
+            [size_type=`echo '__SIZE_TYPE__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *//'`]
         )
-        AC_DEFINE_UNQUOTED( [COMPILER_SP1_VAL], "${size_type}",
+        AC_DEFINE_UNQUOTED( [COMPILER_SP1_VAL], "$size_type",
             [Define the type of size_t.])
 
         AC_CACHE_CHECK( for value of predefined macro '__PTRDIFF_TYPE__',
             ptrdiff_type,
-            [ptrdiff_type=`echo '__PTRDIFF_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *$//'`]
+            [ptrdiff_type=`echo '__PTRDIFF_TYPE__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *$//'`]
         )
-        AC_DEFINE_UNQUOTED( [COMPILER_SP2_VAL], "${ptrdiff_type}",
+        AC_DEFINE_UNQUOTED( [COMPILER_SP2_VAL], "$ptrdiff_type",
             [Define the type of ptrdiff_t.])
 
         AC_CACHE_CHECK( for value of predefined macro '__WCHAR_TYPE__',
             wchar_type,
-            [wchar_type=`echo '__WCHAR_TYPE__' | ${CPP} - | sed 's/^ *//' | ${EGREP} -v '^#|^$' | sed 's/ *$//'`]
+            [wchar_type=`echo '__WCHAR_TYPE__' | $CPP - | sed 's/^ *//' | $EGREP -v '^#|^$' | sed 's/ *$//'`]
         )
-        AC_DEFINE_UNQUOTED( [COMPILER_SP3_VAL], "${wchar_type}",
+        AC_DEFINE_UNQUOTED( [COMPILER_SP3_VAL], "$wchar_type",
         [Define the type of wchar_t.])
 
     fi
 fi
 
-if test x${ac_cv_c_compiler_gnu} = xyes; then
+if test x$ac_cv_c_compiler_gnu = xyes; then
 
     AC_DEFUN([AC_CHECK_MBCHAR_IS_ESCAPE_FREE], [
         AC_CACHE_CHECK(
@@ -721,35 +756,35 @@ if test x${ac_cv_c_compiler_gnu} = xyes; then
     ## The following 3 mb_* files are separated from this file, since
     ## the editors do not allow multiple encodings of multi-byte characters.
     
-    if test x${ac_cv_c_compiler_gnu} = xyes; then
-        lang_save=${LANG}
+    if test x$ac_cv_c_compiler_gnu = xyes; then
+        lang_save=$LANG
     fi
     
     ## Set the environment variable, though this is seldom enabled in GCC.
-    if test x${ac_cv_c_compiler_gnu} = xyes; then
+    if test x$ac_cv_c_compiler_gnu = xyes; then
         export LANG=C-SJIS
     fi
     m4_include(./config/mb_sjis)
-    if test x${ac_cv_c_sjis_escape_free} = xyes; then
+    if test x$ac_cv_c_sjis_escape_free = xyes; then
         AC_DEFINE( [SJIS_IS_ESCAPE_FREE], 1,
             [Define if '0x5c' in SJIS multi-byte character is safe.])
     fi
     
-    if test x${ac_cv_c_compiler_gnu} = xyes; then
+    if test x$ac_cv_c_compiler_gnu = xyes; then
         export LANG=C-JIS
     fi
     m4_include(./config/mb_jis)
-    if test x${ac_cv_c_iso2022_jp_escape_free} = xyes; then
+    if test x$ac_cv_c_iso2022_jp_escape_free = xyes; then
         AC_DEFINE( [ISO2022_JP_IS_ESCAPE_FREE], 1,
             [Define if '0x5c' in ISO2022-JP multi-byte character is safe.])
     fi
     
-    if test x${ac_cv_c_compiler_gnu} = xyes; then
-        export LANG=${lang_save}
+    if test x$ac_cv_c_compiler_gnu = xyes; then
+        export LANG=$lang_save
     fi
     
     m4_include(./config/mb_big5)
-    if test x${ac_cv_c_bigfive_escape_free} = xyes; then
+    if test x$ac_cv_c_bigfive_escape_free = xyes; then
         AC_DEFINE( [BIGFIVE_IS_ESCAPE_FREE], 1,
             [Define if '0x5c' in BIG5 multi-byte character is safe.])
     fi
@@ -767,9 +802,9 @@ AC_ARG_WITH( [gcc-testsuite-dir],
         The testsuite of mcpp uses gcc testsuite, hence needs gcc source
         or at least gcc testsuite.
         This option needs --enable-replace-cpp option.]),
-    if test x"${withval+set}" = x"set"; then
-        if test x"${enable_replace_cpp}" = x"yes"; then
-            [gcc_testsuite_dir=`echo ${withval} | sed 's,/$,,'`]
+    if test x${withval+set} = xset; then
+        if test x$enable_replace_cpp = xyes; then
+            [gcc_testsuite_dir=`echo $withval | sed 's,/$,,'`]
         else
             AC_MSG_ERROR( [--with-gcc-testsuite-dir option requires --enable-replace-cpp option])
         fi
@@ -778,10 +813,10 @@ AC_ARG_WITH( [gcc-testsuite-dir],
     fi
 )
 AC_SUBST( [gcc_testsuite_dir])
-AM_CONDITIONAL( [GNUC], test x${ac_cv_c_compiler_gnu} = xyes)
-AM_CONDITIONAL( [MCPP_LIB], test x${enable_mcpplib} = xyes)
-AM_CONDITIONAL( [REPLACE_CPP], test x${enable_replace_cpp} = xyes)
-AM_CONDITIONAL( [MINGW], test ${ac_c_define_HOST_SYSTEM} = SYS_MINGW)
+AM_CONDITIONAL( [GNUC], test x$ac_cv_c_compiler_gnu = xyes)
+AM_CONDITIONAL( [MCPP_LIB], test x$enable_mcpplib = xyes)
+AM_CONDITIONAL( [REPLACE_CPP], test x$enable_replace_cpp = xyes)
+AM_CONDITIONAL( [MINGW], test $ac_c_define_HOST_SYSTEM = SYS_MINGW)
 
 dnl Final output.
 

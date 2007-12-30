@@ -166,7 +166,7 @@
 #define SYSTEM_STD2         "__unix__"
 #endif
 
-#if     SYSTEM == SYS_FREEBSD || SYSTEM == SYS_LINUX || SYSTEM == SYS_MAC
+#if     SYSTEM == SYS_FREEBSD || SYSTEM == SYS_LINUX
 #define CPU_STD2            "__i386__"
 #endif
 
@@ -181,11 +181,26 @@
 
 #if     SYSTEM == SYS_MAC   /* Mac OS X */
 #define SYSTEM_EXT          "__APPLE__"
-#define CPU_OLD             "i386"  /* Necessary to check arch      */
 #define FNAME_FOLD          TRUE    /* Case-insensitive file-system */
 #define FRAMEWORK1          "/System/Library/Frameworks"
 #define FRAMEWORK2          "/Library/Frameworks"
+#if     COMPILER == INDEPENDENT
+/* Apple-GCC changes CPU-specific macros by -arch option.  These    */
+/* should be defined at compile time rather than configuration time.*/
+#if     defined (__i386__)
+#define CPU_OLD             "i386"
+#define CPU_STD2            "__i386__"
+#elif   defined (__x86_64__)
+#define CPU_STD2            "__x86_64__"
+#elif   defined (__ppc__)
+#define CPU_STD2            "__ppc__"
+#elif   defined (__ppc64__)
+#define CPU_STD2            "__ppc64__"
 #endif
+#elif   ! defined (CPU_STD2)
+#define CPU_STD2            "__i386__"
+#endif
+#endif  /* SYSTEM == SYS_MAC    */
 
 #if     SYSTEM == SYS_CYGWIN
 #define CPU_STD2            "__i386__"

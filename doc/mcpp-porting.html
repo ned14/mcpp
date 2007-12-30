@@ -30,11 +30,12 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.3.1.1" href="#3.1.1">3.1.1. Commonly required settings</a>
 <dd><a name="toc.3.1.2" href="#3.1.2">3.1.2. FreeBSD / GCC V.2.*, V.3.*, V.4.*</a>
 <dd><a name="toc.3.1.3" href="#3.1.3">3.1.3. Linux / GCC V.2.*, V.3.*, V.4.*</a>
-<dd><a name="toc.3.1.4" href="#3.1.4">3.1.4. CygWIN / GCC V.2.*, V.3.*</a>
-<dd><a name="toc.3.1.5" href="#3.1.5">3.1.5. MinGW / GCC V.3.*</a>
-<dd><a name="toc.3.1.6" href="#3.1.6">3.1.6. LCC-Win32 2003-08, 2006-03</a>
-<dd><a name="toc.3.1.7" href="#3.1.7">3.1.7. Visual C++ 2002, 2003, 2005</a>
-<dd><a name="toc.3.1.8" href="#3.1.8">3.1.8. Borland C V.4.*, V.5.*</a></dl>
+<dd><a name="toc.3.1.4" href="#3.1.4">3.1.4. Mac OS X / Apple-GCC V.4.*</a>
+<dd><a name="toc.3.1.5" href="#3.1.5">3.1.5. CygWIN / GCC V.2.*, V.3.*</a>
+<dd><a name="toc.3.1.6" href="#3.1.6">3.1.6. MinGW / GCC V.3.*</a>
+<dd><a name="toc.3.1.7" href="#3.1.7">3.1.7. LCC-Win32 2003-08, 2006-03</a>
+<dd><a name="toc.3.1.8" href="#3.1.8">3.1.8. Visual C++ 2002, 2003, 2005</a>
+<dd><a name="toc.3.1.9" href="#3.1.9">3.1.9. Borland C V.4.*, V.5.*</a></dl>
 <dd><a name="toc.3.2" href="#3.2">3.2. Compiler systems to which DECUS-cpp had been ported</a>
 <dd><a name="toc.3.3" href="#3.3">3.3. noconfig.H, configed.H, system.H</a>
 <dd><a name="toc.3.4" href="#3.4">3.4. system.c</a>
@@ -168,8 +169,13 @@ In November 2006, V.2.6.2 was released.  In this version, most of the text file 
 In April 2007, V.2.6.3 was released.  In this version, compatibility of GCC-specific-build to GCC was increased, and output to memory buffer was implemented in subroutine-build by contribution from Greg Kress.  In addition, binary packages for some systems were begun to be provided.<br>
 In May 2007, V.2.6.4 was released.  This is a bug-fixed version of V.2.6.3.<br>
 <br>
-<li>In December 2007, V.2.7 was released.
-In this version, 'macro notification mode' to embed macro informations into comments was implemented, and much codes are added.<br>
+<li>In January 2008, V.2.7 was released.
+In this version, 'macro notification mode' to embed macro informations into comments was implemented, and much codes were added.
+This mode enables to know the line and column position of macro calls on the source file from the preprocessed output.
+It was implemented for C/C++ refactoring tools.<br>
+A porting to Mac OS X / Apple-GCC was added.
+GCC-specific-build became more close to GCC.
+Some bugs of the previous version were fixed.
 </ol>
 <p>Note:</p>
 <p>*1 The outline of the "Exploratory Software Project" can be seen at the following site (the documents are only in Japanese).</p>
@@ -210,9 +216,8 @@ Some of this type is invoked by compiler-driver.
 This build is explained in <a href="#3.12">3.12</a>.
 </ul>
 <ul>
-<li><b>compiler-independent-build</b>:  The preprocessor which behaves on its own not depending on any compiler system.  The invocation options, for example, are the same across the compilers with which <b>mcpp</b> is compiled.  Although it can preprocess source files, it cannot behave as an integrated part of the compiler system.<br>
-While V.2.6 and V.2.6.1 called this as 'stand-alone-build', V.2.6.2 changed the name according to the creation of subroutine-build.<br>
-It is quite easy to make a compiler-independent-build.  It is explained in <a href="#3.11">3.11</a>. *1
+<li><b>compiler-independent-build</b>:  The preprocessor which behaves on its own not depending on any compiler system.  The invocation options, for example, are the same across the compilers with which <b>mcpp</b> is compiled.  Although it can preprocess source files, it cannot behave as an integrated part of the compiler system. *1<br>
+It is quite easy to make a compiler-independent-build.  It is explained in <a href="#3.11">3.11</a>. *2
 <li><b>compiler-specific-build</b>:  The preprocessor to replace (if possible)
 the resident preprocessor of certain compiler system.
 It has some peculiar specifications for the compiler system and is installed
@@ -224,7 +229,8 @@ into the compiler-system-specific directory.
 <p>Another way is to 'make' using a makefile for each compiler system, with the modified/edited (if required) header file by difference files.  <samp>noconfig.H</samp> will be used in this case.  Difference files and makefiles are in the 'noconfig' directory.  Even for systems which can use the configure script, editing header files and makefiles directly allows you to control compilation in detail.  However, difference files are only available for supported compiler systems.</p>
 <p>In this chapter, I explain how to compile <b>mcpp</b> using the difference files.  Please refer to INSTALL for the configure script.</p>
 <p>Note:<p>
-<p>*1 <b>mcpp</b> V.2.6.3 and later provides some binary packages at the SourceForge site.  They are all stand-alone and compiler-independent-builds.</p>
+<p>*1 While V.2.6 and V.2.6.1 called this as 'stand-alone-build', V.2.6.2 changed the name according to the creation of subroutine-build.</p>
+<p>*2 <b>mcpp</b> V.2.6.3 and later provides some binary packages at the SourceForge site.  They are all stand-alone and compiler-independent-builds.</p>
 <br>
 
 <h2><a name="3.1" href="#toc.3.1">3.1. Already supported compiler systems: Making Compiler-specific-build of <b>mcpp</b></a></h2>
@@ -233,8 +239,9 @@ into the compiler-system-specific directory.
 <table>
   <tr><th>FreeBSD 6.2        </th><td>GCC V.3.4.6</td></tr>
   <tr><th>Vine Linux 4.1     </th><td>GCC V.2.95.3, V.3.2, V.3.3.6, V.3.4.3, V.4.1.1</td></tr>
-  <tr><th>FedoraLinux 7      </th><td>GCC V.4.1.2</td></tr>
+  <tr><th>FedoraLinux 8      </th><td>GCC V.4.1.2</td></tr>
   <tr><th>DebianLInux 4.0    </th><td>GCC V.4.1.2</td></tr>
+  <tr><th>Mac OS X 10.5      </th><td>GCC V.4.0.1</td></tr>
   <tr><th>CygWIN 1.3.10      </th><td>GCC V.2.95.3</td></tr>
   <tr><th>CygWIN 1.5.18      </th><td>GCC V.3.4.4</td></tr>
   <tr><th>MinGW (MSYS 1.0.11)</th><td>GCC V.3.4.5</td></tr>
@@ -344,7 +351,8 @@ And for the fourth, write the same number with the first by a digit.</p>
 <pre>
 #define SYSTEM      SYS_LINUX
 </pre>
-<p>and change:</p>
+<p>Then modify the macros, as on FreeBSD, <i>COMPILER, VERSION_MSG, COMPILER_EXT_VAL, COMPILER_EXT2_VAL, COMPILER_CPLUS_VAL, GCC_MAJOR_VERSION, CPLUS_INCLUDE_DIR1, CPLUS_INCLUDE_DIR2, C_INCLUDE_DIR1</i>.</p>
+<p>For GCC 2.* modify the value of <i>STDC_VERSION</i>. and change:</p>
 <pre>
 #define COMPILER_SP3_VAL    "int"
 </pre>
@@ -352,8 +360,6 @@ And for the fourth, write the same number with the first by a digit.</p>
 <pre>
 #define COMPILER_SP3_VAL    "long int"
 </pre>
-<p>Then modify the macros, as on FreeBSD, <i>COMPILER, VERSION_MSG, COMPILER_EXT_VAL, COMPILER_EXT2_VAL, COMPILER_CPLUS_VAL, GCC_MAJOR_VERSION, CPLUS_INCLUDE_DIR1, CPLUS_INCLUDE_DIR2, C_INCLUDE_DIR1</i>.<br>
-For GCC 2.* modify the value of <i>STDC_VERSION</i>.</p>
 <p>You should make sure the include directories by these commands:</p>
 <pre>
 gcc -xc -E -v /dev/null
@@ -362,7 +368,53 @@ g++ -xc++ -E -v /dev/null
 <p>The difference files in 'noconfig' directory named <samp>linux_gcc2953.dif, linux_gcc32.dif, linux_gcc336.dif, linux_gcc343.dif and linux_gcc411.dif</samp> are for VineLinux 4.0 / GCC V.2.95.3, V.3.2, V.3.3.6, V.3.4.3 and V.4.1.1, respectively.  For the compiler-specific-build, change <i>COMPILER</i> too.  The include directories may vary between distributions of Linux.  Also, if another version is installed in addition to the system standard version of GCC, it should create another include directory for the specific version.  Specify the particular directory using the above macros.</p>
 <p>The specification of getopt() of glibc is different from the standard ones such as POSIX, please use the one in <samp>lib.c</samp> instead.  I assume glibc is used by default for <samp>noconfig.H</samp> in Linux.</p>
 
-<h3><a name="3.1.4" href="#toc.3.1.4">3.1.4. CygWIN / GCC V.2.*, 3.*</a></h3>
+<h3><a name="3.1.4" href="#toc.3.1.4">3.1.4. Mac OS X / Apple-GCC V.4.*</a></h3>
+<p>On Mac OS X, you can install GCC by installing the Xcode package.</p>
+<p>After that installation, you will find many gcc, cc, g++, c++ or such in /usr/bin.
+In Mac OS X 10.5 Leopard on Intel-Mac, i686-apple-darwin9-gcc-4.0.1 and i686-apple-darwin9-g++-4.0.1 are the native compilers for the machine.
+The cross compilers are installed, too.
+On Intel-Mac, powerpc-apple-darwin9-gcc-4.0.1 and powerpc-apple-darwin9-g++-4.0.1 are the cross compilers to generate a binary for PowerPc.
+The names just gcc and g++ are symbolic links to gcc-4.0 and g++-4.0,
+which behave as native compilers by default, but when invoked with '-arch ppc' option, call the compiler-propers cc1 or cc1plus for powerpc.</p>
+<p>These are GCCs with many extensions specific to Mac OS X made by Apple.
+The compiler system of Mac OS X differs from the GCCs on other systems in some important aspects.
+First, it handles the special directories called "framework" as its system header directories.
+Second, it can generate both of the binaries for Intel-Mac and PowerPc-Mac on either machine.
+Moreover, it has a mechanisim to make a "universal binary", which is a bundle of both binaries and is able to run on either machine.
+In fact, gcc-4.0, i686-apple-darwin9-gcc-4.0.1, powerpc-apple-darwin9-gcc-4.0.1 and their corresponding g++s and cc1, cc1plus and other compiler-propers in /usr/libexec/gcc/SYSTEM/4.0.1 are all universal binaries for i386 and ppc.
+(SYSTEM is i686-apple-darwin9 and powerpc-apple-darwin9.)
+If we copy these universal binaries from Intel-Mac to PowerPc-Mac, they will run reversing native and cross positions, I suppose.
+In addition, Intel-Mac even executes most of ppc binaries automatically translating to x86 codes.</p>
+<p>To sum up: there are many gccs and g++s in /usr/bin: also there are links to them;
+there are two libexec directories:
+an executable contains two binaries bundled in it:
+a binary for ppc runs on x86.
+Such being the situation, we easily lose which is which.
+Be careful.
+Here, I take examples of Mac OS X 10.5 (Leopard) on Intel-Mac.
+On PowerPc-Mac, read these sections swapping i686 and powerpc (ppc).
+On Mac OS X 10.4 (Tiger), read darwin9 as darwin8.</p>
+
+<h4><a name="3.1.4.1">3.1.4.1. Native compiler versus cross compiler</a></h4>
+<p>It is quite simple to install <b>mcpp</b> by the native compiler.
+To make settings for Mac OS X 10.5 / GCC 4.0.1 on Intel-Mac, apply mac_gcc401_i686.dif to noconfig.H.
+Use mac_osx.mak as a Makefile.
+The command sequence 'make; sudo make install' will generate a compiler-independent-build, and 'make COMPILER=GNUC; sudo make COMPILER=GNUC install' will install a GCC-specific-build.</p>
+<p>To install <b>mcpp</b> on Intel-Mac with or for the cross compiler for PowerPc, apply mac_gcc401_powerpc.dif to noconfig.H.
+Then edit the Makefile (mac_osx.mak).</p>
+<p>For a compiler-independent-build, change the definition of variables NAME, CC and GPP to those containing "powerpc" as noted by the comments in mac_osx.mak.
+Then, do 'make; sudo make install'.
+The binary is the one compiled "with the cross compiler", so should run on ppc-Mac.</p>
+<p>For a GCC-specific-build, change the definition of variables NAME, INCDIR, BINDIR, target_cc and arch to those containing "powerpc" (do not change CC and GPP), and do 'make COMPILER=GNUC; sudo make COMPILER=GNUC install'.
+This is a binary "for the cross compiler" running on Intel-Mac, hence runs on Intel-Mac.</p>
+<p>On PowerPc-Mac, mac_gcc401_powerpc.dif makes settings for the native compiler, and mac_gcc401_i686.dif do for the cross compiler, in reverse of Intel-Mac.
+To compile <b>mcpp</b> with or for the cross compiler for Intel-Mac on PowerPc-Mac, change the definition of the variables above to those containing "i686".</p>
+
+<h4><a name="3.1.4.2">3.1.4.2. Universal binary</a></h4>
+<p>To make a universal binary, just enable the variable UFLAGS in mac_osx.mak removing the '#' which comments out the line.
+All the other settings are the same with the section above.</p>
+
+<h3><a name="3.1.5" href="#toc.3.1.5">3.1.5. CygWIN / GCC V.2.*, 3.*</a></h3>
 <p>For CygWIN V.1.3.10 / GCC V.2.95.3, add the changes in cyg1310.dif to <samp>noconfig.H</samp>.<br>
 For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.</p>
 <p>Then, rewrite the macro <i>CYGWIN_ROOT_DIRECTORY</i> to define CygWIN's root directory on Windows as:</p>
@@ -373,7 +425,7 @@ For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.</p>
 <p>For other versions, it should be able to be ported by modifying macros such as <i>VERSION_MSG</i>, <i>C_INCLUDE_DIR?</i>, <i>CPLUS_INCLUDE_DIR?</i> and <i>CYGWIN_ROOT_DIRECTORY</i>.</p>
 <p>Although CygWIN is a system on Windows, it simulates UNIX file system.  Therefore, <b>mcpp</b> treats CygWIN/GCC in almost the same way with UNIX/GCC, and presets include directories as <b>mcpp</b> on UNIX.</p>
 
-<h3><a name="3.1.5" href="#toc.3.1.5">3.1.5. MinGW / GCC V.3.*</a></h3>
+<h3><a name="3.1.6" href="#toc.3.1.6">3.1.6. MinGW / GCC V.3.*</a></h3>
 <p>For MinGW / GCC V.3.4.5, add the changes in mingw345.dif to <samp>noconfig.H</samp>.  Then, rewrite the macro <i>MSYS_ROOT_DIRECTORY</i> and <i>MINGW_DIRECTORY</i> to define MSYS's / and /mingw directory on Windows as:</p>
 <pre>
 #define MSYS_ROOT_DIRECTORY "C:/Program Files/MSYS/1.0"
@@ -384,14 +436,14 @@ For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.</p>
 <p>Since MinGW does not support symbolic link, GCC-specific-build of <b>mcpp</b> cannot be invoked from gcc through symbolic link.  Moreover, MinGW / gcc rejects to invoke a shell-script even if it is named cc1.  Therefore, the compiling of <b>mcpp</b> generates an executable named cc1.exe instead of shell-script.  In execution, gcc invokes this cc1.exe from which mcpp.exe or GCC's cc1.exe/cc1plus.exe are invoked.</p>
 <p>Although the include directories are preset on GCC-specific-build, they are not set on compiler-independent-build, hence you should specify them by the environment variables INCLUDE and CPLUS_INCLUDE.</p>
 
-<h3><a name="3.1.6" href="#toc.3.1.6">3.1.6. LCC-WIN32 2003-08, 2006-03</a></h3>
+<h3><a name="3.1.7" href="#toc.3.1.7">3.1.7. LCC-WIN32 2003-08, 2006-03</a></h3>
 <p>In LCC-WIN32 2003-08 or 2006-03, it needs to be changed as per lcc0308.dif, lcc0603.dif respectively.  In other versions, the <i>VERSION_MSG</i> macro needs to be modified.</p>
 
-<h3><a name="3.1.7" href="#toc.3.1.7">3.1.7. Visual C++ 2002, 2003, 2005</a></h3>
+<h3><a name="3.1.8" href="#toc.3.1.8">3.1.8. Visual C++ 2002, 2003, 2005</a></h3>
 <p>In Visual C++ 2002, 2003, 2005, it needs modifications as vc2002.dif, vc2003.dif, vc2005.dif respectively.  For the compiler-specific-build, modify <i>COMPILER</i> or overwrite it by the nmake option, of course.</p>
 <p>For other versions of Visual C, besides modifying <i>VERSION_MSG</i> macro, the values of predefined macros, <tt>_MSC_VER</tt> and <tt>_MSC_FULL_VER</tt>, should be changed by modifying the definition of <i>COMPILER_EXT_VAL</i> and <i>COMPILER_EXT2_VAL</i> respectively.</p>
 
-<h3><a name="3.1.8" href="#toc.3.1.8">3.1.8. Borland C++ V.4.*, V.5.*</a></h3>
+<h3><a name="3.1.9" href="#toc.3.1.9">3.1.9. Borland C++ V.4.*, V.5.*</a></h3>
 <p>In Borland C V.4.0, V.5.5 / bcc32, it needs to be changed with bc40.dif or bc55.dif respectively.</p>
 <p>In other versions of Borland C++, besides the <i>VERSION_MSG</i> macro, the values of predefined macros, <tt>__TURBOC__</tt>, <tt>__BORLANDC__</tt> and <tt>__BCPLUSPLUS__</tt> should be changed by modifying macros <i>COMPILER_STD2_VAL</i>, <i>COMPILER_EXT_VAL</i> and <i>COMPILER_CPLUS_VAL</i>, in <samp>noconfig.H</samp>.  (Refer Sec 
 <a href="#4.1.1.1">4.1.1.1</a>.)  If the version can handle digraphs, the definition of <i>HAVE_DIGRAPHS</i> needs to be changed.  If the version has <tt>__STDC_VERSION__</tt> macro, change the definition of <i>STDC_VERSION</i>.</p>
@@ -419,12 +471,11 @@ For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.</p>
 <br>
 
 <h2><a name="3.5" href="#toc.3.5">3.5. lib.c</a></h2>
-<p>Of library functions, C source code for getopt() and stpcpy(), which are not in Standard, are written in this file.  Though <b>mcpp</b> uses also getcwd(), stat() and in UNIXes readlink(), they are not included in <samp>lib.c</samp>, because they are functions dependent on OS, so cannot be written portably.  They are only three low-level functions used in <b>mcpp</b>.  Though they are not Standard C function, they are required by POSIX.  Every compiler system seems to provide it. *1, *2</p>
+<p>Of library functions, C source code for getopt() and stpcpy(), which are not in Standard, are written in this file.  Though <b>mcpp</b> uses also getcwd(), stat() and in UNIXes readlink(), they are not included in <samp>lib.c</samp>, because they are functions dependent on OS, so cannot be written portably.  They are only three low-level functions used in <b>mcpp</b>.  Though they are not Standard C function, they are required by POSIX.  Every compiler system seems to provide it. *1</p>
 <p>Usage of library functions in <b>mcpp</b> does not depend on the specification difference on different compiler systems, so those functions of any compiler systems will not cause a problem unless there is a bug.</p>
 <p>To use the function called xyz in <samp>lib.c</samp>, the macro <i>HOST_HAVE_XYZ</i>, in PART 2 of <samp>noconfig.H</samp> (<samp>configed.H</samp>), should be defined to <i>FALSE</i>.</p>
 <p>Note:</p>
 <p>*1 On MinGW, spawnv() is used too.</p>
-<p>*2 Until <b>mcpp</b> V.2.5, also C source code for memmove(), memcmp(), memcpy(), strstr() and strcspn() were provided.  They were removed, since compiler system without them seems to exist no longer.</p>
 <br>
 
 <h2><a name="3.6" href="#toc.3.6">3.6. Standard headers</a></h2>
@@ -550,6 +601,10 @@ However, since memory is scarce on MS-DOS, you may get an "out of memory" error 
 <p>PART 2 depends on the extent to which the host compiler implements the Standard's specifications, and also depends on whether the necessary functions are provided.  The most often encountered discrepancy among the compilers is implementation of 'long long' or its corresponding data type.  In Visual C 2002, 2003, 2005 and Borland C 5.5, the type is <samp>__int64</samp>.  It's length modifier for printf() is 'I64', not 'j' nor 'll', except Visual C 2005.  Hence, define the macro <i>LL_FORM</i> as "I64" for these compilers.  On MinGW, the specifier is also "I64", though it has long long.</p>
 <p>If the compiler's library has not the function stpcpy() or getopt(), define <i>HOST_HAVE_STPCPY</i> or <i>HOST_HAVE_GETOPT</i> to <i>FALSE</i>.</p>
 <p>Write makefile yourself referring the *.mak files. (Refer <a href="#3.7">3.7</a> too.)</p>
+<p>Mac OS X provides a cross compiler as well as a native compiler so that we can make binaries for both of x86 and powerpc on either machine.
+Moreover, it provides a mechanism to make a "universal binary", which is a bundle of binaries for x86 and powerpc.
+Therefore, the settings necessary to compile <b>mcpp</b> on Mac OS X is a bit complex.
+I explain compiler-independent-build and compiler-specific-build together at <a href="#3.1.4">3.1.4</a>.</p>
 <p>By the way, at the SourceForge site, <b>mcpp</b> V.2.6.3 and later supplies some binary packages of compiler-independent-build.  These are the ones packaged after each packaging method, and their packaging specifications are found in the setting files contained in each corresponding source package.  All the packages on FreeBSD and Linux use configure script to compile.</p>
 <p>Note:</p>
 <p>*1 In <b>mcpp</b> V.2.4 and V.2.5, the specification of the compiler-independent-build was a compromise with the compiler's specification.  From V.2.6 on, the specification is its own and independent from the compiler.</p>
@@ -577,6 +632,13 @@ Then libmcpp.so and libmcpp.so.0 will be created as links to libmcpp.so.$(SHLIB_
 The *.a is a static library, and the *.so is a shared library.
 The file named libmcpp.la will also be created, which is for the tool 'libtool'.
 $(SHLIB_VER) is 0.0.0 on <b>mcpp</b> V.2.6.3, 0.0.1 on V.2.6.4, 0.1.0 on V.2.7 and later.</p>
+<p>On Mac OS X, the name of the shared library is *.dylib, not *.so.
+And, if you specify some CPUs by -arch option, such as "<samp>make CFLAGS+='-arch i386 -arch ppc'</samp>", a universal binary for those CPUs will be generated.
+In addition, you can widen the range of Mac OS X version on which the binary will run by -isysroot and -mmacosx-version-min= options.
+This is an example to generate a shared library on Leopard as a universal binary for i386 and ppc usable on Tiger.</p>
+<pre>
+make CFLAGS+='-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -arch i386 -arch ppc'
+</pre>
 <p>On CygWIN and MinGW, DLL named *.dll will be generated instead of *.so.
 On CygWIN, libmcpp.a, libmcpp.dll.a, libmcpp.la will be generated and installed into /usr/local/lib, and cygmcpp-0.dll will be generated and installed into /usr/local/bin.
 On MinGW, those are the same with CygWIN, except cygmcpp-0.dll changes to libmcpp-0.dll.
@@ -595,16 +657,17 @@ make MCPP_LIB=1 mcpplib_install
 <p>While the above commands makes a compiler-independent-build, you can also make a compiler-specific-build by adding an option <samp>'COMPILER=MSC'</samp> or the like, unless the compiler is GCC.<br>
 For Visual C, use <samp>'nmake'</samp> instead of <samp>'make'</samp>.<br>
 Since the 'make' command attached to LCC-Win32 cannot handle 'if' directive, you must edit the makefile whenever you do different 'make's.</p>
-<p>On Linux, FreeBSD, CygWIN and MinGW, the result is the same with that of the configure above, except libmcpp.la is not created.<br>
+<p>On Linux, FreeBSD, Max OS X, CygWIN and MinGW, the result is the same with that of the configure above, except libmcpp.la is not created.<br>
+On Mac OS X, if you remove the '#' which comments out the definition of variable UFLAGS in mac_osx.mak, universal binary will be generated for each library.<br>
 On Windows, the name of the libraries are different from those on Linux as shown in the table below.</p>
-<blockquote>
-<table>
-  <tr><th></th><th>Linux, FreeBSD / GCC</th><th>CygWIN / GCC</th><th>MinGW / GCC</th><th>Visual C, Borland C, LCC-Win32</th></tr>
-  <tr><th>static library</th><td>libmcpp.a</td><td>libmcpp.a</td><td>libmcpp.a</td><td>mcpp.lib</td></tr>
-  <tr><th>shared library or DLL</th><td>libmcpp.so.$(SHLIB_VER)</td><td>cygmcpp-$(DLL_VER).dll<td>libmcpp-$(DLL_VER).dll</td><td>mcpp$(DLL_VER).dll</td></tr>
-  <tr><th>import library of DLL</th><td></td><td>libmcpp-$(DLL_VER).dll.a</td><td>libmcpp-$(DLL_VER).dll.a</td><td>mcpp$(DLL_VER).lib</td></tr>
+
+<table border='1' frame='below'>
+  <tr><th></th><th>Linux, FreeBSD / GCC</th><th>Mac OS X / GCC</th><th>CygWIN / GCC</th><th>MinGW / GCC</th><th>Visual C, Borland C, LCC-Win32</th></tr>
+  <tr><th>static library</th><td>libmcpp.a</td><td>libmcpp.a</td><td>libmcpp.a</td><td>libmcpp.a</td><td>mcpp.lib</td></tr>
+  <tr><th>shared library or DLL</th><td>libmcpp.so.$(SHLIB_VER)</td><td>libmcpp.$(SHLIB_VER).dylib</td><td>cygmcpp-$(DLL_VER).dll<td>libmcpp-$(DLL_VER).dll</td><td>mcpp$(DLL_VER).dll</td></tr>
+  <tr><th>import library of DLL</th><td></td><td></td><td>libmcpp-$(DLL_VER).dll.a</td><td>libmcpp-$(DLL_VER).dll.a</td><td>mcpp$(DLL_VER).lib</td></tr>
 </table>
-</blockquote>
+
 <p>$(SHLIB_VER) is 0.0.0, 0.0.1, 0.1.0 on <b>mcpp</b> V.2.6.3, V.2.6.4, V.2.7 and later, respectively.  $(DLL_VER) is 0 on any of <b>mcpp</b> V.2.6.3, V.2.6.4 and V.2.7 and later.
 If the first digit of $(SHLIB_VER) or $(DLL_VER) is the same, the versions with the higher second or third digit of $(SHLIB_VER) are upper-compatible to the one with lower second or third digit.</p>
 <p>On Windows, so-called 'import library' is generated too, which is to use the DLL.
@@ -667,7 +730,9 @@ Select the host OS and the host compiler system.  If these are the same as the t
 <h4><a name="4.1.1.1" href="#toc.4.1.1.1">4.1.1.1. Predefined macros</a></h4>
 <ul>
 <li><samp><i>CPU_OLD, CPU_STD1, CPU_STD2, SYSTEM_OLD, SYSTEM_STD1, SYSTEM_STD2, SYSTEM_EXT, SYSTEM_EXT2, COMPILER_OLD, COMPILER_STD1, COMPILER_STD2, COMPILER_EXT, COMPILER_EXT2</i></samp><br>
-Specify the unique macro name of the compiler system, which will be predefined in <b>mcpp</b>, in a string literal.  Leave undefined any unnecessary ones (should not define to 0 token). <i>*_OLD</i> generate old style macros which do not begin with '_' (underscore), these won't be predefined at <b>mcpp</b> execution time if more than 1 is specified for &lt;n&gt; of the -S&lt;n&gt; option.  In <i>*_STD?, *_EXT</i> and <i>*_EXT2</i>, always specify the macro name beginning with '_'.  <i>*_STD1</i> starts from <samp>__</samp>, and <i>*_STD2</i> starts from <samp>__</samp> and end with <samp>__</samp>.  In <i>SYSTEM_EXT, SYSTEM_EXT2, COMPILER_STD1, COMPILER_STD2, COMPILER_EXT</i> and <i>COMPILER_EXT2</i>, the value of their macros are also specified by <i>SYSTEM_EXT_VAL, SYSTEM_EXT2_VAL, COMPILER_STD1_VAL, COMPILER_STD2_VAL, COMPILER_EXT_VAL</i> and <i>COMPILER_EXT2_VAL</i>, respectively.  This is defined by a string literal which is the integer enclosed by "".  The macro that expands to a 0 token is defined as "".  If nothing is specified, the value of the macro becomes 1.  All other predefined macros (the ones specified by <i>CPU_*, SYSTEM_OLD, SYSTEM_STD1, SYSTEM_STD2, COMPILER_OLD</i>) have a value of 1.<br>
+Specify the unique macro name of the compiler system, which will be predefined in <b>mcpp</b>, in a string literal.  Leave undefined any unnecessary ones (should not define to 0 token). <i>*_OLD</i> generate old style macros which do not begin with '_' (underscore), these won't be predefined at <b>mcpp</b> execution time if more than 1 is specified for &lt;n&gt; of the -S&lt;n&gt; option.
+(Except GCC-specific-build which predefines these macros even in STD mode, unless -ansi or -std=iso* option is specified.)
+In <i>*_STD?, *_EXT</i> and <i>*_EXT2</i>, always specify the macro name beginning with '_'.  <i>*_STD1</i> starts from <samp>__</samp>, and <i>*_STD2</i> starts from <samp>__</samp> and end with <samp>__</samp>.  In <i>SYSTEM_EXT, SYSTEM_EXT2, COMPILER_STD1, COMPILER_STD2, COMPILER_EXT</i> and <i>COMPILER_EXT2</i>, the value of their macros are also specified by <i>SYSTEM_EXT_VAL, SYSTEM_EXT2_VAL, COMPILER_STD1_VAL, COMPILER_STD2_VAL, COMPILER_EXT_VAL</i> and <i>COMPILER_EXT2_VAL</i>, respectively.  This is defined by a string literal which is the integer enclosed by "".  The macro that expands to a 0 token is defined as "".  If nothing is specified, the value of the macro becomes 1.  All other predefined macros (the ones specified by <i>CPU_*, SYSTEM_OLD, SYSTEM_STD1, SYSTEM_STD2, COMPILER_OLD</i>) have a value of 1.<br>
 <li><samp><i>CPU_SP_OLD</i>, <i>CPU_SP_STD</i></samp><br>
 Write the compiler system unique special predefined macro name as a string literal. The values of all these macro should be 1.<br>
 <li><samp><i>SYSTEM_SP_OLD</i>, <i>SYSTEM_SP_STD</i></samp><br>

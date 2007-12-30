@@ -418,8 +418,8 @@ static int  print_macro_inf(
         if (m_inf->locs.start_line) {
             /* Location of the macro call in source file        */
             *opp += sprintf( *opp, " %ld:%d-%ld:%d"
-                    , m_inf->locs.start_line, m_inf->locs.start_col
-                    , m_inf->locs.end_line, m_inf->locs.end_col);
+                    , m_inf->locs.start_line, (int) m_inf->locs.start_col
+                    , m_inf->locs.end_line, (int) m_inf->locs.end_col);
         }
         *opp = stpcpy( *opp, "*/");
         if ((num_args = m_inf->num_args) >= 1) {
@@ -471,8 +471,8 @@ static char *   print_macro_arg(
 
     if (real_arg && m_inf->loc_args && loc->start_line) {
         /* Location of the argument in source file  */
-        out += sprintf( out, " %ld:%d-%ld:%d"
-            , loc->start_line, loc->start_col, loc->end_line, loc->end_col);
+        out += sprintf( out, " %ld:%d-%ld:%d", loc->start_line
+                , (int) loc->start_col, loc->end_line, (int) loc->end_col);
     }
     if (! start)            /* End of an argument in verbose mode   */
         out = stpcpy( out, ">");
