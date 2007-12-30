@@ -190,6 +190,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target = @target@
 target_alias = @target_alias@
+target_cc = @target_cc@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@

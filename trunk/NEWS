@@ -11,7 +11,9 @@ MCPP V.2.7-prerelease (2007/12)
 
 3. Ported to Mac OS X / GCC.
 
-4. Added documentation on source checking of firefox 3.0pre.
+4. Made GCC-specific-build more closer to GCC.
+
+5. Added documentation on source checking of firefox 3.0pre.
 
 
 MCPP V.2.6.4 (2007/05)

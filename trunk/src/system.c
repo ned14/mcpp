@@ -343,7 +343,9 @@ static int      sys_framework;          /* System framework dir     */
 static const char **    to_search_framework;
                         /* Search framework[] next to the directory */
 static int      in_import;          /* #import rather than #include */
+#if COMPILER == GNUC
 static char *   arch = NULL;                /* -arch ppc or such    */
+#endif
 #endif
 
 #if MCPP_LIB
@@ -427,6 +429,9 @@ void    do_options(
     char *      sysdir[ NSYSDIR] = { NULL, };
     char **     sysdir_end = sysdir;
     int         integrated_cpp; /* Flag of cc1 which integrates cpp in it   */
+#if SYSTEM == SYS_MAC
+    static char ar[ 7];
+#endif
 #elif   COMPILER == LCC
     const char *    debug_name = "__LCCDEBUGLEVEL";
 #endif
@@ -530,7 +535,7 @@ plus:
                optind++;
                break;	        /* Ignore '-auxbase some' or such nonsence  */
 #if SYSTEM == SYS_MAC
-            } else if (str_eq( optarg, "rch")) {
+            } else if (str_eq( optarg, "rch")) {        /* -arch    */
                 arch = argv[ optind++];
                 if (str_eq( arch, "ppc") || str_eq( arch, "ppc64") ||
                         str_eq( arch, "i386") || str_eq( arch, "i686") ||
@@ -1225,15 +1230,19 @@ Version:
                         /* Search framework[] next to the directory */
 #if COMPILER == GNUC
     if (arch) {                     /* -arch option is specified    */
-        if (((str_eq( CPU_OLD, "i386") || str_eq( CPU_OLD, "x86_64"))
+        if (((str_eq( CPU_STD2, "__i386__") || str_eq( CPU_STD2, "__x86_64__"))
                 && (! str_eq( arch, "i386") && ! str_eq( arch, "x86_64")))
-            || ((str_eq( CPU_OLD, "ppc") || str_eq( CPU_OLD, "ppc64"))
+            || ((str_eq( CPU_STD2, "__ppc__")
+                    || str_eq( CPU_STD2, "__ppc64__"))
                 && (! str_eq( arch, "ppc") && ! str_eq( arch, "ppc64")))) {
             mcpp_fprintf( ERR, "Wrong argument of -arch option: %s\n", arch);
             longjmp( error_exit, -1);
         }
-        undefine( CPU_OLD);
+        /* The CPU-specific-macros will be defined in init_gcc_macro(). */
         undefine( CPU_STD2);
+#ifdef  CPU_OLD
+        undefine( CPU_OLD);
+#endif
 #ifdef  CPU_STD1
         undefine( CPU_STD1);
 #endif
@@ -1244,7 +1253,9 @@ Version:
         undefine( CPU_SP_OLD);
 #endif
     } else {
-        arch = CPU_OLD;
+        memcpy( ar, CPU_STD2+2, strlen( CPU_STD2) - 4);
+        ar[ strlen( CPU_STD2) - 4] = EOS;
+        arch = ar;
     }
 #endif
 #endif
@@ -1371,6 +1382,9 @@ static void usage(
 #if COMPILER == MSC
 "-arch:SSE, -arch:SSE2   Define the macro _M_IX86_FP as 1, 2 respectively.\n",
 #endif
+#if SYSTEM == SYS_MAC && COMPILER == GNUC
+"-arch <arch>        Change the target to <arch> (i386, x86_64, ppc, ppc64).\n",
+#endif
 
 #if ! STD_LINE_PREFIX
 "-b          Output #line lines in C source style.\n",
@@ -1383,7 +1397,6 @@ static void usage(
 "            euc_jp, gb2312, ksc5601, big5, sjis, iso2022_jp, utf8.\n",
 
 #if SYSTEM == SYS_MAC
-"-arch <arch>        Change the target to <arch> (i386, x86_64, ppc, ppc64).\n",
 "-F <framework>      Add <framework> to top of framework directory list.\n",
 #endif
 #if COMPILER == GNUC
@@ -1401,6 +1414,7 @@ static void usage(
 "-I <directory>      Add <directory> to the #include search list.\n",
 
 #if COMPILER == GNUC
+"-isysroot <dir>     Change root of system header directory to <dir>.\n",
 "-include <file>     Include the <file> prior to the main input file.\n",
 #else
 "-I-         Unset system or site specific include directories.\n",
@@ -2526,8 +2540,7 @@ static void init_gcc_macro( void)
     if (nflag)                                  /* -undef option    */
         goto  undef_special;
 
-    tmp = xmalloc( strlen( INC_DIR) + strlen( "/mcpp-gcc")
-            + strlen( "/mingw") + 1);
+    tmp = xmalloc( strlen( INC_DIR) + strlen( "/mcpp-gcc") + 10);
 #if     SYSTEM == SYS_CYGWIN
     if (no_cygwin) {
         sprintf( tmp, "%s/%s/mcpp-gcc", INC_DIR, "mingw");
@@ -2536,9 +2549,7 @@ static void init_gcc_macro( void)
     }
 #elif   SYSTEM == SYS_MAC
     /* Apple-GCC has -arch * option which changes many predefined macros.   */
-    /* Moreover, Apple-GCC has -sysroot option to change "root" directory!  */
-    sprintf( tmp, "%s%s/mcpp-gcc-%s", sysroot ? sysroot : null, INC_DIR
-            , arch);
+    sprintf( tmp, "%s/mcpp-gcc-%s", INC_DIR, arch);
 #else
     sprintf( tmp, "%s/mcpp-gcc", INC_DIR);
 #endif

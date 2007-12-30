@@ -539,9 +539,7 @@ extern void     init_eval( void);
 extern void     init_support( void);
 /* system.c */
 extern void     init_system( void);
-#if NEED_GETOPT
 extern void     init_lib( void);
-#endif
 
 #if HOST_COMPILER == GNUC && (SYS_FAMILY == SYS_UNIX && SYSTEM != SYS_CYGWIN)
 #pragma GCC visibility pop

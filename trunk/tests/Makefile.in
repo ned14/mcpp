@@ -164,6 +164,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target = @target@
 target_alias = @target_alias@
+target_cc = @target_cc@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
@@ -376,7 +377,7 @@ uninstall-am: uninstall-info-am
 @REPLACE_CPP_TRUE@        echo "ERROR: testsuite directory is not specified.  Do './configure --with-gcc-testsuite-dir=directory' prior to 'make check'"; \
 @REPLACE_CPP_TRUE@        exit 1; \
 @REPLACE_CPP_TRUE@    fi
-@REPLACE_CPP_TRUE@	@if test `echo '' | $(cpp_call) -v - 2>&1 | grep 'MCPP' > /dev/null; echo $$?` != 0; \
+@REPLACE_CPP_TRUE@	@if test `$(cpp_call) -v /dev/null 2>&1 | grep 'MCPP' > /dev/null; echo $$?` != 0; \
 @REPLACE_CPP_TRUE@            then \
 @REPLACE_CPP_TRUE@        echo "ERROR: Do 'make install' prior to 'make check'"; \
 @REPLACE_CPP_TRUE@        exit 1; \
@@ -387,9 +388,9 @@ uninstall-am: uninstall-info-am
 @REPLACE_CPP_TRUE@        echo '  cp -Rp $(top_srcdir)/cpp-test $(gcc_testsuite_dir)/gcc.dg'; \
 @REPLACE_CPP_TRUE@        cp -Rp $(top_srcdir)/cpp-test "$(gcc_testsuite_dir)/gcc.dg"; \
 @REPLACE_CPP_TRUE@    fi
-@REPLACE_CPP_TRUE@	@$(top_srcdir)/tests/set_test.sh '$(CC)' '$(gcc_path)' '$(gcc_testsuite_dir)' $(gcc_maj_ver) '$(LN_S)' '$(cpp_call)'
+@REPLACE_CPP_TRUE@	@$(top_srcdir)/tests/set_test.sh '$(CC)' '$(gcc_path)' '$(gcc_testsuite_dir)' $(gcc_maj_ver) '$(LN_S)' '$(cpp_call)' '$(target_cc)'
 @REPLACE_CPP_TRUE@	-$(RUNTEST) --tool gcc --srcdir $(gcc_testsuite_dir) cpp-test.exp
-@REPLACE_CPP_TRUE@	@$(top_srcdir)/tests/after_test.sh '$(CC)' '$(gcc_path)' '$(cpp_call)'
+@REPLACE_CPP_TRUE@	@$(top_srcdir)/tests/after_test.sh '$(CC)' '$(gcc_path)' '$(cpp_call)' '$(target_cc)'
 
 @REPLACE_CPP_TRUE@uninstall:
 @REPLACE_CPP_TRUE@	@if test x"$(gcc_testsuite_dir)" != x""; then \

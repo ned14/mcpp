@@ -195,72 +195,122 @@ To install MCPP for this complex system, the command sequence of 2.2.1
 is not sufficient.  Here, I explain the case of Mac OS X / Apple-GCCs
 apart from other UNIX.  I am using Mac OS X Leopard on Intel-Mac, so I
 take the examples of the system.  If you use Powerpc-Mac, read the
-sections below swapping 'i686' and 'powerpc'.
+section below swapping 'i686' and 'powerpc'.  On Tiger, read 'darwin9'
+as 'darwin8'.
+
+Apple provides GCC 4.0.1, and also provides GCC 3.3 as an addition.  I
+explain only GCC 4.0.1, and omit GCC 3.3, because it has not been
+properly compiled at least on Leopard.
 
 2.2.2.1. Native compiler versus cross compiler
 
 It is simple to compile and install MCPP for a native compiler, i.e. for
 x86 on Intel-Mac.  The command sequence in 2.2.1 is sufficient for it.
 
-To install MCPP for a cross compiler, however, you should add three
-options to configure.  You should specify the C compiler (the name of
-compiler driver) by the environment-variable CC, and the C++ compiler by
-CXX.  There are many gccs and g++s in /usr/bin of Mac OS X.  In Mac OS X
-Leopard on Intel-Mac, powerpc-apple-darwin9-gcc-4.0.1 and powerpc-apple-
-darwin9-g++-4.0.1 are the C compiler and the C++ compier for powerpc.
-(Actually, all the gccs and g++s in /usr/bin are universal binaries of
-i386 and ppc.) In addition, you should specify the target system by
---target option.  In this case, you should use the compiler's name
-removing '-gcc-4.0.1', i.e. powerpc-apple-darwin9.
+Making of MCPP with a cross compiler, however, is not so easy.
+Generally, the configure script of MCPP does not support cross compiling,
+because it contains a few tests to be compiled and executed.  A binary
+for a target environment cannot be run on a build environment usually.
+If we test the build environment instead, the results are not
+necessarily the same with the target.
 
-This is the configure command to make compiler-independent-build:
+Nevertheless, on Mac OS X, we can exceptionally configure cross-
+compilings for different CPUs in most cases.  First, Intel-Mac
+automatically executes a ppc binary with an emulator.  Second, if the
+build environment and the target differ only in CPU and its related
+settings, and OS, its version and GCC's version are all the same between
+them, we can substitute most of the tests of the target with that of the
+build.
 
-    ${mcpp-dir}/configure CC=powerpc-apple-darwin9-gcc-4.0.1    \
-            CXX=powerpc-apple-darwin9-g++-4.0.1     \
-            --target=powerpc-apple-darwin9
+On Intel-Mac, for a compiler-independent-build, you should specify the C
+compiler (the name of compiler driver) and C++ compiler by the
+environment-variables CC and CXX.  There are many gccs and g++s in /usr/
+bin of Mac OS X.  In Mac OS X Leopard on Intel-Mac, powerpc-apple-
+darwin9-gcc-4.0.1 and powerpc-apple-darwin9-g++-4.0.1 are the C compiler
+and the C++ compiler for powerpc.  (Actually, all the gccs and g++s in
+/usr/bin are universal binaries of i386 and ppc.) In addition, you
+should specify the target system by --target option.  In this case, you
+should use the compiler's name removing '-gcc-4.0.1', i.e. powerpc-apple-
+darwin9.  This is the configure command to make compiler-independent-
+build:
 
-To make compiler-specific-build:
+    ${mcpp-dir}/configure --target=powerpc-apple-darwin9    \
+            CC=powerpc-apple-darwin9-gcc-4.0.1      \
+            CXX=powerpc-apple-darwin9-g++-4.0.1
 
-    ${mcpp-dir}/configure CC=powerpc-apple-darwin9-gcc-4.0.1    \
-            CXX=powerpc-apple-darwin9-g++-4.0.1     \
-            --target=powerpc-apple-darwin9 --enable-replace-cpp
+On the other hand, ppc-Mac cannot execute an x86 binary, so you cannot
+make the compiler-independent-build with this method.  Instead, you can
+cross-compile it manually, using the difference file and mac_osx.mak.
+See mcpp-porting.html#3.1.4 and #3.11, if needed.  You can also make a
+universal binary on ppc-Mac with its native compiler using the configure,
+as explained in the next section.
+
+To make a GCC-specific-build, you should specify the C compiler by
+--with-target-cc= option instead of CC and CXX as: (the configure deduce
+the name of C++ compiler from the name of C compiler, replacing 'gcc'
+with 'g++'.)
+
+    ${mcpp-dir}/configure --target=powerpc-apple-darwin9    \
+            --with-target-cc=powerpc-apple-darwin9-gcc-4.0.1    \
+            --enable-replace-cpp
+
+This configuration does not contain any running test of the target, so
+it can be used on ppc-Mac too, changing 'powerpc' with 'i686'.
+
+When the version of the default native compiler (gcc and g++) greatly
+differs from that of the cross compiler specified by --with-target-cc=
+option, you should specify a native compiler of a version as close as
+possible to the target by the environment-variables CC and CXX.  The
+compiler specified by CC (CXX) is to be used to build MCPP, while the
+compiler specified by --with-target-cc= is the target compiler into
+which MCPP is installed.
 
 The cross compiler differs from the native compiler in libexec directory,
 compiler-specific include directory and predefined macros.  The
 configure with these options appropriately sets them.  These options
 should be used for configure, not for make command.
 
-Though the configure script of MCPP generally does not support cross
-compiler, it succeeds in configuration on this case.  It is because the
-OS and its version is the same between the host and the target only
-differing in CPU and its related settings, and because the binary
-generated by the cross compiler of Mac OS X has a special character to
-be able to run on the host machine.
-
 Note that a cross compiler itself runs on a host system, so does a
 compiler-specific-build MCPP installed "to a cross compiler".  On the
 other hand, a compiler-independent-build MCPP compiled "with a cross
-compiler" runs on a target system.
+compiler" runs on a target system.  Also note that both of the GCC-
+specific-build for the native compiler and for the cross compiler are
+compiled by the native compiler, therefore, if you install both, you
+must first install the one for the cross compiler.
 
-2.2.2.2. To use sysroot option
+2.2.2.2. Making a universal binary
+
+To make a universal binary, specify the CPUs by -arch options and add
+them to the 'make' command as "CFLAGS+='-arch i386 -arch ppc'".  The
+valid CPU types are 'i386', 'x86_64', 'ppc' and 'ppc64'.  For example,
+this command generates a bundled binary for 4 CPU types.
+
+    make CFLAGS+='-arch i386 -arch x86_64 -arch ppc -arch ppc64'
+
+The configure needs no special option for universal binary, it needs
+only options for non-universal binary, if any.
 
 GCC has '-isysroot DIR' or '--sysroot=DIR' options, which change root of
 system include directories to DIR.  These options are not limited to Mac
-OS, but are commonly used on Mac OS to compile a universal binary.  For
-example, if '-isysroot /Developer/SDKs/MacOSX10.4u.sdk' is specified,
-/usr/include becomes /Developer/SDKs/MacOSX10.4u.sdk/usr/include.  This
-is an example to compile a universal binary compatible with Mac OS X 10.
-4 (Tiger) on 10.5 (Leopard).
+OS, but are commonly used on Mac OS to compile a universal binary in
+order to widen compatibility with older version of Mac OS.  For example,
+if '-isysroot /Developer/SDKs/MacOSX10.4u.sdk' is specified, /usr/
+include becomes /Developer/SDKs/MacOSX10.4u.sdk/usr/include.  This is an
+example to compile a universal binary compatible with Mac OS X 10.4
+(Tiger) on 10.5 (Leopard).  When you use this option in making MCPP, you
+should also specify the version of SDK by -mmacosx-version-min= option.
 
-To use this option on GCC-specific-build MCPP, the header files of mcpp-
-gcc* directories should be in the compiler-specific include directory
-under the sysroot directory specified.  Hence, taking the example above,
-you must manually copy the headers as:
+Any universal binary of MCPP can be generated with a combination of the
+above configure options and these make options, on either of compiler-
+independent-build or GCC-specific-build, and on either of native
+compiler or cross compiler.  This example shows the sequence to generate
+a universal binary of compiler-independent-build compatible with Tiger
+for i386 and ppc.
 
-    sudo cp -rp /usr/lib/gcc/i686-apple-darwin9/4.0.1/include/mcpp-gcc-* \\
-        /Developer/SDKs/MacOSX10.4u.sdk/usr/lib/gcc/i686-apple-darwin9/4.0.1/include
-    sudo cp -rp /usr/lib/gcc/powerpc-apple-darwin9/4.0.1/include/mcpp-gcc-* \\
-        /Developer/SDKs/MacOSX10.4u.sdk/usr/lib/gcc/powerpc-apple-darwin9/4.0.1/include
+    ${mcpp-dir}/configure
+    make CFLAGS+='-isysroot /Developer/SDKs/MacOSX10.4u.sdk     \
+            -mmacosx-version-min=10.4 -arch i386 -arch ppc'
+    sudo make install
 
 2.2.3. When the compiler system is not GCC
 
