@@ -2307,13 +2307,12 @@ static char *   norm_path(
     }
 #if SYS_FAMILY == SYS_UNIX
     /* Dereference symbolic linked directory or file, if any    */
-    slbuf1[ len] = EOS;
+    slbuf1[ len] = EOS;     /* Truncate PATH_DELIM and 'fname' part, if any */
     slbuf2[ 0] = EOS;
     if (*dir && ! fname) {      /* Registering include directory    */
         /* Symbolic link check of directories are required  */
         deref_syml( slbuf1, slbuf2, slbuf1);
-    }
-    if (fname) {
+    } else if (fname) {                             /* Regular file */
         len = strlen( slbuf1);
         strcat( slbuf1, fname);
         deref_syml( slbuf1, slbuf2, slbuf1 + len);
@@ -2323,9 +2322,9 @@ static char *   norm_path(
             *(slbuf2 + len) = EOS;
             cp1 = slbuf1;
             if (slbuf2[ 0] != PATH_DELIM) {     /* Relative path    */
-                cp1 = strrchr( slbuf1, PATH_DELIM);
-                if (cp1)        /* Append to the source directory   */
-                    cp1++;
+                cp2 = strrchr( slbuf1, PATH_DELIM);
+                if (cp2)        /* Append to the source directory   */
+                    cp1 = cp2 + 1;
             }
             strcpy( cp1, slbuf2);
         }
