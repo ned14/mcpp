@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2007 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2008 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -44,7 +44,7 @@
 #endif
 
 #if     HOST_SYS_FAMILY == SYS_UNIX
-#include    "unistd.h"              /* For getcwd(), readlink(), getopt()   */
+#include    "unistd.h"              /* For getcwd(), readlink() */
 #elif   HOST_COMPILER == MSC || HOST_COMPILER == LCC
 #include    "direct.h"
 #define getcwd( buf, size)  _getcwd( buf, size)
@@ -62,14 +62,6 @@
 #define S_IFREG     _S_IFREG
 #define S_IFDIR     _S_IFDIR
 #define stat( path, stbuf)  _stat( path, stbuf)
-#endif
-
-/* Functions other than standard.   */
-#if     HOST_SYS_FAMILY != SYS_UNIX     /* On UNIX "unistd.h" will suffice  */
-extern int      getopt( int argc, char * const * argv, const char * opts);
-extern int      optind;
-extern int      opterr;
-extern char *   optarg;
 #endif
 
 /* Function to compare path-list    */
@@ -118,7 +110,7 @@ static void     usage( int opt);
                 /* Putout usage of MCPP             */
 static void     set_opt_list( char * optlist);
                 /* Set list of legal option chars   */
-static int      parse_warn_level( const char * optarg, int opt);
+static int      parse_warn_level( const char * mcpp_optarg, int opt);
                 /* Parse warning level option       */
 static void     def_a_macro( int opt, char * def);
                 /* Do a -D option                   */
@@ -145,10 +137,10 @@ static void     parse_env( const char * env);
                 /* Parse environment variables      */
 static void     set_a_dir( const char * dirname);
                 /* Append an include directory      */
-static char *   norm_path( const char * dir, const char * fname, int inf);
-                /* Normalize pathname to compare    */
-static char *   norm_dir( const char * dirname);
+static char *   norm_dir( const char * dirname, int framework);
                 /* Normalize include directory path */
+static char *   norm_path( const char * dir, const char * fname, int inf
+        , int hmap);    /* Normalize pathname to compare    */
 #if SYS_FAMILY == SYS_UNIX
 static void     deref_syml( char * slbuf1, char * slbuf2, char * chk_start);
                 /* Dereference symbolic linked directory and file   */
@@ -184,6 +176,13 @@ static int      open_file( const char ** dirp, const char * src_dir
 static const char *     set_fname( const char * filename);
                 /* Remember the source filename     */
 #if SYSTEM == SYS_MAC
+#if COMPILER == GNUC
+static char *   search_header_map( const char * hmap_file
+        , const char * filename, char * pathlist);
+                /* Search header map file for a header  */
+static unsigned hmap_hash( const char * fname);
+                /* Get hash value for the fname     */
+#endif
 static void     init_framework( void);
                 /* Initialize framework[]           */
 static int      search_framework( char * filename);
@@ -191,7 +190,7 @@ static int      search_framework( char * filename);
 static int      search_subdir( char * fullname, char * cp, char * frame
         , char * fname, int sys_frame);
                 /* Search "Headers" and other dirs  */
-#endif
+#endif  /* SYSTEM == SYS_MAC    */
 #if 0   /* This function is only for debugging use  */
 static int      chk_dirp( const char ** dirp);
                 /* Check validity of dirp arg for open_file()   */
@@ -220,9 +219,17 @@ static void     dump_path( void);
                 /* Print include search path        */
 static void     do_asm( int asm_start);
                 /* Process #asm, #endasm            */
+static int      mcpp_getopt( int argc, char * const * argv, const char * opts);
+                /* getopt() to prevent linking of glibc getopt  */
+
+/* for mcpp_getopt()    */
+static int      mcpp_optind = 1;
+static int      mcpp_opterr = 1;
+static int      mcpp_optopt;
+static char *   mcpp_optarg;
 
 static int      mb_changed = FALSE;     /* Flag of -e option        */
-static char     cur_work_dir[ FILENAMEMAX + 1]; /* Current working directory*/
+static char     cur_work_dir[ PATHMAX + 1];     /* Current working directory*/
 
 /*
  * incdir[] stores the -I directories (and the system-specific #include <...>
@@ -363,6 +370,7 @@ void    init_system( void)
     mkdep_target = mkdep_mf = mkdep_md = mkdep_mq = mkdep_mt = NULL;
     std_val = -1L;
     def_cnt = undef_cnt = 0;
+    mcpp_optind = mcpp_opterr = 1;
 #if COMPILER == GNUC
     sys_dirp = NULL;
     sysroot = NULL;
@@ -382,17 +390,6 @@ void    init_system( void)
     num_framework = sys_framework = 0;
     to_search_framework = NULL;
 #endif
-}
-
-void    init_lib( void)
-/*
- * Initialize getopt()
- * This should be in system.c rather than lib.c
- * in case of getopt() is in library.
- */
-{
-    optind = 1;
-    opterr = 1;
 }
 
 #endif
@@ -441,7 +438,7 @@ void    do_options(
     set_cplus_dir = TRUE;
 
     /* Get current directory for -I option and #pragma once */
-    getcwd( cur_work_dir, FILENAMEMAX);
+    getcwd( cur_work_dir, PATHMAX);
 #if SYS_FAMILY == SYS_WIN
     bsl2sl( cur_work_dir);
 #endif
@@ -460,8 +457,8 @@ void    do_options(
     set_opt_list( optlist);
 
 opt_search: ;
-    while (optind < argc
-            && (opt = getopt( argc, argv, optlist)) != EOF) {
+    while (mcpp_optind < argc
+            && (opt = mcpp_getopt( argc, argv, optlist)) != EOF) {
 
         switch (opt) {          /* Command line option character    */
 
@@ -482,11 +479,11 @@ plus:
             break;
 #if COMPILER == GNUC
         case '-':
-            if (memcmp( optarg, "sysroot", 7) == 0) {
-                if (optarg[ 7] == '=')          /* --sysroot=DIR    */
-                    sysroot = optarg + 8;
-                else if (optarg[ 7] == EOS)     /* --sysroot DIR    */
-                    sysroot = argv[ optind++];
+            if (memcmp( mcpp_optarg, "sysroot", 7) == 0) {
+                if (mcpp_optarg[ 7] == '=')             /* --sysroot=DIR    */
+                    sysroot = mcpp_optarg + 8;
+                else if (mcpp_optarg[ 7] == EOS)        /* --sysroot DIR    */
+                    sysroot = argv[ mcpp_optind++];
                 else
                     usage( opt);
                 break;
@@ -503,15 +500,17 @@ plus:
 
         case '@':                   /* Special preprocessing mode   */
             old_mode = mcpp_mode;
-            if (str_eq( optarg, "post") || str_eq( optarg, "poststd"))
+            if (str_eq( mcpp_optarg, "post")
+                    || str_eq( mcpp_optarg, "poststd"))
                 mcpp_mode = POST_STD;   /* 'post-Standard' mode     */
-            else if (str_eq( optarg, "old") || str_eq( optarg, "oldprep"))
+            else if (str_eq( mcpp_optarg, "old")
+                    || str_eq( mcpp_optarg, "oldprep"))
                 mcpp_mode = OLD_PREP;   /* 'old-Preprocessor' mode  */
-            else if (str_eq( optarg, "kr"))
+            else if (str_eq( mcpp_optarg, "kr"))
                 mcpp_mode = KR;         /* 'K&R 1st' mode           */
-            else if (str_eq( optarg, "std"))
+            else if (str_eq( mcpp_optarg, "std"))
                 mcpp_mode = STD;        /* 'Standard' mode (default)*/
-            else if (str_eq( optarg, "compat")) {
+            else if (str_eq( mcpp_optarg, "compat")) {
                 compat_mode = TRUE;     /* 'compatible' mode        */
                 mcpp_mode = STD;
             }
@@ -519,29 +518,34 @@ plus:
                 usage( opt);
             standard = (mcpp_mode == STD || mcpp_mode == POST_STD);
             if (old_mode != STD && old_mode != mcpp_mode)
-                mcpp_fprintf( ERR, "Mode is redefined to: %s\n", optarg);
+                mcpp_fprintf( ERR, "Mode is redefined to: %s\n", mcpp_optarg);
             break;
 
 #if COMPILER == GNUC
         case 'A':       /* Ignore -A system(gnu), -A cpu(vax) or so */
             break;
         case 'a':
-            if (str_eq( optarg, "nsi")) {   /* -ansi                */
+            if (str_eq( mcpp_optarg, "nsi")) {      /* -ansi                */
                 look_and_install( "__STRICT_ANSI__", DEF_NOARGS_PREDEF, ""
                         , "1");
                 ansi = TRUE;
                 break;
-            } else if (memcmp( optarg, "uxbase", 6) == 0) {
-               optind++;
-               break;	        /* Ignore '-auxbase some' or such nonsence  */
+            } else if (memcmp( mcpp_optarg, "uxbase", 6) == 0) {
+                mcpp_optind++;
+                break;  /* Ignore '-auxbase some' or such nonsence  */
 #if SYSTEM == SYS_MAC
-            } else if (str_eq( optarg, "rch")) {        /* -arch    */
-                arch = argv[ optind++];
-                if (str_eq( arch, "ppc") || str_eq( arch, "ppc64") ||
-                        str_eq( arch, "i386") || str_eq( arch, "i686") ||
-                        str_eq( arch, "x86_64")) {
+            } else if (str_eq( mcpp_optarg, "rch")) {   /* -arch    */
+                arch = argv[ mcpp_optind++];
+                if (str_eq( arch, "ppc") || str_eq( arch, "ppc7400")
+                        || str_eq( arch, "ppc64")
+                        || str_eq( arch, "i386") || str_eq( arch, "i686")
+                        || str_eq( arch, "x86_64") || str_eq( arch, "amd64")) {
                     if (str_eq( arch, "i686"))
                         strcpy( arch, "i386");
+                    else if (str_eq( arch, "amd64"))
+                        strcpy( arch, "x86_64");
+                    else if (str_eq( arch, "ppc7400"))
+                        strcpy( arch, "ppc");
                     break;
                 }   /* Else usage() */
 #endif
@@ -549,13 +553,13 @@ plus:
             usage( opt);
 #elif   COMPILER == MSC
         case 'a':
-            if (memcmp( optarg, "rch", 3) == 0) {
-                if (str_eq( optarg + 3, ":SSE")     /* -arch:SSE    */
-                        || str_eq( optarg + 3, ":sse"))
+            if (memcmp( mcpp_optarg, "rch", 3) == 0) {
+                if (str_eq( mcpp_optarg + 3, ":SSE")        /* -arch:SSE    */
+                        || str_eq( mcpp_optarg + 3, ":sse"))
                     look_and_install( "_M_IX86_FP", DEF_NOARGS_PREDEF, null
                             , "1");
-                else if (str_eq( optarg + 3, ":SSE2")       /* -arch:SSE2   */
-                        || str_eq( optarg + 3, ":sse2"))
+                else if (str_eq( mcpp_optarg + 3, ":SSE2")  /* -arch:SSE2   */
+                        || str_eq( mcpp_optarg + 3, ":sse2"))
                     look_and_install( "_M_IX86_FP", DEF_NOARGS_PREDEF, null
                             , "2");
                 /* Else ignore  */
@@ -589,14 +593,14 @@ plus:
                 usage( opt);
             break;                  /* Else ignore this option      */
         case 'd':
-            if (str_eq( optarg, "M"))       {       /* -dM          */
+            if (str_eq( mcpp_optarg, "M"))       {          /* -dM          */
                 dMflag = TRUE;
                 no_output++;
-            } else if (str_eq( optarg, "D"))  {     /* -dD          */
+            } else if (str_eq( mcpp_optarg, "D"))  {        /* -dD          */
                 dDflag = TRUE;
-            } else if (str_eq( optarg, "igraphs")) {        /* -digraphs    */
+            } else if (str_eq( mcpp_optarg, "igraphs")) {   /* -digraphs    */
                 option_flags.dig = TRUE;
-            } else if (str_eq( optarg, "umpbase")) {        /* -dumpbase    */
+            } else if (str_eq( mcpp_optarg, "umpbase")) {   /* -dumpbase    */
                 ;                                   /* Ignore       */
             } else {
                 usage( opt);
@@ -609,12 +613,12 @@ plus:
                 mcpp_fputs( "Too many -D options.\n", ERR);
                 longjmp( error_exit, -1);
             }
-            def_list[ def_cnt++] = optarg;
+            def_list[ def_cnt++] = mcpp_optarg;
             break;
 
         case 'e':
             /* Change the default MBCHAR encoding   */
-            if (set_encoding( optarg, FALSE, 0) == NULL)
+            if (set_encoding( mcpp_optarg, FALSE, 0) == NULL)
                 usage( opt);
             mb_changed = TRUE;
             break;
@@ -625,29 +629,31 @@ plus:
                 usage( opt);
             break;                          /* Ignore this option   */
         case 'f':
-            if (memcmp( optarg, "input-charset=", 14) == 0) {
+            if (memcmp( mcpp_optarg, "input-charset=", 14) == 0) {
                 /* Treat -finput-charset= as the same option as -e  */
-                if (set_encoding( optarg + 14, FALSE, 0) == NULL)
+                if (set_encoding( mcpp_optarg + 14, FALSE, 0) == NULL)
                     usage( opt);
                 mb_changed = TRUE;
-            } else if (str_eq( optarg, "working-directory")) {
+            } else if (str_eq( mcpp_optarg, "working-directory")) {
                 gcc_work_dir = TRUE;
-            } else if (str_eq( optarg, "no-working-directory")) {
+            } else if (str_eq( mcpp_optarg, "no-working-directory")) {
                 gcc_work_dir = FALSE;
-            } else if (str_eq( optarg, "stack-protector")) {
+            } else if (str_eq( mcpp_optarg, "stack-protector")) {
                 look_and_install( "__SSP__", DEF_NOARGS_PREDEF, null, "1");
-            } else if (str_eq( optarg, "stack-protector-all")) {
+            } else if (str_eq( mcpp_optarg, "stack-protector-all")) {
                 look_and_install( "__SSP_ALL__", DEF_NOARGS_PREDEF, null, "2");
-            } else if (str_eq( optarg, "exceptions")) {
+            } else if (str_eq( mcpp_optarg, "exceptions")) {
                 look_and_install( "__EXCEPTIONS", DEF_NOARGS_PREDEF, null
                         , "1");
-            } else if (str_eq( optarg, "no-exceptions")) {
+            } else if (str_eq( mcpp_optarg, "no-exceptions")) {
                 no_exceptions = TRUE;
-            } else if (str_eq( optarg, "PIC") || str_eq( optarg, "pic")
-                    || str_eq( optarg, "PIE") || str_eq( optarg, "pie")) {
+            } else if (str_eq( mcpp_optarg, "PIC")
+                    || str_eq( mcpp_optarg, "pic")
+                    || str_eq( mcpp_optarg, "PIE")
+                    || str_eq( mcpp_optarg, "pie")) {
                 look_and_install( "__PIC__", DEF_NOARGS_PREDEF, null, "1");
                 look_and_install( "__pic__", DEF_NOARGS_PREDEF, null, "1");
-            } else if (str_eq( optarg, "no-show-column")) {
+            } else if (str_eq( mcpp_optarg, "no-show-column")) {
                 ;                           /* Ignore this option   */
             } else if (! integrated_cpp) {
                 usage( opt);
@@ -655,26 +661,28 @@ plus:
             break;
 
         case 'g':
-            if (!isdigit( *optarg) && str_eq( argv[ optind - 2], "-g"))
-                optind--;   /* Neither '-g 0' nor '-ggdb' -- No argument    */
+            if (!isdigit( *mcpp_optarg)
+                    && str_eq( argv[ mcpp_optind - 2], "-g"))
+                /* Neither '-g 0' nor '-ggdb' -- No argument    */
+                mcpp_optind--;
             break;                          /* Ignore the option    */
 #elif COMPILER == LCC
         case 'g':               /* Define __LCCDEBUGLEVEL as <n>    */
-            if (*(optarg + 1) == EOS && isdigit( *optarg)) {
+            if (*(mcpp_optarg + 1) == EOS && isdigit( *mcpp_optarg)) {
                 defp = look_id( debug_name);
-                strcpy( defp->repl, optarg);
+                strcpy( defp->repl, mcpp_optarg);
             } else {
                 usage( opt);
             }
             break;
 #elif COMPILER == MSC
         case 'G':
-            if (*(optarg + 1) == EOS) {     /* -Gx                  */
+            if (*(mcpp_optarg + 1) == EOS) {    /* -Gx              */
                 char    val[ 4] = "000";
 
-                switch (*optarg) {
+                switch (*mcpp_optarg) {
                 case '3':   case '4':   case '5':   case '6':
-                    *val = *optarg; /* "300", "400", "500", "600"   */
+                    *val = *mcpp_optarg;    /* "300", "400", "500", "600"   */
                     break;
                 case 'B':                   /* -GB                  */
                     *val = '6';
@@ -692,7 +700,7 @@ plus:
                             , DEF_NOARGS_PREDEF, null, "1");
                     break;
                 default :
-                    mcpp_fprintf( ERR, warning, opt, optarg);
+                    mcpp_fprintf( ERR, warning, opt, mcpp_optarg);
                 }
                 if (*val)                   /* Redefine _M_IX86     */
                     look_and_install( COMPILER_SP2, DEF_NOARGS_PREDEF, null
@@ -705,14 +713,15 @@ plus:
 
 #if SYSTEM == SYS_MAC
         case 'F':
-            framework[ num_framework++] = optarg;
+            framework[ num_framework++] = mcpp_optarg;
             break;
 #endif
 
         case 'h':
-            if (*(optarg + 1) == EOS && isdigit( *optarg))      /* a digit  */
+            if (*(mcpp_optarg + 1) == EOS && isdigit( *mcpp_optarg))
+                /* a digit  */
                 look_and_install( "__STDC_HOSTED__", DEF_NOARGS_PREDEF, null
-                        , optarg);
+                        , mcpp_optarg);
             else
                 usage( opt);
             break;
@@ -723,7 +732,7 @@ plus:
                 break;
 #endif
         case 'I':                           /* Include directory    */
-            if (str_eq( optarg, "-")) {     /* -I-                  */
+            if (str_eq( mcpp_optarg, "-")) {        /* -I-                  */
 #if COMPILER == GNUC
                 sys_dirp = incend;  /* Split include directories    */
                 i_split = TRUE;
@@ -731,23 +740,23 @@ plus:
                 unset_sys_dirs = TRUE;
                         /* Unset pre-specified include directories  */
 #endif
-            } else if (*(optarg + 1) == EOS && isdigit( *optarg)
-                    && (i = *optarg - '0') != 0
+            } else if (*(mcpp_optarg + 1) == EOS && isdigit( *mcpp_optarg)
+                    && (i = *mcpp_optarg - '0') != 0
                     && (i & ~(CURRENT | SOURCE)) == 0) {
                 search_rule = i;            /* -I1, -I2 or -I3      */
             } else {                        /* Not '-' nor a digit  */
-                set_a_dir( optarg);         /* User-defined dir     */
+                set_a_dir( mcpp_optarg);    /* User-defined dir     */
             }
             break;
 
 #if COMPILER == MSC
         case 'F':
-            if (str_eq( optarg, "l")) {             /* -Fl          */
+            if (str_eq( mcpp_optarg, "l")) {        /* -Fl          */
                 if (preinc_end >= &preinclude[ NPREINCLUDE]) {
                     mcpp_fputs( "Too many -Fl options.\n", ERR);
                     longjmp( error_exit, -1);
                 }
-                *preinc_end++ = argv[ optind++];
+                *preinc_end++ = argv[ mcpp_optind++];
             } else {
                 usage( opt);
             }
@@ -756,39 +765,39 @@ plus:
 
 #if COMPILER == GNUC
         case 'i':
-            if (str_eq( optarg, "nclude")) {        /* -include     */
+            if (str_eq( mcpp_optarg, "nclude")) {   /* -include     */
                 if (preinc_end >= &preinclude[ NPREINCLUDE]) {
                     mcpp_fputs( "Too many -include options.\n", ERR);
                     longjmp( error_exit, -1);
                 }
-                *preinc_end++ = argv[ optind++];
-            } else if (str_eq( optarg, "system")) { /* -isystem     */
+                *preinc_end++ = argv[ mcpp_optind++];
+            } else if (str_eq( mcpp_optarg, "system")) {    /* -isystem     */
                 if (sysdir_end >= &sysdir[ NSYSDIR]) {
                     mcpp_fputs( "Too many -isystem options.\n", ERR);
                     longjmp( error_exit, -1);
                 }
-                *sysdir_end++ = argv[ optind++];
+                *sysdir_end++ = argv[ mcpp_optind++];
                 /* Add the directory before system include directory*/
-            } else if (str_eq( optarg, "quote")) {  /* -iquote      */
+            } else if (str_eq( mcpp_optarg, "quote")) {     /* -iquote      */
                 if (quote_dir_end >= &quote_dir[ N_QUOTE_DIR]) {
                     mcpp_fputs( "Too many -iquote options.\n", ERR);
                     longjmp( error_exit, -1);
                 }
-                *quote_dir_end++ = argv[ optind++];
+                *quote_dir_end++ = argv[ mcpp_optind++];
                 /* Add the directory for #include "header"          */
-            } else if (memcmp( optarg, "sysroot", 7) == 0) {
-                if (optarg[ 7] == '=')          /* -isysroot=DIR    */
-                    sysroot = optarg + 8;
-                else if (optarg[ 7] == EOS)     /* -isysroot DIR    */
-                    sysroot = argv[ optind++];
+            } else if (memcmp( mcpp_optarg, "sysroot", 7) == 0) {
+                if (mcpp_optarg[ 7] == '=')     /* -isysroot=DIR    */
+                    sysroot = mcpp_optarg + 8;
+                else if (mcpp_optarg[ 7] == EOS)        /* -isysroot DIR    */
+                    sysroot = argv[ mcpp_optind++];
                 else
                     usage( opt);
-            } else if (str_eq( optarg, "prefix")        /* -iprefix */
-                    || str_eq( optarg, "withprefix")    /* -iwithprefix     */
-                    || str_eq( optarg, "withprefixbefore")
+            } else if (str_eq( mcpp_optarg, "prefix")       /* -iprefix     */
+                    || str_eq( mcpp_optarg, "withprefix")   /* -iwithprefix */
+                    || str_eq( mcpp_optarg, "withprefixbefore")
                                             /* -iwithprefixbefore   */
-                    || str_eq( optarg, "dirafter")) {   /* -idirafter       */
-                optind++;                   /* Skip the argument    */
+                    || str_eq( mcpp_optarg, "dirafter")) {  /* -idirafter   */
+                mcpp_optind++;              /* Skip the argument    */
                 /* Ignore these options */
             } else {
                 usage( opt);
@@ -821,25 +830,25 @@ plus:
 
 #if COMPILER == GNUC
         case 'l':
-            if (memcmp( optarg, "ang-", 4) != 0) {
+            if (memcmp( mcpp_optarg, "ang-", 4) != 0) {
                 usage( opt);
-            } else if (str_eq( optarg + 4, "c")) {      /* -lang-c          */
+            } else if (str_eq( mcpp_optarg + 4, "c")) {     /* -lang-c  */
                 ;                           /* Ignore this option   */
-            } else if (str_eq( optarg + 4, "c99")       /* -lang-c99*/
-                        || str_eq( optarg + 4, "c9x")) {    /* -lang-c9x    */
+            } else if (str_eq( mcpp_optarg + 4, "c99")      /* -lang-c99*/
+                        || str_eq( mcpp_optarg + 4, "c9x")) {   /* -lang-c9x*/
                 if (! sflag) {
                     stdc_val = 1;           /* Define __STDC__ to 1 */
                     std_val = 199901L;
                     sflag = TRUE;
                 }
-            } else if (str_eq( optarg + 4, "c89")) {    /* -lang-c89*/
+            } else if (str_eq( mcpp_optarg + 4, "c89")) {   /* -lang-c89*/
                 if (! sflag) {
                     stdc_val = 1;           /* Define __STDC__ to 1 */
                     sflag = TRUE;
                 }
-            } else if (str_eq( optarg + 4, "c++")) {    /* -lang-c++*/
+            } else if (str_eq( mcpp_optarg + 4, "c++")) {   /* -lang-c++*/
                 goto  plus;
-            } else if (str_eq( optarg + 4, "asm")) {    /* -lang-asm*/
+            } else if (str_eq( mcpp_optarg + 4, "asm")) {   /* -lang-asm*/
                 option_flags.lang_asm = TRUE;
             } else {
                 usage( opt);
@@ -848,31 +857,31 @@ plus:
 #endif  /* COMPILER == GNUC */
 
         case 'M':           /* Output source file dependency line   */
-            if (str_eq( optarg, "M")) {                     /* -MM  */
+            if (str_eq( mcpp_optarg, "M")) {                /* -MM  */
                 ;
-            } else if (str_eq( optarg, "D")) {              /* -MD  */
+            } else if (str_eq( mcpp_optarg, "D")) {         /* -MD  */
                 mkdep |= (MD_SYSHEADER | MD_FILE);
-            } else if (str_eq( optarg, "MD")) {             /* -MMD */
+            } else if (str_eq( mcpp_optarg, "MD")) {         /* -MMD */
                 mkdep |= MD_FILE;
-            } else if (str_eq( optarg, "P")) {              /* -MP  */
+            } else if (str_eq( mcpp_optarg, "P")) {          /* -MP  */
                 mkdep |= MD_PHONY;
-            } else if (str_eq( optarg, "Q")) {      /* -MQ target   */
+            } else if (str_eq( mcpp_optarg, "Q")) {  /* -MQ target   */
                 mkdep |= MD_QUOTE;
-                mkdep_mq = argv[ optind++];
-            } else if (str_eq( optarg, "T")) {      /* -MT target   */
-                mkdep_mt = argv[ optind++];
-            } else if (str_eq( optarg, "F")) {      /* -MF file     */
-                mkdep_mf = argv[ optind++];
-            } else if (argv[ optind - 1] == optarg) {       /* -M   */
+                mkdep_mq = argv[ mcpp_optind++];
+            } else if (str_eq( mcpp_optarg, "T")) {  /* -MT target   */
+                mkdep_mt = argv[ mcpp_optind++];
+            } else if (str_eq( mcpp_optarg, "F")) {  /* -MF file     */
+                mkdep_mf = argv[ mcpp_optind++];
+            } else if (argv[ mcpp_optind - 1] == mcpp_optarg) {     /* -M   */
                 mkdep |= MD_SYSHEADER;
-                optind--;
+                mcpp_optind--;
             } else {
                 usage( opt);
             }
-            if (str_eq( optarg, "D") || str_eq( optarg, "MD")) {
-                cp = argv[ optind];
+            if (str_eq( mcpp_optarg, "D") || str_eq( mcpp_optarg, "MD")) {
+                cp = argv[ mcpp_optind];
                 if (cp && *cp != '-')           /* -MD (-MMD) file  */
-                    mkdep_md = argv[ optind++];
+                    mkdep_md = argv[ mcpp_optind++];
             }
             mkdep |= MD_MKDEP;
             break;
@@ -880,7 +889,7 @@ plus:
 #if COMPILER == GNUC
         case 'm':
 #if SYSTEM == SYS_CYGWIN
-            if (str_eq( optarg, "no-cygwin")) { /* -mno-cygwin      */
+            if (str_eq( mcpp_optarg, "no-cygwin")) {    /* -mno-cygwin      */
                 no_cygwin = TRUE;
                 break;
             }
@@ -892,7 +901,7 @@ plus:
 
 #if COMPILER == GNUC
         case 'u':
-            if (! str_eq( optarg, "ndef"))  /* -undef               */
+            if (! str_eq( mcpp_optarg, "ndef"))     /* -undef       */
                 usage( opt);                /* Else fall through    */
 #endif
 
@@ -906,12 +915,12 @@ plus:
 
 #if COMPILER == GNUC
         case 'n':
-            if (str_eq( optarg, "ostdinc")) {               /* -nostdinc    */
+            if (str_eq( mcpp_optarg, "ostdinc")) {  /* -nostdinc    */
                 unset_sys_dirs = TRUE;  /* Unset pre-specified directories  */
-            } else if (str_eq( optarg, "ostdinc++")) {      /* -nostdinc++  */
+            } else if (str_eq( mcpp_optarg, "ostdinc++")) { /* -nostdinc++  */
                 set_cplus_dir = FALSE;  /* Unset C++-specific directories   */
-            } else if (str_eq( optarg, "oprecomp")) {       /* -noprecomp   */
-                mcpp_fprintf( ERR, warning, opt, optarg);
+            } else if (str_eq( mcpp_optarg, "oprecomp")) {  /* -noprecomp   */
+                mcpp_fprintf( ERR, warning, opt, mcpp_optarg);
                 break;
             } else {
                 usage( opt);
@@ -922,13 +931,14 @@ plus:
 #if COMPILER == GNUC
         case 'O':
             if (integrated_cpp) {
-                if (*optarg == '-')                 /* No argument  */
-                    optind--;
-                else if ((isdigit( *optarg) && *optarg != '0')  /* -O1, -O2 */
-                        || *optarg == 's' || *optarg == 'z')    /* -Os, -Oz */
+                if (*mcpp_optarg == '-')            /* No argument  */
+                    mcpp_optind--;
+                else if ((isdigit( *mcpp_optarg) && *mcpp_optarg != '0')
+                        || *mcpp_optarg == 's' || *mcpp_optarg == 'z')
+                                            /* -O1, -O2 -Os, -Oz    */
                     look_and_install( "__OPTIMIZE__", DEF_NOARGS_PREDEF, ""
                             , "1");
-                else if (! isdigit( *optarg))
+                else if (! isdigit( *mcpp_optarg))
                     usage( opt);
                 /* Else -O0: ignore */
             } else {
@@ -943,7 +953,7 @@ plus:
 #endif
 
         case 'o':
-            *out_pp = optarg;               /* Output file name     */
+            *out_pp = mcpp_optarg;          /* Output file name     */
             break;
 
         case 'P':                           /* No #line output      */
@@ -952,8 +962,8 @@ plus:
 
 #if COMPILER == GNUC
         case 'p':
-            if (str_eq( optarg, "edantic")          /* -pedantic    */
-                    || str_eq( optarg, "edantic-errors")) {
+            if (str_eq( mcpp_optarg, "edantic")     /* -pedantic    */
+                    || str_eq( mcpp_optarg, "edantic-errors")) {
                                             /* -pedantic-errors     */
                 /* This option does not imply -ansi */
                 if (warn_level == -1)
@@ -968,7 +978,7 @@ plus:
             }
             break;
         case 'q':
-            if (str_eq( optarg, "uiet"))
+            if (str_eq( mcpp_optarg, "uiet"))
                 /* -quiet: GCC's undocumented, yet frequently specified opt */
                 break;                      /* Ignore the option    */
             else
@@ -982,7 +992,8 @@ plus:
 
 #if COMPILER == MSC
         case 'R':               /* -RTC1, -RTCc, -RTCs, -RTCu, etc. */
-            if (memcmp( optarg, "TC", 2) == 0 && *(optarg + 2) != EOS)
+            if (memcmp( mcpp_optarg, "TC", 2) == 0
+                    && *(mcpp_optarg + 2) != EOS)
                 look_and_install( "__MSVC_RUNTIME_CHECKS", DEF_NOARGS_PREDEF
                         , null, "1");
             else
@@ -992,11 +1003,11 @@ plus:
 
         case 'S':
             if (cplus_val || sflag) {   /* C++ or the second time   */
-                mcpp_fprintf( ERR, warning, opt, optarg);
+                mcpp_fprintf( ERR, warning, opt, mcpp_optarg);
                 break;
             }
-            i = *optarg;
-            if (! isdigit( i) || *(optarg + 1) != EOS)
+            i = *mcpp_optarg;
+            if (! isdigit( i) || *(mcpp_optarg + 1) != EOS)
                 usage( opt);
             stdc_val = i - '0';
             sflag = TRUE;
@@ -1004,17 +1015,17 @@ plus:
 
 #if COMPILER == GNUC
         case 'r':
-            if (str_eq( optarg, "emap"))
-                mcpp_fprintf( ERR, warning, opt, optarg);
+            if (str_eq( mcpp_optarg, "emap"))
+                mcpp_fprintf( ERR, warning, opt, mcpp_optarg);
                                             /* Ignore -remap option */
             else
                 usage( opt);
             break;
 
         case 's':
-            if (memcmp( optarg, "td=", 3) == 0 && strlen( optarg) > 3) {
-                /* -std=STANDARD    */
-                cp = optarg + 3;
+            if (memcmp( mcpp_optarg, "td=", 3) == 0
+                    && strlen( mcpp_optarg) > 3) {  /* -std=STANDARD*/
+                cp = mcpp_optarg + 3;
                 if (str_eq( cp, "c89")              /* std=c89      */
                         || str_eq( cp, "c90")       /* std=c90      */
                         || str_eq( cp, "gnu89")     /* std=gnu89    */
@@ -1031,7 +1042,7 @@ plus:
                     cplus_val = std_val = 199711L;
                 } else if (memcmp( cp, "iso9899:", 8) == 0
                         && strlen( cp) >= 14) { /* std=iso9899:199409, etc. */
-                    optarg = cp + 8;
+                    mcpp_optarg = cp + 8;
                     look_and_install( "__STRICT_ANSI__", DEF_NOARGS_PREDEF, ""
                             , "1");
                     ansi = TRUE;
@@ -1042,7 +1053,7 @@ plus:
                     if (cp && *cp == ':' && strlen( cp) >= 7) {
                                     /* std=iso14882:199711, etc.    */
                         cplus_val = CPLUS;
-                        optarg = cp + 1;
+                        mcpp_optarg = cp + 1;
                         goto Version;
                     } else {
                         goto plus;
@@ -1064,12 +1075,12 @@ plus:
             break;
 
         case 't':
-            if (str_eq( optarg, "raditional")
-                    || str_eq( optarg, "raditional-cpp")) {
+            if (str_eq( mcpp_optarg, "raditional")
+                    || str_eq( mcpp_optarg, "raditional-cpp")) {
                                 /* -traditional, -traditional-cpp   */
                 trad = TRUE;
                 mcpp_mode = OLD_PREP;
-            } else if (str_eq( optarg, "rigraphs")) {
+            } else if (str_eq( mcpp_optarg, "rigraphs")) {
                 option_flags.trig = TRUE;           /* -trigraphs   */
             } else {
                 usage( opt);
@@ -1079,9 +1090,9 @@ plus:
 
 #if COMPILER == MSC
         case 'T':
-            if (strlen( optarg) > 1)
+            if (strlen( mcpp_optarg) > 1)
                 usage( opt);
-            i = tolower( *optarg);                  /* Fold case    */
+            i = tolower( *mcpp_optarg);             /* Fold case    */
             if (i == 'c') {
                 ;                           /* Ignore this option   */
             } else if (i == 'p') {
@@ -1097,14 +1108,14 @@ plus:
                 mcpp_fputs( "Too many -U options.\n", ERR);
                 longjmp( error_exit, -1);
             }
-            undef_list[ undef_cnt++] = optarg;
+            undef_list[ undef_cnt++] = mcpp_optarg;
             break;
 
         case 'V':
 #if COMPILER == GNUC
 Version:
 #endif
-            valp = eval_num( optarg);
+            valp = eval_num( mcpp_optarg);
             if (valp->sign == VAL_ERROR)
                 usage( opt);
             std_val = (long) valp->val;
@@ -1119,35 +1130,35 @@ Version:
             if (warn_level == -1)           /* Have to initialize   */
                 warn_level = 0;
 #if COMPILER == GNUC
-            if (argv[ optind - 1] == optarg) {      /* No argument  */
+            if (argv[ mcpp_optind - 1] == mcpp_optarg) {    /* No argument  */
                 /*
                  * Note: -W without argument is not officially supported.
                  *  It may cause an error.
                  */
                 warn_level |= (1 | 2 | 4 | 16);
-                optind--;
-            } else if (str_eq( optarg, "comment")
-                        || str_eq( optarg, "comments")
-                        || str_eq( optarg, "sign-compare")) {
+                mcpp_optind--;
+            } else if (str_eq( mcpp_optarg, "comment")
+                        || str_eq( mcpp_optarg, "comments")
+                        || str_eq( mcpp_optarg, "sign-compare")) {
                 warn_level |= 1;
-            } else if (str_eq( optarg, "undef")) {
+            } else if (str_eq( mcpp_optarg, "undef")) {
                 warn_level |= 4;
-            } else if (str_eq( optarg, "all")) {
+            } else if (str_eq( mcpp_optarg, "all")) {
                 warn_level |= (1 | 16);     /* Convert -Wall to -W17*/
-            } else if (str_eq( optarg, "trigraphs")) {
+            } else if (str_eq( mcpp_optarg, "trigraphs")) {
                 warn_level |= 16;
             }
 #endif  /* COMPILER == GNUC */
 #if COMPILER == MSC
-            if (str_eq( optarg, "all")) {
+            if (str_eq( mcpp_optarg, "all")) {
                 warn_level |= (1 | 16);     /* Convert -Wall to -W17*/
-            } else if (str_eq( optarg, "L")) {
+            } else if (str_eq( mcpp_optarg, "L")) {
                 option_flags.no_source_line = TRUE;
                                         /* Single-line diagnostic   */
             }
 #endif
-            if (isdigit( *optarg)) {
-                warn_level |= parse_warn_level( optarg, opt);
+            if (isdigit( *mcpp_optarg)) {
+                warn_level |= parse_warn_level( mcpp_optarg, opt);
                 if (warn_level > 31 || warn_level < 0)
                     usage( opt);
             }
@@ -1164,11 +1175,11 @@ Version:
 
 #if COMPILER == GNUC
         case 'x':
-            if (str_eq( optarg, "c")) {
+            if (str_eq( mcpp_optarg, "c")) {
                 break;                      /* -x c -- ignore this  */
-            } else if (str_eq( optarg, "c++")) {
+            } else if (str_eq( mcpp_optarg, "c++")) {
                 goto plus;
-            } else if (str_eq( optarg, "assembler-with-cpp")) {
+            } else if (str_eq( mcpp_optarg, "assembler-with-cpp")) {
                 option_flags.lang_asm = TRUE;
                 break;
             } else {
@@ -1179,22 +1190,23 @@ Version:
 
 #if COMPILER == MSC
         case 'Z':
-            if (str_eq( optarg, "c:wchar_t")) {     /* -Zc:wchar_t  */
+            if (str_eq( mcpp_optarg, "c:wchar_t")) {        /* -Zc:wchar_t  */
                 look_and_install( "_NATIVE_WCHAR_T_DEFINED", DEF_NOARGS_PREDEF
                         , null, "1");
                 look_and_install( "_WCHAR_T_DEFINED", DEF_NOARGS_PREDEF, null
                         , "1");
                 wchar_t_modified = TRUE;
-            } else if (str_eq( optarg, "c:wchar_t-")) {     /* -Zc:wchar_t- */
+            } else if (str_eq( mcpp_optarg, "c:wchar_t-")) {/* -Zc:wchar_t- */
                 wchar_t_modified = TRUE;        /* Do not define the macros */
-            } else if (str_eq( optarg, "l")) {
+            } else if (str_eq( mcpp_optarg, "l")) {
                 look_and_install( "_VC_NODEFAULTLIB", DEF_NOARGS_PREDEF, null
                         , "1");
-            } else if (str_eq( optarg, "a") || str_eq( optarg, "e")) {
+            } else if (str_eq( mcpp_optarg, "a") || str_eq( mcpp_optarg, "e")) {
                 /* Ignore -Za and -Ze silently  */
                 break;
-            } else if (*(optarg + 1) == EOS) {  /* -Z followed by one char  */
-                mcpp_fprintf( ERR, warning, opt, optarg);
+            } else if (*(mcpp_optarg + 1) == EOS) {
+                /* -Z followed by one char  */
+                mcpp_fprintf( ERR, warning, opt, mcpp_optarg);
                 /* Ignore the option with warning   */
             } else {
                 usage( opt);
@@ -1213,7 +1225,7 @@ Version:
 
     }                                   /* For all arguments        */
 
-    if (optind < argc && set_files( argc, argv, in_pp, out_pp) != NULL)
+    if (mcpp_optind < argc && set_files( argc, argv, in_pp, out_pp) != NULL)
         goto  opt_search;       /* More options after the filename  */
 
     /* Check consistency of specified options, set some variables   */
@@ -1293,7 +1305,7 @@ Version:
 
     /* Normalize the path-list  */
     if (*in_pp && ! str_eq( *in_pp, "-")) {
-        char *  tmp = norm_path( null, *in_pp, FALSE);
+        char *  tmp = norm_path( null, *in_pp, FALSE, FALSE);
         if (tmp)                        /* The file exists          */
             *in_pp = tmp;
             /* Else mcpp_main() will diagnose *in_pp and exit   */
@@ -1323,7 +1335,7 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.7-prerelease (2007/12) "
+        "MCPP V.2.7-prerelease (2008/01) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif
@@ -1545,7 +1557,7 @@ static void usage(
     const char * const *    mpp = mes;
 
     if (opt != '?')
-        mcpp_fprintf( ERR, illegopt, opt, optarg ? optarg : "");
+        mcpp_fprintf( ERR, illegopt, opt, mcpp_optarg ? mcpp_optarg : "");
     version();
 #if MCPP_LIB
     mes[ 1] = argv0;
@@ -1597,7 +1609,7 @@ static void set_opt_list(
 }
 
 static int  parse_warn_level(
-    const char *    optarg,
+    const char *    mcpp_optarg,
     int     opt
 )
 /*
@@ -1606,7 +1618,7 @@ static int  parse_warn_level(
  * Even spaces are allowed as ' 1 | 2|16 '.
  */
 {
-    const char *    cp = optarg;
+    const char *    cp = mcpp_optarg;
     int             w, i;
 
     w = i = 0;
@@ -1628,7 +1640,8 @@ static int  parse_warn_level(
         }
     }
     if (*cp != EOS) {               /* Not ending with digit        */
-        mcpp_fprintf( ERR, "Illegal warning level option \"%s\"\n", optarg);
+        mcpp_fprintf( ERR, "Illegal warning level option \"%s\"\n"
+                , mcpp_optarg);
         usage( opt);
     }
     w |= i;                                 /* Take the last arg    */
@@ -2017,24 +2030,25 @@ static char *   set_files(
     char *      cp;
 
     if (*in_pp == NULL) {                           /* Input file   */
-        cp = argv[ optind++];
+        cp = argv[ mcpp_optind++];
 #if SYS_FAMILY == SYS_WIN
         cp = bsl2sl( cp);
 #endif
         *in_pp = cp;
     }
-    if (optind < argc && argv[ optind][ 0] != '-' && *out_pp == NULL) {
-        cp = argv[ optind++];
+    if (mcpp_optind < argc && argv[ mcpp_optind][ 0] != '-'
+            && *out_pp == NULL) {
+        cp = argv[ mcpp_optind++];
 #if SYS_FAMILY == SYS_WIN
         cp = bsl2sl( cp);
 #endif
         *out_pp = cp;                               /* Output file  */
     }
-    if (optind >= argc)
+    if (mcpp_optind >= argc)
         return  NULL;           /* Exhausted command line arguments */
-    if (argv[ optind][ 0] == '-')
-        return  argv[ optind];                      /* More options */
-    cfatal( "Excessive file argument \"%s\"", argv[ optind], 0L , NULL);
+    if (argv[ mcpp_optind][ 0] == '-')
+        return  argv[ mcpp_optind];                 /* More options */
+    cfatal( "Excessive file argument \"%s\"", argv[ mcpp_optind], 0L , NULL);
     return  NULL;
 }
 
@@ -2178,12 +2192,12 @@ static void set_a_dir(
 
     if (dirname == NULL)
         return;                     /* Only to initialize incdir[]  */
-    norm_name = norm_dir( dirname);
+    norm_name = norm_dir( dirname, FALSE);
     if (! norm_name)                        /* Non-existent         */
         return;
     for (ip = incdir; ip < incend; ip++) {
         if (str_case_eq( *ip, norm_name)) {
-            if (option_flags.v)
+            if (option_flags.v && ! (mcpp_debug & MACRO_CALL))
                 mcpp_fprintf( ERR, "Duplicate directory \"%s\" is ignored\n"
                         , norm_name);
             free( norm_name);               /* Already registered   */
@@ -2194,8 +2208,44 @@ static void set_a_dir(
     *incend++ = norm_name;
 }
 
+#if SYSTEM == SYS_MAC && COMPILER == GNUC
+/* Definitions for "header map" file of Xcode / Apple-GCC.          */
+/* These definitions were taken from cpplib.h of Apple-GCC-4.0.1    */
+
+#define HMAP_SAME_ENDIANNESS_MAGIC      \
+        (((((('h' << 8) | 'm') << 8) | 'a') << 8) | 'p')
+
+typedef unsigned short  uint16;
+typedef unsigned int    uint32;
+
+struct hmap_bucket
+{
+    uint32  key;            /* Offset (into strings) of key             */
+    struct {
+        uint32  prefix;     /* Offset (into strings) of value prefix    */
+        uint32  suffix;     /* Offset (into strings) of value suffix    */
+    } value;                /* Value (prefix- and suffix-strings)       */
+};
+
+struct hmap_header_map
+{
+    uint32  magic;          /* Magic word, also indicates byte order    */
+    uint16  version;        /* Version number -- currently 1            */
+    uint16  _reserved;      /* Reserved for future use -- zero for now  */
+    uint32  strings_offset; /* Offset to start of string pool           */
+    uint32  count;          /* Number of entries in the string table    */
+    uint32  capacity;       /* Number of buckets (always a power of 2)  */
+    uint32  max_value_length;
+                        /* Length of longest result path (excl. '\0')   */
+    struct hmap_bucket  buckets[1];
+                        /* Inline array of 'capacity' maptable buckets  */
+    /* Strings follow the buckets, at strings_offset.  */
+};
+#endif
+
 static char *   norm_dir(
-    const char *    dirname         /* Directory path to normalize  */
+    const char *    dirname,        /* Directory path to normalize  */
+    int             framework       /* Setting a framework directory*/
 )
 /*
  * Normalize include directory path.
@@ -2203,27 +2253,40 @@ static char *   norm_dir(
  */
 {
     char *  norm_name;
-    int     diag = TRUE;
 
 #if COMPILER == GNUC
     if (sysroot && sys_dirp) {
         /* Logical system root specified and dirname is system header dir   */
         char    delim[ 2] = { EOS, EOS};
         char *  dir;
+#if SYSTEM == SYS_MAC
+        if (! framework && memcmp( dirname, "/usr/", 5) != 0)
+            return  NULL;           /* /Developer/usr/lib/gcc/*     */
+#endif
         if (dirname[ 0] != PATH_DELIM)
-            sprintf( delim, "%c", PATH_DELIM);
+            delim[ 0] = PATH_DELIM;
         dir = xmalloc( strlen( sysroot) + strlen( dirname) + 2);
         sprintf( dir, "%s%s%s", sysroot, delim, dirname);
         dirname = dir;
     }
-    if (! option_flags.v)
-        diag = FALSE;
 #endif
-    norm_name = norm_path( dirname, NULL, FALSE);
+#if SYSTEM == SYS_MAC && COMPILER == GNUC
+    if (strlen( dirname) > 5
+            && str_case_eq( dirname + strlen( dirname) - 5, ".hmap")) {
+        /* "header map" file (not an include directory) */
+        norm_name = norm_path( null, dirname, FALSE, TRUE);
+        if (! norm_name && option_flags.v)
+            mcpp_fprintf( ERR, "Invalid header map file \"%s\" is ignored\n"
+                    , dirname);
+    } else 
+#endif
+    {
+        norm_name = norm_path( dirname, NULL, FALSE, FALSE);
                             /* Normalize the pathname to compare    */
-    if (! norm_name && diag)
-        mcpp_fprintf( ERR, "Non-existent directory \"%s\" is ignored\n"
-                , dirname);
+        if (! norm_name && option_flags.v && ! (mcpp_debug & MACRO_CALL))
+            mcpp_fprintf( ERR, "Non-existent directory \"%s\" is ignored\n"
+                    , dirname);
+    }
 #if COMPILER == GNUC
     if (sysroot && sys_dirp)
         free( dirname);
@@ -2236,7 +2299,8 @@ static char *   norm_path(
     const char *    dir,        /* Include directory (maybe "", never NULL) */
     const char *    fname,
         /* Filename (possibly has directory part, or maybe NULL)    */
-    int     inf     /* If TRUE, output some infs when (mcpp_debug & PATH)   */
+    int     inf,    /* If TRUE, output some infs when (mcpp_debug & PATH)   */
+    int     hmap            /* "header map" file of Apple-GCC       */
 )
 /*
  * Normalize the pathname removing redundant components such as
@@ -2258,9 +2322,9 @@ static char *   norm_path(
     char *  abs_path;
     int     len;                            /* Should not be size_t */
     size_t  start_pos = 0;
-    char    slbuf1[ FILENAMEMAX+1];         /* Working buffer       */
+    char    slbuf1[ PATHMAX+1];             /* Working buffer       */
 #if SYS_FAMILY == SYS_UNIX
-    char    slbuf2[ FILENAMEMAX+1];     /* Working buffer for dereferencing */
+    char    slbuf2[ PATHMAX+1]; /* Working buffer for dereferencing */
 #endif
 #if SYSTEM == SYS_CYGWIN || SYSTEM == SYS_MINGW
     static char *   root_dir;
@@ -2301,6 +2365,18 @@ static char *   norm_path(
             || (fname && ! S_ISREG( st_buf.st_mode)))
                 /* Not a regular file though 'fname' is specified   */
         return  NULL;
+#if SYSTEM == SYS_MAC && COMPILER == GNUC
+    if (hmap) {                         /* Dirty "header map" file  */
+        struct hmap_header_map  hmap;
+        size_t      cnt;
+        FILE *      fp;
+        fp = fopen( fname, "r");
+        cnt = fread( & hmap, sizeof (struct hmap_header_map), 1, fp);
+        fclose( fp);
+        if (cnt == 0 || hmap.magic != HMAP_SAME_ENDIANNESS_MAGIC)
+            return  NULL;
+    }
+#endif
     if (! fname) {
         slbuf1[ len] = PATH_DELIM;          /* Append PATH_DELIM    */
         slbuf1[ ++len] = EOS;
@@ -2317,7 +2393,7 @@ static char *   norm_path(
         strcat( slbuf1, fname);
         deref_syml( slbuf1, slbuf2, slbuf1 + len);
                                 /* Symbolic link check of directory */
-        if ((len = readlink( slbuf1, slbuf2, FILENAMEMAX)) > 0) {
+        if ((len = readlink( slbuf1, slbuf2, PATHMAX)) > 0) {
             /* Dereference symbolic linked file (not directory) */
             *(slbuf2 + len) = EOS;
             cp1 = slbuf1;
@@ -2464,7 +2540,7 @@ static char *   norm_path(
     }
 #endif
     if (inf) {
-        char    debug_buf[ FILENAMEMAX+1];
+        char    debug_buf[ PATHMAX+1];
         strcpy( debug_buf, dir);
         strcat( debug_buf, fname ? fname : "");
 #if SYS_FAMILY == SYS_WIN
@@ -2492,7 +2568,7 @@ static void     deref_syml(
 
     while ((chk_start = strchr( chk_start, PATH_DELIM)) != NULL) {
         *chk_start = EOS;
-        if ((len = readlink( slbuf1, slbuf2, FILENAMEMAX)) > 0) {
+        if ((len = readlink( slbuf1, slbuf2, PATHMAX)) > 0) {
             /* Dereference symbolic linked directory    */
             cp2 = strrchr( slbuf1, PATH_DELIM); /* Previous delimiter       */
             *chk_start = PATH_DELIM;
@@ -2552,7 +2628,7 @@ static void init_gcc_macro( void)
 #else
     sprintf( tmp, "%s/mcpp-gcc", INC_DIR);
 #endif
-    include_dir = norm_path( tmp, NULL, TRUE);
+    include_dir = norm_path( tmp, NULL, TRUE, FALSE);
     free( tmp);
 
     for (i = 0; i <= 1; i++) {
@@ -2673,7 +2749,7 @@ static void     undef_macros( void)
         name = undef_list[ i];
         if (look_id( name) != NULL)
             undefine( name);
-        else
+        else if (warn_level & 8)
             mcpp_fprintf( ERR, "\"%s\" wasn't defined\n", name);
     }
 }
@@ -2800,7 +2876,7 @@ static char *   md_init(
  * Initialize output file and target.
  */
 {
-    char    prefix[ FILENAMEMAX];
+    char    prefix[ PATHMAX];
     char *  cp = NULL;
     size_t  len;
     char *  out_p;
@@ -2843,6 +2919,7 @@ static char *   md_init(
     }
 
     *out_p++ = ':';
+    *out_p = EOS;
     return  out_p;
 }
 
@@ -2903,7 +2980,7 @@ int     do_include(
  */
 {
     const char * const  no_name = "No header name";         /* _E_  */
-    char    header[ FILENAMEMAX + 16];
+    char    header[ PATHMAX + 16];
     int     token_type;
     char *  fname;
     int     delim;                          /* " or <, >            */
@@ -2923,7 +3000,7 @@ int     do_include(
         c = delim;
         while (get_unexpandable( c, FALSE) != NO_TOKEN) {
                                 /* Expand any macros in the line    */
-            if (header + FILENAMEMAX < hp + (int) (workp - work_buf))
+            if (header + PATHMAX < hp + (int) (workp - work_buf))
                 cfatal( toolong_fname, header, 0L, work_buf);
             hp = stpcpy( hp, work_buf);
             while (char_type[ c = get_ch()] & HSP)
@@ -2941,11 +3018,11 @@ int     do_include(
     }
 
     token_type = scan_token( delim, (workp = work_buf, &workp)
-            , work_buf + FILENAMEMAX);
+            , work_buf + PATHMAX);
     if (token_type == STR)                  /* String literal form  */
         goto  found_name;
     else if (token_type == OPE && openum == OP_LT)          /* '<'  */
-        workp = scan_quote( delim, work_buf, work_buf + FILENAMEMAX, TRUE);
+        workp = scan_quote( delim, work_buf, work_buf + PATHMAX, TRUE);
                                         /* Re-construct or diagnose */
     else                                    /* Any other token in-  */
         goto  not_header;                   /*   cluding <=, <<, <% */
@@ -3001,8 +3078,7 @@ static int  open_include(
  * Returns TRUE if the file was opened, FALSE if it fails.
  */
 {
-    char    src_dir[ FILENAMEMAX] = { EOS, };
-                                    /* Directory part of includer   */
+    char    src_dir[ PATHMAX] = { EOS, };   /* Directory part of includer   */
     int     full_path;              /* Filename is full-path-list   */
     int     has_dir = FALSE;        /* Includer has directory part  */
     int     has_dir_src = FALSE;
@@ -3154,7 +3230,7 @@ static int  search_dir(
 #endif
 
     for ( ; incptr < incend; incptr++) {
-        if (strlen( *incptr) + strlen( filename) >= FILENAMEMAX)
+        if (strlen( *incptr) + strlen( filename) >= PATHMAX)
             cfatal( toolong_fname, *incptr, 0L, filename);  /* _F_  */
 #if SYSTEM == SYS_MAC
         if (incptr == to_search_framework && ! searchlocal) {
@@ -3189,7 +3265,7 @@ static int  open_file(
  * This is called from open_include() and at_start().
  */
 {
-    char        dir_fname[ FILENAMEMAX] = { EOS, };
+    char        dir_fname[ PATHMAX] = { EOS, };
 #if HOST_COMPILER == BORLANDC
     /* Borland's fopen() does not set errno.    */
     static int  max_open = FOPEN_MAX - 5;
@@ -3203,9 +3279,22 @@ static int  open_file(
     const char *    fname;
 
     errno = 0;      /* Clear errno possibly set by path searching   */
-    if (mcpp_debug & PATH)
-        mcpp_fprintf( DBG, "Searching %s%s%s\n", *dirp
-                , src_dir ? src_dir : null, filename);
+#if SYSTEM == SYS_MAC && COMPILER == GNUC
+    if (strlen( *dirp) > 5
+            && str_case_eq( *dirp + strlen( *dirp) - 5, ".hmap")) {
+        /* Search header map file for a header  */
+        if (! search_header_map( *dirp, filename, dir_fname))
+            return  NULL;
+        fname = dir_fname;                  /* Found a path-list    */
+        dirp = &null;
+        goto  search;
+    } else
+#endif
+    {
+        if (mcpp_debug & PATH)
+            mcpp_fprintf( DBG, "Searching %s%s%s\n", *dirp
+                    , src_dir ? src_dir : null, filename);
+    }
     /* src_dir is usually NULL.  This is specified to   */
     /* search the source directory of the includer.     */
     if (src_dir && *src_dir != EOS) {
@@ -3215,7 +3304,8 @@ static int  open_file(
     } else {
         fname = filename;
     }
-    fullname = norm_path( *dirp, fname, TRUE);
+search:
+    fullname = norm_path( *dirp, fname, TRUE, FALSE);
                                     /* Convert to absolute path     */
     if (! fullname)                 /* Non-existent or directory    */
         return  FALSE;
@@ -3377,6 +3467,71 @@ static const char *     set_fname(
 }
 
 #if SYSTEM == SYS_MAC
+#if COMPILER == GNUC
+
+/* Routines to search "header map" file of Xcode / Apple-GCC.       */
+/* search_header_map() and hmap_hash() were written referring to    */
+/* c-incpath.c of Apple-GCC-4.0.1.                                  */
+
+static char *   search_header_map(
+    const char *    hmap_file,              /* Header map file      */
+    const char *    filename,               /* Filename to search   */
+    char *          pathlist        /* Buffer for a found pathlist  */
+)
+/*
+ * Search a table in "header map" file for a header.
+ */
+{
+    struct stat     stat_buf;
+    FILE *          fp;
+    size_t          fsize;
+    const char *    contents;
+    struct hmap_header_map *    hmap;
+    struct hmap_bucket *        buckets;
+    const char *    strings;
+    uint32          mask;
+    uint32          key_offs;
+    uint32          i;
+
+    stat( hmap_file, &stat_buf);            /* Get size of the file */
+    fsize = stat_buf.st_size;
+    contents = xmalloc( fsize + 1);
+    fp = fopen( hmap_file, "r");
+    fread( contents, fsize, 1, fp);     /* Read whole of the file at once   */
+    hmap = (struct hmap_header_map *) contents;
+
+    strings = ((const char *) hmap) + hmap->strings_offset;
+    buckets = hmap->buckets;
+    mask = hmap->capacity - 1;
+    i = hmap_hash( filename) & mask;
+    while ((key_offs = buckets[ i].key) != 0) {
+        if (str_case_eq( filename, strings + key_offs)) {
+            /* The names match.  Make path-list.    */
+            char *  cp = stpcpy( pathlist, strings + buckets[ i].value.prefix);
+            strcpy( cp, strings + buckets[ i].value.suffix);
+            break;
+        }
+        i = ++i & mask;
+    }
+    free( contents);
+    return  key_offs ? pathlist : NULL;
+}
+
+static unsigned hmap_hash(
+    const char *    fname                   /* header name          */
+)
+/*
+ * Get hash value for the fname.
+ */
+{
+    const char *    sp;
+    unsigned        hash_code = 0;
+
+    for (sp = fname; *sp; sp++)
+        hash_code += tolower( *sp & 0xFF) * 13;
+    return  hash_code;
+}
+#endif  /* COMPILER == GNUC */
 
 static void     init_framework( void)
 /*
@@ -3387,17 +3542,17 @@ static void     init_framework( void)
     /* Some frameworks may have been already specified by -F option.    */
     sys_framework = num_framework;      /* These are system frameworks  */
 #ifdef  FRAMEWORK1
-    framework_dir = norm_dir( FRAMEWORK1);
+    framework_dir = norm_dir( FRAMEWORK1, TRUE);
     if (framework_dir)
         framework[ num_framework++] = framework_dir;
 #endif
 #ifdef  FRAMEWORK2
-    framework_dir = norm_dir( FRAMEWORK2);
+    framework_dir = norm_dir( FRAMEWORK2, TRUE);
     if (framework_dir)
         framework[ num_framework++] = framework_dir;
 #endif
 #ifdef  FRAMEWORK3
-    framework_dir = norm_dir( FRAMEWORK3);
+    framework_dir = norm_dir( FRAMEWORK3, TRUE);
     if (framework_dir)
         framework[ num_framework++] = framework_dir;
 #endif
@@ -3420,7 +3575,7 @@ static int      search_framework(
  * and so on.
  */
 {
-    char        fullname[ FILENAMEMAX + 1];
+    char        fullname[ PATHMAX + 1];
     FILEINFO *  file;
     char *      frame, * fname, * cp1, * cp2;
     int         sys_frame = FALSE;
@@ -3523,7 +3678,7 @@ static int      search_subdir(
          * argument to open_file() is needed for #include_next, this directive
          * has no meaning in framework.
          */
-        if ((cp - fullname) + n > FILENAMEMAX)
+        if ((cp - fullname) + n > PATHMAX)
             cfatal( "Too long framework path", NULL, 0L, NULL); /* _F_  */
         if (open_file( &null, NULL, fullname, FALSE, FALSE, sys_frame))
             return  TRUE;
@@ -3617,7 +3772,7 @@ sharp_exit:
     wrong_line = FALSE;
 }
 
-static void	cur_file(
+static void cur_file(
     FILEINFO *  file,                   /* infile or sharp_file     */
     FILEINFO *  sharp_file,             /* The 'file' or NULL       */
     int         flag                    /* Flag to append for GCC   */
@@ -3679,7 +3834,7 @@ static char *   bsl2sl(
             int     c;
             c = *cp & UCHARMAX;
             if (char_type[ c] & mbstart) {  /* First byte of MBCHAR */
-                char    tmp[ FILENAMEMAX];
+                char    tmp[ PATHMAX];
                 char *  tp = tmp;
                 *tp++ = *cp++;
                 mb_read( c, &cp, &tp);
@@ -4486,6 +4641,95 @@ static void dump_path( void)
     mcpp_fputs( "End of framework path list.\n", DBG);
 #endif
 }
+
+/*
+ * Note: The getopt() of glibc should not be used since the specification
+ *  differs from the standard one.
+ *  Use this mcpp_getopt() for mcpp.
+ */
+
+/* Based on the public-domain-software released by AT&T.    */
+
+#define OPTERR( s, c)   if (mcpp_opterr) {  \
+    mcpp_fputs( argv[0], ERR);  \
+    mcpp_fputs( s, ERR);        \
+    mcpp_fputc( c, ERR);        \
+    mcpp_fputc( '\n', ERR);     \
+    }
+
+static int  mcpp_getopt(
+    int         argc,
+    char * const *  argv,
+    const char *    opts
+)
+/*
+ * Get the next option (and it's argument) from the command line.
+ */
+{
+    const char * const   error1 = ": option requires an argument --";
+    const char * const   error2 = ": illegal option --";
+    static int      sp = 1;
+    int             c;
+    const char *    cp;
+
+    if (sp == 1) {
+        if (argc <= mcpp_optind ||
+                argv[ mcpp_optind][ 0] != '-'
+                    || argv[ mcpp_optind][ 1] == '\0') {
+            return  EOF;
+        } else if (strcmp( argv[ mcpp_optind], "--") == 0) {
+            mcpp_optind++;
+            return  EOF;
+        }
+    }
+/*  mcpp_optopt = c = (unsigned char) argv[ mcpp_optind][ sp];  */
+    mcpp_optopt = c = argv[ mcpp_optind][ sp] & UCHARMAX;
+    if (c == ':' || (cp = strchr( opts, c)) == NULL) {
+        OPTERR( error2, c)
+        if (argv[ mcpp_optind][ ++sp] == '\0') {
+            mcpp_optind++;
+            sp = 1;
+        }
+        return  '?';
+    }
+    if (*++cp == ':') {
+        if (argv[ mcpp_optind][ sp+1] != '\0') {
+            mcpp_optarg = &argv[ mcpp_optind++][ sp+1];
+        } else if (argc <= ++mcpp_optind) {
+            OPTERR( error1, c)
+            sp = 1;
+            return  '?';
+        } else {
+            mcpp_optarg = argv[ mcpp_optind++];
+        }
+        sp = 1;
+    } else {
+        if (argv[ mcpp_optind][ ++sp] == '\0') {
+            sp = 1;
+            mcpp_optind++;
+        }
+        mcpp_optarg = NULL;
+    }
+    return  c;
+}
+
+#if ! HOST_HAVE_STPCPY
+char *  stpcpy(
+    char *          dest,
+    const char *    src
+)
+/*
+ * Copy the string and return the advanced pointer.
+ */
+{
+    const char * s;
+    char *  d;
+
+    for (s = src, d = dest; (*d++ = *s++) != '\0'; )
+        ;
+    return  d - 1;
+}
+#endif
 
 /*
  * list_heap() is a function to print out information of heap-memory.

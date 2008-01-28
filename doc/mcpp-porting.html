@@ -11,7 +11,7 @@
 <h2>== How to Port MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2007/12)<br>
+<h4>for V.2.7 (2008/01)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -39,7 +39,7 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.3.2" href="#3.2">3.2. Compiler systems to which DECUS-cpp had been ported</a>
 <dd><a name="toc.3.3" href="#3.3">3.3. noconfig.H, configed.H, system.H</a>
 <dd><a name="toc.3.4" href="#3.4">3.4. system.c</a>
-<dd><a name="toc.3.5" href="#3.5">3.5. lib.c</a>
+<dd><a name="toc.3.5" href="#3.5">3.5. Library functions</a>
 <dd><a name="toc.3.6" href="#3.6">3.6. Standard headers</a>
 <dd><a name="toc.3.7" href="#3.7">3.7. Makefile and recompilation using <b>mcpp</b></a>
 <dd><a name="toc.3.8" href="#3.8">3.8. Compiler systems which can compile <b>mcpp</b></a>
@@ -66,7 +66,6 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.4.1.3.2" href="#4.1.3.2">4.1.3.2. Specifying the details of the behavioral modes</a>
 <dd><a name="toc.4.1.3.3" href="#4.1.3.3">4.1.3.3. Specifying translation limits</a></dl></dl>
 <dd><a name="toc.4.2" href="#4.2">4.2. system.c</a>
-<dd><a name="toc.4.3" href="#4.3">4.3. lib.c</a>
 <dd><a name="toc.4.extra" href="#4.extra">4.extra. malloc()</a>
 <br><br>
 <dt><a name="toc.5" href="#5">5. Bug reporting and porting report</a>
@@ -200,7 +199,7 @@ Some bugs of the previous version were fixed.
 <br>
 
 <h1><a name="3" href="#toc.3">3. How to port <b>mcpp</b> to each compiler system: Overview</a></h1>
-<p>The source of <b>mcpp</b> consists of five header files and eight *.c files.  The parts which are dependent on OS or compiler system are included in the four source files <samp>configed.H, noconfig.H, system.H</samp> and <samp>system.c</samp>.  Either of <samp>configed.H</samp> or <samp>noconfig.H</samp> is used depending the compiling method, they are never used simultaneously.  There are also a few library function sources in <samp>lib.c</samp>.  When <b>mcpp</b> is compiled by any compiler system, these source files need to be modified to match that compiler system.</p>
+<p>The source of <b>mcpp</b> consists of five header files and seven *.c files.  The parts which are dependent on OS or compiler system are included in the four source files <samp>configed.H, noconfig.H, system.H</samp> and <samp>system.c</samp>.  Either of <samp>configed.H</samp> or <samp>noconfig.H</samp> is used depending the compiling method, they are never used simultaneously.  There are also a few library function sources in <samp>system.c</samp>.  When <b>mcpp</b> is compiled by any compiler system, these source files need to be modified to match that compiler system.</p>
 <p>There are several types of MCPP executable corresponding to its building methods.
 The building methods of MCPP have following two axis:</p>
 
@@ -366,7 +365,7 @@ gcc -xc -E -v /dev/null
 g++ -xc++ -E -v /dev/null
 </pre>
 <p>The difference files in 'noconfig' directory named <samp>linux_gcc2953.dif, linux_gcc32.dif, linux_gcc336.dif, linux_gcc343.dif and linux_gcc411.dif</samp> are for VineLinux 4.0 / GCC V.2.95.3, V.3.2, V.3.3.6, V.3.4.3 and V.4.1.1, respectively.  For the compiler-specific-build, change <i>COMPILER</i> too.  The include directories may vary between distributions of Linux.  Also, if another version is installed in addition to the system standard version of GCC, it should create another include directory for the specific version.  Specify the particular directory using the above macros.</p>
-<p>The specification of getopt() of glibc is different from the standard ones such as POSIX, please use the one in <samp>lib.c</samp> instead.  I assume glibc is used by default for <samp>noconfig.H</samp> in Linux.</p>
+<p>The specification of getopt() of glibc is different from the standard ones such as POSIX, please use the mcpp_getopt() in <samp>system.c</samp> instead.</p>
 
 <h3><a name="3.1.4" href="#toc.3.1.4">3.1.4. Mac OS X / Apple-GCC V.4.*</a></h3>
 <p>On Mac OS X, you can install GCC by installing the Xcode package.</p>
@@ -375,7 +374,8 @@ In Mac OS X 10.5 Leopard on Intel-Mac, i686-apple-darwin9-gcc-4.0.1 and i686-app
 The cross compilers are installed, too.
 On Intel-Mac, powerpc-apple-darwin9-gcc-4.0.1 and powerpc-apple-darwin9-g++-4.0.1 are the cross compilers to generate a binary for PowerPc.
 The names just gcc and g++ are symbolic links to gcc-4.0 and g++-4.0,
-which behave as native compilers by default, but when invoked with '-arch ppc' option, call the compiler-propers cc1 or cc1plus for powerpc.</p>
+which behave as native compilers by default, but when invoked with '-arch ppc' option, call the compiler-propers cc1 or cc1plus for powerpc.
+Note that these compilers are also installed into /Developer/usr/bin.</p>
 <p>These are GCCs with many extensions specific to Mac OS X made by Apple.
 The compiler system of Mac OS X differs from the GCCs on other systems in some important aspects.
 First, it handles the special directories called "framework" as its system header directories.
@@ -385,8 +385,8 @@ In fact, gcc-4.0, i686-apple-darwin9-gcc-4.0.1, powerpc-apple-darwin9-gcc-4.0.1 
 (SYSTEM is i686-apple-darwin9 and powerpc-apple-darwin9.)
 If we copy these universal binaries from Intel-Mac to PowerPc-Mac, they will run reversing native and cross positions, I suppose.
 In addition, Intel-Mac even executes most of ppc binaries automatically translating to x86 codes.</p>
-<p>To sum up: there are many gccs and g++s in /usr/bin: also there are links to them;
-there are two libexec directories:
+<p>To sum up: there are many gccs and g++s in /usr/bin and /Developer/usr/bin: also there are links to them;
+there are libexec directories for x86 and ppc:
 an executable contains two binaries bundled in it:
 a binary for ppc runs on x86.
 Such being the situation, we easily lose which is which.
@@ -399,13 +399,14 @@ On Mac OS X 10.4 (Tiger), read darwin9 as darwin8.</p>
 <p>It is quite simple to install <b>mcpp</b> by the native compiler.
 To make settings for Mac OS X 10.5 / GCC 4.0.1 on Intel-Mac, apply mac_gcc401_i686.dif to noconfig.H.
 Use mac_osx.mak as a Makefile.
-The command sequence 'make; sudo make install' will generate a compiler-independent-build, and 'make COMPILER=GNUC; sudo make COMPILER=GNUC install' will install a GCC-specific-build.</p>
+The command sequence '<samp>make; sudo make install</samp>' will generate a compiler-independent-build, and '<samp>make COMPILER=GNUC; sudo make COMPILER=GNUC install</samp>' will install a GCC-specific-build.
+The compilers in /usr/bin will be used for these commands, since usually /Devepoler/usr/bin is not set to $PATH.</p>
 <p>To install <b>mcpp</b> on Intel-Mac with or for the cross compiler for PowerPc, apply mac_gcc401_powerpc.dif to noconfig.H.
 Then edit the Makefile (mac_osx.mak).</p>
-<p>For a compiler-independent-build, change the definition of variables NAME, CC and GPP to those containing "powerpc" as noted by the comments in mac_osx.mak.
-Then, do 'make; sudo make install'.
+<p>For a compiler-independent-build, change the definition of variables NAME, CC and CXX to those containing "powerpc" as noted by the comments in mac_osx.mak.
+Then, do '<samp>make; sudo make install</samp>'.
 The binary is the one compiled "with the cross compiler", so should run on ppc-Mac.</p>
-<p>For a GCC-specific-build, change the definition of variables NAME, INCDIR, BINDIR, target_cc and arch to those containing "powerpc" (do not change CC and GPP), and do 'make COMPILER=GNUC; sudo make COMPILER=GNUC install'.
+<p>For a GCC-specific-build, change the definition of variables NAME, INCDIR, BINDIR, target_cc and arch to those containing "powerpc" (do not change CC and CXX), and do '<samp>make COMPILER=GNUC; sudo make COMPILER=GNUC install</samp>'.
 This is a binary "for the cross compiler" running on Intel-Mac, hence runs on Intel-Mac.</p>
 <p>On PowerPc-Mac, mac_gcc401_powerpc.dif makes settings for the native compiler, and mac_gcc401_i686.dif do for the cross compiler, in reverse of Intel-Mac.
 To compile <b>mcpp</b> with or for the cross compiler for Intel-Mac on PowerPc-Mac, change the definition of the variables above to those containing "i686".</p>
@@ -470,16 +471,18 @@ For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.</p>
 <p>This file includes functions such as options for <b>mcpp</b> invocation, usage message, include directory, the handling of OS unique directory paths when opening header files or source files, processing of #pragma, and processing of compiler system unique extension directives.  Most of them are setup for the target OS and target compiler systems.</p>
 <br>
 
-<h2><a name="3.5" href="#toc.3.5">3.5. lib.c</a></h2>
-<p>Of library functions, C source code for getopt() and stpcpy(), which are not in Standard, are written in this file.  Though <b>mcpp</b> uses also getcwd(), stat() and in UNIXes readlink(), they are not included in <samp>lib.c</samp>, because they are functions dependent on OS, so cannot be written portably.  They are only three low-level functions used in <b>mcpp</b>.  Though they are not Standard C function, they are required by POSIX.  Every compiler system seems to provide it. *1</p>
+<h2><a name="3.5" href="#toc.3.5">3.5. Library functions</a></h2>
+<p>Of library functions, C source code for getopt() and stpcpy(), which are not in Standard, are written in system.c.  Though <b>mcpp</b> uses also getcwd(), stat() and in UNIXes readlink(), they are not included here, because they are functions dependent on OS, so cannot be written portably.  They are only three low-level functions used in <b>mcpp</b>.  Though they are not Standard C function, they are required by POSIX.  Every compiler system seems to provide it. *1, *2</p>
 <p>Usage of library functions in <b>mcpp</b> does not depend on the specification difference on different compiler systems, so those functions of any compiler systems will not cause a problem unless there is a bug.</p>
-<p>To use the function called xyz in <samp>lib.c</samp>, the macro <i>HOST_HAVE_XYZ</i>, in PART 2 of <samp>noconfig.H</samp> (<samp>configed.H</samp>), should be defined to <i>FALSE</i>.</p>
 <p>Note:</p>
 <p>*1 On MinGW, spawnv() is used too.</p>
+<p>*2 <b>mcpp</b> upto V.2.6.4 had a separate source file lib.c.
+But, it was absorbed into system.c on V.2.7, since the functions written in it decreased to only two (getopt() and stpcpy()).
+At the same time, getopt() was renamed to mcpp_getopt() in order to prevent linking troubles.<p>
 <br>
 
 <h2><a name="3.6" href="#toc.3.6">3.6. Standard headers</a></h2>
-<p>In the source code of <b>mcpp</b>, stdio.h, string.h, stdlib.h, ctype.h, errno.h, time.h, sys/types.h, sys/stat.h are included unconditionally.  For UNIX-like systems, unistd.h is also included.  When you build <b>mcpp</b> with configure and make, limits.h is also included.  There should not be a compiler system which does not have these.</p>
+<p>In the source code of <b>mcpp</b>, stdio.h, string.h, stdlib.h, ctype.h, errno.h, limits.h, time.h, sys/types.h, sys/stat.h are included unconditionally.  For UNIX-like systems, unistd.h is also included.  There should not be a compiler system which does not have these.</p>
 <br>
 
 <h2><a name="3.7" href="#toc.3.7">3.7. Makefile and recompilation using <b>mcpp</b></a></h2>
@@ -497,13 +500,10 @@ make clean
 <p>For other compiler systems, please write the necessary makefile referring to these files.  The dependencies of the source files are simple:</p>
 <ol>
 <li><samp>main.c, directive.c, eval.c, expand.c, support.c, system.c, mbchar.c</samp> depend on <samp>system.H, internal.H</samp><br>
-<li><samp>lib.c</samp> depends on <samp>configed.H (noconfig.H</samp>)<br>
 <li><samp>system.H</samp> depends on <samp>configed.H</samp> (<samp>noconfig.H</samp>)<br>
 </ol>
 <p><samp>system.H</samp> needs to be included before <samp>internal.H</samp>.<br>
 <samp>internal.H</samp> further includes <samp>mcpp_lib.h</samp>.</p>
-<p>The stack size should be added, to the size which system uses, the following size. (<i>NMACWORK</i>, <i>NEXP</i>, <i>RESCAN_LIMIT</i> are macros defined in <samp>system.H</samp>.)</p>
-<blockquote><samp><i>NMACWORK</i> + (<i>NEXP</i> * 30) + (sizeof (int) * 100) + (sizeof (char *) * 12 * <i>RESCAN_LIMIT</i>)</samp></blockquote>
 <p>In systems like Windows, the shell (command processor) does not expand wild cards, and it is safe to be compiled not to expand in <b>mcpp</b> either. (Unless the -o option is specified, the second argument will be taken as the output file.)</p>
 <p>To recompile <b>mcpp</b> using <b>mcpp</b> itself, place the executable into the location where the preprocessor of the compiler system should be.  For instance, in the cases of GCC 2.95, rename the resident cpp0 to something like cpp0_gnuc and link cpp0 to whichever cpp you use at the time.  Therefore, if mcpp is the preprocessor you are going to use, you need to do</p>
 <pre>
@@ -551,7 +551,7 @@ For further information, see
 <br>
 
 <h2><a name="3.9" href="#toc.3.9">3.9. Host compiler system and target compiler system</a></h2>
-<p>There is no need for the compiler system which compiles the <b>mcpp</b> source code (host) and the compiler system which will use the generated <b>mcpp</b> executable (target) to be the same.  If these are different, select the target by <i>SYSTEM</i> and <i>COMPILER</i> and the host by <i>HOST_SYSTEM</i> and <i>HOST_COMPILER</i> within <samp>noconfig.H</samp> (<samp>configed.H</samp>).  Also, the definitions in PART 1 are the settings for the target, and the ones in PART 2 are for the host.  <samp>system.c</samp> is mainly for the target.  <samp>lib.c</samp> should be compiled using the settings for the host.</p>
+<p>There is no need for the compiler system which compiles the <b>mcpp</b> source code (host) and the compiler system which will use the generated <b>mcpp</b> executable (target) to be the same.  If these are different, select the target by <i>SYSTEM</i> and <i>COMPILER</i> and the host by <i>HOST_SYSTEM</i> and <i>HOST_COMPILER</i> within <samp>noconfig.H</samp> (<samp>configed.H</samp>).  Also, the definitions in PART 1 are the settings for the target, and the ones in PART 2 are for the host.  <samp>system.c</samp> is mainly for the target.</p>
 <p>However, there are the following limitations.</p>
 <ol>
 <li>The host compiler system should be on the same OS as the target compiler system, otherwise a cross-compiler has to be used.
@@ -585,7 +585,7 @@ However, if you would like to compile <b>mcpp</b> with these compilers, you will
 <p>As for the compiler systems on MS-DOS, define <i>SYSTEM, HOST_SYSTEM</i> to <i>SYS_WIN32</i> and <i>HAVE_LONG_LONG</i> to <i>FALSE</i> in noconfig.H, define <i>NBUFF</i> as about 1/16 of the default, <i>IDMAX</i> as about 1/4 of the default in system.H, define <i>SBSIZE</i> as about 1/8 of the default in directive.c.  Then compile with large memory model.<br>
 However, since memory is scarce on MS-DOS, you may get an "out of memory" error on preprocessing a source which has many long macro definitions, even if you have compiled <b>mcpp</b> with these settings.</p>
 <p>Note:<p>
-<p>*1 It was reported that DJGPP / GCC 4.1.0 successfully compiled <b>mcpp</b> with this setting.</p>
+<p>*1 It was reported that DJGPP / GCC 4.1.0 successfully compiled <b>mcpp</b> V.2.6.1 with this setting.</p>
 <br>
 
 <h2><a name="3.11" href="#toc.3.11">3.11. Making compiler-independent-build of <b>mcpp</b></a></h2>
@@ -599,13 +599,13 @@ However, since memory is scarce on MS-DOS, you may get an "out of memory" error 
 <p>In case of the version of the compiler differs a little from the already ported version, first apply the patch for the nearest version, then edit <samp>noconfig.H</samp>.</p>
 <p>For the compiler systems to which <b>mcpp</b> is not yet ported, edit <samp>noconfig.H</samp> and modify or add several macros.  First, define <i>HOST_COMPILER</i> appropriately.  Next, define <i>COMPILER</i> as <i>INDEPENDENT</i>, and define <i>VERSION_MSG</i> appropriately.  There is no target compiler for the compiler-independent-build, so nothing is required in PART 1.</p>
 <p>PART 2 depends on the extent to which the host compiler implements the Standard's specifications, and also depends on whether the necessary functions are provided.  The most often encountered discrepancy among the compilers is implementation of 'long long' or its corresponding data type.  In Visual C 2002, 2003, 2005 and Borland C 5.5, the type is <samp>__int64</samp>.  It's length modifier for printf() is 'I64', not 'j' nor 'll', except Visual C 2005.  Hence, define the macro <i>LL_FORM</i> as "I64" for these compilers.  On MinGW, the specifier is also "I64", though it has long long.</p>
-<p>If the compiler's library has not the function stpcpy() or getopt(), define <i>HOST_HAVE_STPCPY</i> or <i>HOST_HAVE_GETOPT</i> to <i>FALSE</i>.</p>
+<p>If the compiler's library has not the function stpcpy(), define <i>HOST_HAVE_STPCPY</i> to <i>FALSE</i>.</p>
 <p>Write makefile yourself referring the *.mak files. (Refer <a href="#3.7">3.7</a> too.)</p>
 <p>Mac OS X provides a cross compiler as well as a native compiler so that we can make binaries for both of x86 and powerpc on either machine.
 Moreover, it provides a mechanism to make a "universal binary", which is a bundle of binaries for x86 and powerpc.
 Therefore, the settings necessary to compile <b>mcpp</b> on Mac OS X is a bit complex.
 I explain compiler-independent-build and compiler-specific-build together at <a href="#3.1.4">3.1.4</a>.</p>
-<p>By the way, at the SourceForge site, <b>mcpp</b> V.2.6.3 and later supplies some binary packages of compiler-independent-build.  These are the ones packaged after each packaging method, and their packaging specifications are found in the setting files contained in each corresponding source package.  All the packages on FreeBSD and Linux use configure script to compile.</p>
+<p>By the way, at the SourceForge site, <b>mcpp</b> V.2.6.3 and later supplies some binary packages of compiler-independent-build.  These are the ones packaged after each packaging method, and their packaging specifications are found in the setting files contained in each corresponding source package.  All the packages on FreeBSD, Linux and Mac OS X use configure script to compile.</p>
 <p>Note:</p>
 <p>*1 In <b>mcpp</b> V.2.4 and V.2.5, the specification of the compiler-independent-build was a compromise with the compiler's specification.  From V.2.6 on, the specification is its own and independent from the compiler.</p>
 <p>*2 Even if you could compile <b>mcpp</b> on MS-DOS, you may run into shortage of memory on execution, since the memory is very scarce on MS-DOS.  You must largely cut down translation limits before compiling.  Refer 3.10.</p>
@@ -856,11 +856,12 @@ If the system has 'long long', define the length modifier for displaying the max
 <h3><a name="4.1.2" href="#toc.4.1.2">4.1.2. PART 2: Setting of Host system</a></h3>
 <p>In <samp>noconfig.H</samp> and <samp>configed.H</samp>, the target system is assumed to be the same as the host system.  If not, PART 2 needs to be rewritten.</p>
 <ul>
-<li><samp><i>HOST_HAVE_GETOPT</i>, <i>HOST_HAVE_STPCPY</i></samp><br>
-If the library of the host system has getopt() and stpcpy(), define each of them to <i>TRUE</i>.  If not, define to <i>FALSE</i>.  For the functions which are set to <i>FALSE</i>, those in <samp>lib.c</samp> are used.<br>
+<li><i>HOST_HAVE_STPCPY</i></samp><br>
+If the library of the host system has stpcpy(), define this to <i>TRUE</i>.  If not, define to <i>FALSE</i>.  If it is set to <i>FALSE</i>, stpcpy() in <samp>system.c</samp> is used.<br>
 <br>
-<li><samp><i>FILENAMEMAX</i></samp><br>
-The value of <tt>FILENAME_MAX</tt> in &lt;stdio.h&gt; of the host system.<br>
+<li><samp><i>PATHMAX</i></samp><br>
+The value of <tt>PATH_MAX</tt> defined in &lt;limits.h&gt; of the host system.
+If it is not available, <tt>FILENAME_MAX</tt> in &lt;stdio.h&gt; will be used.<br>
 </ul>
 <p>Also in PART 1, there are a few parts which assume the target is the same as the host.  Modify it, if required.  For example, the line using the predefined macro of the host compiler as:</p>
 <pre>
@@ -957,7 +958,7 @@ Defines the suffix of the object file, generated by the compiler, in a string li
 <br>
 <li><samp>do_options()</samp><br>
 The invocation options are implemented.  When port <b>mcpp</b> to compiler system to which <b>mcpp</b> hasn't been ported yet, you may need to add some lines to match the compiler driver of the system.  When you add to do_options(), you also need to add to set_opt_list() and usage() correspondingly.<br>
-do_options() calls getopt(), so you have to decide whether the option character is with or without arguments.  As a basic rule, the options like -P and -P- cannot be implemented simultaneously.  (If this is necessary for compatibility with the compiler system's resident preprocessor, this can be done.  Refer to the implementation of -M option.)  Also, for the longer options such as -trigraphs, you have to implement by 't' as an option character and 'rigraphs' as an argument.<br>
+do_options() calls mcpp_getopt(), which has the same specification with getopt() of POSIX, so you have to decide whether the option character is with or without arguments.  As a basic rule, the options like -P and -P- cannot be implemented simultaneously.  (If this is necessary for compatibility with the compiler system's resident preprocessor, this can be done.  Refer to the implementation of -M option.)  Also, for the longer options such as -trigraphs, you have to implement by 't' as an option character and 'rigraphs' as an argument.<br>
 <li><samp>set_opt_list()</samp><br>
 Sets option characters for do_options().<br>
 <li><samp>usage()</samp><br>
@@ -970,10 +971,7 @@ The processing of #pragma is implemented.  #pragma sub-directive, which <b>mcpp<
 <li><samp>do_old()</samp><br>
 If you require the preprocessing directives which don't conform to Standard C (the ones which are not #pragma sub-directives such as #assert, #asm, #endasm, #include_next, #warning, #put_defines, #debug), add the function which processes that and call from here. (However, for GCC, #include_next, #warning can also be used in <i>STD</i> mode).<br>
 </ul>
-<br>
-
-<h2><a name="4.3" href="#toc.4.3">4.3. lib.c</a></h2>
-<p>Source code for some library functions, which some compiler systems may not have or have a problem in using, are written here.  As each of them are enclosed with #if ! <i>HOST_HAVE_XYZ</i> -- #endif, this XYZ function is used when <i>HOST_HAVE_XYZ</i> == <i>FALSE</i>.</p>
+<p>Source code for getopt() and stpcpy() among non-Standard library functions are written here.  getopt() is renamed to mcpp_getopt() in order to prevent linking troubles.  The stpcpy() is used when <i>HOST_HAVE_STPCPY</i> == <i>FALSE</i>.</p>
 <br>
 
 <h2><a name="4.extra" href="#toc.4.extra">4.extra malloc()</a></h2>
@@ -1067,8 +1065,6 @@ To test C99 compatibility, check n_std99.t, e_std99.t with -V199901L option.</p>
 <li>Whether the preprocessor is separated or built-in in the compiler.<br>
 <li>The predefined macros of the compiler system and their values.  How it goes for C++.  (Distinguish between the macro passed from compiler driver by some options such as -D or the predefined macros of the preprocessor itself.)<br>
 <li>Is there the data type long long?  If there is long long, what is its length modifier for printf().  If there isn't long long, is there the same size type?<br>
-<li>If there is &lt;limits.h&gt;, the value of <tt>CHAR_BIT</tt>, <tt>UCHAR_MAX</tt>, <tt>LONG_MAX</tt>, <tt>ULONG_MAX</tt>.  If there isn't a &lt;limits.h&gt;, the value equivalents to these four.<br>
-<li>If there is <tt>FILENAME_MAX</tt> in &lt;stdio.h&gt;, its value.<br>
 <li>The argument of #pragma line is subject to the macro expansion?<br>
 <li>What kind of name should be used for the environment variables to specify the include directory.  What separator should be used for writing the multiple path in the environment variables.<br>
 <li>Include directory for standard use.  The rule when searching the header file by #include.<br>

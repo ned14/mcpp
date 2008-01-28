@@ -109,7 +109,7 @@ if test $host_system != SYS_MINGW; then
             cat > $shname.sh <<_EOF
 #!/bin/sh
 for i in \$@
-    do
+do
     case \$i in
         -fpreprocessed|-traditional*)
             $cpp_path/${cpp}_gnuc "\$@"
@@ -208,8 +208,6 @@ do
         do
             entity=$ref;
         done
-    fi
-    if test x$entity != x; then         # symbolic linked file dereferenced
         if test $entity = $cc.sh; then          # gcc.sh already installed
             exit 0
         fi
@@ -217,30 +215,43 @@ do
     ccache=`echo $entity | grep ccache`
     if test x$ccache != x; then
         ## CC (CXX) is a symbolic link to ccache
-        echo '#! /bin/sh' > $cc.sh
-        echo $entity $cc -no-integrated-cpp '"$@"' >> $cc.sh
-        chmod a+x $cc.sh
-        echo "  $LN_S $cc.sh $cc"
-        $LN_S -f $cc.sh $cc
-        continue
+        ## search the real $cc in $PATH
+        for path in `echo $PATH | sed 's/:/ /g'`
+        do
+            if test -f $path/$cc$EXEEXT && test $gcc_path != $path; then
+                break;
+            fi
+        done
+        gcc_path=$path
+        echo "  cd $gcc_path"
+        cd $gcc_path
+        entity=$cc
+        ref=$cc
+        while ref=`readlink $ref`
+        do
+            entity=$ref;
+        done
+        if test $entity = $cc.sh; then
+            exit 0
+        fi
     fi
     if test x$EXEEXT != x; then
         entity_base=`echo $entity | sed "s/$EXEEXT//"`
     else
         entity_base=$entity
     fi
-    if test ! $host_system = SYS_MINGW    \
+    if test $host_system != SYS_MINGW     \
             || test ! -f ${entity_base}_proper$EXEEXT; then
         echo "  mv $entity ${entity_base}_proper$EXEEXT"
         mv -f $entity ${entity_base}_proper$EXEEXT
     fi
     if test x"`echo $entity | grep '^/'`" = x; then     # not absolute path
-        path=$gcc_path/
+        prefix_dir=$gcc_path/
     else                                # absolute path
-        path=
+        prefix_dir=
     fi
     echo '#! /bin/sh' > $cc.sh
-    echo $path${entity_base}_proper -no-integrated-cpp '"$@"' >> $cc.sh
+    echo $prefix_dir${entity_base}_proper -no-integrated-cpp '"$@"' >> $cc.sh
     chmod a+x $cc.sh
     echo "  $LN_S $cc.sh $cc"
     $LN_S -f $cc.sh $cc

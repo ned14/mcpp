@@ -96,9 +96,6 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* Define to 1 if you have the `getopt' function. */
-#undef HAVE_GETOPT
-
 /* Define to 1 if the system has the type `intmax_t'. */
 #undef HAVE_INTMAX_T
 
@@ -116,9 +113,6 @@
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
-
-/* Define to 1 if you have the `stpcpy' function. */
-#undef HAVE_STPCPY
 
 /* Define to 1 if you have the <strings.h> header file. */
 #undef HAVE_STRINGS_H
@@ -149,9 +143,6 @@
 
 /* Define if '0x5c' in ISO2022-JP multi-byte character is safe. */
 #undef ISO2022_JP_IS_ESCAPE_FREE
-
-/* Define if the library is glibc. */
-#undef LIB_IS_GLIBC
 
 /* Define output format of line directive. */
 #undef LINE_PREFIX

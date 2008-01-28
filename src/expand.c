@@ -1562,8 +1562,8 @@ static char *   stringize(
     char *      out_p = out;
     int         token_type;
     int         num_arg_magic = 0;
-    int         nmagic;
     size_t      len;
+    size_t      arg_e_len = option_flags.v ? ARG_E_LEN_V : ARG_E_LEN;
     int         c;
 
     if (trace_macro) {
@@ -1582,28 +1582,25 @@ static char *   stringize(
     }
 
     file = unget_string( argp, NULL);
-    *out_p++ = '"';                         /* Starting quote       */
-
     len = strlen( infile->buffer);  /* Sequence ends with RT_END    */
     if (trace_macro) {          /* Remove suffixed argument closing magics  */
         /* There are 0 or more argument closing magic sequences and */
         /* 0 or more TOK_SEPs and no space at the end of argp.      */
         /* This is assured by get_an_arg().                         */
-        size_t      arg_e_len = option_flags.v ? ARG_E_LEN_V : ARG_E_LEN;
-        nmagic = num_arg_magic;
-        while (nmagic
-                && ((*(infile->buffer + len - arg_e_len - 1) == MAC_INF
-                        && *(infile->buffer + len - arg_e_len) == MAC_ARG_END)
-                    || *(infile->buffer + len - 2) == TOK_SEP)) {
+        int         nmagic = 0;
+        while (len > arg_e_len
+            && (((*(infile->buffer + len - arg_e_len - 1) == MAC_INF
+                    && *(infile->buffer + len - arg_e_len) == MAC_ARG_END)
+                || *(infile->buffer + len - 2) == TOK_SEP))) {
             if (*(infile->buffer + len - arg_e_len - 1) == MAC_INF
                     && *(infile->buffer + len - arg_e_len) == MAC_ARG_END) {
-                nmagic--;
                 if (option_flags.v) {
                     memcpy( arg_end_inf[ nmagic]
                             , infile->buffer + len - arg_e_len + 1
                             , arg_e_len - 2);
                     arg_end_inf[ nmagic][ arg_e_len - 2] = EOS;
                 }
+                nmagic++;
                 len -= arg_e_len;
                 *(infile->buffer + len - 1) = RT_END;
                 *(infile->buffer + len) = EOS;
@@ -1613,7 +1610,16 @@ static char *   stringize(
                 *(infile->buffer + len) = EOS;
             }
         }
+        if (nmagic != num_arg_magic) {  /* There are some imbalances    */
+            /* Some surrounding magics correspond to intervening ones.  */
+            /* So, unmatched surrounding magics should be removed.      */
+            if (num_arg_magic > nmagic) {
+                num_arg_magic = nmagic;     /* Ignore the surplus   */
+                out_p = out + ARG_S_LEN * num_arg_magic;
+            }   /* Else simply ignore the surplus nmagic    */
+        }
     }
+    *out_p++ = '"';                         /* Starting quote       */
 
     while ((c = get_ch()), ((mcpp_mode == POST_STD && file == infile)
             || (mcpp_mode == STD && c != RT_END))) {
@@ -1690,13 +1696,11 @@ static char *   stringize(
         unget_ch();
     *out_p++ = '"';                         /* Closing quote        */
     if (trace_macro) {
-        int     num = 0;
-        while (num < num_arg_magic) {
+        while (num_arg_magic--) {
             *out_p++ = MAC_INF;             /* Restore removed magic*/
             *out_p++ = MAC_ARG_END;
             if (option_flags.v)
-                out_p = stpcpy( out_p, arg_end_inf[ num]);
-            num++;
+                out_p = stpcpy( out_p, arg_end_inf[ num_arg_magic]);
         }
     }
     *out_p = EOS;

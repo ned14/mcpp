@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2007 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2008 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -470,7 +470,7 @@ static void     conv_case(
         c = *sp & UCHARMAX;
 #if MBCHAR
         if ((char_type[ c] & mbstart)) {
-            char    tmp[ FILENAMEMAX+1];
+            char    tmp[ PATHMAX+1];
             char *  tp = tmp;
             *tp++ = *sp++;
             mb_read( c, &sp, &tp);

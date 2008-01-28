@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2007 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2008 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -49,7 +49,10 @@
 
 /* Some system has a wrong definition of UCHAR_MAX.  See cpp-test.html#5.1.3 */
 #if     UCHARMAX < -255
-#error  "The definition of UCHARMAX (possibly UCHAR_MAX too) is wrong.  Define it as signed int value as 255, not as unsigned value as 255U."
+/* The definition of UCHARMAX (possibly UCHAR_MAX too) is wrong.    */
+/* Define it as a signed int value, not as an unsigned value.       */
+#undef  UCHARMAX
+#define UCHARMAX    ((1 << CHAR_BIT) - 1)
 #endif
 
 /*

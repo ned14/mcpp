@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2007 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2008 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -522,6 +522,10 @@ extern void     at_end( void);
                 /* Do the final commands        */
 extern void     print_heap( void);
                 /* Print blocks of heap memory  */
+#if ! HOST_HAVE_STPCPY
+extern char *   stpcpy( char * dest, const char * src);
+                /* Non-Standard library function*/
+#endif
 
 #if MCPP_LIB    /* Setting to use mcpp as a subroutine  */
 /* directive.c  */
@@ -539,7 +543,6 @@ extern void     init_eval( void);
 extern void     init_support( void);
 /* system.c */
 extern void     init_system( void);
-extern void     init_lib( void);
 
 #if HOST_COMPILER == GNUC && (SYS_FAMILY == SYS_UNIX && SYSTEM != SYS_CYGWIN)
 #pragma GCC visibility pop

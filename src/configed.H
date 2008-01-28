@@ -8,7 +8,7 @@
 
 #define     TRUE            1
 #define     FALSE           0
-#define     DATE            "2007/12"               /* Date of mcpp     */
+#define     DATE            "2008/01"               /* Date of mcpp     */
 
 /*
  *  'Target' means the O.S. and the compiler to which cpp is implemented.
@@ -303,7 +303,20 @@
  * ULONGMAX     should be defined to the ULONG_MAX in <limits.h>.
  */
 
+/* _POSIX_* only to get PATH_MAX    */
+#define _POSIX_             1
+#define _POSIX_SOURCE       1
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE     1
+#define _POSIX_C_SOURCE_defined     1
+#endif
 #include    "limits.h"
+#undef  _POSIX_
+#undef  _POSIX_SOURCE
+#ifdef  _POSIX_C_SOURCE_defined
+#undef  _POSIX_C_SOURCE
+#undef  _POSIX_C_SOURCE_defined
+#endif
 #define CHARBIT             CHAR_BIT
 #define UCHARMAX            UCHAR_MAX
 #define USHRTMAX            USHRT_MAX
@@ -344,8 +357,6 @@
  */
 
 #define HOST_HAVE_STPCPY        HAVE_STPCPY
-#define HOST_HAVE_GETOPT        HAVE_GETOPT
-#define HOST_LIB_IS_GLIBC       LIB_IS_GLIBC
 
 /*
  * Declaration of standard library functions and macros.
@@ -354,11 +365,11 @@
 /* stdin, stdout, stderr, FILE, NULL, fgets(), fputs() and other functions. */
 #include    "stdio.h"
 
-/* FILENAMEMAX should be defined to FILENAME_MAX of host system.    */
-#ifdef  FILENAME_MAX
-#define FILENAMEMAX     FILENAME_MAX
+/* PATHMAX is the maximum length of path-list on the host system.   */
+#ifdef  PATH_MAX
+#define PATHMAX     PATH_MAX        /* Posix macro  */
 #else
-#define FILENAMEMAX     BUFSIZ
+#define PATHMAX     FILENAME_MAX
 #endif
 
 /* islower(), isupper(), toupper(), isdigit(), isxdigit(), iscntrl()        */
@@ -371,15 +382,6 @@
 #include    "stdlib.h"
 #include    "time.h"
 #include    "setjmp.h"
-
-/* Functions other than standard.   */
-#if     ! HOST_HAVE_GETOPT || HOST_LIB_IS_GLIBC || HOST_SYSTEM == SYS_MINGW
-#define NEED_GETOPT     TRUE
-#else
-#define NEED_GETOPT     FALSE
-#endif
-
-extern char *   stpcpy( char * dest, const char * src);
 
 /* For debugging malloc systems by kmatsui  */
 #if     KMMALLOC && _MEM_DEBUG
