@@ -369,7 +369,11 @@ ifdo:
          */
             ;
         } else if (skip_ws() != '\n') {
+#if COMPILER == GNUC
+            if (standard && hash != L_endif)
+#else
             if (standard)
+#endif
                 cerror( excess, infile->bptr-1, 0L, NULL);
             else if (warn_level & 1)
                 cwarn( excess, infile->bptr-1, 0L, NULL);
@@ -1055,7 +1059,8 @@ static int  get_repl(
         }
     }
 
-    while (*(repl_cur - 1) == ' ' || *(repl_cur - 1) == '\t')
+    while (repl_base < repl_cur
+            && (*(repl_cur - 1) == ' ' || *(repl_cur - 1) == '\t'))
         repl_cur--;                     /* Remove trailing spaces   */
     *repl_cur = EOS;                        /* Terminate work       */
 

@@ -1,7 +1,8 @@
-# makefile to compile MCPP version 2.7 for Linux / GCC / GNU make
+# makefile to compile MCPP version 2.7 for Mac OS X / GCC / GNU make
 #       2008/01 kmatsui
 #
-# First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
+# First, you must edit NAME, GCCDIR, BINDIR, INCDIR, 
+#       gcc_maj_ver, gcc_min_ver, arch, target_cc.
 # To make compiler-independent-build of MCPP:
 #       make
 #       sudo make install
@@ -28,17 +29,28 @@
 
 # NAME: name of mcpp executable
 NAME = mcpp
+#NAME = powerpc-apple-darwin9-mcpp
+#NAME = i686-apple-darwin9-mcpp
 
-# CC:   name of gcc executable
-#       e.g. cc, gcc, gcc-2.95.3, i686-pc-linux-gnu-gcc-4.1.1
+# CC, CXX:  name of gcc, g++ executable
+# CC:   default, GCC-specific-build
+# $(arch)-apple-darwin?-gcc-VERSION:
+#       cross-compile of compiler-independent-build
 CC = gcc
+#CC = powerpc-apple-darwin9-gcc-4.0.1
+#CC = i686-apple-darwin9-gcc-4.0.1
 CXX = g++
-CFLAGS = -c -O2 -Wall   # -ggdb -v
+#CXX = powerpc-apple-darwin9-g++-4.0.1
+#CXX = i686-apple-darwin9-g++-4.0.1
+CFLAGS = -c -Wall -O2   # -ggdb -O0 -v
 #CFLAGS += -fstack-protector     # for gcc 4.1 or later
 CPPFLAGS =
 
 LINKFLAGS = -o $(NAME)
 #LINKFLAGS += -fstack-protector  # for gcc 4.1 or later
+
+# for universal binary of MacOS 10.4 and 10.5, x86 and ppc
+#UFLAGS = -isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -arch i386 -arch ppc
 
 ifeq    ($(COMPILER), )
 # compiler-independent-build
@@ -56,28 +68,26 @@ ifeq    ($(COMPILER), GNUC)
 GCCDIR = /usr/bin
 #GCCDIR = /usr/local/bin
 # set GCC version
-gcc_maj_ver = 3
-gcc_min_ver = 3
+gcc_maj_ver = 4
+gcc_min_ver = 0
 # INCDIR:   GCC's version specific include directory
-#INCDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include
-#INCDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2/include
-# Vine 4.1
-INCDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6/include
-#INCDIR = /usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include
-# Debian 4.0
-#INCDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2/include
+# Mac OS X Leopard
+INCDIR = /usr/lib/gcc/i686-apple-darwin9/4.0.1/include
+#INCDIR = /usr/lib/gcc/powerpc-apple-darwin9/4.0.1/include
 CPPOPTS = -DCOMPILER=$(COMPILER)
 
-#BINDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3
-#BINDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2
-# Vine 4.1
-BINDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6
-#BINDIR = /usr/local/libexec/gcc/i686-pc-linux-gnu/4.1.1
-# Debian 4.0
-#BINDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2
-target = i386-vine-linux
-#target = i686-pc-linux-gnu
-#target = i486-linux-gnu
+# BINDIR:   Where mcpp should be installed
+# Mac OS X Leopard
+BINDIR = /usr/libexec/gcc/i686-apple-darwin9/4.0.1
+#BINDIR = /usr/libexec/gcc/powerpc-apple-darwin9/4.0.1
+# target_cc: the compiler into which mcpp is installed
+# gcc: default
+# $(arch)-apple-darwin?-gcc-VERSION: target is the cross-compiler
+target_cc = gcc
+#target_cc = powerpc-apple-darwin9-gcc-4.0.1
+#target_cc = i686-apple-darwin9-gcc-4.0.1
+arch = i386
+#arch = ppc
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0
 else
@@ -100,7 +110,7 @@ OBJS = main.o directive.o eval.o expand.o support.o system.o mbchar.o
 
 all	:	$(NAME)
 $(NAME): $(OBJS)
-	$(CC) $(OBJS) $(LINKFLAGS)
+	$(CC) $(UFLAGS) $(OBJS) $(LINKFLAGS)
 
 PREPROCESSED = 0
 
@@ -126,13 +136,14 @@ main.o directive.o eval.o expand.o support.o system.o mbchar.o:   \
 endif
 
 .c.o	:
-	$(CC) $(CFLAGS) $(CMACRO) $(CPPFLAGS) $<
+	$(CC) $(CFLAGS) $(UFLAGS) $(CMACRO) $(CPPFLAGS) $<
 
 install :
 	install -s $(NAME) $(BINDIR)/$(NAME)
 ifeq    ($(COMPILER), GNUC)
-	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
-            '$(cpp_call)' '$(CC)' '$(CXX)' 'x' 'ln -s' '$(INCDIR)' SYS_LINUX
+	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
+            '$(cpp_call)' '$(CC)' '$(CXX)' 'x' 'ln -s' '$(INCDIR)' \
+            SYS_MAC $(arch) $(target_cc)
 endif
 
 clean	:
@@ -141,8 +152,9 @@ clean	:
 uninstall:
 	rm -f $(BINDIR)/$(NAME)
 ifeq    ($(COMPILER), GNUC)
-	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'  \
-            '$(cpp_call)' '$(CC)' '$(CXX)' 'x' 'ln -s' '$(INCDIR)' SYS_LINUX
+	@./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'  \
+            '$(cpp_call)' '$(CC)' '$(CXX)' 'x' 'ln -s' '$(INCDIR)' SYS_MAC  \
+            $(target_cc)
 endif
 
 ifeq    ($(COMPILER), )
@@ -157,29 +169,30 @@ mcpplib_a:	$(OBJS)
 	ar -rv libmcpp.a $(OBJS)
 
 # shared library
-# mcpp 2.6.*: 0, mcpp 2.7: 1
+# mcpp 2.7: 1
 CUR = 1
-# mcpp 2.6.3: 0, mcpp 2.6.4: 1, mcpp 2.7: 0
+# mcpp 2.7: 0
 REV = 0
-# mcpp 2.6.*: 0, mcpp 2.7: 1
+# mcpp 2.7: 1
 AGE = 1
 SHLIB_VER = 0.$(CUR).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
+
 .SUFFIXES: .so
 .c.so	:
-	$(CC) $(CFLAGS) $(MEM_MACRO) -c -fpic -o $*.so $*.c
+	$(CC) $(CFLAGS) $(UFLAGS) $(MEM_MACRO) -c -fno-common -o $*.so $*.c
 mcpplib_so: $(SOBJS)
-	$(CC) -shared -o libmcpp.so.$(SHLIB_VER) $(SOBJS) # -fstack-protector
-	chmod a+x libmcpp.so.$(SHLIB_VER)
+	$(CC) $(UFLAGS) -dynamiclib -o libmcpp.$(SHLIB_VER).dylib $(SOBJS)
+	chmod a+x libmcpp.$(SHLIB_VER).dylib
 
 mcpplib_install:
-	cp libmcpp.a libmcpp.so.$(SHLIB_VER) $(LIBDIR)
+	cp libmcpp.a libmcpp.$(SHLIB_VER).dylib $(LIBDIR)
 	ranlib $(LIBDIR)/libmcpp.a
-	ln -sf libmcpp.so.$(SHLIB_VER) $(LIBDIR)/libmcpp.so
-	ln -sf libmcpp.so.$(SHLIB_VER) $(LIBDIR)/libmcpp.so.$(CUR)
+	ln -sf libmcpp.$(SHLIB_VER).dylib $(LIBDIR)/libmcpp.dylib
+	ln -sf libmcpp.$(SHLIB_VER).dylib $(LIBDIR)/libmcpp.0.dylib
     # You should do 'ldconfig' as a root after install.
 mcpplib_uninstall:
-	rm -f $(LIBDIR)/libmcpp.a $(LIBDIR)/libmcpp.so.$(SHLIB_VER) $(LIBDIR)/libmcpp.so.$(CUR) $(LIBDIR)/libmcpp.so 
+	rm -f $(LIBDIR)/libmcpp.a $(LIBDIR)/libmcpp.$(SHLIB_VER).dylib $(LIBDIR)/libmcpp.0.dylib $(LIBDIR)/libmcpp.dylib
 
 # use mcpp as a subroutine from testmain.c
 NAME = testmain
@@ -193,7 +206,7 @@ ifeq	($(MALLOC), KMMALLOC)
 endif
 #LINKFLAGS += -fstack-protector
 $(NAME)	:	$(NAME).o
-	$(CC) $(LINKFLAGS)
+	$(CC) $(UFLAGS) $(LINKFLAGS)
 $(NAME)_install	:
 	install -s $(NAME) $(BINDIR)/$(NAME)
 $(NAME)_uninstall	:

@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.6.3 and later for LCC-Win32 / LCC make
-#       2007/09 kmatsui
+# makefile to compile MCPP version 2.7 and later for LCC-Win32 / LCC make
+#       2008/01 kmatsui
 # You must first edit BINDIR according to your system.
 # To compile MCPP do:
 #       make
@@ -36,7 +36,7 @@ MEMLIB =
 MEM_MACRO =
 
 OBJS = main.obj directive.obj eval.obj expand.obj support.obj system.obj  \
-	mbchar.obj lib.obj
+	mbchar.obj
 
 $(NAME) : $(OBJS)
 	lcclnk $(LINKFLAGS) *.obj $(MEMLIB)

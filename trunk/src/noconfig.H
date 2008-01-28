@@ -521,10 +521,8 @@
 #define HAVE_INTTYPES_H             TRUE
 #endif
 #define HOST_HAVE_LONG_LONG         TRUE 
-#define HOST_HAVE_GETOPT            TRUE
 #if     HOST_SYSTEM == SYS_LINUX
 #define HOST_HAVE_STPCPY            TRUE
-#define HOST_LIB_IS_GLIBC           TRUE
 #endif
 #if     HOST_SYSTEM == SYS_MAC
 #define HOST_HAVE_STPCPY            TRUE
@@ -579,12 +577,6 @@
 #ifndef HOST_HAVE_STPCPY
 #define HOST_HAVE_STPCPY            FALSE
 #endif
-#ifndef HOST_HAVE_GETOPT
-#define HOST_HAVE_GETOPT            FALSE
-#endif
-#ifndef HOST_LIB_IS_GLIBC
-#define HOST_LIB_IS_GLIBC           FALSE
-#endif
 
 /*
  * Declaration of standard library functions and macros.
@@ -593,11 +585,25 @@
 /* stdin, stdout, stderr, FILE, NULL, fgets(), fputs() and other functions. */
 #include    "stdio.h"
 
-/* FILENAMEMAX should be defined to FILENAME_MAX of host system.    */
-#ifdef  FILENAME_MAX
-#define FILENAMEMAX     FILENAME_MAX
+/* PATHMAX is the maximum length of path-list on the host system.   */
+/* _POSIX_* only to get PATH_MAX    */
+#define _POSIX_             1
+#define _POSIX_SOURCE       1
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE     1
+#define _POSIX_C_SOURCE_defined     1
+#endif
+#include    "limits.h"
+#undef  _POSIX_
+#undef  _POSIX_SOURCE
+#ifdef  _POSIX_C_SOURCE_defined
+#undef  _POSIX_C_SOURCE
+#undef  _POSIX_C_SOURCE_defined
+#endif
+#ifdef  PATH_MAX
+#define PATHMAX     PATH_MAX        /* Posix macro  */
 #else
-#define FILENAMEMAX     BUFSIZ
+#define PATHMAX     FILENAME_MAX
 #endif
 
 /* islower(), isupper(), toupper(), isdigit(), isxdigit(), iscntrl()        */
@@ -610,14 +616,6 @@
 #include    "stdlib.h"
 #include    "time.h"
 #include    "setjmp.h"
-
-#if     ! HOST_HAVE_GETOPT || HOST_LIB_IS_GLIBC || HOST_SYSTEM == SYS_MINGW
-#define NEED_GETOPT     TRUE
-#else
-#define NEED_GETOPT     FALSE
-#endif
-
-extern char *   stpcpy( char * dest, const char * src);
 
 /* For debugging malloc systems by kmatsui  */
 #if     KMMALLOC && _MEM_DEBUG

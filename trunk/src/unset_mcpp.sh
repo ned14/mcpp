@@ -64,22 +64,32 @@ do
     if test $host_system != SYS_MINGW; then
         ref=`readlink $cc`
     fi
-    if test x$ref = x$cc.sh || test $host_system = SYS_MINGW; then
-        ccache=`grep ccache $cc.sh | sed "s/ .*$//"`
-        if test x$ccache != x; then
-            rm $cc.sh
-            echo "  $LN_S $ccache $cc"
-            $LN_S -f $ccache $cc
-        else
-            entity=`grep $gcc_path $cc.sh | sed "s,$gcc_path/,," | sed "s/_proper.*$//"`
-            rm -f $entity
-            echo "  mv ${entity}_proper$EXEEXT $entity$EXEEXT"
-            mv -f ${entity}_proper$EXEEXT $entity$EXEEXT
-            if test $entity != $cc; then
-                echo "  $LN_S $entity $cc"
-                $LN_S -f $entity $cc
+    if test x$ref = x; then
+        ref=$cc
+    fi
+    ccache=`grep ccache $ref`
+    if test x$ccache != x; then
+        ## search the real $cc in $PATH
+        for path in `echo $PATH | sed 's/:/ /g'`
+        do
+            if test -f $path/$cc$EXEEXT && test $gcc_path != $path; then
+                break;
             fi
-            rm -f $cc.sh
+        done
+        gcc_path=$path
+        echo "  cd $gcc_path"
+        cd $gcc_path
+        ref=`readlink $cc`
+    fi
+    if test x$ref = x$cc.sh || test $host_system = SYS_MINGW; then
+        entity=`grep $gcc_path $cc.sh | sed "s,$gcc_path/,," | sed "s/_proper.*$//"`
+        rm -f $entity
+        echo "  mv ${entity}_proper$EXEEXT $entity$EXEEXT"
+        mv -f ${entity}_proper$EXEEXT $entity$EXEEXT
+        if test $entity != $cc; then
+            echo "  $LN_S $entity $cc"
+            $LN_S -f $entity $cc
         fi
+        rm -f $cc.sh
     fi
 done

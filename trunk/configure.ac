@@ -1,4 +1,4 @@
-dnl configure.ac for MCPP   2003/11, 2007/12  kmatsui
+dnl configure.ac for MCPP   2003/11, 2008/01  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
@@ -134,7 +134,7 @@ x86_64|amd64)
 powerpc64|ppc64)
     Target_Cpu=ppc64
     ;;
-powerpc|ppc)
+powerpc|ppc|ppc7400)
     Target_Cpu=ppc
     ;;
 *)
@@ -171,10 +171,6 @@ AC_CHECK_HEADERS( [unistd.h, stdint.h, inttypes.h])
 dnl Checks for typedefs, and compiler characteristics.
 
 AC_CHECK_TYPES( [intmax_t, long long])
-
-dnl Check for library functions.
-
-AC_CHECK_FUNCS( [getopt stpcpy])
 
 dnl Checks for some system characteristics.
 
@@ -213,6 +209,8 @@ dnl Check printf length modifier of the longest integer.
 
 # AC_CHECK_MOD_LL( modifier, additional include header)
 # Try the printf length modifier for the longest integer.
+# The redundant sscanf() is for some compilers which cannot handle
+# long long integer token.
 AC_DEFUN([AC_CHECK_MOD_LL], [
     AC_CACHE_CHECK( [printf length modifier for the longest integer],
         [ac_cv_c_printf_modifier],
@@ -224,7 +222,8 @@ AC_DEFUN([AC_CHECK_MOD_LL], [
 $3
 int main( void)
 {   char    buf@<:@ 20@:>@;
-    $1  num = 1234567890123456789;
+    $1  num;
+    sscanf( "1234567890123456789", "%$2d", &num);
     sprintf( buf, "%$2d", num);
     assert( strcmp( buf, "1234567890123456789") == 0);
     exit( 0);
@@ -290,21 +289,6 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     AC_DEFINE_UNQUOTED( [GCC_MINOR_VERSION], "$gcc_min_ver",
         [Define gcc minor version.])
 
-    AC_CACHE_CHECK( if the library is glibc,
-        gcc_cv_glibc,
-        [AC_PREPROC_IFELSE( [
-#include <features.h>
-#if ! (defined __GLIBC__ || defined __GNU_LIBRARY)
-#error Not glibc
-#endif],
-            [gcc_cv_glibc=yes],
-            [gcc_cv_glibc=no]
-        )]
-    )
-    if test x$gcc_cv_glibc = xyes; then
-        AC_DEFINE( [LIB_IS_GLIBC], 1, [Define if the library is glibc.])
-    fi
-
     if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN; then
         AC_CACHE_CHECK( the root directory,
             ac_cv_cygwin_root,
@@ -321,9 +305,10 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
             cat > getcwd.c <<\_EOF
 #include <stdio.h>
 #include <unistd.h>
+#include <limits.h>
 int main( int argc, char ** argv)
-{   char    buf@<:@ FILENAME_MAX@:>@;
-    getcwd( buf, FILENAME_MAX);
+{   char    buf@<:@ PATH_MAX@:>@;
+    getcwd( buf, PATH_MAX);
     puts( buf);
     return 0;
 }

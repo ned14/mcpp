@@ -268,7 +268,8 @@ universal binary をコンパイルするためのものです。MCPP の make でこれを使
 make オプションを組み合わせることで、compiler-independent-build, GCC-
 specific-build のどちらでも、native-compiler, cross-compiler のどちらで
 も生成することができます。例えば compiler-independent-build で Tiger 互
-換の i386 と ppc 用のものを作るにはこうします。
+換の i386 と ppc 用のものを作るにはこうします（実際には、'*' の中を \ で
+２行に分けることはできない）。
 
     ${mcpp-dir}/configure
     make CFLAGS+='-isysroot /Developer/SDKs/MacOSX10.4u.sdk     \

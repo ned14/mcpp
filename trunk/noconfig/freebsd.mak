@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7 for FreeBSD / GCC / UCB make
-#       2007/12 kmatsui
+#       2008/01 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -30,7 +30,7 @@
 # NAME: name of mcpp executable
 NAME ?= mcpp
 CC = gcc
-GPP = g++
+CXX = g++
 CFLAGS = -c -O2 -Wall   # -ggdb -v
 #CFLAGS += -fstack-protector        # for gcc 4.1 or later
 CPPFLAGS =
@@ -87,7 +87,7 @@ MALLOC =
     MEM_MACRO =
 .endif
 
-OBJS = main.o directive.o eval.o expand.o support.o system.o mbchar.o lib.o
+OBJS = main.o directive.o eval.o expand.o support.o system.o mbchar.o
 
 all :   $(NAME)
 $(NAME) : $(OBJS)
@@ -121,7 +121,7 @@ install :
 	install -s $(NAME) $(BINDIR)/$(NAME)
 .if ! empty(COMPILER) && $(COMPILER) == GNUC
 	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'    \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)' SYS_FREEBSD
+            '$(cpp_call)' '$(CC)' '$(CXX)' 'x' 'ln -s' '$(INCDIR)' SYS_FREEBSD
 .endif
 
 clean	:
@@ -131,7 +131,7 @@ uninstall:
 	rm -f $(BINDIR)/$(NAME)
 .if ! empty(COMPILER) && $(COMPILER) == GNUC
 	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
-            '$(cpp_call)' '$(CC)' '$(GPP)' 'x' 'ln -s' '$(INCDIR)'
+            '$(cpp_call)' '$(CC)' '$(CXX)' 'x' 'ln -s' '$(INCDIR)' SYS_FREEBSD
 .endif
 
 .if empty(COMPILER)
@@ -153,7 +153,7 @@ REV = 0
 # mcpp 2.6.*: 0, mcpp 2.7: 1
 AGE = 1
 SHLIB_VER = 0.$(CUR).$(REV)
-SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so lib.so
+SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 .SUFFIXES: .so
 .c.so   :
 	$(CC) $(CFLAGS) $(MEM_MACRO) -c -fpic -o $*.so $*.c

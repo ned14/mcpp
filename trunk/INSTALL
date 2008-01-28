@@ -124,7 +124,7 @@ This setting is different depending on GCC being V.2.* or V.3.*-4.*.
 generates GCC-version-dependent header files under 'mcpp-gcc*' directory
 in compiler-specific include directory.
 
-2.1.1.2. make check
+2.2.1.2. make check
 
 In the MCPP Validation Suite, there is an edition which can be used as
 testsuite of GCC.  If GCC / testsuite has been installed, 'make check'
@@ -305,7 +305,7 @@ above configure options and these make options, on either of compiler-
 independent-build or GCC-specific-build, and on either of native
 compiler or cross compiler.  This example shows the sequence to generate
 a universal binary of compiler-independent-build compatible with Tiger
-for i386 and ppc.
+for i386 and ppc.  (Actually, you must write the '*' in one line.)
 
     ${mcpp-dir}/configure
     make CFLAGS+='-isysroot /Developer/SDKs/MacOSX10.4u.sdk     \

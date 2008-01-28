@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2007/12/13  kmatsui
+2008/01/28      kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
@@ -50,15 +50,23 @@ ChangeLog of MCPP and its accompanying Validation Suite
         Changed FILEINFO and DEFBUF struct, moved sharp() from main.c to
         system.c, revised many functions.  (system.c, support.c, main.c,
         directive.c)
-        * Added porting to Mac OS X / GCC.  Enabled searching of
-        "framework" directories for #include.  Enabled #import, which is
-        #include with unconditional once only feature.  Implemented
-        -arch, -isysroot options.  Created init_framework(),
-        search_framework(), search_subdir().  (system.c, directive.c,
-        set_mcpp.sh, unset_mcpp.sh, configure.ac, src/Makefile.am)
+        * Absorbed lib.c into system.c.  Renamed getopt() to mcpp_getopt
+        (), also variables opt* to mcpp_opt*, and made static in order
+        to prevent linking of glibc getopt().  (thanks to Dwayne Boone)
+        * Changed FILENAME_MAX to PATH_MAX and FILENAMEMAX to PATHMAX,
+        because FILENAME_MAX of some systems are too short.  (thanks to
+        Dwayne Boone)
         * Bundled some variables into structs (std_limits, option_flags,
         etc.).  Tidied up the sources removing unused codes, rewriting
         old comments.  (most of the sources)
+        * Added porting to Mac OS X / Apple-GCC.  Enabled searching of
+        "framework" directories for #include.  Enabled to search "header
+        map" file.  Enabled #import, which is #include with
+        unconditional once only feature.  Implemented -F, -arch,
+        -isysroot options.  Created init_framework(), search_framework(),
+        search_subdir(), search_header_map(), hmap_hash().  (system.c,
+        directive.c, set_mcpp.sh, unset_mcpp.sh, configure.ac, src/
+        Makefile.am)
         * Added documentation on source checking of firefox 3.0pre.
         (mcpp-manual.html)
         * Updated some documents.  Some parts of the documents are not

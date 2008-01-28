@@ -18869,7 +18869,7 @@ x86_64|amd64)
 powerpc64|ppc64)
     Target_Cpu=ppc64
     ;;
-powerpc|ppc)
+powerpc|ppc|ppc7400)
     Target_Cpu=ppc
     ;;
 *)
@@ -19194,111 +19194,6 @@ fi
 
 
 
-
-
-for ac_func in getopt stpcpy
-do
-as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
-echo "$as_me:$LINENO: checking for $ac_func" >&5
-echo $ECHO_N "checking for $ac_func... $ECHO_C" >&6
-if eval "test \"\${$as_ac_var+set}\" = set"; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-/* Define $ac_func to an innocuous variant, in case <limits.h> declares $ac_func.
-   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
-#define $ac_func innocuous_$ac_func
-
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char $ac_func (); below.
-    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-    <limits.h> exists even on freestanding compilers.  */
-
-#ifdef __STDC__
-# include <limits.h>
-#else
-# include <assert.h>
-#endif
-
-#undef $ac_func
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char $ac_func ();
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined (__stub_$ac_func) || defined (__stub___$ac_func)
-choke me
-#else
-char (*f) () = $ac_func;
-#endif
-#ifdef __cplusplus
-}
-#endif
-
-int
-main ()
-{
-return f != $ac_func;
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"
-			 || test ! -s conftest.err'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; } &&
-	 { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  eval "$as_ac_var=yes"
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-eval "$as_ac_var=no"
-fi
-rm -f conftest.err conftest.$ac_objext \
-      conftest$ac_exeext conftest.$ac_ext
-fi
-echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_var'}'`" >&5
-echo "${ECHO_T}`eval echo '${'$as_ac_var'}'`" >&6
-if test `eval echo '${'$as_ac_var'}'` = yes; then
-  cat >>confdefs.h <<_ACEOF
-#define `echo "HAVE_$ac_func" | $as_tr_cpp` 1
-_ACEOF
-
-fi
-done
-
-
-
 echo "$as_me:$LINENO: checking if the cases of filename are folded" >&5
 echo $ECHO_N "checking if the cases of filename are folded... $ECHO_C" >&6
 if test "${ac_cv_fname_fold+set}" = set; then
@@ -19366,6 +19261,8 @@ _ACEOF
 
 # AC_CHECK_MOD_LL( modifier, additional include header)
 # Try the printf length modifier for the longest integer.
+# The redundant sscanf() is for some compilers which cannot handle
+# long long integer token.
 
 
 if test x$ac_cv_type_intmax_t = xyes; then
@@ -19395,7 +19292,8 @@ else
 #include <stdint.h>
 int main( void)
 {   char    buf[ 20];
-    intmax_t  num = 1234567890123456789;
+    intmax_t  num;
+    sscanf( "1234567890123456789", "%jd", &num);
     sprintf( buf, "%jd", num);
     assert( strcmp( buf, "1234567890123456789") == 0);
     exit( 0);
@@ -19461,7 +19359,8 @@ else
 
 int main( void)
 {   char    buf[ 20];
-    long long  num = 1234567890123456789;
+    long long  num;
+    sscanf( "1234567890123456789", "%${modifier}d", &num);
     sprintf( buf, "%${modifier}d", num);
     assert( strcmp( buf, "1234567890123456789") == 0);
     exit( 0);
@@ -19555,57 +19454,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-    echo "$as_me:$LINENO: checking if the library is glibc" >&5
-echo $ECHO_N "checking if the library is glibc... $ECHO_C" >&6
-if test "${gcc_cv_glibc+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  cat >conftest.$ac_ext <<_ACEOF
-
-#include <features.h>
-#if ! (defined __GLIBC__ || defined __GNU_LIBRARY)
-#error Not glibc
-#endif
-_ACEOF
-if { (eval echo "$as_me:$LINENO: \"$ac_cpp conftest.$ac_ext\"") >&5
-  (eval $ac_cpp conftest.$ac_ext) 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } >/dev/null; then
-  if test -s conftest.err; then
-    ac_cpp_err=$ac_c_preproc_warn_flag
-    ac_cpp_err=$ac_cpp_err$ac_c_werror_flag
-  else
-    ac_cpp_err=
-  fi
-else
-  ac_cpp_err=yes
-fi
-if test -z "$ac_cpp_err"; then
-  gcc_cv_glibc=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-  gcc_cv_glibc=no
-
-fi
-rm -f conftest.err conftest.$ac_ext
-
-fi
-echo "$as_me:$LINENO: result: $gcc_cv_glibc" >&5
-echo "${ECHO_T}$gcc_cv_glibc" >&6
-    if test x$gcc_cv_glibc = xyes; then
-
-cat >>confdefs.h <<\_ACEOF
-#define LIB_IS_GLIBC 1
-_ACEOF
-
-    fi
-
     if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN; then
         echo "$as_me:$LINENO: checking the root directory" >&5
 echo $ECHO_N "checking the root directory... $ECHO_C" >&6
@@ -19634,9 +19482,10 @@ else
             cat > getcwd.c <<\_EOF
 #include <stdio.h>
 #include <unistd.h>
+#include <limits.h>
 int main( int argc, char ** argv)
-{   char    buf[ FILENAME_MAX];
-    getcwd( buf, FILENAME_MAX);
+{   char    buf[ PATH_MAX];
+    getcwd( buf, PATH_MAX);
     puts( buf);
     return 0;
 }

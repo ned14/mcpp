@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2007/12)<br>
+<h4>for V.2.7 (2008/01)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -34,7 +34,8 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.2.8" href="#2.8">2.8. Multi-Byte Character Encodings</a>
 <dd><a name="toc.2.9" href="#2.9">2.9. How to Use <b>mcpp</b> in One-Pass Compilers</a>
 <dd><dl><dt><a name="toc.2.10" href="#2.10">2.10. How to Use <b>mcpp</b> in IDE</a>
-<dd><a name="toc.2.10.1" href="#2.10.1">2.10.1. How to Make <b>mcpp</b> available in Visual C++ IDE</a></dl>
+<dd><a name="toc.2.10.1" href="#2.10.1">2.10.1. How to Make <b>mcpp</b> available in Visual C++ IDE</a>
+<dd><a name="toc.2.10.2" href="#2.10.2">2.10.2. How to Make <b>mcpp</b> available in Mac OS X / Xcode.app</a></dl>
 <br>
 <dt><a name="toc.3" href="#3">3. Enhancement and Compatibility</a>
 <dd><dl><dt><a name="toc.3.1" href="#3.1">3.1. #pragma MCPP put_defines, #pragma MCPP preprocess and others</a>
@@ -573,15 +574,20 @@ Define the macros <tt>_NATIVE_WCHAR_T_DEFINED</tt> and  <tt>_WCHAR_T_DEFINED</tt
 Define the macro <tt>_VC_NODEFAULTLIB</tt> to 1.<br>
 </ul>
 
-<p><b>mcpp</b> on Mac OS X accepts the following options, on both of GCC-specific-build and compiler-independent-build.</p>
+<p><b>mcpp</b> on Mac OS X accepts the following option, on both of GCC-specific-build and compiler-independent-build.</p>
 <ul>
-<li><samp>-arch &lt;arch&gt;</samp><br>
-Change the target architecture of machine as &lt;arch&gt; from the default one.
-This causes changes of many predefined macros.
-&lt;arch&gt; should be one of <samp>i386, x86_64, ppc, ppc64</samp>.
 <li><samp>-F &lt;framework&gt;</samp><br>
 Put the &lt;framework&gt; directory to top of the framework directories to search.
 The standard framework directories are /System/Library/Frameworks and /Library/Frameworks by default.
+</ul>
+<p><b>mcpp</b> on Mac OS X accepts the following option on GCC-specific-build.</p>
+<ul>
+<li><samp>-arch &lt;arch&gt;</samp><br>
+Change the target architecture of machine as &lt;arch&gt; from the default one.
+This causes changes of some predefined macros.
+&lt;arch&gt; should be i386 or x86_64 on the preprocessor for x86, ppc or ppc64 on the one for ppc.
+(You can specify any of these 4 for <samp>gcc</samp> command.
+<samp>gcc</samp> command invokes the preprocessor for x86 on '<samp>-arch i386</samp>' or '<samp>-arch x86_64</samp>' options, and the one for ppc on '<samp>-arch ppc</samp>' or '<samp>-arch ppc64</samp>' options.)
 </ul>
 <p>The following options (until at the end of this 2.6 section) are available for the GCC-specific-build.  Note that since <tt>__STDC__</tt> is set to 1 for GCC, the result is same with or without the -S1 option.</p>
 <p>The followings are available across the modes.</p>
@@ -799,7 +805,8 @@ Refer to <a href="#3.9.9"> 3.9.9</a> for the problem.</p>
 
 <h2><a name="2.10" href="#toc.2.10">2.10. How to Use <b>mcpp</b> in IDE</a></h2>
 <p>It is difficult to use <b>mcpp</b> in Integrated Development Environment (IDE) because IDE's GUI follows compiler-system-specific specifications and internal interfaces are not usually made available to third parties.  Furthermore, one-pass compilers make it more difficult to insert a phase to use <b>mcpp</b>.</p>
-<p>This subsection describes how to make <b>mcpp</b> available in Visual C++ 2003, 2005 IDE.  Use the compiler-specific-build for Borland C and LCC-Win32 on command lines.</p>
+<p>This subsection describes how to make <b>mcpp</b> available in Windows / Visual C++ 2003, 2005 IDE.  Use the compiler-specific-build for Borland C and LCC-Win32 on command lines.</p>
+<p>Also, it is described here how to make <b>mcpp</b> available in Mac OS X / Xcode.app / Apple-GCC.</p>
 
 <h3><a name="2.10.1" href="#toc.2.10.1">2.10.1. How to Make <b>mcpp</b> Available in Visual C++ IDE</a></h3>
 <p><b>mcpp</b> cannot be used in a normal "project" since the internal specifications of Visual C++'s IDE are not made available to third parties and the compiler is a one-pass compiler.  However, once a makefile that uses <b>mcpp</b> is created, Visual C++'s IDE can recognize the makefile and you can create a "makefile project" using that file.  This allows you to utilize most of the IDE functions, including source editing, search, and source level debugging.</p>
@@ -839,6 +846,35 @@ devenv &lt;Project File&gt; /useenv
 <p>On VC 2005 express edition:</p>
 <pre>
 vcexpress &lt;Project File&gt; /useenv
+</pre>
+
+<h3><a name="2.10.2" href="#toc.2.10.2">2.10.2. How to Make <b>mcpp</b> available in Mac OS X / Xcode.app</a></h3>
+<p>You can use Xcode.app, which is an IDE on Mac OS X, with <b>mcpp</b> without problems.</p>
+<p>Xcode.app uses gcc (g++) in /Developer/usr/bin rather than /usr/bin for some reason.
+(/Developer is the default install directory for Xcode.)
+To use <b>mcpp</b> in Xcode.app, you must install GCC-specific-build for the gcc (g++) in that directory.
+You should do as follows to install it.
+(${mcpp_dir} means the directory where the source of <b>mcpp</b> is placed.)</p>
+<pre>
+export PATH=/Developer/usr/bin:$PATH
+configure ${mcpp_dir}/configure --enable-replace-cpp
+make
+sudo make install
+</pre>
+<p>The installation method is the same with that for gcc in /usr/bin, except PATH setting.
+So, please refer to INSTALL for installation to cross-compiler or installation of universal binary.</p>
+<p>After installing <b>mcpp</b> in such a way, you can use Xcode.app without any special setting for <b>mcpp</b>.
+Also the Apple-GCC-specific *.hmap files, which are "header map" files generated by Xcode.app, are read and processed by <b>mcpp</b>.
+However, <b>mcpp</b> does not process precompiled-header.
+It processes '<samp>#include "header.pch"</samp>' as an ordinary #include.
+Also, <b>mcpp</b> does not preprocess Objective-C and Objective-C++, so *.m and *.mm source files are directly handed on to cc1obj and cc1objplus, bypassing <b>mcpp</b>.</p>
+<p>When you use <b>mcpp</b>-specific options, specify them as follows:<br>
+From screen top menu bar of Xcode.app, select "Project" > "Edit Project Settings".
+The "project editor" window will appear.
+Then, select "Build" pane of it, and edit "Other C flags" item.
+The options should be specified following '-Wp,' and separated by commas, for example:</p>
+<pre>
+-Wp,-23,-W3
 </pre>
 <br>
 
@@ -2995,10 +3031,13 @@ In V.2.6.4, it changed the behavior.</p>
 <table>
   <tr><th>FreeBSD 6.2        </th><td>GCC V.3.4</td></tr>
   <tr><th>VineLinux 4.1-x86  </th><td>GCC V.2.95, V.3.2, V.3.3, V.3.4, V.4.1</td></tr>
+  <tr><th>Debian GNU/Linux 4.0-x86  </th><td>GCC V.4.1</td></tr>
+  <tr><th>Fedora 8-x86       </th><td>GCC V.4.1</td></tr>
+  <tr><th>Mac OS X Leopard-x86      </th><td>GCC V.4.0</td></tr>
   <tr><th>CygWIN             </th><td>1.3.10 (GCC V.2.95), 1.5.18 (GCC 3.4)</td></tr>
   <tr><th>MinGW &amp; MSYS       </th><td>GCC 3.4</td></tr>
   <tr><th>WIN32              </th><td>LCC-Win32 2003-08, 2006-03</td></tr>
-  <tr><th>WIN32              </th><td>Visual C++ 2002, 2003, 2005</td></tr>
+  <tr><th>WIN32              </th><td>Visual C++ 2003, 2005</td></tr>
   <tr><th>WIN32              </th><td>Borland C++ V.4.0, V.5.5</td></tr>
 </table>
 </blockquote>
@@ -3028,8 +3067,8 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
 <p><i>MBCHAR</i> (Default encoding of multibyte character):</p>
 <blockquote>
 <table>
-  <tr><th>Linux, FreeBSD      </th><td>EUC-JP</td></tr>
-  <tr><th>WIN32, CygWIN, MinGW</th><td>SJIS</td></tr>
+  <tr><th>Linux, FreeBSD, Mac OS X  </th><td>EUC-JP</td></tr>
+  <tr><th>WIN32, CygWIN, MinGW      </th><td>SJIS</td></tr>
 </table>
 </blockquote>
 <p>The settings of the macros below are different among compiler systems.</p>
@@ -3064,9 +3103,11 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
 <p>System-specific or site-specific directories under UNIX-like OSs are as follows (common to compiler-independent-build and compiler-specific-build):</p>
 <blockquote>
 <table>
-  <tr><th>FreeBSD, Linux, CygWIN</th><td>/usr/include,  /usr/local/include</td></tr>
+  <tr><th>FreeBSD, Linux, Mac OS X, CygWIN</th><td>/usr/include,  /usr/local/include</td></tr>
 </table>
 </blockquote>
+<p>Mac OS X has also the framework directories set to /System/Library/Frameworks and /Library/Frameworks by default.</p>
+<p>On MinGW, /mingw/include is the default include directory.</p>
 <p>CygWIN GCC-specific-build changes /usr/include to /usr/include/mingw by -mno-cygwin option.</p>
 <p>For the implementation-specific directories that vary among compiler systems and their versions, see the DIFfiles.  The compiler-independent-build does not set implementation-specific directories.  <b>mcpp</b> for the compiler systems on Windows does not preset any directory but uses the environment variables: INCLUDE, CPLUS_INCLUDE.  These environment variables are used by the compiler-independent-build too.</p>
 <p>If these default settings do not suit you, change settings to recompile <b>mcpp</b>, or use environment variables or the -I option.</p>
@@ -3183,7 +3224,7 @@ Runs short of memory.  <b>mcpp</b> tried to obtain memory of 0x1234 bytes from t
 <h3><a name="5.3.3" href="#toc.5.3.3">5.3.3. Translation Limits and Internal Buffer Errors</a></h3>
 <ul>
 <li><samp>Too long header name "long-file-name"</samp><br>
-The length of the full path name of a file to include (file name concatenated with the specified directory path) has exceeded <i>FILENAMEMAX</i>.<br>
+The length of the full path name of a file to include (file name concatenated with the specified directory path) has exceeded <i>PATHMAX</i>.<br>
 <br>
 <li><samp>Too long source line</samp><br>
 The length of a physical line in source file has exceeded <i>NBUFF</i>-2.  The source code may not be written in C.<br>
