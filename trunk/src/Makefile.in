@@ -631,8 +631,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-cc1PROGRAMS \
 @GNUC_TRUE@@REPLACE_CPP_TRUE@install-exec-hook:
 @GNUC_TRUE@@REPLACE_CPP_TRUE@	@if test x"$(gcc_path)" = x""; then	exit 1; fi
 @GNUC_TRUE@@REPLACE_CPP_TRUE@	@$(srcdir)/set_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver)  \
-@GNUC_TRUE@@REPLACE_CPP_TRUE@            '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)'       \
-@GNUC_TRUE@@REPLACE_CPP_TRUE@            '$(inc_dir)' $(host_system) $(Target_Cpu) $(target_cc)
+@GNUC_TRUE@@REPLACE_CPP_TRUE@            '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x$(EXEEXT)'  \
+@GNUC_TRUE@@REPLACE_CPP_TRUE@			'$(LN_S)' '$(inc_dir)' $(host_system) $(Target_Cpu) $(target_cc)
 @GNUC_TRUE@@REPLACE_CPP_TRUE@uninstall-hook:
 @GNUC_TRUE@@REPLACE_CPP_TRUE@	@$(srcdir)/unset_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver)\
 @GNUC_TRUE@@REPLACE_CPP_TRUE@             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)'      \

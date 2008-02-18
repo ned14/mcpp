@@ -1,4 +1,4 @@
-dnl configure.ac for MCPP   2003/11, 2008/01  kmatsui
+dnl configure.ac for MCPP   2003/11, 2008/02  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
@@ -597,17 +597,22 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     bindir=`expr $cpp_call : "\(.*\)/$cpp_name"`
     AC_MSG_RESULT( $bindir)
 
+    if test "x$prefix" = xNONE; then
+        prefix=$ac_default_prefix
+    fi
     lang_save=$LANG
     export LANG=C
 
     AC_MSG_CHECKING( for the compiler-specific C include directory)
-    c_include_dirs=`$CPP $CFLAGS $arch_opt -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | $EGREP -v '^/usr(/local|)/include$|/Frameworks|End of search list'`
+    exclude="^/usr(/local|)/include\$|^${prefix}(/local|)/include\$|/Frameworks|End of search list"
+    c_include_dirs=`$CPP $CFLAGS $arch_opt -xc -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed 's/^ *//' | $EGREP -v "$exclude"`
     n=1
     for dir in $c_include_dirs
     do
         case $n in
         1)  c_include_dir1=$dir;;
         2)  c_include_dir2=$dir;;
+        3)  c_include_dir3=$dir;;
         esac
         let n=n+1
     done
@@ -623,12 +628,18 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
             [Define compiler-specific C include directory 2.])
         AC_MSG_RESULT( $c_include_dir2)
     fi
+    if test x${c_include_dir3+set} = xset; then
+        AC_DEFINE_UNQUOTED( [C_INCLUDE_DIR3], "$c_include_dir3",
+            [Define compiler-specific C include directory 3.])
+        AC_MSG_RESULT( $c_include_dir3)
+    fi
 
     AC_PROG_CXX
     AC_PROG_CXXCPP
     AC_LANG_PUSH( C++)
     AC_MSG_CHECKING( for the compiler-specific C++ include directory)
-    cxx_include_dirs=`${CXXCPP} ${CXXFLAGS} $arch_opt -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | $EGREP -v "^/usr(/local|)/include\$|/Frameworks|^${c_include_dir1}\$|^${c_include_dir2}\$"`
+    exclude="^/usr(/local|)/include\$|^${prefix}(/local|)/include\$|/Frameworks|^${c_include_dir1}\$|^${c_include_dir2}\$|^${c_include_dir3}\$"
+    cxx_include_dirs=`${CXXCPP} ${CXXFLAGS} $arch_opt -xc++ -v /dev/null 2>&1 | sed '1,/<...> search starts here/d' | sed '/End of search list/q' | sed '/End of search list/d' | sed 's/^ *//' | $EGREP -v "$exclude"`
     n=1
     for dir in ${cxx_include_dirs}
     do
@@ -672,13 +683,13 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
         if test x${c_include_dir1+set} = xset; then
             inc_dir=$c_include_dir1
         else
-            test "x$prefix" = xNONE && prefix=$ac_default_prefix
             inc_dir="$prefix"/include
         fi
     fi
     AC_DEFINE_UNQUOTED( [INC_DIR], "$inc_dir",
         [Define include directory to install mcpp_g*.h header files.])
 
+    AC_SUBST( [CPPFLAGS])
     AC_SUBST( [host_system])
     AC_SUBST( [Target_Cpu])
     AC_SUBST( [inc_dir])

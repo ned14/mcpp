@@ -20,5 +20,5 @@
     /* No argument to correspond __VA_ARGS__    */
     #define debug( ...) fprintf( stderr, __VA_ARGS__)
     debug();
-/* { dg-error "(E|e)mpty argument" "" { target *-*-* } 22 } */
+/* { dg-error "Empty argument" "" { target *-*-* } 22 } */
 

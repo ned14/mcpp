@@ -69,6 +69,9 @@
 /* Define compiler-specific C include directory 2. */
 #undef C_INCLUDE_DIR2
 
+/* Define compiler-specific C include directory 3. */
+#undef C_INCLUDE_DIR3
+
 /* Define if the argument of pragma is macro expanded. */
 #undef EXPAND_PRAGMA
 

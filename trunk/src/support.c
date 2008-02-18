@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1998, 2002-2007 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
+ * Copyright (c) 1998, 2002-2008 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
  * All rights reserved.
  *
  * Some parts of this code are derived from the public domain software
@@ -1608,8 +1608,12 @@ int     get_ch( void)
 #endif
         include_nest--;
         src_line++;                         /* Next line to #include*/
-        sharp( NULL, (infile->include_opt || file->include_opt) ? 1 : 2);
+        sharp( NULL, infile->include_opt ? 1 : (file->include_opt ? 0 : 2));
             /* Need a #line now.  Marker depends on include_opt.    */
+            /* The file of include_opt should be marked as 1.       */
+            /* Else if returned from include_opt file, it is the    */
+            /* main input file, and should not be marked.           */
+            /* Else, it is normal includer file, and marked as 2.   */
         src_line--;
         newlines = 0;                       /* Clear the blank lines*/
         if (mcpp_debug & MACRO_CALL)    /* Should be re-initialized */
@@ -1757,21 +1761,6 @@ not_comment:
             }
             sp = infile->bptr;
             break;
-#if SYSTEM == SYS_MAC && COMPILER == GNUC
-        case '\\':
-            if (*sp == '*' && mcpp_mode != POST_STD) {   
-                /* Some system headers in MAC have illogical "comment"      */
-                /* starting with '\\''*' and ending with '*''/'.    */
-                /* This is a bug-to-bug implementation.             */
-                /* '\\''*' sequence does not exist in C/C++ other   */
-                /* than in string literal.                          */
-                if (warn_level & 1)
-                    cwarn( "Parsed '\\''*' sequence as start of a comment"
-                            , NULL, 0L, NULL);
-                sp++;
-                goto  com_start;
-            }   /* Else fall through    */
-#endif
         default:
             if (iscntrl( c)) {
                 cerror(             /* Skip the control character   */
