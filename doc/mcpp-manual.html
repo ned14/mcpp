@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2008/01)<br>
+<h4>for V.2.7 (2008/02)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -71,7 +71,8 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 <dd><a name="toc.3.9.7" href="#3.9.7">3.9.7. To Use <b>mcpp</b> with GCC 3 or 4</a>
 <dd><a name="toc.3.9.8" href="#3.9.8">3.9.8. Preprocessing Linux/glibc 2.4</a>
 <dd><a name="toc.3.9.9" href="#3.9.9">3.9.9. The Problems of Linux / stddef.h, limits.h and #include_next</a>
-<dd><a name="toc.3.9.10" href="#3.9.10">3.9.10. Preprocessing firefox 3.0a8pre</a></dl>
+<dd><a name="toc.3.9.10" href="#3.9.10">3.9.10. Problems of Mac OS X / Apple-GCC and its System Headers</a>
+<dd><a name="toc.3.9.11" href="#3.9.11">3.9.11. Preprocessing firefox 3.0b3pre</a></dl>
 <dd><dl><dt><a name="toc.3.10" href="#3.10">3.10. Visual C++ System Header Problems</a>
 <dd><a name="toc.3.10.1" href="#3.10.1">3.10.1. Comment Generating Macro?</a></dl>
 <br>
@@ -849,7 +850,7 @@ vcexpress &lt;Project File&gt; /useenv
 </pre>
 
 <h3><a name="2.10.2" href="#toc.2.10.2">2.10.2. How to Make <b>mcpp</b> available in Mac OS X / Xcode.app</a></h3>
-<p>You can use Xcode.app, which is an IDE on Mac OS X, with <b>mcpp</b> without problems.</p>
+<p>You can use Xcode.app, which is an IDE on Mac OS X, with <b>mcpp</b> without problems. *1</p>
 <p>Xcode.app uses gcc (g++) in /Developer/usr/bin rather than /usr/bin for some reason.
 (/Developer is the default install directory for Xcode.)
 To use <b>mcpp</b> in Xcode.app, you must install GCC-specific-build for the gcc (g++) in that directory.
@@ -876,6 +877,8 @@ The options should be specified following '-Wp,' and separated by commas, for ex
 <pre>
 -Wp,-23,-W3
 </pre>
+<p>Note:</p>
+<p>*1 Here we refer to Mac OS X Leopard / Xcode 3.0.</p>
 <br>
 
 <h1><a name="3" href="#toc.3">3. Enhancements and Compatibility</a></h1>
@@ -2004,7 +2007,7 @@ What is worse, most of the predefined macros are undocumented ones.
 As a result, the whole picture cannot be grasped easily.</p>
 <p>*2 MinGW does not support symbolic link.  Though the 'ln -s' command exists, it does not link but only copy.  Moreover, MinGW's GCC rejects to invoke a shell-script even if it is named cc1.  To cope with this, <b>mcpp</b>'s MinGW GCC-specific-build generates a binary executable named cc1.exe (copied also to cc1plus.exe) which invokes mcpp.exe or GCC's cc1.exe/cc1plus.exe.</p>
 <p>*3 CygWIN / GCC has -mno-cygwin option which alters system include directory and alters GCC's predefined macros.  <b>mcpp</b> V.2.6.1 onward, CygWIN GCC-specific-build supports this option and generates two sets of header files for the predefined macros.</p>
-<p>*4 On GCC in my FreeBSD 5,3 and 6.2, multi-byte character conversion to UTF-8 does not work at all, though libiconv is linked.</p>
+<p>*4 On GCC in my FreeBSD 5,3, 6.2 and 6.3, multi-byte character conversion to UTF-8 does not work at all, though libiconv seems to be linked to them.</p>
 <p>*5 When you pass the output of <b>mcpp</b> to cc1, you should not specify -fexec-charset option as well as -finput-charset option.</p>
 <p>*6 <b>mcpp</b> V.2.5 did not supplement multi-byte characters with &lt;backslash&gt; for GCC V.3.4.  Since GCC's behavior was not stable, I have waited to see where it settles down.  However, it is still not stable on V.4.1, hence I reverted the <b>mcpp</b> specification of V.2.6 to that of V.2.4, that is, it treats GCC 3.4 and later as GCC 3.3 and former.</p>
 
@@ -2191,7 +2194,7 @@ That is to say, a function-like macro call of <samp><tt>_ElfW_1</tt>(ELF, 32, _S
 
 <p>Although these arguments may seem to be a little redundant, these are more natural than the original ones, if we think of function call syntax.</p>
 
-<h4>3.9.8.6. Macros Expanded to 'defined'</a></h4>
+<h4><a name="3.9.8.6">3.9.8.6. Macros Expanded to 'defined'</a></h4>
 
 <p>The folllowing files contain macro definitions whose replacement-lists have the <samp>'defined'</samp> token. *1</p>
 
@@ -2485,10 +2488,15 @@ The old style writings are not easily cleared.</p>
 I think that both of GCC and glibc need to tidy up their old local specifications and old interfaces drastically in the near future.</p>
 
 <h3><a name="3.9.9" href="#toc.3.9.9">3.9.9. The Problems of Linux / stddef.h, limits.h and #include_next</a></h3>
-<p>On Linux, GCC installs a version specific include directory such as <samp>/usr/lib/gcc-lib/i386-vine-linux/3.3.2/include</samp> where the Standard headers stddef.h, limits.h and some others are located.  These headers and GCC behavior on them have some problems.  The problems are the same on CygWIN as on Linux.</p>
+<p>On Linux, the system compiler is GCC, and the standard library is glibc.
+In these circumstances, there are some system headers which presuppose only GCC.
+Those are the obstacles to use other compiling tools than GCC such as <b>mcpp</b> of compiler-independent-build.
+For example, <samp>stddef.h</samp> and some other Standard header files are located only in GCC's version specific include directory, and are not found in <samp>/usr/include</samp>.
+These are rude deficiencies of the system header structure, and <b>mcpp</b> needs some workarounds for them.</p>
+<p>On Linux, GCC installs a version specific include directory such as <samp>/usr/lib/gcc-lib/SYSTEM/VERSION/include</samp> where the Standard headers stddef.h, limits.h and some others are located.  These headers and GCC behavior on them are queer.  The problems are the same on CygWIN as on Linux.  Mac OS X also has a few problems on some Standard headers.</p>
 
 <h4>3.9.9.1. /usr/include Lacks Standard Headers</h4>
-<p>In the first place, on Linux, five of the Standard C header files <samp>float.h, iso646.h, stdarg.h, stdbool.h, stddef.h</samp> are located only in the GCC version specific directory, not in <samp>/usr/include</samp> nor <samp>/usr/local/include</samp>.  The system headers on Linux seem to intend that compiler systems other than GCC use only <samp>/usr/include</samp> and GCC uses its version specific directory in addition to <samp>/usr/include</samp>.  In fact, /usr/include lacks some Standard headers, that is the problem for non-GCC compilers or preprocessors.</p>
+<p>In the first place, on Linux, five of the Standard C header files <samp>float.h, iso646.h, stdarg.h, stdbool.h, stddef.h</samp> are located only in the GCC version specific directory, not in <samp>/usr/include</samp> nor <samp>/usr/local/include</samp>.  The system headers on Linux seem to more or less intend that compiler systems other than GCC use only <samp>/usr/include</samp> and GCC uses its version specific directory in addition to <samp>/usr/include</samp>.  In fact, /usr/include lacks some Standard headers, that is the problem for non-GCC compilers or preprocessors.</p>
 <p>If non-GCC preprocessor uses also GCC version specific directory, then on limits.h in this directory, the preprocessor encounters #include_next which is a GCC specific directive.  If that is the case, why doesn't the preprocessor implement #include_next?  Then, the limits.h causes a problem, because it is not cleanly written.  What is worse, GCC V.3.3 or later predefines practically by itself the macros to be defined by limits.h, hence the header is useless for other preprocessors.</p>
 <p>Besides, as for GCC itself, it shows queer behavior with #include_next in this header.</p>
 <p>Although these problems are complicated to explain, I will describe them here, because they have been neglected for years for some reason.</p>
@@ -2616,10 +2624,11 @@ This time <tt>_GCC_LIMITS_H_</tt> has been defined already, so the block beginni
 <p>Hence, the canceled macros are redefined correctly.  Although the most part of the processing is useless, the results were correct.  With the header files of V.3.3 or later, a non-GCC preprocessor is taken around here and there to get vain results.</p>
 
 <h4>3.9.9.4. Workarounds for the Present</h4>
-<p>The problems are summarized as below: *1, *2, *3</p>
+<p>The problems are summarized as below: *1, *2, *3, *4</p>
 <ol>
 <li><samp>/usr/include</samp> lacks Standard C headers <samp>float.h, iso646.h, stdarg.h, stdbool.h</samp> and <samp>stddef.h</samp> which are necessary to make Linux system headers usable to non-GCC compiler system.<br>
-<li>C++ include directories do not exist other than <samp>/usr/include/c++/VERSION/*</samp>.  In order to make C++ standard include directories independent on GCC version, <samp>/usr/include/c++</samp> should be used instead of <samp>/usr/include/c++/VERSION</samp> which should be limited to GCC specific headers.<br>
+<li>C++ include directories do not exist other than <samp>/usr/include/c++/VERSION/*</samp>.  In order to make C++ standard include directories independent on GCC version, <samp>/usr/include/c++</samp> should be used instead of <samp>/usr/include/c++/VERSION</samp> which should be limited to GCC specific headers.
+Though, having said that, this is a difficult task, since the C++ standard library is libstdc++ distributed with GCC on all of FreeBSD, Linux and Mac OS X.<br>
 <li>The behavior of GCC on #include_next differs from its specification and is inconsistent.<br>
 <li>It is meaningless to process the complicated limits.h headers, since GCC practically predefines the Standard required macros.  It is doubly meaningless, since <samp>/usr/lib/gcc-lib/SYSTEM/VERSION/include/limits.h</samp> does #undef all.  As far as Linux and CygWIN are concerned, there seems to be no necessity for splitting limits.h to two.  Since these headers in this directory are autogenarated ones by GCC installation, some redundancies are inevitable.  Yet, these are too dirty to install as system headers.<br>
 </ol>
@@ -2628,17 +2637,22 @@ This time <tt>_GCC_LIMITS_H_</tt> has been defined already, so the block beginni
 <ol>
 <li>Link <samp>/usr/include/stddef.h</samp> to <samp>/usr/lib/gcc-lib/SYSTEM/VERSION/include/stddef.h</samp>.  In case of multiple versions of GCC have been installed, a link to any of them will work for mere preprocessing.  This setting does no harm on GCC nor GCC-specific-build of <b>mcpp</b>.  The same can be said about stdarg.h, though it expands macros to GCC built-in functions.<br>
 <li>Copy or move iso646.h and stdbool.h from one of the GCC specific directories to <samp>/usr/include</samp>, since these are quite simple headers and independent on any system.  As for limits.h, the existing <samp>/usr/include/limits.h</samp> is enough for non-GCC preprocessor.<br>
-<li>float.h is useless for other preprocessor, such as <tt>DBL_MAX_EXP</tt> is defined to <samp>__DBL_MAX_EXP__</samp>.  If required, you must write the header referring to the internal setting of GCC or some other source. *4<br>
+<li>float.h is useless for other preprocessor, such as <tt>DBL_MAX_EXP</tt> is defined to <samp>__DBL_MAX_EXP__</samp>.  If required, you must write the header referring to the internal setting of GCC or some other source. *5<br>
 <li>Do not set GCC specific include directory in C include directories list by environment variable.<br>
 <li>Set C++ include directories by environment variable CPLUS_INCLUDE as <samp>/usr/include/c++/VERSION:/usr/include/c++/VERSION/SYSTEM:/usr/include/c++/VERSION/backward</samp>.<br>
 </ol>
 <p>For the GCC-specific-build of <b>mcpp</b>, no special setting is required, because it has GCC specific include directories list, implements #include_next as its specification, and predefines the macros as GCC does.</p>
 <p>Note:</p>
 <p>*1 I have checked the descriptions of this 3.9.9 section on Linux / GCC 2.95.3, 3.2, 3.3.2, 3.4.3, 4.0.2, 4.1.1 and on CygWIN / GCC 2.95.3, 3.4.4.  As with CygWIN, the behavior on #include_next was as its specification on GCC 2.95.3, but on 3.4.4 it changed to the same behavior as Linux.  The C++ include directories in CygWIN was <samp>/usr/include/g++-3</samp> on 2.95.3, while they are <samp>/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++</samp> and its sub-directories on 3.4.4.</p>
-<p>*2 On FreeBSD 6.2 and its bundled GCC 3.4.6, all the Standard C headers are present in <samp>/usr/include</samp>, #include_next is not used in any system headers, and GCC specific C include directory does not exist.  However, C++ include directories are GCC version dependent as <samp>/usr/include/c++/3.4, /usr/include/c++/3.4/backward</samp>, that is a pity.<br>
+<p>*2 On FreeBSD 6.2 or 6.3 and its bundled GCC 3.4.6, all the Standard C headers are present in <samp>/usr/include</samp>, #include_next is not used in any system headers, and GCC specific C include directory does not exist.  However, C++ include directories are GCC version dependent as <samp>/usr/include/c++/3.4, /usr/include/c++/3.4/backward</samp>.<br>
 Even on FreeBSD, an installation of another version of GCC makes GCC-version-specific include directory.  Most of the headers in the directory are redundant.  However, the headers in <samp>/usr/include</samp> remain unchanged.</p>
-<p>*3 On MinGW / GCC 3.4.*, though the include directories and their precedence differ from the other systems, the behavior of GCC on #include_next is the same, and also some Standard headers are not in the standard include directory <samp>/mingw/include</samp> but in its version-specific-directory.</p>
-<p>*4 It can be written as follows referring to GCC's setting:</p>
+<p>*3 On Mac OS X Leopard / Apple-GCC 4.0.1, as on Linux, there is a GCC-version-specific include directory, #include_next is used in <samp>limits.h</samp> and a few other headers, also two <samp>limits.h</samp> are found.
+Howerer, #include_next in <samp>syslimits.h</samp> has been deleted by Apple.
+<samp>float.h, iso646.h, stdarg.h, stdbool.h, stddef.h</samp> are all found in <samp>/usr/include</samp>, hence so much special settings are not necessary for <b>mcpp</b>.
+But, <samp>float.h, stdarg.h</samp> are only for GCC and Metrowerks (for powerpc), so if you use them with <b>mcpp</b>, you must rewrite <samp>float.h</samp> yourself and make <samp>stdarg.h</samp> to include GCC-version-specific one.
+Note that some definitions in <samp>float.h</samp> are different between x86 and powerpc.</p>
+<p>*4 On MinGW / GCC 3.4.*, though the include directories and their precedence differ from the other systems, the behavior of GCC on #include_next is the same, and also some Standard headers are not in the standard include directory <samp>/mingw/include</samp> but in its version-specific-directory.</p>
+<p>*5 It can be written as follows referring to GCC's setting:</p>
 <pre>
 /* float.h  */
 
@@ -2693,12 +2707,140 @@ Even on FreeBSD, an installation of another version of GCC makes GCC-version-spe
 </pre>
 <br>
 
-<h3><a name="3.9.10" href="#toc.3.9.10">3.9.10. Preprocessing firefox 3.0a8pre</a></h3>
-<p>I compiled source of firefox developing version 3.0a8pre (September, 2007) by GCC 4.1.2 replacing its preprocessor with <b>mcpp</b> V.2.7 on Linux/x86.
-<b>mcpp</b> was executed with -K option passing its output to cc1 (cc1plus).
-As a result, the compilation successfully completed, and the firefox binary was generated. *1</p>
+<h3><a name="3.9.10" href="#toc.3.9.10">3.9.10. Problems of Mac OS X / Apple-GCC and its System Headers</a></h3>
+<p>On V.2.7, <b>mcpp</b> began to support Max OS X / GCC.
+This section describes the problems of the system found by <b>mcpp</b>.
+The author, however, does not know the system so much yet.
+He has only compiled <b>mcpp</b> itself and firefox on the system.
+He knows nothing about Objective C nor Objective C++.</p>
+<p>Since GCC is practically the only compiler on this system now, some dependencies on GCC-local specs are found in some of its system headers.
+Such dependencies are not so much as Linux, maybe because its standard library is not glibc.
+But, they are not so few as FreeBSD.
+Some tidy-ups are disirable.</p>
+<p>Another characteristic of this system is that the system compiler is a GCC largely modified and extended by Apple.
+In the system headers and some sources of Apple on Max OS X, dependencies on Apple-GCC-local specs are more conspicuous than those on general-GCC-local specs.
+In particular, the extended specs to support both of Intel-Mac and PowerPC-Mac on a machine are the most characteristic.</p>
+<p>Here, we refer to the system of Mac OS X Leopard / Apple-GCC 4.0.1.</p>
+
+<h4>3.9.10.1. #include_next, #warning</h4>
+<p>The GCC-local directive #include_next are not many, but found in <samp>float.h, stdarg.h, varargs.h</samp> in <samp>/usr/include/</samp> and the files of the same name in <samp>/Developer/SDKs/MacOSX10.*.sdk/usr/include/</samp>.
+All of them are to include different real header files depending on whether the compiler is GCC or Metrowerks.
+When the compiler is GCC, <samp>stdarg.h</samp>, for example, does '#include_next &lt;stdarg.h&gt;'.<br>
+The <samp>limits.h</samp> in GCC-version-specific include directory has #include_next as Linux, but the one in <samp>syslimits.h</samp> has been removed and a bit tidied up.</p>
+<p>Though this directive is used modestly, it is a problem that <samp>float.h, stdarg.h</samp> presuppose only GCC and Metrowerks.
+Those can be written more portable as on FreeBSD. *1<br>
+In addition, #include_next for GCC on a header in <samp>/usr/include</samp> is a nonsense, because the priority of that include directory is lower than GCC-version-specific one.
+Consequently this #include_next is never executed.</p>
+<p>Another GCC-local directive #warning is sometimes found in <samp>objc/, wx-2.8/wx/</samp> and a few other directories in <samp>/usr/include/</samp>, and their corresponding directories in <samp>/Developer/SDKs/MacOSX*.sdk/usr/include/</samp>.
+Most of the directives are warnings against obsolete or deprecated files or usages.<br>
+<samp>backward_warning.h</samp> in <samp>/usr/include/c++/VERSION/backward/</samp> and its corresponding file in <samp>/Developer/SDKs/MacOSX*.sdk/</samp> are to execute #warning against these deprecated headers.
+And all the headers in the directories include this header.
+This is the same with Linux or FreeBSD.</p>
+<p>Note:</p>
+<p>*1 About how to use these headers with compiler-independent-build of <b>mcpp</b>, refer 3.9.9.4 and its note 3.</p>
+
+<h4>3.9.10.2. A Macro Expanded to 'defined'</h4>
+<p><samp>/usr/include/sys/cdefs.h</samp> and its corresponding file of the same name in <samp>/Developer/SDKs/MacOSX*.sdk/</samp> have a macro definition as:</p>
+<pre>
+#define __DARWIN_NO_LONG_LONG   (defined(__STRICT_ANSI__) \
+                && (__STDC_VERSION__-0 < 199901L) \
+                && !defined(__GNUG__))
+</pre>
+<p>And it is used in <samp>stdlib.h</samp> and a few others as:
+<pre>
+#if __DARWIN_NO_LONG_LONG
+</pre>
+<p>This macro should be defined as: *1</p>
+<pre>
+#if     defined(__STRICT_ANSI__) \
+                && (__STDC_VERSION__-0 < 199901L) \
+                && !defined(__GNUG__)
+#define __DARWIN_NO_LONG_LONG   1
+#endif
+</pre>
+<p>Note:</p>
+<p>*1 As for its reason, see <a href="#3.9.4.6">3.9.4.6</a> and <a href="#3.9.8.6">3.9.8.6</a>.</p>
+
+<h4>3.9.10.3. Tokens in #endif line</h4>
+<p><samp>gssapi.h, krb5.h, profile.h</samp> in <samp>/System/Library/Frameworks/Kerberos.framework/Headers</samp> have queer #endif lines like:</p>
+<pre>
+#endif \* __KERBEROS5__ */
+</pre>
+<p>This <samp>\* __KERBEROS5__ */</samp> seems to intend to be a comment.
+I cannot understand why they must invent such a writing.
+Though GCC usually warns at it, Apple-GCC does not issue any warning even if <samp>-pedantic</samp> or any other options are specified.
+Apple-GCC does not warn at the following case, too.
+It still trails a sence of pre-C90.</p>
+<pre>
+#endif __KERBEROS5__
+</pre>
+
+<h4>3.9.10.4. Some Special Usages of Macro</h4>
+<p>As far as a compilation of firefix 3.0b3pre source is concerned, any of the following special usages of macro, which are frequently found in glibc sources and Linux system headers, is not found in the Mac OS X system headers included from the firefox source.</p>
+<ul>
+<li>GCC-specific variable argument macro.<br>
+While a few variadics of C99-spec are found, no GCC-specific one is found.
+<li>Empty argument of macro call.
+<li>Object-like macro replaced with a function-like macro name.
+</ul>
+
+<h4>3.9.10.5. Apple-GCC's Peculiar Specifications</h4>
+<p>Apple-GCC has some peculiar specifications different from the general GCC.</p>
+<ul>
+<li><p>Specs to generate binaries for both of Intel-Mac and PowerPC-Mac on either machine</p>
+<p>Mac OS X has a pair of compilers for x86 and ppc.
+(One is a native compiler, and other is a cross compiler.)
+This pair of Apple-GCCs have their own option <samp>-arch</samp>.
+If you specify multiple CPUs as '<samp>-arch i386 -arch ppc</samp>', gcc will be repeatedly invoked, binaries for the specified CPUs will be generated, and a "universal binary" which bundles all the binaries will be created.
+Also they have another peculiar option <samp>-mmacosx-version-min=</samp>.
+You can use this option along with <samp>-isysroot</samp> or <samp>--sysroot</samp> option, and widen the range of compatibility of the binary to the older versions of Mac OS X to some extent.
+These specs are convenient to make a binary package for Mac OS X.</p>
+<p>As for preprocessing, you should remember that some predefined macros differ depending on the CPU specified.</p>
+<li><p>"framework" directories</p>
+<p>Mac OS X has "framework" directories inherited from NeXTstep.
+Framework is a hierarchical directory that contains shared resources such as header files, library, documents, and some other resources.
+To include a header file in these directories, such a directive is used as:</p>
+</p>
+<pre>
+#include &lt;Kerberos/Kerberos.h&gt;
+</pre>
+<p>This format is the same with:</p>
+<pre>
+#include &lt;sys/stat.h&gt;
+</pre>
+<p>However, these two have quite different meanings.
+While the latter includes the file  <samp>sys/stat.h</samp> in some include directory (in this case <samp>/usr/include</samp>), <samp>&lt;Kerberos/Kerberos.h&gt;</samp> is not a path-list, and <samp>Kerberos</samp> is not even a directory name.
+This is a file <samp>Kerberos.framework/Headers/Kerberos.h</samp> in a framework directory <samp>/System/Library/Frameworks</samp>.
+And in actual, <samp>Kerberos.framework/Headers</samp> is a symbolic-link to <samp>Kerberos.framework/Versions/Current/Headers</samp>.
+This is the most simple case of framework header file location.
+There are many other far more complex cases.</p>
+<p>Who has invented such a complex system?
+This system burdens a preprocessor, because it must search system headers in framework directories repeatedly building and rebuilding path-list.
+Some headers furthur include many other headers.</p>
+<li><p>"header map" file</p>
+<p>Xcode.app is an IDE on Max OS X.
+It uses "header map" file, which is a list of include files.
+One of the tools of Xcode checks source files, searchs the files to be included, and records the path-list of the files into a file named *.hmap, and Apple-GCC refers to it instead of include directories.
+This is an extended feature of Apple-GCC.</p>
+<p>Header map file is a device to lessen burdens of header file searching.
+However, it is a binary file of a peculiar specification and lacks transparency.
+In order to lessen heavy burdens of framework header searching, it is more desired to reorganize the framework system.</p>
+<li><p>Tokens in #endif line</p>
+<p>As shown in the previous section, Apple-GCC does not issue even a warning whatever junks are on a #endif line, regardless of whatever options specified.
+It is quite an anachronism.</p>
+<li><p>Non-ASCII characters in comments</p>
+<p>This is not a problem of GCC, but a problem of system headers in framework directory.
+In many headers, some non-ASCII characters are frequently found in comments, such as the copyright mark (0xA9) and others of ISO-8859-* (?).
+They are nuisances on an environment of multibyte characters, even if in comments.
+A little bit of character encoding consciousness is desired.
+Though the characters of this kind are sometimes found also in /usr/include of Linux, they are far more often found in framework headers of Mac OS.</ul>
+
+<h3><a name="3.9.11" href="#toc.3.9.11">3.9.11. Preprocessing firefox 3.0b3pre</a></h3>
+<p>I compiled source of firefox developing version 3.0b3pre (January, 2008), or 3.0-beta3-prerelease, by GCC replacing its preprocessor with <b>mcpp</b> V.2.7 on Linux/x86 + GCC 4.1.2 and Mac OS X + GCC 4.0.1.
+<b>mcpp</b> were executed with -Kv option passing its output to cc1 (cc1plus).
+As its results, the compilations successfully completed, and the firefox binaries were generated. *1</p>
 <p>The preprocessing portability of firefox source on the whole is rather high.
-The dependencies on GCC-local specifications, such as frequently found in glibc sources, are rarely found.
+The dependencies on GCC-local specifications, such as frequently found in glibc sources, are not found so many.
 It is portable enough to officially support both of GCC on Linux, Mac OS X and Visual C++ on Windows.</p>
 <p>Preprocessing portability of a source is, however, not necessarily sufficient, even if GCC and Visual C pass it.
 In the sections below, I will check some problems, sometimes comparing them with glibc sources.
@@ -2708,22 +2850,19 @@ For GCC's problems, refer to <a href="#3.9.4">3.9.4</a>, <a href="#3.9.8">3.9.8
 <p>Note:</p>
 <p>*1 I checked out the sources from CVS repository of mozilla.org.
 One of the motivations to compile firefox source was to test -K option of <b>mcpp</b>.
-This option was proposed by Taras Glek, and he has been working on refactoring of C/C++ source at mozilla.com.
+This option was proposed by Taras Glek, and he was working on refactoring of C/C++ source at mozilla.com.
 So, I also used firefox source to test -K option and other behaviors of <b>mcpp</b>.
-About -K option, refer to <a href="#2.4">2.4</a>.</p>
-<p>*2 There is a coding-guideline for firefox as below.
-But, it is too old (last updated in 2001).</p>
-<a href="http://www.mozilla.org/hacking/portable-cpp.html">http://www.mozilla.org/hacking/portable-cpp.html</a>
+About -K (-Kv) option, refer to <a href="#2.4">2.4</a>.</p>
+<p>*2 There is a list of coding-guidelines for firefox as below.
+But, its content is too old.<br>
+<a href="http://www.mozilla.org/hacking/portable-cpp.html">portable-cpp</a></p>
  
-<h4>3.9.10.1. GCC-local specifications are rarely used</h4>
-<p>The following GCC-local-specs, which are sometimes used in glibc sources, are not used in firefox sources at all.
-Though compiling firefox on Linux includes system headers, and some of which contain #include_next and GCC2-spec variadic macros, they are not firefox sources themselves.</p>
+<h4>3.9.11.1. GCC-local specifications are rarely used</h4>
+<p>The following GCC-local-specs, which are sometimes used in glibc sources, are not used in firefox sources.
+Though compiling firefox on Linux includes system headers, and some of which contain such as GCC2-spec variadic macros, they are not firefox sources themselves.</p>
 <ul>
-<li>#include_next<br>
 <li>GCC-local variadic macro<br>
 Even C99 spec variadic macro is not yet used, too.
-<li>*.S file (assembler source which requires preprocessing)<br>
-The assembler sources are written as *.s (*.asm) files, and some of which contain macros, but none of them calls for preprocessor anyway.
 </ul>
 <p>The following features are not used even in recent glibc, and not used in firefox at all.</p>
 <ul>
@@ -2732,23 +2871,50 @@ The assembler sources are written as *.s (*.asm) files, and some of which contai
 <li>-isystem, -I- options
 </ul>
 
-<h4>3.9.10.2. Using C99 specs without specifying C99</h4>
+<h4>3.9.11.2. #include_next</h4>
+<p>However, a lot of #include_next are found only in one directory: <samp>config/system_wrappers/</samp>, which is generated by configure.
+All of the 900 files generated in the directory are short header files of the same pattern.
+For example, <samp>stdio.h</samp> is:</p>
+<pre>
+#pragma GCC system_header
+#pragma GCC visibility push(default)
+#include_next &lt;stdio.h&gt;
+#pragma GCC visibility pop
+</pre>
+<p>This is a code to utilize '<samp>#pragma GCC visibility *</samp>' directive implemented in GCC 4.*.
+At the same time, there is a file '<samp>config/gcc_hidden.h</samp>' as below.
+The file is specified by -include option for most of the translation units, and read in at the start of the units.</p>
+<pre>
+#pragma GCC visibility push(hidden)
+</pre>
+<p><samp>system_wrappers</samp> directory should be the include directory with the highest priority, so you should specify it as a first argument of -I option.
+In spite of such a constraint, this usage of #include_next is simple and seems to has no problem.</p>
+<p>On the other hand, for many sources in <samp>nsprpub</samp> directory, '<samp>-fvisibility=hidden</samp>' option is used instead of '<samp>-include gcc_hidden.h</samp>', and the headers in <samp>system_wrappers</samp> are not used.
+This <samp>nsprpub</samp> directory seems still to be reorganized.</p>
+
+<h4>3.9.11.3. Using C99 specs without specifying C99</h4>
 <p>Many sources use C99 specifications without specifying C99.
 GCC use "gnu89" spec by default on *.c source, which is a compromising spec of C90 plus some of C99 specs and GCC-local specs.
 Some of firefox sources use the following C99 specs implicitly, depending on GCC's default behavior.</p>
 <ul>
-<li>Empty argument in macro call<br>
-Though empty argument in macro call is very rare in firefox, these 4 files have that.
-<samp>layout/style/nsHTMLStyleSheet.cpp, layout/generic/nsObjectFrame.cpp, intl/uconv/src/nsGREResProperties.cpp, gfx/cairo/cairo/src/cairoint.h</samp>
-<li>Translation limits beyond C90<br>
-Length of an identifier, nesting level of #include, number of macro definitions and so forth often exceed C90 translation limits.<br>
+<li><p>Empty argument in macro call<p>
+<p>Though empty argument in macro call is rare in firefox, these 3 files have it.
+The actual macro called with any empty argument is only one named <tt>NS_ENSURE_TRUE</tt>.</p>
+<p><samp>layout/style/nsHTMLStyleSheet.cpp, layout/generic/nsObjectFrame.cpp, intl/uconv/src/nsGREResProperties.cpp</samp></p>
+<p>Also the following files in <samp>gfx/cairo/cairo/src/</samp> have it.
+The actual macro is only one: <tt>slim_hidden_ulp2</tt>.</p>
+<p><samp>cairoint.h, cairo-font-face.c, cairo-font-options.c, cairo-ft-font.c, cairo-ft-private.h, cairo-image-surface.c, cairo-matrix.c, cairo-matrix.c, cairo-pattern.c, cairo-scaled-font.c, cairo-surface.c, cairo-xlib-surface.c, cairo.c</samp></p>
+<p>Though these empty macro arguments are used on Linux, they are not used on Mac OS X.
+Anyway, these are not tricky ones.</p>
+<li><p>Translation limits beyond C90<p>
+<p>Length of an identifier, nesting level of #include, number of macro definitions and so forth often exceed C90 translation limits.<br>
 Identifiers longer than 31 bytes are found especially frequently in the directory <samp>gfx/cairo/cairo/src/</samp>.
 Nesting of #include over than 8 level and macro definitions over than 1024 are often found, too.
-These are almost inevitable on Linux, since only inclusion of some system headers often reaches these limits.
-<li>Using <samp>//</samp> comment in C source<br>
-Some C sources have this type of comments.
-<a href="http://www.mozilla.org/hacking/portable-cpp.html">http://www.mozilla.org/hacking/portable-cpp.html</a> prohibits this.
-However, this causes few problem nowadays.
+These are almost inevitable on Linux and Mac OS X, since only inclusion of some system headers often reaches these limits.</p>
+<li><p>Using <samp>//</samp> comment in C source</p>
+<p>Some C sources have this type of comments.
+The <a href="http://www.mozilla.org/hacking/portable-cpp.html">list of guidelines</a> prohibits this.
+However, this causes few problem nowadays.</p>
 </ul>
 <p>Above specifications are also available on Visual C 2005.
 Since GCC has <samp>-std=c99</samp> option, we might use this to specify C99 explicitly.
@@ -2766,27 +2932,29 @@ In actual, both of C and C++ of Visual C have C99 features mixed in it as well a
 Both of GCC and Visual C have such mixture of versions of Standard and their own extensions and modifications, thus bring about some ambiguities.
 The absence of option in Visual C to specify a version of Standard is the most inconvenient problem.</p>
 
-<h4>3.9.10.3. Object-like macro replaced with function-like macro name</h4>
+<h4>3.9.11.4. Object-like macro replaced with function-like macro name</h4>
 <p>Object-like macro replaced with function-like macro name is found sometimes in many other programs, and is found also in firefox sources below, though not frequently.</p>
 <samp>content/base/src/nsTextFragment.h,
+modules/libimg/png/mozpngconf.h,
 modules/libjar/zipstub.h,
+modules/libpr0n/src/imgLoader.h,
+nsprpub/pr/include/obsolete/protypes.h,
 nsprpub/pr/include/private/primpl.h,
+nsprpub/pr/include/prtypes.h,
 parser/expat/lib/xmlparse.c,
-security/nss/lib/jar/jarver.c</samp>
+security/nss/lib/jar/jarver.c
+security/nss/lib/util/secport.h,
+xpcom/glue/nsISupportsImpl.h
+</samp>
 <p>In addition, building of firefox creates, in a directory for developing environment, many links to header files, which are copied into /usr/include/firefox-VERSION/ when you install developing environment for firefox.
-Some of these header files, listed below, have definitions of object-like macro replacing to function-like macro name. ("obj-dir" represents the directory to place object files.)</p>
-<samp>obj-dir/dist/include/imglib2/ImageLogging.h,
-obj-dir/dist/include/nspr/obsolete/protypes.h,
-obj-dir/dist/include/nspr/prtypes.h,
-obj-dir/dist/include/xpcom/nsISupportsImpl.h,
-obj-dir/dist/public/nss/secport.h,
-obj-dir/mozilla-config.h</samp>
+Some of these header files have symbolic links to the above files.
+<samp>mozilla-confic.h</samp>, that is created by configure, has a macro definition of this kind, too.</p>
 <p>These macros should be written as function-like macro to improve readability.
 In actual, many other macros in firefox sources are defined as function-like macro replacing to another function-like macro with the same arguments.
 There are coding style differences among the authors.
 It would be better to set a coding guideline on this matter.</p>
 
-<h4>3.9.10.4. Macro expanded to 'defined'</h4>
+<h4>3.9.11.5. Macro expanded to 'defined'</h4>
 <p>A Macro with 'defined' token in its replacement text, sometimes found in glibc, is found in firefox only once.</p>
 <p><samp>modules/oji/src/nsJVMConfigManagerUnix.cpp</samp>
 defines a macro as:
@@ -2807,57 +2975,90 @@ and uses it in itself as:</p>
 <p>*1 GCC-specific-build of <b>mcpp</b> V.2.7 enabled GCC-like handling of 'defined' in macro on #if line.
 But <b>mcpp</b> warns at it, and you would better to revise the code.</p>
 
-<h4>3.9.10.5. -include option</h4>
-<p>Compilation of firefox begins with <samp>configure</samp>, which generates <samp>mozilla-config.h</samp>.
-In compilation of most of the sources, this header file is specified by <samp>-include</samp> option.
-Why don't they <samp>#include</samp> this header at their top?</p>
+<h4>3.9.11.6. Tokens in #endif line</h4>
+<p>The following files in <samp>jpeg</samp> directory have #endif lines with comments without comment mark.
+All of the lines has appeared by some recent updates.</p>
+<pre>
+jmorecfg.h, jconfig.h, jdapimin.c, jdcolor.c, jdmaster.c
+</pre>
+<p>Though this style of writing was frequently seen in some sources for UNIX-like systems up until middle of 1990s, it has almost completely disappeared nowadays, and cannot be found even in that glibc sources.
+GCC usually warns at it as expected.
+For all that, these sources take such a writing style.
+Only Apple-GCC does not warn at it.
+Have these sources been edited on Mac OS?</p>
 
-<h4>3.9.10.6. Redefinition of macro</h4>
-<p>In compilation of most of the sources, <samp>-DZLIB_INTERNAL</samp> option is specified.
-This macro is, however, defined by 4 sources in <samp>modules/zlib/src/</samp> as:</p>
+<h4>3.9.11.7. Assembler Source Which Needs Preprocessing</h4>
+<p>The assembler sources are written as *.s (*.asm) files, and some of which contain macros, but in principle, they do not call for preprocessor.</p>
+<p>On Mac OS X / ppc, however, there is only one exception.
+<samp>xpcom/reflect/xptcall/src/md/unix/xptcinvoke_asm_ppc_rhapsody.s</samp> calls for preprocessor, because it has a #if block containing only one line.
+The block seems to be unnecessary already.</p>
+
+<h4>3.9.11.8. -include option</h4>
+<p>Compilation of firefox begins with <samp>configure</samp>, which generates <samp>mozilla-config.h</samp>.
+In compilation of most of the sources, this header file is specified by -include option.
+<samp>config/gcc_hidden.h</samp> is also specified similarly.
+Why don't the sources #include these headers at their top?</p>
+
+<h4>3.9.11.9. Redefinition of macro</h4>
+<p>Some silent redefinition of macros are found, though they are rare.</p>
+<ul>
+<li><p>In compilation of most of the sources, <samp>-DZLIB_INTERNAL</samp> option is specified.
+In other words, the macro is defined as 1.
+It is, however, defined by some sources in <samp>modules/zlib/src/</samp> as:</p>
 <pre>
 #define ZLIB_INTERNAL
 </pre>
-<p>and is used as:
+<p>It is defined to zero token.
+And it is used as:
 <pre>
 #    ifdef ZLIB_INTERNAL
 </pre>
-<p>Though the difference does not make real harm in this case, different definitions of the same macro is not recommended.
-Maybe the option by Makefiles is redundant.</p>
-<p><samp>xpcom/build/nsXPCOMPrivate.h</samp> defines a macro <tt>MAXPATHLEN</tt> differently from <samp>/usr/include/sys/param.h</samp>.
-This discrepancy stems from an inconsistency among the related header files on whether include <samp>/usr/include/sys/param.h</samp> or not.
+<p>Though the difference does not make different result in this case, different definitions of the same macro is not recommended.
+Maybe the option by Makefile is redundant.</p>
+<li><p><samp>xpcom/build/nsXPCOMPrivate.h</samp> defines a macro <tt>MAXPATHLEN</tt> differently from <samp>/usr/include/sys/param.h</samp>.
+This discrepancy stems from an inconsistency among the related header files about whether include <samp>/usr/include/sys/param.h</samp> or not.
 The related header files should be reorganized.</p>
-
-<h4>3.9.10.7. Nesting of comments</h4>
-<p><p><samp>security/nss/lib/pk11wrap/pk11obj.c</samp> has a few queer nested comments as:</p>
+<li><p>On Mac OS X, <tt>assert</tt> macro, once defined in <samp>/usr/include/assert.h</samp>, is redefined in <samp>netwerk/dns/src/nsIDNKitInterface.h</samp>.
+'<samp>#undef assert</samp>' should precede it.</p>
+<li><p>On Mac OS X, in <samp>modules/libreg/src/VerReg.c</samp>, queer redefinition of macro <tt>VR_FILE_SEP</tt> occurs as:</p>
 <pre>
-/*
- * a comment
- * /* one more comment */
-</pre>
-<p>Though this notation is not wrong, this is mistake-prone.
-The outer comment should be written using #if 0 and #endif as:</p>
-<pre>
-#if 0
-a comment
-/* one more comment */
+#if defined(XP_MAC) || defined(XP_MACOSX)
+#define VR_FILE_SEP ':'
+#endif
+#ifdef XP_UNIX
+#define VR_FILE_SEP '/'
 #endif
 </pre>
+<p>, because on Mac OS X, configure defines both of <tt>XP_MACOSX</tt> and <tt>XP_UNIX</tt>.
+This redefinition may be an intended one.
+Anyway, it is misleading.
+It would be better to write as below, clearly showing the priority of <tt>XP_UNIX</tt>.
+<pre>
+#ifdef XP_UNIX
+#define VR_FILE_SEP '/'
+#elif defined(XP_MAC) || defined(XP_MACOSX)
+#define VR_FILE_SEP ':'
+#endif
+</pre>
+</ul>
 
-<h4>3.9.10.8. Too long comments</h4>
+<h4>3.9.11.10. Too long comments</h4>
 <p>The following files have too long comments crossing over several hundred lines or more.</p>
 <p><samp>extensions/universalchardet/src/base/Big5Freq.tab, extensions/universalchardet/src/base/EUCKRFreq.tab,intl/unicharutil/src/ignorables_abjadpoints.x-ccmap, layout/generic/punct_marks.ccmap</samp></p>
-<p>Especially, in the directories <samp>intl/uconv/ucv*</samp>, there are many files with too long comments.
-There is even a case of single comment crossing over 7000 lines!
+<p>Especially, in the directories <samp>intl/uconv/ucv*/</samp>, there are many files with too long comments.
+There is even a case of single comment crossing over 8000 lines!
 All of these files have name of *.uf or *.ut, and are mapping tables between Unicode and each Asian encodings, generated automatically by some tool.
 They do not seem to be source of C/C++, but they are included from other C++ sources.
-The most part of these files are comments, which seem to be a sort of document or table for some other tool.</p>
+Most part of these files are comments, which seem to be a sort of document or table for some other tool.</p>
 <p>It is not recommendable to include long documents or tables in source files.
 They should be separated from source files, even if placed in source tree.</p>
+<p>Though these files are used in Linux, they are not used in Mac OS X.
+On the other hand, on Mac OS X, system headers in framework directories are frequently used, and some of them are queer files mostly occupied with comments.</p>
 
-<h4>3.9.10.9. Mixed encodings of newline</h4>
-<p>Some files have a few lines ending with [CR][LF] in the midst of lines ending with [LF].
-All of these [CR][LF] lines seem to be small fragments inserted as patches.
+<h4>3.9.11.11. Mixed encodings of newline</h4>
+<p>The encoding of newline in firefox source is [LF].
+A few files, however, have a small block of lines ending with [CR][LF].
+All of these [CR][LF] lines seem to be fragments inserted as patches.
 Some conversion tools should be used when one edit source file on Windows.</p>
 <br>
 
@@ -3029,11 +3230,11 @@ In V.2.6.4, it changed the behavior.</p>
 <p>DIFfiles and makefiles are for the following compiler systems:</p>
 <blockquote>
 <table>
-  <tr><th>FreeBSD 6.2        </th><td>GCC V.3.4</td></tr>
-  <tr><th>VineLinux 4.1-x86  </th><td>GCC V.2.95, V.3.2, V.3.3, V.3.4, V.4.1</td></tr>
-  <tr><th>Debian GNU/Linux 4.0-x86  </th><td>GCC V.4.1</td></tr>
-  <tr><th>Fedora 8-x86       </th><td>GCC V.4.1</td></tr>
-  <tr><th>Mac OS X Leopard-x86      </th><td>GCC V.4.0</td></tr>
+  <tr><th>FreeBSD 6.3        </th><td>GCC V.3.4</td></tr>
+  <tr><th>VineLinux 4.2/x86  </th><td>GCC V.2.95, V.3.2, V.3.3, V.3.4, V.4.1</td></tr>
+  <tr><th>Debian GNU/Linux 4.0/x86  </th><td>GCC V.4.1</td></tr>
+  <tr><th>Fedora 8/x86       </th><td>GCC V.4.1</td></tr>
+  <tr><th>Mac OS X Leopard/x86      </th><td>GCC V.4.0</td></tr>
   <tr><th>CygWIN             </th><td>1.3.10 (GCC V.2.95), 1.5.18 (GCC 3.4)</td></tr>
   <tr><th>MinGW &amp; MSYS       </th><td>GCC 3.4</td></tr>
   <tr><th>WIN32              </th><td>LCC-Win32 2003-08, 2006-03</td></tr>
@@ -3276,8 +3477,7 @@ This seems to be a source preprocessed by <b>mcpp</b>, but cannot be used becaus
 <ol>
 <li>' or /* in a header name in the form of a string literal: <b>mcpp</b> regards them as characters, resulting in a file open error. (' or /* in a header name enclosed with &lt; and &gt; is regarded as the beginning of a character constant or a comment, resulting in some errors.)  Although how to treat \ in a header name is undefined in Standard C, <b>mcpp</b> does not check it because it may eventually cause an error when <b>mcpp</b> actually tries to open the file.  <b>mcpp</b> on Windows issues a class 2 warning to \ and converts it to /.<br>
 <br>
-<li>#undef defined: Although #undef-ing a name "defined" yields an undefined result, <b>mcpp</b> does not issue a message because, in the first place, <b>mcpp</b> does not allow definition of a macro named "defined", so it does not think of revoking the definition.<br>
-<br>
+<li>#undef defined: Although #undef-ing a name "defined" yields an undefined result, <b>mcpp</b> does not issue a message because, in the first place, <b>mcpp</b> does not allow definition of a macro named "defined", so the macro to be undefined never exists.<br>
 <li>Illegal multi-byte character sequence in a comment: Although how to deal with such character sequence is undefined in Standard C, <b>mcpp</b> does not issue a message because it does no harm. (<b>mcpp</b> issues a warning to an illegal multi-byte character sequence in string literals, character constants and header names.)<br>
 <br>
 <li>Identifiers that begin with _ (Reserved for compiler systems): Although using these identifiers in a user program will cause an undefined result, <b>mcpp</b> does not check it because <b>mcpp</b> does not always have a means to decide whether these identifiers are used in a user program or the compiler-system.<br>
@@ -3495,7 +3695,7 @@ A type combination, like #if sizeof (long float), is invalid.<br>
 </ul>
 
 <h3><a name="5.4.7" href="#toc.5.4.7">5.4.7. #define Related Errors</a></h3>
-<p>This section covers #define related errors.  A macro will not be defined if an error occurs at #define.  The # and ## operator related errors occurs in Standard mode.  <samp>__VA_ARGS__</samp> related errors also occur in Standard mode.  Although variable argument macro is a C99 specification, <b>mcpp</b> allows these macros to be used in C90 and C++ modes for compatibility with GCC and Visual C++2005. (A warning is issued.)</p>
+<p>This section covers #define related errors.  A macro will not be defined if an error occurs at #define.  The # and ## operator related errors occurs in Standard mode.  <samp>__VA_ARGS__</samp> related errors also occur in Standard mode.  Although variable argument macro is a C99 specification, <b>mcpp</b> allows these macros to be used in C90 and C++ modes for compatibility with GCC and Visual C++ 2005. (A warning is issued.)</p>
 <ul>
 <li><samp>"defined" shouldn't be defined</samp><br>
 A macro named "defined" cannot be defined.  Standard mode checks this.<br>
@@ -3793,7 +3993,7 @@ MACRO in #pragma MCPP pop_macro( "MACRO") has not been pushed.  It may have been
 <li><samp>Not in a #if (#ifdef) section in a source file</samp><br>
 <li><samp>Line number "0x123" isn't a decimal digit sequence</samp><br>
 </ul>
-<p><i>KR</i> mode issues the following warning.  Standard mode issues the same warning only to #pragma once, #pragma MCPP put_defines, #pragma MCPP push_macro, #pragma MCPP pop_macro, #pragma push_macro, #pragma pop_macro, #pragma MCPP debug, and #pragma MCPP end_debug; for other directives, Standard mode issues an error.  <i>OLDPREP</i> mode issues neither an error nor a warning.</p>
+<p><i>KR</i> mode issues the following warning.  Standard mode issues the same warning only to #pragma once, #pragma MCPP put_defines, #pragma MCPP push_macro, #pragma MCPP pop_macro, #pragma push_macro, #pragma pop_macro, #pragma MCPP debug, #pragma MCPP end_debug, and #endif for GCC-specific-build on <i>STD</i> mode; for other directives, Standard mode issues an error.  <i>OLDPREP</i> mode issues neither an error nor a warning.</p>
 <ul>
 <li><samp>Excessive token sequence "junk"</samp><br>
 </ul>
@@ -4107,7 +4307,7 @@ Therefore, the compiler-proper is not necessary to be able to handle digraphs.  
 <br>
 
 <h2><a name="5.10" href="#toc.5.10">5.10. Diagnostic Messages Index</a></h2>
-<table border='1' frame='below'><tr><th rowspan='2'>Diagnostic Message</th><th rowspan='2'>Fatal error</th><th rowspan='2'>Error</th><th colspan='5'>Warning class</th></tr>
+<table border='1' frame='below'><tr><th rowspan='2'>Diagnostic Message</th><th rowspan='2'>Fatal<br>error</th><th rowspan='2'>Error</th><th colspan='5'>Warning class</th></tr>
 <th>1</th><th>2</th><th>4</th><th>8</th><th>16</th></tr>
 <tr><td><samp>"..." isn't the last parameter</samp></td><td></td><td><a href='#5.4.7'>5.4.7</td></tr>
 <tr><td><samp>"/*" in comment</samp></td><td></td><td></td><td><a href='#5.5.1'>5.5.1</td></tr>
@@ -4131,6 +4331,7 @@ Therefore, the compiler-proper is not necessary to be able to handle digraphs.  
 <tr><td><samp>2 digraph(s) converted</samp></td><td></td><td></td><td></td><td></td><td></td><td></td><td><a href='#5.9'>5.9</td></tr>
 <tr><td><samp>2 trigraph(s) converted</samp></td><td></td><td></td><td></td><td></td><td></td><td></td><td><a href='#5.9'>5.9</td></tr>
 <tr><td><samp>8 bits can't represent escape sequence '\x123'</samp></td><td></td><td><a href='#5.4.6'>5.4.6</td><td></td><td></td><td></td><td><a href='#5.8'>5.8</td></tr>
+<tr><td><samp>_Pragma operator found in directive line</samp></td><td></td><td><a href='#5.4.12'>5.4.12</td></tr>
 <tr><td><samp>Already seen #else at line 123</samp></td><td></td><td><a href='#5.4.3'>5.4.3</td></tr>
 <tr><td><samp>Bad defined syntax</samp></td><td></td><td><a href='#5.4.5'>5.4.5</td></tr>
 <tr><td><samp>Bad pop_macro syntax</samp></td><td></td><td></td><td><a href='#5.5.3'>5.5.3</td></tr>

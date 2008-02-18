@@ -796,7 +796,8 @@ plus:
                     || str_eq( mcpp_optarg, "withprefix")   /* -iwithprefix */
                     || str_eq( mcpp_optarg, "withprefixbefore")
                                             /* -iwithprefixbefore   */
-                    || str_eq( mcpp_optarg, "dirafter")) {  /* -idirafter   */
+                    || str_eq( mcpp_optarg, "dirafter")     /* -idirafter   */
+                    || str_eq( mcpp_optarg, "multilib")) {  /* -imultilib   */
                 mcpp_optind++;              /* Skip the argument    */
                 /* Ignore these options */
             } else {
@@ -1335,7 +1336,7 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.7-prerelease (2008/01) "
+        "MCPP V.2.7-prerelease (2008/02) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif
@@ -2012,8 +2013,10 @@ static void put_info(
                 , std_line_prefix ? "#line " : LINE_PREFIX , 1);
     mcpp_fprintf( OUT, "%s%ld \"<command line>\"\n"
                 , std_line_prefix ? "#line " : LINE_PREFIX , 1);
-    mcpp_fprintf( OUT, "%s%ld \"%s\"\n"
-            , std_line_prefix ? "#line " : LINE_PREFIX, 1, cur_fullname);
+    mcpp_fprintf( OUT, "%s%ld \"%s\"%s\n"
+            , std_line_prefix ? "#line " : LINE_PREFIX, 1, cur_fullname
+            , ! str_eq( cur_fullname, sharp_file->full_fname) ? " 1" : "");
+            /* Suffix " 1" for the file specified by -include   */
 #endif
 }
 
@@ -2261,7 +2264,7 @@ static char *   norm_dir(
         char *  dir;
 #if SYSTEM == SYS_MAC
         if (! framework && memcmp( dirname, "/usr/", 5) != 0)
-            return  NULL;           /* /Developer/usr/lib/gcc/*     */
+            return  NULL;           /* /Developer/usr/lib/gcc/      */
 #endif
         if (dirname[ 0] != PATH_DELIM)
             delim[ 0] = PATH_DELIM;
@@ -3790,7 +3793,9 @@ static void cur_file(
         else                /* Output full-path-list, normalized    */
             name = cur_fullname;
     } else {                /* Usually, the path not "normalized"   */
-        if (str_eq( file->filename, file->real_fname)) {
+        if (sharp_file) {                       /* Main input file  */
+            name = file->filename;
+        } else if (str_eq( file->filename, file->real_fname)) {
             sprintf( work_buf, "%s%s", *(file->dirp), cur_fname);
             name = work_buf;
         } else {            /* Changed by '#line fname' directive   */

@@ -105,7 +105,7 @@
     int         errors = 0;         /* Cpp error counter            */
     int         warn_level = -1;    /* Level of warning (have to initialize)*/
     FILEINFO *  infile = NULL;      /* Current input file           */
-    int         include_nest;       /* Nesting level of #include    */
+    int         include_nest = 0;   /* Nesting level of #include    */
     const char *    null = "";      /* "" string for convenience    */
     const char **   inc_dirp;       /* Directory of #includer       */
     const char *    cur_fname;      /* Current source file name     */
@@ -312,6 +312,7 @@ static void     init_main( void)
     in_asm = 0L;
     macro_line = 0L;
     mcpp_debug = mkdep = no_output = keep_comments = keep_spaces = 0;
+    include_nest = 0;
     insert_sep = NO_SEP;
     mbchar = MBCHAR;
     ifptr = ifstack;

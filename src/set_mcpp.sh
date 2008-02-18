@@ -1,19 +1,20 @@
 #!/bin/sh
 # script to set MCPP to be called from gcc
 # ./set_mcpp.sh $gcc_path $gcc_maj_ver $gcc_min_ver $cpp_call $CC   \
-#       $CXX x$EXEEXT $LN_S $inc_dir $host_system $cpu $target_cc
+#       $CXX x$CPPFLAGS x$EXEEXT $LN_S $inc_dir $host_system $cpu $target_cc
 
 gcc_maj_ver=$2
 gcc_min_ver=$3
 cpp_call=$4
 CC=$5
 CXX=$6
-LN_S=$8
-inc_dir=$9
-host_system=${10}
+CPPFLAGS=`echo $7 | sed 's/^x//'`
+LN_S=$9
+inc_dir=${10}
+host_system=${11}
 if test $host_system = SYS_MAC; then
-    cpu=${11}
-    target_cc=${12}
+    cpu=${12}
+    target_cc=${13}
     target=`echo $target_cc | sed 's/-gcc.*$//'`
 fi
 cpp_name=`echo $cpp_call | sed 's,.*/,,'`
@@ -21,7 +22,7 @@ cpp_path=`echo $cpp_call | sed "s,/$cpp_name,,"`
 gcc_path=`echo $1 | sed "s,/${CC}\$,,"`
 
 # remove ".exe" or such
-EXEEXT=`echo $7 | sed 's/^x//'`
+EXEEXT=`echo $8 | sed 's/^x//'`
 if test x$EXEEXT != x; then
     cpp_base=`echo $cpp_name | sed "s/${EXEEXT}//"`
 else
@@ -39,14 +40,16 @@ gen_headers() {
     mkdir -p $hdir
     if test ! -f $hdir/gcc$gcc_maj_ver${gcc_min_ver}_predef_std.h; then
         echo "  generating g*.h header files"
-        $CC -E -xc $arg -dM /dev/null | sort | grep ' *#define *_'      \
+        $CC $CPPFLAGS -E -xc $arg -dM /dev/null | sort |        \
+                grep ' *#define *_'                             \
                 > $hdir/gcc$gcc_maj_ver${gcc_min_ver}_predef_std.h
-        $CC -E -xc $arg -dM /dev/null | sort |                  \
+        $CC $CPPFLAGS -E -xc $arg -dM /dev/null | sort |        \
                 grep -E ' *#define *[A-Za-z]+'                  \
                 > $hdir/gcc$gcc_maj_ver${gcc_min_ver}_predef_old.h
-        $CXX -E -xc++ $arg -dM /dev/null | sort | grep ' *#define *_'   \
+        $CXX $CPPFLAGS -E -xc++ $arg -dM /dev/null | sort |     \
+                grep ' *#define *_'                             \
                 > $hdir/gxx$gcc_maj_ver${gcc_min_ver}_predef_std.h
-        $CXX -E -xc++ $arg -dM /dev/null | sort |               \
+        $CXX $CPPFLAGS -E -xc++ $arg -dM /dev/null | sort |     \
                 grep -E ' *#define *[A-Za-z]+'                  \
                 > $hdir/gxx$gcc_maj_ver${gcc_min_ver}_predef_old.h
     fi
