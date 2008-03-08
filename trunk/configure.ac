@@ -1,4 +1,4 @@
-dnl configure.ac for MCPP   2003/11, 2008/02  kmatsui
+dnl configure.ac for MCPP   2003/11, 2008/03  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
@@ -26,7 +26,7 @@ dnl You must uninstall MCPP before re-configuring.
 
 AC_MSG_CHECKING( [whether the cpp is target preprocessor])
 mcpp=`$CPP $CFLAGS -xc -v /dev/null 2>&1 | grep 'MCPP'`
-if test x$mcpp != x; then
+if test "x$mcpp" != x; then
     AC_MSG_ERROR( Do 'make uninstall' before configuring again.)
 fi
 AC_MSG_RESULT( yes)
@@ -725,67 +725,17 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     fi
 fi
 
-if test x$ac_cv_c_compiler_gnu = xyes; then
-
-    AC_DEFUN([AC_CHECK_MBCHAR_IS_ESCAPE_FREE], [
-        AC_CACHE_CHECK(
-            [if '0x5c' in $1 multi-byte character is handled differently from backslash],
-            [ac_cv_c_$2_escape_free],
-            AC_RUN_IFELSE( [[
-    #include    <assert.h>
-        int     strcmp();
-        void    exit();
-    #define str( a)     # a
-    int main( void)
-    {
-        assert( strcmp( str( "$3"), "\"$3\"") == 0);    /* Multi-byte chars */
-        exit (0);
-    }]],
-                [ac_cv_c_$2_escape_free=yes],
-                [ac_cv_c_$2_escape_free=no],
-                AC_MSG_WARN( [cannot run on cross-compiling so assumes that '0x5c' in multi-byte character is not rightly handled.])
-                [ac_cv_c_$2_escape_free=no]
-            )
-        )
-    ])
-    
-    ## The following 3 mb_* files are separated from this file, since
-    ## the editors do not allow multiple encodings of multi-byte characters.
-    
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        lang_save=$LANG
-    fi
-    
-    ## Set the environment variable, though this is seldom enabled in GCC.
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        export LANG=C-SJIS
-    fi
-    m4_include(./config/mb_sjis)
-    if test x$ac_cv_c_sjis_escape_free = xyes; then
-        AC_DEFINE( [SJIS_IS_ESCAPE_FREE], 1,
-            [Define if '0x5c' in SJIS multi-byte character is safe.])
-    fi
-    
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        export LANG=C-JIS
-    fi
-    m4_include(./config/mb_jis)
-    if test x$ac_cv_c_iso2022_jp_escape_free = xyes; then
-        AC_DEFINE( [ISO2022_JP_IS_ESCAPE_FREE], 1,
-            [Define if '0x5c' in ISO2022-JP multi-byte character is safe.])
-    fi
-    
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        export LANG=$lang_save
-    fi
-    
-    m4_include(./config/mb_big5)
-    if test x$ac_cv_c_bigfive_escape_free = xyes; then
-        AC_DEFINE( [BIGFIVE_IS_ESCAPE_FREE], 1,
-            [Define if '0x5c' in BIG5 multi-byte character is safe.])
-    fi
-    
-fi ## gcc
+## Handling of multi-byte characters containing '0x5c' codes:
+## These tests cannot be executed without appropriate options for the
+## compiler.  So, here we define all of these macros as FALSE.
+## User should edit config.h by hand after executing this script.
+## These should be 0 for GCC at least upto V.4.1.
+    AC_DEFINE( [SJIS_IS_ESCAPE_FREE], 0,
+        [Define if '0x5c' in SJIS multi-byte character is safe.])
+    AC_DEFINE( [ISO2022_JP_IS_ESCAPE_FREE], 0,
+        [Define if '0x5c' in ISO2022-JP multi-byte character is safe.])
+    AC_DEFINE( [BIGFIVE_IS_ESCAPE_FREE], 0,
+        [Define if '0x5c' in BIG5 multi-byte character is safe.])
 
 fi ## replace-cpp mode
 fi ## build-cpp mode or replace-cpp mode

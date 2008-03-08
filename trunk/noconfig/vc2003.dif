@@ -1,5 +1,5 @@
-*** noconfig.H	2007-12-23 21:34:39.000000000 +0900
---- noconfig.H.vc2003	2007-12-23 22:12:16.000000000 +0900
+*** noconfig.H	2008-02-21 17:24:21.000000000 +0900
+--- noconfig.H.vc2003	2008-02-21 17:27:55.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -43,27 +43,25 @@
       "LCC-Win32 2006-03"
       "Visual C 2005"
 ***************
-*** 266,276 ****
+*** 266,275 ****
   #define ONE_PASS            TRUE
   #endif
   #define COMPILER_EXT        "_MSC_VER"
-! #define COMPILER_EXT_VAL    "1400"
-                  /* VC 4.0: "1000", VC 5.0: "1100", VC 6.0: "1200"
-                  , VC 2002: "1300", VC 2003: "1310", VC 2005: "1400" */
+! #define COMPILER_EXT_VAL    "1500"
+      /* VC 2002: "1300", VC 2003: "1310", VC 2005: "1400", VC 2008: "1500"   */
   #define COMPILER_EXT2       "_MSC_FULL_VER"
-! #define COMPILER_EXT2_VAL   "140050320"
-  /* VC 6.0:12008804, VC 2002:13009466, VC 2003:13103077, VC 2005: "140050320"*/
+! #define COMPILER_EXT2_VAL   "150021022"
+      /* VC 2002:13009466, VC 2003:13103077, VC 2005: "140050320" */
+      /* VC 2008 "150021022"  */
   #define COMPILER_SP1        "_MSC_EXTENSIONS"
-  #define COMPILER_SP1_VAL    "1"
---- 266,276 ----
+--- 266,275 ----
   #define ONE_PASS            TRUE
   #endif
   #define COMPILER_EXT        "_MSC_VER"
 ! #define COMPILER_EXT_VAL    "1310"
-                  /* VC 4.0: "1000", VC 5.0: "1100", VC 6.0: "1200"
-                  , VC 2002: "1300", VC 2003: "1310", VC 2005: "1400" */
+      /* VC 2002: "1300", VC 2003: "1310", VC 2005: "1400", VC 2008: "1500"   */
   #define COMPILER_EXT2       "_MSC_FULL_VER"
 ! #define COMPILER_EXT2_VAL   "13103077"
-  /* VC 6.0:12008804, VC 2002:13009466, VC 2003:13103077, VC 2005: "140050320"*/
+      /* VC 2002:13009466, VC 2003:13103077, VC 2005: "140050320" */
+      /* VC 2008 "150021022"  */
   #define COMPILER_SP1        "_MSC_EXTENSIONS"
-  #define COMPILER_SP1_VAL    "1"

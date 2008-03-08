@@ -6,7 +6,11 @@
 
 main( void)
 {
-    char *  cp = str( "à¡p");  /* 0xe0a170 */
+    char *  cp = str( "å­—");   /* 0xe5ad97 : legal */
+    char *  ecp1 = str( "À¯");   /* 0xc0af   : overlong  */
+    char *  ecp2 = str( "àŸ¿");   /* 0xe09fbf : overlong  */
+    char *  ecp3 = str( "í €");   /* 0xeda080 : UTF-16 surrogate  */
+
     return  0;
 }
 

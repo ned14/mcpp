@@ -34,7 +34,7 @@
 #if     0
     "LCC-Win32 2006-03"
     "Visual C 2005"
-    "Visual C 2003"
+    "Visual C 2008"
     "BCC V.5.5"
 #endif
 
@@ -266,12 +266,12 @@
 #define ONE_PASS            TRUE
 #endif
 #define COMPILER_EXT        "_MSC_VER"
-#define COMPILER_EXT_VAL    "1400"
-                /* VC 4.0: "1000", VC 5.0: "1100", VC 6.0: "1200"
-                , VC 2002: "1300", VC 2003: "1310", VC 2005: "1400" */
+#define COMPILER_EXT_VAL    "1500"
+    /* VC 2002: "1300", VC 2003: "1310", VC 2005: "1400", VC 2008: "1500"   */
 #define COMPILER_EXT2       "_MSC_FULL_VER"
-#define COMPILER_EXT2_VAL   "140050320"
-/* VC 6.0:12008804, VC 2002:13009466, VC 2003:13103077, VC 2005: "140050320"*/
+#define COMPILER_EXT2_VAL   "150021022"
+    /* VC 2002:13009466, VC 2003:13103077, VC 2005: "140050320" */
+    /* VC 2008 "150021022"  */
 #define COMPILER_SP1        "_MSC_EXTENSIONS"
 #define COMPILER_SP1_VAL    "1"
 #define COMPILER_SP2        "_M_IX86"
@@ -279,9 +279,9 @@
 #define COMPILER_SP3        "_M_IX86_FP"
 #define COMPILER_SP3_VAL    "0"         /* Overwritten by -arch:* option    */
 #define COMPILER_SP4        "_INTEGRAL_MAX_BITS"
-#define COMPILER_SP4_VAL    "64"        /* VC 2003, VC2005: 64      */
+#define COMPILER_SP4_VAL    "64"        /* VC 2003, VC2005, VC2008: 64      */
 #define TARGET_HAVE_LONG_LONG       TRUE
-    /* __int64 instead of long long (VC 2.0 and later)      */
+    /* __int64 instead of long long (VC 2.0 through 8.0)    */
 #define EXPAND_PRAGMA       TRUE
 #define HAVE_DIGRAPHS       TRUE
 #define BIGFIVE_IS_ESCAPE_FREE      TRUE 
@@ -539,6 +539,9 @@
 #define HOST_HAVE_LONG_LONG         TRUE 
 #endif
 #define HOST_HAVE_STPCPY            TRUE
+#if     __STDC__
+#define stpcpy( dest, src)  __stpcpy__( dest, src)
+#endif
 #endif
 
 #ifndef HAVE_INTMAX_T

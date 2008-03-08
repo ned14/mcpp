@@ -1,6 +1,6 @@
 This file summarizes new major features of each MCPP release.  (kmatsui)
 
-MCPP V.2.7-prerelease (2007/12)
+MCPP V.2.7-prerelease (2008/03)
 
 1. Implemented -K option to enable macro notification mode.  This mode
     is designed for C/C++ refactoring tools and embeds macro annotations
@@ -9,7 +9,7 @@ MCPP V.2.7-prerelease (2007/12)
 
 2. Fixed several bugs of the previous release.
 
-3. Ported to Mac OS X / GCC.
+3. Ported to Mac OS X / GCC and Visual C++ 2008.
 
 4. Made GCC-specific-build more closer to GCC.
 
@@ -28,8 +28,8 @@ MCPP V.2.6.4 (2007/05)
 
 MCPP V.2.6.3 (2007/04)
 
-1. Revised sutle points of #include and '#pragma once' handling, such as
-    dereferencing symbolic linked directory and others.
+1. Revised subtle points of #include and '#pragma once' handling, such
+    as dereferencing symbolic linked directory and others.
 
 2. Relaxed syntax checking and token checking in lang_asm mode.
     Implemented variadic macro of GCC3-specification for GCC-specific-

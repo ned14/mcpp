@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7 for FreeBSD / GCC / UCB make
-#       2008/02 kmatsui
+#       2008/03 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:

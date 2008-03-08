@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7 and later for Borland C / BC make
-#       2008/01 kmatsui
+#       2008/03 kmatsui
 # You must first edit BINDIR, LIBDIR and LINKER according to your system.
 # To make compiler-independent-build of MCPP do:
 #       make
@@ -88,7 +88,7 @@ CFLAGS = $(CFLAGS) -DMCPP_LIB=1
 LIBDIR = \PUB\COMPILERS\BCC55\LIB
 #LINKER = tlink32   # BCC40
 LINKER = ilink32   # BCC55
-ADD_OBJS = +main +directive +eval +expand +support +system +mbchar +lib
+ADD_OBJS = +main +directive +eval +expand +support +system +mbchar
 
 mcpplib:	mcpplib_lib mcpplib_dll
 

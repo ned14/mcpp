@@ -213,8 +213,7 @@
 
 /* Variables on multi-byte character encodings. */
     int     mbchar = MBCHAR;        /* Encoding of multi-byte char  */
-    int     mbmask;                 /* Char type other than mbchar  */
-    int     mbstart;                /* 1st byte of mbchar (or shift)*/
+    int     mbchk;  /* Character type of possible multi-byte char   */
     int     bsl_in_mbchar;  /* 2nd byte of mbchar possibly has '\\' */
     int     bsl_need_escape;    /* '\\' in MBCHAR should be escaped */
     /* Function pointer to mb_read_*() functions.   */
@@ -323,7 +322,8 @@ static void     init_main( void)
     std_limits.n_mac_pars =  NMACPARS;
     option_flags.c = option_flags.k = option_flags.z = option_flags.p
             = option_flags.q = option_flags.v = option_flags.lang_asm
-            = option_flags.no_source_line = FALSE;
+            = option_flags.no_source_line = option_flags.dollar_in_name
+            = FALSE;
     option_flags.trig = TRIGRAPHS_INIT;
     option_flags.dig = DIGRAPHS_INIT;
 }
@@ -757,6 +757,8 @@ static void do_pragma_op( void)
  *      surrounded by other token sequences.
  * Since all the macros have been expanded completely, any name identical to
  *      macro should not be re-expanded.
+ * However, a macro in the string argument of _Pragma() may be expanded by
+ *      do_pragma() after de_stringize(), if EXPAND_PRAGMA == TRUE.
  */
 {
     FILEINFO *  file;
@@ -1109,7 +1111,7 @@ static char *   esc_mbchar(
     if ((delim = *str++) == 'L')
         delim = *str++;                         /* The quote character  */
     while ((c = *str++ & UCHARMAX) != delim) {
-        if (char_type[ c] & mbstart) {               /* MBCHAR   */
+        if (char_type[ c] & mbchk) {            /* MBCHAR   */
             cp = str;
             mb_read( c, &str, (workp = work_buf, &workp));
             while (cp++ < str) {
@@ -1122,7 +1124,7 @@ static char *   esc_mbchar(
                     str_end++;
                 }
             }
-        } else if (c == '\\' && ! (char_type[ *str & UCHARMAX] & mbstart)) {
+        } else if (c == '\\' && ! (char_type[ *str & UCHARMAX] & mbchk)) {
             str++;                              /* Escape sequence      */
         }
     }

@@ -215,7 +215,7 @@ If we test the build environment instead, the results are not
 necessarily the same with the target.
 
 Nevertheless, on Mac OS X, we can exceptionally configure cross-
-compilings for different CPUs in most cases.  First, Intel-Mac
+compiling for different CPUs in most cases.  First, Intel-Mac
 automatically executes a ppc binary with an emulator.  Second, if the
 build environment and the target differ only in CPU and its related
 settings, and OS, its version and GCC's version are all the same between
@@ -508,6 +508,6 @@ preprocessor comprehensively.  Validation Suite has 265 items and can be
 applied to any preprocessor as well as MCPP.  Refer to 3.1 and 3.2 of
 cpp-test.html.
 
-December, 2007
+March, 2008
 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
 

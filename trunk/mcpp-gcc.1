@@ -1,4 +1,4 @@
-.TH MCPP "1" "Aug 2007" "alternative CPP" "Commands for GCC"
+.TH MCPP "1" "Mar 2008" "alternative CPP" "Commands for GCC"
 .SH NAME
 mcpp \- Matsui CPP, an alternative C preprocessor
 .SH SYNOPSIS
@@ -119,6 +119,10 @@ Same as -x assembler-with-cpp.
 .IP "\fB-x assembler-with-cpp"
 Process "assembler" source.
 .PP
+Option available on Mac OS X / Apple-GCC:
+.IP "\fB-arch <arch>"
+Change the target to <arch> (one of i386, x86_64, ppc and ppc64).
+.PP
 Option available on CygWIN:
 .IP \fB-mno-cygwin
 Change include directory and predefined macros for msvcrt.dll rather than cygwin1.dll.
@@ -148,7 +152,7 @@ Retrieve the macro definition from the stack.
 .IP "#pragma MCPP warning    any message"
 Putout warning "any message".
 .SH "VERSION"
-MCPP V.2.7 (2007/08) for GCC
+MCPP V.2.7 (2008/03) for GCC
 .SH "SEE ALSO"
 The full documentation for \fBmcpp\fR are maintained as html files.
 Please see mcpp-manual.html.

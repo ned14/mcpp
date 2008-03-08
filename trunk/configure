@@ -18708,7 +18708,7 @@ LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 echo "$as_me:$LINENO: checking whether the cpp is target preprocessor" >&5
 echo $ECHO_N "checking whether the cpp is target preprocessor... $ECHO_C" >&6
 mcpp=`$CPP $CFLAGS -xc -v /dev/null 2>&1 | grep 'MCPP'`
-if test x$mcpp != x; then
+if test "x$mcpp" != x; then
     { { echo "$as_me:$LINENO: error: Do 'make uninstall' before configuring again." >&5
 echo "$as_me: error: Do 'make uninstall' before configuring again." >&2;}
    { (exit 1); exit 1; }; }
@@ -21069,212 +21069,26 @@ _ACEOF
     fi
 fi
 
-if test x$ac_cv_c_compiler_gnu = xyes; then
-
-
-
-    ## The following 3 mb_* files are separated from this file, since
-    ## the editors do not allow multiple encodings of multi-byte characters.
-
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        lang_save=$LANG
-    fi
-
-    ## Set the environment variable, though this is seldom enabled in GCC.
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        export LANG=C-SJIS
-    fi
-
-        echo "$as_me:$LINENO: checking if '0x5c' in SJIS multi-byte character is handled differently from backslash" >&5
-echo $ECHO_N "checking if '0x5c' in SJIS multi-byte character is handled differently from backslash... $ECHO_C" >&6
-if test "${ac_cv_c_sjis_escape_free+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  if test "$cross_compiling" = yes; then
-  { echo "$as_me:$LINENO: WARNING: cannot run on cross-compiling so assumes that '0x5c' in multi-byte character is not rightly handled." >&5
-echo "$as_me: WARNING: cannot run on cross-compiling so assumes that '0x5c' in multi-byte character is not rightly handled." >&2;}
-                ac_cv_c_sjis_escape_free=no
-
-else
-  cat >conftest.$ac_ext <<_ACEOF
-
-    #include    <assert.h>
-        int     strcmp();
-        void    exit();
-    #define str( a)     # a
-    int main( void)
-    {
-        assert( strcmp( str( "•\Ž¦"), "\"•\Ž¦\"") == 0);    /* Multi-byte chars */
-        exit (0);
-    }
-_ACEOF
-rm -f conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_c_sjis_escape_free=yes
-else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-( exit $ac_status )
-ac_cv_c_sjis_escape_free=no
-fi
-rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
-
-fi
-echo "$as_me:$LINENO: result: $ac_cv_c_sjis_escape_free" >&5
-echo "${ECHO_T}$ac_cv_c_sjis_escape_free" >&6
-
-
-
-    if test x$ac_cv_c_sjis_escape_free = xyes; then
+## Handling of multi-byte characters containing '0x5c' codes:
+## These tests cannot be executed without appropriate options for the
+## compiler.  So, here we define all of these macros as FALSE.
+## User should edit config.h by hand after executing this script.
+## These should be 0 for GCC at least upto V.4.1.
 
 cat >>confdefs.h <<\_ACEOF
-#define SJIS_IS_ESCAPE_FREE 1
+#define SJIS_IS_ESCAPE_FREE 0
 _ACEOF
 
-    fi
-
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        export LANG=C-JIS
-    fi
-
-        echo "$as_me:$LINENO: checking if '0x5c' in ISO2022_JP multi-byte character is handled differently from backslash" >&5
-echo $ECHO_N "checking if '0x5c' in ISO2022_JP multi-byte character is handled differently from backslash... $ECHO_C" >&6
-if test "${ac_cv_c_iso2022_jp_escape_free+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  if test "$cross_compiling" = yes; then
-  { echo "$as_me:$LINENO: WARNING: cannot run on cross-compiling so assumes that '0x5c' in multi-byte character is not rightly handled." >&5
-echo "$as_me: WARNING: cannot run on cross-compiling so assumes that '0x5c' in multi-byte character is not rightly handled." >&2;}
-                ac_cv_c_iso2022_jp_escape_free=no
-
-else
-  cat >conftest.$ac_ext <<_ACEOF
-
-    #include    <assert.h>
-        int     strcmp();
-        void    exit();
-    #define str( a)     # a
-    int main( void)
-    {
-        assert( strcmp( str( "$B0\F0(B"), "\"$B0\F0(B\"") == 0);    /* Multi-byte chars */
-        exit (0);
-    }
-_ACEOF
-rm -f conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_c_iso2022_jp_escape_free=yes
-else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-( exit $ac_status )
-ac_cv_c_iso2022_jp_escape_free=no
-fi
-rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
-
-fi
-echo "$as_me:$LINENO: result: $ac_cv_c_iso2022_jp_escape_free" >&5
-echo "${ECHO_T}$ac_cv_c_iso2022_jp_escape_free" >&6
-
-
-
-    if test x$ac_cv_c_iso2022_jp_escape_free = xyes; then
 
 cat >>confdefs.h <<\_ACEOF
-#define ISO2022_JP_IS_ESCAPE_FREE 1
+#define ISO2022_JP_IS_ESCAPE_FREE 0
 _ACEOF
 
-    fi
-
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        export LANG=$lang_save
-    fi
-
-
-        echo "$as_me:$LINENO: checking if '0x5c' in BIGFIVE multi-byte character is handled differently from backslash" >&5
-echo $ECHO_N "checking if '0x5c' in BIGFIVE multi-byte character is handled differently from backslash... $ECHO_C" >&6
-if test "${ac_cv_c_bigfive_escape_free+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  if test "$cross_compiling" = yes; then
-  { echo "$as_me:$LINENO: WARNING: cannot run on cross-compiling so assumes that '0x5c' in multi-byte character is not rightly handled." >&5
-echo "$as_me: WARNING: cannot run on cross-compiling so assumes that '0x5c' in multi-byte character is not rightly handled." >&2;}
-                ac_cv_c_bigfive_escape_free=no
-
-else
-  cat >conftest.$ac_ext <<_ACEOF
-
-    #include    <assert.h>
-        int     strcmp();
-        void    exit();
-    #define str( a)     # a
-    int main( void)
-    {
-        assert( strcmp( str( "¥\ÁZ"), "\"¥\ÁZ\"") == 0);    /* Multi-byte chars */
-        exit (0);
-    }
-_ACEOF
-rm -f conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_c_bigfive_escape_free=yes
-else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-( exit $ac_status )
-ac_cv_c_bigfive_escape_free=no
-fi
-rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
-
-fi
-echo "$as_me:$LINENO: result: $ac_cv_c_bigfive_escape_free" >&5
-echo "${ECHO_T}$ac_cv_c_bigfive_escape_free" >&6
-
-
-
-    if test x$ac_cv_c_bigfive_escape_free = xyes; then
 
 cat >>confdefs.h <<\_ACEOF
-#define BIGFIVE_IS_ESCAPE_FREE 1
+#define BIGFIVE_IS_ESCAPE_FREE 0
 _ACEOF
 
-    fi
-
-fi ## gcc
 
 fi ## replace-cpp mode
 fi ## build-cpp mode or replace-cpp mode

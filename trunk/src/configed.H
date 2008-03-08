@@ -8,7 +8,7 @@
 
 #define     TRUE            1
 #define     FALSE           0
-#define     DATE            "2008/02"               /* Date of mcpp     */
+#define     DATE            "2008/03"               /* Date of mcpp     */
 
 /*
  *  'Target' means the O.S. and the compiler to which cpp is implemented.
