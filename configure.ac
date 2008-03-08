@@ -172,6 +172,10 @@ dnl Checks for typedefs, and compiler characteristics.
 
 AC_CHECK_TYPES( [intmax_t, long long])
 
+dnl Check for library functions.
+
+AC_CHECK_FUNCS( [stpcpy])
+
 dnl Checks for some system characteristics.
 
 AC_CACHE_CHECK( if the cases of filename are folded,
