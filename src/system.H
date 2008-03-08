@@ -201,7 +201,7 @@ typedef intmax_t    expr_t;
 typedef uintmax_t   uexpr_t;
 #else
 #if     HAVE_LONG_LONG
-#if     HOST_COMPILER == MSC || HOST_COMPILER == BORLANDC
+#if     (HOST_COMPILER == MSC && _MSC_VER < 1500) || HOST_COMPILER == BORLANDC
 typedef __int64             expr_t;
 typedef unsigned __int64    uexpr_t;
 #else
@@ -224,14 +224,6 @@ typedef long            expr_t;
 #endif
 #else
 #define EXPR_MAX            4294967295UL
-#endif
-
-/*
- * DOLLAR_IN_NAME   Should be set TRUE if $ is a valid letter in identifiers
- *              or FALSE if $ is invalid.
- */
-#ifndef DOLLAR_IN_NAME
-#define DOLLAR_IN_NAME      FALSE
 #endif
 
 /*

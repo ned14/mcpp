@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2008/01/28      kmatsui
+2008/03/08      kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
@@ -39,7 +39,7 @@ ChangeLog of MCPP and its accompanying Validation Suite
         by -I option was disabled, "non-existent/../existent" was judged
         as non-existent before wrongly normalizing to "existent", and #
         include "directory" was made not to open.  Created norm_dir().
-        (thanks to Taras Glek) (system.c)
+        (thanks to Taras Glek and Dave Mandelin) (system.c)
         * Stopped to convert path-list on Windows to lowercase-letters.
         Changed path-list comparing function on Windows from strcmp() to
         strcasecmp() or stricmp().  (system.c)
@@ -53,6 +53,11 @@ ChangeLog of MCPP and its accompanying Validation Suite
         * Absorbed lib.c into system.c.  Renamed getopt() to mcpp_getopt
         (), also variables opt* to mcpp_opt*, and made static in order
         to prevent linking of glibc getopt().  (thanks to Dwayne Boone)
+        * Fixed a bug of UTF-8 multibyte character handling, enabled 4-
+        bytes long sequences, and enabled checking of overlong sequences
+        and UTF-16 surrogate pairs.  (by Matt Wozniski) (mbchar.c,
+        support.c)
+        * Fixed a bug of tokenization in KR and OLD modes.  (support.c)
         * Changed FILENAME_MAX to PATH_MAX and FILENAMEMAX to PATHMAX,
         because FILENAME_MAX of some systems are too short.  (thanks to
         Dwayne Boone)
@@ -67,10 +72,13 @@ ChangeLog of MCPP and its accompanying Validation Suite
         search_subdir(), search_header_map(), hmap_hash().  (system.c,
         directive.c, set_mcpp.sh, unset_mcpp.sh, configure.ac, src/
         Makefile.am)
+        * Added porting to Visual C++ 2008.  Enabled '$' in identifier
+        by default in Visual-C-specific-build and GCC-specific-build.
+        (system.H, internal.H, support.c, system.c)
         * Added documentation on source checking of firefox 3.0pre.
-        (mcpp-manual.html)
-        * Updated some documents.  Some parts of the documents are not
-        yet updated.  (mainly by kmatsui, partly by Taras Glek)
+        Added comments on system headers in Mac OS X.  (mcpp-manual.html)
+        * Updated all the documents.  (mainly by kmatsui, partly by
+        Taras Glek)
 
 2007/05/19  kmatsui
         * V.2.6.4

@@ -1,6 +1,7 @@
 /* e_18_4.c:    #define syntax errors.  */
 
 /* { dg-do preprocess } */
+/* { dg-options "-ansi -pedantic" } */
 
 /* 18.4:    Not an identifier.  */
 #define "string"    /* { dg-error "macro names must be identifiers| invalid macro name| Not an identifier" } */
@@ -26,7 +27,7 @@
         character.
 */
 /*  From ISO 9899:1990 / Corrigendum 1. */
-#define THIS$AND$THAT(a, b)     ((a) + (b))     /* { dg-error "ISO C requires whitespace after the macro name| '\\$' in identifier or number| No space between macro name \"THIS\" and repl-text" } */
+#define THIS$AND$THAT(a, b)     ((a) + (b))     /* { dg-error "ISO C requires whitespace after the macro name| '\\$' in identifier| No space between macro name" } */
 /* Note: the following definition is legal (object-like macro).
 #define THIS $AND$THAT(a, b)    ((a) + (b))
 */

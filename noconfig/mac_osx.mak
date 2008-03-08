@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7 for Mac OS X / GCC / GNU make
-#       2008/02 kmatsui
+#       2008/03 kmatsui
 #
 # First, you must edit NAME, GCCDIR, BINDIR, INCDIR, 
 #       gcc_maj_ver, gcc_min_ver, arch, target_cc.

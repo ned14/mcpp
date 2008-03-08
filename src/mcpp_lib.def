@@ -1,4 +1,4 @@
-LIBRARY mcpp
+LIBRARY mcpp0
 EXPORTS
 	mcpp_lib_main
 	mcpp_reset_def_out_func

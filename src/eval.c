@@ -996,7 +996,7 @@ static VAL_SIGN *   eval_char(
         cp++;                           /* Skip 'L'                 */
         bits = mbits;
     }
-    if (char_type[ *cp & UCHARMAX] & mbstart) {
+    if (char_type[ *cp & UCHARMAX] & mbchk) {
         cl = mb_eval( &cp);
         bits = mbits;
     } else if ((cl = eval_one( &cp, wide, mbits, (ucn8 = FALSE, &ucn8)))
@@ -1008,7 +1008,7 @@ static VAL_SIGN *   eval_char(
     value = cl;
 
     for (i = 0; *cp != '\'' && *cp != EOS; i++) {
-        if (char_type[ *cp & UCHARMAX] & mbstart) {
+        if (char_type[ *cp & UCHARMAX] & mbchk) {
             cl = mb_eval( &cp);
             if (cl == 0)
                 /* Shift-out sequence of multi-byte or wide character   */

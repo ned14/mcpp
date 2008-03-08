@@ -299,7 +299,7 @@ static char *   mkdep_mt;               /* Argument of -MT option   */
 /* sharp_filename is filename for #line line, used only in cur_file()   */
 static char *   sharp_filename = NULL;
 static char *   argv0;      /* argv[ 0] for usage() and version()   */
-static int      ansi;           /* __STRICT_ANSI__ flag for GNUC    */
+static int      ansi;           /* __STRICT_ANSI__ flag for GNUC    */ 
 static int      compat_mode;
                 /* "Compatible" mode of recursive macro expansion   */
 
@@ -453,6 +453,10 @@ void    do_options(
     integrated_cpp = ((gcc_maj_ver == 3 && gcc_min_ver >= 3)
             || gcc_maj_ver == 4);
 #endif
+#if COMPILER == GNUC || COMPILER == MSC
+    option_flags.dollar_in_name = TRUE;
+    /* GCC and Visual C allows '$' in name by default   */
+#endif
 
     set_opt_list( optlist);
 
@@ -462,9 +466,10 @@ opt_search: ;
 
         switch (opt) {          /* Command line option character    */
 
-#if COMPILER == GNUC && ! DOLLAR_IN_NAME
+#if COMPILER == GNUC
         case '$':                       /* Forbid '$' in identifier */
-            break;                          /* Ignore this option   */
+            option_flags.dollar_in_name = FALSE;
+            break;
 #endif
 
         case '+':
@@ -653,6 +658,8 @@ plus:
                     || str_eq( mcpp_optarg, "pie")) {
                 look_and_install( "__PIC__", DEF_NOARGS_PREDEF, null, "1");
                 look_and_install( "__pic__", DEF_NOARGS_PREDEF, null, "1");
+            } else if (str_eq( mcpp_optarg, "no-dollars-in-identifiers")) {
+                option_flags.dollar_in_name = FALSE;
             } else if (str_eq( mcpp_optarg, "no-show-column")) {
                 ;                           /* Ignore this option   */
             } else if (! integrated_cpp) {
@@ -1202,8 +1209,11 @@ Version:
             } else if (str_eq( mcpp_optarg, "l")) {
                 look_and_install( "_VC_NODEFAULTLIB", DEF_NOARGS_PREDEF, null
                         , "1");
-            } else if (str_eq( mcpp_optarg, "a") || str_eq( mcpp_optarg, "e")) {
-                /* Ignore -Za and -Ze silently  */
+            } else if (str_eq( mcpp_optarg, "a")) {         /* -Za  */
+                undefine( "_MSC_EXTENSIONS");
+                option_flags.dollar_in_name = FALSE;
+            } else if (str_eq( mcpp_optarg, "e")) {
+                /* Ignore -Ze silently  */
                 break;
             } else if (*(mcpp_optarg + 1) == EOS) {
                 /* -Z followed by one char  */
@@ -1282,8 +1292,10 @@ Version:
     }
     if (*in_pp && str_eq( (*in_pp) + strlen( *in_pp) - 2, ".S"))
         option_flags.lang_asm = TRUE;   /* Input file name is *.S   */
-    if (option_flags.lang_asm)
+    if (option_flags.lang_asm) {
         look_and_install( "__ASSEMBLER__", DEF_NOARGS_PREDEF, null, "1");
+        option_flags.dollar_in_name = FALSE;        /* Disable '$' in name  */
+    }
     if (! sys_dirp || sys_dirp == incdir)
         sys_dirp = incend;
 #endif
@@ -1336,7 +1348,7 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.7-prerelease (2008/02) "
+        "MCPP V.2.7-prerelease (2008/03) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif
@@ -1968,6 +1980,8 @@ void    at_start( void)
     }
 
 #if COMPILER == GNUC || COMPILER == MSC
+    if (option_flags.dollar_in_name)
+        char_type[ 0x24] |= LET;    /* Enable '$' in identifiers    */
     /*
      * Do the -include (-Fl for MSC) options in the specified order.
      * Note: This functionality is implemented as nested #includes
@@ -3838,7 +3852,7 @@ static char *   bsl2sl(
         if (bsl_in_mbchar) {
             int     c;
             c = *cp & UCHARMAX;
-            if (char_type[ c] & mbstart) {  /* First byte of MBCHAR */
+            if (char_type[ c] & mbchk) {    /* First byte of MBCHAR */
                 char    tmp[ PATHMAX];
                 char *  tp = tmp;
                 *tp++ = *cp++;

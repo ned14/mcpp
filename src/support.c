@@ -102,8 +102,6 @@ static void     do_msg( const char * severity, const char * format
                 /* Putout diagnostic message    */
 static char *   cat_line( int del_bsl);
                 /* Splice the line              */
-static int      last_is_mbchar( const char * in, int len);
-                /* The line ends with MBCHAR ?  */
 static void     put_line( char * out, FILE * fp);
                 /* Put out a logical line       */
 static void     dump_token( int token_type, const char * cp);
@@ -477,6 +475,8 @@ int     skip_ws( void)
     return  c;
 }
 
+#define MBMASK          0xFF    /* Mask to hide multibyte char      */
+
 int     scan_token(
     int     c,                  /* The first character of the token */
     char ** out_pp,             /* Pointer to pointer to output buf */
@@ -503,7 +503,7 @@ int     scan_token(
     if (standard)
         in_token = TRUE;                /* While a token is scanned */
     c = c & UCHARMAX;
-    ch_type = char_type[ c] & mbmask;
+    ch_type = char_type[ c] & MBMASK;
 
     switch (ch_type) {
     case LET:                           /* Probably an identifier   */
@@ -567,12 +567,13 @@ operat: out = scan_op( c, out);         /* Operator or punctuator   */
         }
 #endif
 #if OK_MBIDENT
-        if (mcpp_mode == STD && (char_type[ c] & mbstart) && stdc3) {
+        if (mcpp_mode == STD && (char_type[ c] & mbchk) && stdc3) {
             char *  bptr = infile->bptr;
             mb_read( c, &infile->bptr, &out);
             infile->bptr = bptr;
             out = *out_pp;
             goto  ident;        /* An identifier with multi-byte characters */
+            /* Mbchar cheking has been done in scan_quote() and others. */
         }
 #endif
         if ((standard && (c == CAT || c == ST_QUOTE)) || (char_type[ c] & SPA))
@@ -608,9 +609,7 @@ static void scan_id(
  */
 {
     static char * const     limit = &identifier[ IDMAX];
-#if DOLLAR_IN_NAME
-    static int      diagnosed = FALSE;  /* Flag of diagnosing '$'   */
-#endif
+    static int      dollar_diagnosed = FALSE;   /* Flag of diagnosing '$'   */
 #if OK_UCN
     int     uc2 = 0, uc4 = 0;           /* Count of UCN16, UCN32    */
 #endif
@@ -659,7 +658,7 @@ static void scan_id(
         }
 #endif  /* OK_UCN   */
 #if OK_MBIDENT
-        if (mcpp_mode == STD && (char_type[ c] & mbstart) && stdc3) {
+        if (mcpp_mode == STD && (char_type[ c] & mbchk) && stdc3) {
             len = mb_read( c, &infile->bptr, &bp);
             if (len & MB_ERROR) {
                 if (infile->fp)
@@ -680,7 +679,7 @@ next_c:
             || (mcpp_mode == STD && c == '\\' && stdc2)
 #endif
 #if OK_MBIDENT
-            || (mcpp_mode == STD && (char_type[ c] & mbstart) && stdc3)
+            || (mcpp_mode == STD && (char_type[ c] & mbchk) && stdc3)
 #endif
         );
 
@@ -707,13 +706,11 @@ next_c:
                 , NULL, (long) std_limits.id_len, identifier);
 #endif  /* IDMAX > IDLEN90MIN   */
 
-#if DOLLAR_IN_NAME
-    if (diagnosed == FALSE && (warn_level & 2)
-            && strchr( identifier, '$') != NULL) {
+    if (option_flags.dollar_in_name && dollar_diagnosed == FALSE
+            && (warn_level & 2) && strchr( identifier, '$') != NULL) {
         cwarn( "'$' in identifier \"%s\"", identifier, 0L, NULL); /* _W2_ */
-        diagnosed = TRUE;                   /* Diagnose only once   */
+        dollar_diagnosed = TRUE;            /* Diagnose only once   */
     }
-#endif
 }
 
 char *  scan_quote(
@@ -750,7 +747,7 @@ scan:
     while ((c = get_ch()) != EOS) {
 
 #if MBCHAR
-        if (char_type[ c] & mbstart) {
+        if (char_type[ c] & mbchk) {
             /* First of multi-byte character (or shift-sequence)    */
             char *  bptr = infile->bptr;
             len = mb_read( c, &infile->bptr, (*out_p++ = c, &out_p));
@@ -801,7 +798,7 @@ scan:
             c = get_ch();
 escape:
 #if MBCHAR
-            if (char_type[ c] & mbstart) {
+            if (char_type[ c] & mbchk) {
                                 /* '\\' followed by multi-byte char */
                 unget_ch();
                 continue;
@@ -979,7 +976,7 @@ static char *   scan_number(
             c = get_ch();
 #endif  /* OK_UCN   */
 #if OK_MBIDENT
-        } else if (mcpp_mode == STD && (char_type[ c] & mbstart) && stdc3) {
+        } else if (mcpp_mode == STD && (char_type[ c] & mbchk) && stdc3) {
             len = mb_read( c, &infile->bptr, &out_p);
             if (len & MB_ERROR) {
                 if (infile->fp)
@@ -996,7 +993,7 @@ static char *   scan_number(
             || (mcpp_mode == STD && c == '\\' && stdc3)
 #endif
 #if OK_MBIDENT
-            || (mcpp_mode == STD && (char_type[ c] & mbstart) && stdc3)
+            || (mcpp_mode == STD && (char_type[ c] & mbchk) && stdc3)
 #endif
         );
 
@@ -1791,7 +1788,7 @@ end_line:
         while (char_type[ *temp & UCHARMAX] & HSP)
             temp++;
         if (*temp == '#'        /* This line starts with # token    */
-                    || (mcpp_mode == STD && *temp == '%' && *(temp + 1) == ':'))
+                || (mcpp_mode == STD && *temp == '%' && *(temp + 1) == ':'))
             if (warn_level & 1)
                 cwarn(
     "Macro started at line %.0s%ld swallowed directive-like line"   /* _W1_ */
@@ -2098,30 +2095,6 @@ int     cnv_digraph(
         cwarn( "%.0s%ld digraph(s) converted"           /* _W16_    */
                 , NULL, (long) count, NULL);
     return  count;
-}
-
-static int  last_is_mbchar(
-    const char *  in,               /* Input physical line          */
-    int     len                     /* Length of the line minus 2   */
-)
-/*
- * Return 2, if the last char of the line is second byte of SJIS or BIGFIVE,
- * else return 0.
- */
-{
-    const char *    cp = in + len;
-    const char * const      endp = in + len;    /* -> the char befor '\n'   */
-
-    if ((mbchar & (SJIS | BIGFIVE)) == 0)
-        return  0;
-    while (in <= --cp) {                    /* Search backwardly    */
-        if ((char_type[ *cp & UCHARMAX] & mbstart) == 0)
-            break;                  /* Not the first byte of MBCHAR */
-    }
-    if ((endp - cp) & 1)
-        return  0;
-    else
-        return  2;
 }
 
 static char *   at_eof(

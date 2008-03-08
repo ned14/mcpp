@@ -77,9 +77,10 @@
 #define DIG             2           /* Digit                        */
 #define DOT             4           /* . might start a number       */
 #define PUNC            8           /* Punctuators and operators    */
-#define QUO             16          /* Both flavors of quotation ",'*/
-#define SPA             32          /* White spaces                 */
-#define HSP             64  /* Horizontal white spaces (' ', '\t', TOK_SEP) */
+#define QUO             0x10        /* Both flavors of quotation ",'*/
+#define SPA             0x20        /* White spaces                 */
+#define HSP             0x40
+                    /* Horizontal white spaces (' ', '\t', TOK_SEP) */
 
 /*
  * Codes for operators used in #if expression.
@@ -332,6 +333,7 @@ extern struct option_flags_ {
         int     dig;                /* -2 option (toggle digraphs)  */
         int     lang_asm;           /* -a option (assembler source) */
         int     no_source_line;     /* Do not output line in diag.  */
+        int     dollar_in_name;     /* Allow $ in identifiers       */
 } option_flags;
 
 extern int      mcpp_mode;          /* Mode of preprocessing        */
@@ -370,8 +372,7 @@ extern FILE *   fp_debug;           /* Debugging information stream */
 extern int      insert_sep;         /* Inserted token separator flag*/
 extern int      mkdep;              /* Output source file dependency*/
 extern int      mbchar;             /* Encoding of multi-byte char  */
-extern int      mbmask;             /* Char type other than mbchar  */
-extern int      mbstart;            /* 1st byte of mbchar (or shift)*/
+extern int      mbchk;              /* Possible multi-byte char     */
 extern int      bsl_in_mbchar;      /* 2nd byte of mbchar has '\\'  */
 extern int      bsl_need_escape;/* '\\' in mbchar should be escaped */
 extern int      mcpp_debug;         /* Class of debug information   */
@@ -438,6 +439,8 @@ extern void     mb_init( void);
                 /* Initialize mbchar variables  */
 extern uexpr_t  mb_eval( char ** seq_pp);
                 /* Evaluate mbchar in #if       */
+extern int      last_is_mbchar( const char * in, int len);
+                /* The line ends with MBCHAR ?  */
 
 /* support.c    */
 extern int      get_unexpandable( int c, int diag);

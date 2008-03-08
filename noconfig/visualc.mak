@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7 for Visual C / nmake
-#       2008/01 kmatsui
+#       2008/03 kmatsui
 # You must first edit BINDIR and LIBDIR according to your system.
 # To make compiler-independent-build of MCPP do:
 #       nmake
@@ -7,8 +7,8 @@
 #       nmake COMPILER=MSC
 # To re-compile MCPP using Visual-C-specific-build of MCPP do:
 #       nmake COMPILER=MSC PREPROCESSED=1
-# To link kmmalloc V.2.5.1 (malloc() package of kmatsui) or later do:
-#   (Note: Visual C 2005 cannot coexist with kmmalloc)
+# To link kmmalloc V.2.5.3 (malloc() package of kmatsui) or later do:
+#   (Note: Visual C 2005 and 2008 cannot coexist with kmmalloc)
 #       nmake [PREPROCESSED=1] KMMALLOC=1
 # To make mcpp.lib (subroutine-build of mcpp) do:
 #       nmake MCPP_LIB=1 mcpplib
@@ -24,15 +24,15 @@ CC = cl
 CFLAGS = $(CFLAGS) -Za -c	# -Zi
 	# Add -Zi for debugging on Visual C / IDE
 LINKFLAGS = -Fe$(NAME)	# -Zi
-CPPFLAGS = $(CPPFLAGS) -D_CRT_SECURE_NO_DEPRECATE
-	# -D_CRT_SECURE_NO_DEPRECATE for Visual C 2005
+CPPFLAGS = $(CPPFLAGS) -D_CRT_SECURE_NO_DEPRECATE -Za
+	# -D_CRT_SECURE_NO_DEPRECATE for Visual C 2005, 2008
 
 !if "$(COMPILER)"=="MSC"
 CPPFLAGS = $(CPPFLAGS) -DCOMPILER=MSC
 # BINDIR : Adjust to your system.
 #	for Visual C 2003
 #BINDIR = "$(MSVCDIR)"\bin
-#	for Visual C 2005
+#	for Visual C 2005, 2008
 BINDIR = "$(VCINSTALLDIR)"\bin
 !else
 # compiler-independent-build: use compiler-independent directory

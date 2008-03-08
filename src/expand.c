@@ -171,6 +171,9 @@ static DEFBUF * is_macro_call(
  * 1998/08      First released.     kmatsui
  */
 
+/* For debug of -K option: should be turned off on release version. */
+#define DEBUG_MACRO_ANN     FALSE
+
 /* Return value of is_able_repl()   */
 #define NO          0               /* "Blue-painted"               */
 #define YES         1               /* Not blue-painted             */
@@ -250,7 +253,7 @@ static char *   catenate( const DEFBUF * defp, const char ** arglist
                 /* Catenate tokens                  */
 static const char * remove_magics( const char * argp, int from_last);
                 /* Remove pair of magic characters  */
-#if 0   /* For debugging only   */
+#if DEBUG_MACRO_ANN
 static void     chk_symmetry( char *  start_id, char *  end_id, size_t  len);
                 /* Check if a pair of magics are symmetrical    */
 #endif
@@ -319,7 +322,7 @@ static char *   expand_std(
         goto  exp_end;
     }
 
-#if 0
+#if DEBUG_MACRO_ANN
     chk_magic_balance( macrobuf, macrobuf + strlen( macrobuf), FALSE, TRUE);
 #endif
     cp = macrobuf;
@@ -861,7 +864,7 @@ static char *   replace(
         }
         *out_p = EOS;
     }
-#if 0
+#if DEBUG_MACRO_ANN
     chk_magic_balance( out, out_p, FALSE, TRUE);
 #endif
 
@@ -1389,7 +1392,7 @@ static const char *     remove_magics(
                         nest_e--;
                         /* Search after the token   */
                         if (token < mac_loc[ mac_e] && nest_e == nest_s - 1) {
-#if 0   /* For debugging only   */
+#if DEBUG_MACRO_ANN
                             if (option_flags.v)
                                 chk_symmetry( mac_id[ mac_s], mac_id[ mac_e]
                                         , MAC_E_LEN - 2);
@@ -1426,7 +1429,7 @@ static const char *     remove_magics(
                     } else {
                         nest_e--;
                         if (token < arg_loc[ arg_e] && nest_e == nest_s - 1) {
-#if 0   /* For debugging only   */
+#if DEBUG_MACRO_ANN
                             if (option_flags.v)
                                 chk_symmetry( arg_id[ arg_s], arg_id[ arg_e]
                                         , ARG_E_LEN_V - 2);
@@ -1504,7 +1507,7 @@ static const char *     remove_magics(
         infile->bptr += len;
     }
     if (! with_rtend)
-        *tp--;
+        tp--;
     *tp = EOS;
     if (file == infile)
         get_ch();                               /* Clear the "file" */
@@ -1513,7 +1516,7 @@ static const char *     remove_magics(
     return  arg_p;
 }
 
-#if 0   /* For debugging only. Should not be enabled on release version.    */
+#if DEBUG_MACRO_ANN
 static void     chk_symmetry(
     char *  start_id,   /* Sequence of macro (or arg) starting inf  */
     char *  end_id,     /* Sequence of macro (or arg) closing inf   */
@@ -1668,7 +1671,7 @@ static char *   stringize(
         case CHR:
             workp = work_buf;
             while ((c = *workp++ & UCHARMAX) != EOS) {
-                if (char_type[ c] & mbstart) {      /* Multi-byte character */
+                if (char_type[ c] & mbchk) {        /* Multi-byte character */
                     mb_read( c, &workp, (*out_p++ = c, &out_p));
                                             /* Copy as it is        */
                     continue;
@@ -2781,10 +2784,10 @@ static int  get_an_arg(
                 *argp++ = (m_num % UCHARMAX) + 1;
                 *argp++ = nargs + 1;
                 *argp = EOS;
-                *argpp = chk_magic_balance( *argpp, argp, TRUE, FALSE);
+                *argpp = chk_magic_balance( *argpp, argp, TRUE
+                        , DEBUG_MACRO_ANN);
                     /* Check a stray magic caused by abnormal macro */
                     /* and move it to an edge if found.             */
-                    /* Turn the 4th arg on to debug */
             }
         }
         *argp++ = RT_END;                   /* For rescan()         */
