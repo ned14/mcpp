@@ -120,7 +120,7 @@ main.o directive.o eval.o expand.o support.o system.o mbchar.o:   \
 install :
 	install -s $(NAME) $(BINDIR)/$(NAME)
 .if ! empty(COMPILER) && $(COMPILER) == GNUC
-	./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'    \
+	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'    \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'  \
             '$(INCDIR)' SYS_FREEBSD
 .endif
@@ -131,7 +131,7 @@ clean	:
 uninstall:
 	rm -f $(BINDIR)/$(NAME)
 .if ! empty(COMPILER) && $(COMPILER) == GNUC
-	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
+	@./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x' 'ln -s' '$(INCDIR)' SYS_FREEBSD
 .endif
 

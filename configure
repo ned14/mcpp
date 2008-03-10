@@ -465,7 +465,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB DLLTOOL ac_ct_DLLTOOL AS ac_ct_AS OBJDUMP ac_ct_OBJDUMP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL target_cc host_system Target_Cpu inc_dir gcc_maj_ver gcc_min_ver cpp_call gcc_path gcc_testsuite_dir GNUC_TRUE GNUC_FALSE MCPP_LIB_TRUE MCPP_LIB_FALSE REPLACE_CPP_TRUE REPLACE_CPP_FALSE MINGW_TRUE MINGW_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB DLLTOOL ac_ct_DLLTOOL AS ac_ct_AS OBJDUMP ac_ct_OBJDUMP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL target_cc gcc_path host_system Target_Cpu inc_dir gcc_maj_ver gcc_min_ver cpp_call gcc_testsuite_dir GNUC_TRUE GNUC_FALSE MCPP_LIB_TRUE MCPP_LIB_FALSE REPLACE_CPP_TRUE REPLACE_CPP_FALSE MINGW_TRUE MINGW_FALSE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -20343,8 +20343,58 @@ echo $ECHO_N "checking for the directory to install mcpp... $ECHO_C" >&6
     echo "$as_me:$LINENO: result: $bindir" >&5
 echo "${ECHO_T}$bindir" >&6
 
-    if test "x$prefix" = xNONE; then
-        prefix=$ac_default_prefix
+    # Extract the first word of "$CC", so it can be a program name with args.
+set dummy $CC; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_path_gcc_path+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $gcc_path in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_gcc_path="$gcc_path" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_gcc_path="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  ;;
+esac
+fi
+gcc_path=$ac_cv_path_gcc_path
+
+if test -n "$gcc_path"; then
+  echo "$as_me:$LINENO: result: $gcc_path" >&5
+echo "${ECHO_T}$gcc_path" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+    ## force to set $prefix to GCC's prefix
+    ## (i.e. "/usr/local" of "/usr/local/bin/gcc")
+    gcc_prefix=`echo $gcc_path | $EGREP "/bin/$CC\$" | sed "s,/bin/$CC\$,,"`
+    if test "x$gcc_prefix" != xNONE; then
+        if test "x$prefix" != xNONE && "x$gcc_prefix" != "x$prefix"; then
+            { echo "$as_me:$LINENO: WARNING: Ignored --prefix option, since it conflicts with GCC path" >&5
+echo "$as_me: WARNING: Ignored --prefix option, since it conflicts with GCC path" >&2;}
+        fi
+        prefix=$gcc_prefix
+    else
+        if test "x$prefix" = xNONE; then
+            prefix=$ac_default_prefix
+        fi
     fi
     lang_save=$LANG
     export LANG=C
@@ -21068,45 +21118,6 @@ _ACEOF
 
 
 
-
-    # Extract the first word of "$CC", so it can be a program name with args.
-set dummy $CC; ac_word=$2
-echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
-if test "${ac_cv_path_gcc_path+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $gcc_path in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_gcc_path="$gcc_path" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_gcc_path="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-
-  ;;
-esac
-fi
-gcc_path=$ac_cv_path_gcc_path
-
-if test -n "$gcc_path"; then
-  echo "$as_me:$LINENO: result: $gcc_path" >&5
-echo "${ECHO_T}$gcc_path" >&6
-else
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-fi
 
     echo "$as_me:$LINENO: checking whether ln -s works" >&5
 echo $ECHO_N "checking whether ln -s works... $ECHO_C" >&6
@@ -21965,13 +21976,13 @@ s,@FFLAGS@,$FFLAGS,;t t
 s,@ac_ct_F77@,$ac_ct_F77,;t t
 s,@LIBTOOL@,$LIBTOOL,;t t
 s,@target_cc@,$target_cc,;t t
+s,@gcc_path@,$gcc_path,;t t
 s,@host_system@,$host_system,;t t
 s,@Target_Cpu@,$Target_Cpu,;t t
 s,@inc_dir@,$inc_dir,;t t
 s,@gcc_maj_ver@,$gcc_maj_ver,;t t
 s,@gcc_min_ver@,$gcc_min_ver,;t t
 s,@cpp_call@,$cpp_call,;t t
-s,@gcc_path@,$gcc_path,;t t
 s,@gcc_testsuite_dir@,$gcc_testsuite_dir,;t t
 s,@GNUC_TRUE@,$GNUC_TRUE,;t t
 s,@GNUC_FALSE@,$GNUC_FALSE,;t t

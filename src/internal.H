@@ -525,7 +525,7 @@ extern void     at_end( void);
                 /* Do the final commands        */
 extern void     print_heap( void);
                 /* Print blocks of heap memory  */
-#if ! HOST_HAVE_STPCPY
+#if ! HOST_HAVE_STPCPY || HOST_COMPILER == GNUC
 extern char *   stpcpy( char * dest, const char * src);
                 /* Non-Standard library function*/
 #endif

@@ -601,8 +601,19 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     bindir=`expr $cpp_call : "\(.*\)/$cpp_name"`
     AC_MSG_RESULT( $bindir)
 
-    if test "x$prefix" = xNONE; then
-        prefix=$ac_default_prefix
+    AC_PATH_PROG( [gcc_path], [$CC], , [$PATH])
+    ## force to set $prefix to GCC's prefix
+    ## (i.e. "/usr/local" of "/usr/local/bin/gcc")
+    gcc_prefix=`echo $gcc_path | $EGREP "/bin/$CC\$" | sed "s,/bin/$CC\$,,"`
+    if test "x$gcc_prefix" != xNONE; then
+        if test "x$prefix" != xNONE && "x$gcc_prefix" != "x$prefix"; then
+            AC_MSG_WARN( [Ignored --prefix option, since it conflicts with GCC path])
+        fi
+        prefix=$gcc_prefix
+    else
+        if test "x$prefix" = xNONE; then
+            prefix=$ac_default_prefix
+        fi
     fi
     lang_save=$LANG
     export LANG=C
@@ -700,7 +711,6 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     AC_SUBST( [gcc_maj_ver])
     AC_SUBST( [gcc_min_ver])
     AC_SUBST( [cpp_call])
-    AC_PATH_PROG( [gcc_path], [$CC], , [$PATH])
     AC_PROG_LN_S
 
     if test x$gcc_maj_ver = x2; then

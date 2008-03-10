@@ -91,9 +91,12 @@ mcpp-manual.html 3.9.9 を見てください。
 とすると、compiler-specific 版の実行プログラムが生成されて、その処理系の
 専用のディレクトリにインストールされます。
   make install-strip, make uninstall は compiler-independent-build と同
-じです。configure の --prefix オプションも同じですが、これは実行プログラ
-ムのインストールディレクトリには関係しません。また、make での DESTDIR オ
-プションも、実行プログラムのインストールには関係しません。
+じです。
+  prefix ディレクトリは GCC の path から自動的に設定されます。例えば GCC
+の path が /usr/local/bin/gcc であれば、/usr/local を prefix とします。
+configure の --prefix オプションを指定しても、それが GCC の path と矛盾
+していれば無視されます。また、make での DESTDIR オプションも、実行プログ
+ラムのインストールには関係しません。
 
   ただし、GCC 以外の処理系では先に移植作業を行い、configure でさらにいく
 つかのオプションを指定しないと、適切なコンパイルとインストールがされませ
@@ -145,6 +148,9 @@ MCPP をインストールした gcc の名前が違っている場合は、gcc という名前が一
 場合は順序が逆になります。gcc から MCPP が呼び出されるようにしておかない
 と testsuite が MCPP に適用できないからです。また、このため --enable-
 replace-cpp オプションも必要です。
+  ${gcc-source} のありかによっては make check は sudo make check としな
+ければなりませんが、その場合は root と現ユーザとで 'which gcc' の結果が
+一致していなければならないことに注意してください。
   Testsuite 版検証セットは MCPP だけでなく、GCC V.2.95 以降の cc1,
 cc1plus (cpp0) にも適用することができます（cpp-test.html 3.2.3 参照）。
 
