@@ -107,7 +107,7 @@ endif
 install :
 	install -s -b $(NAME).exe $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
-    @./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'        \
+	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'        \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'   \
             '$(INCDIR)' SYS_CYGWIN
 endif
@@ -118,7 +118,7 @@ clean	:
 uninstall:
 	rm -f $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
-	./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
+	@./unset_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
         '$(cpp_call)' '$(CC)' '$(CXX)' 'x.exe' 'ln -s' '$(INCDIR)' SYS_CYGWIN
 endif
 

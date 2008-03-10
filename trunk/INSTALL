@@ -97,10 +97,13 @@ will install it into the compiler-specific directory.
     ${mcpp-dir}/configure --enable-replace-cpp; make; make install
 
 'make install', 'make install-strip', 'make uninstall' are the same as
-compiler-independent-build.  '--prefix' option of configure is also the
-same, though this is irrelevant to the installation directory of the
-executable.  'DESTDIR' option of make has also no relevance to the
-executable's installation.
+compiler-independent-build.
+
+The prefix directory is automatocally set from the path of GCC: for
+example, '/usr/local' of '/usr/local/bin/gcc'.  If you specify --prefix
+option for configure and it conflicts with the GCC path, the --prefix
+option will be ignored.  'DESTDIR' option of make has also no relevance
+to the executable's installation.
 
 For the compiler systems other than GCC, however, it may not be compiled
 or installed properly if some porting work has not been done beforehand
@@ -156,6 +159,10 @@ before 'make install' in the normal software, but this order is reversed
 in MCPP.  This is because testsuite cannot be applied to MCPP unless
 MCPP is called from gcc.  Due to this, the option '--enable-replace-cpp'
 is also required.
+
+Depending on the location of ${gcc-source} directory, you should do
+'sudo make check' instead of 'make check'.  In this case, make sure that
+gcc is the same between root and the current user.
 
 The testsuite edition of Validation Suite can also be applied to cc1,
 cc1plus (cpp0) of GCC V.2.95 and later, not only for MCPP.  (Refer cpp-

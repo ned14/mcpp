@@ -100,7 +100,7 @@ DLL_VER = 0
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 .SUFFIXES: .so
 .c.so   :
-    $(CC) $(CFLAGS) $(MEM_MACRO) -DDLL_EXPORT=1 -o$*.so $<
+	$(CC) $(CFLAGS) $(MEM_MACRO) -DDLL_EXPORT=1 -o$*.so $<
 mcpplib_dll: $(SOBJS)
 	$(LINKER) -Tpd c0d32.obj $(SOBJS), mcpp$(DLL_VER).dll, , \
             cw32.lib import32.lib $(MEMLIB)
