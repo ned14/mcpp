@@ -1267,11 +1267,18 @@ cpp 自身のデバッグ用にオリジナル版以来あるもので、私はほとんど手を加えていません
 このモードでは、マクロが定義されるたびに、またマクロが展開されるたびに、そのソース上の行とカラム位置がコメントに埋め込まれて出力されます。
 マクロが引数を持つ場合は、各引数についてもその位置が報告されます。
 ただし、マクロ展開によってトークンが連結された場合は、連結前のトークンに関するマクロ情報は失われます。<br>
+さらに、#undef, #if (#elif, #ifdef, #ifndef), #endif についても、簡単な情報が出力されます。<br>
 このモードは -K オプションで指定することもできます。</p>
 <p>このモードは C/C++ の refactoring tool のために実装されたものです。
 C/C++ にはプリプロセスというフェーズのあることが refactoring tool にとって困難な問題を引き起こしますが、このモードを使えばプリプロセス後の出力からソースを再構成することができるので、tool を作成しやすくなります。*1</p>
 <p>#pragma MCPP debug expand と似ていますが、expand のほうはマクロの展開過程をトレースするためのもので、詳細な情報が出力されるものの、それをコンパイルすることはできません。
 それに対して、macro_call はソース上の正確な位置を伝えるためのもので、情報をコメントに埋め込むので、出力をそのまま再プリプロセスしてコンパイルすることができるのが特徴です。</p>
+<p>注:</p>
+<p>*1 この仕様は Taras Glek の提案によるものである。
+彼自身は次のところで mozilla のソースの refactoring に取り組んでいる。</p>
+<p><a href="http://blog.mozilla.com/tglek/"> http://blog.mozilla.com/tglek/</a></p>
+
+<h4><a name="3.5.8.1">3.5.8.1. #define に関するコメント</a></h4>
 <p>例えば、ソースの冒頭に次のようなマクロ定義があると、</p>
 <pre>
 #define NULL 0L
@@ -1289,7 +1296,20 @@ C/C++ にはプリプロセスというフェーズのあることが refactoring tool にとって困難な
 <p>を意味します。
 行とカラムはともに 1 から始まります。
 -K オプションを指定した場合は事前定義マクロも出力されますが、事前定義マクロには位置情報はありません。</p>
-<p>そして、マクロが呼び出されるたびに、それを挟んでその開始と終了を示すマーカが出力されます。
+
+
+<h4><a name="3.5.8.2">3.5.8.2. #undef に関するコメント</a></h4>
+<pre>
+#undef  BAZ
+</pre>
+<p>という行では、次のようなコメントが出力されます。</p>
+<pre>
+/*uBAZ 10*/
+</pre>
+<p>/*u&lt;NAME&gt; &lt;num&gt;*/ というフォーマットで、&lt;num&gt; はその行の行番号を示します。</p>
+
+<h4><a name="3.5.8.3">3.5.8.3. マクロ展開に関するコメント</a></h4>
+<p>マクロが呼び出されるたびに、それを挟んでその開始と終了を示すマーカが出力されます。
 このマーカのフォーマットは HTML に似たネスト可能なもので、<samp>/*<...*/</samp> がマクロ展開の開始を示し、<samp>/*>*/</samp> がその終了を示します。
 マクロ開始のフォーマットはマクロ定義のフォーマットの <samp>/*m</samp> を <samp>/*<</samp> に変えた次の形をとります。</p>
 <samp>/*&lt;&lt;NAME&gt; &lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;*/</samp>
@@ -1330,13 +1350,82 @@ bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:
 </pre>
 <p>この例でもわかるように、マクロ展開終了のマーカも引数展開終了のマーカも、それぞれその前にある最後の同じネストレベルの開始マーカに対応しています。
 したがって、-v オプションを指定しなくても、自動的に対応関係を判断することができます。</p>
+
+<h4><a name="3.5.8.4">3.5.8.4. #if (#elif, #ifdef, #ifndef) に関するコメント</a></h4>
+<p>#if (#elif, #ifdef, #ifndef) 行に関しては、その行にあるマクロの情報が出力されます。
+例えば、このソースを bar.c とし、</p>
+<pre>
+#define NULL 0L
+#define BAR(x, y) x ## y
+#define BAZ(a, b) a + b
+</pre>
+<p>こちらを foo.c とすると、</p>
+<pre>
+#include "bar.c"
+#ifdef  BAR
+#ifndef BAZ
+#if 1 + BAR( 2, 3)
+#endif
+#else
+#if 1
+#endif
+#if BAZ( 1, BAR( 2, 3))
+#undef  BAZ
+#endif
+#endif
+#endif
+</pre>
+<p>foo.c は次のような結果を出力します。</p>
+<pre>
+#line 1 "/dir/foo.c"
+#line 1 "/dir/bar.c"
+/*mNULL 1:9-1:16*/
+/*mBAR 2:9-2:25*/
+/*mBAZ 3:9-3:24*/
+#line 2 "/dir/foo.c"
+/*iBAR 2*/
+/*iBAZ 3*/
+
+/*e 7-8*/
+/*iBAZ 9*//*iBAR 9*/
+/*uBAZ 10*/
+/*e 9-11*/
+/*e 3-12*/
+/*e 2-13*/
+</pre>
+<p>すなわち、/*i&lt;NAME&gt; line*/ というフォーマットで、i に続いてマクロ名と現在の行番号が表示されます。
+地の文と違って、マクロの展開結果は表示されません。
+<samp>#if 1</samp> のようにマクロのない行については空行が出力されます。
+<samp>#ifdef, #ifndef</samp> についても同様です。
+したがって、<samp>#ifndef MACRO</samp> では MACRO が定義されている場合だけ、すなわちこの行の評価が false になる場合だけ、マクロ情報が表示されます。
+<samp>#if ! defined( MACRO)</samp> も同じです。</p>
+<p>さらに -v オプションも指定すると、次のように /*i&lt;NAME&gt; cur-line file:line*/ というフォーマットになり、マクロ定義のあるファイルとその行番号も表示されます。</p>
+<pre>
+#line 1 "/dir/foo.c"
+#line 1 "/dir/bar.c"
+/*mNULL 1:9-1:16*/
+/*mBAR 2:9-2:25*/
+/*mBAZ 3:9-3:24*/
+#line 2 "/dir/foo.c"
+/*iBAR 2 /dir/bar.c:2*/
+/*iBAZ 3 /dir/bar.c:3*/
+
+/*e 7-8*/
+/*iBAZ 9 /dir/bar.c:3*//*iBAR 9 /dir/bar.c:2*/
+/*uBAZ 10*/
+/*e 9-11*/
+/*e 3-12*/
+/*e 2-13*/
+</pre>
+
+<h4><a name="3.5.8.5">3.5.8.5. #endif に関するコメント</a></h4>
+<p>#endif 行では上の例のように、/*e l1-l2*/ というフォーマットで、対応する #if (#ifdef, #ifndef) 行の行番号と現在の行番号が表示されます。</p>
+<p></p>
+
+<h4><a name="3.5.8.6">3.5.8.6. #line の出力</a></h4>
 <p>なお、macro notification mode では #line 行のファイル名の出力がデフォルトの場合と違い、
 #include 行の指定を full-path-list に正規化したものが出力されます（<a href="#3.2">3.2</a> 参照）。
 Refactoring tool の作成を容易にするためです。</p>
-<p>注:</p>
-<p>*1 この仕様は Taras Glek の提案によるものである。
-彼自身は次のところで mozilla のソースの refactoring に取り組んでいる。</p>
-<p><a href="http://blog.mozilla.com/tglek/"> http://blog.mozilla.com/tglek/</a></p>
 <br>
 
 <h2><a name="3.6" href="#toc.3.6">3.6. #assert, #asm, #endasm</a></h2>

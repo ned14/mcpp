@@ -285,6 +285,11 @@ ifdo:
         if (! compiling && (ifptr->stat & WAS_COMPILING))
             wrong_line = TRUE;
         compiling = (ifptr->stat & WAS_COMPILING);
+        if ((mcpp_debug & MACRO_CALL) && compiling) {
+            mcpp_fprintf( OUT, "/*e %ld-%ld*/\n", ifptr->ifline, src_line);
+            /* Show that the block beginning at ifptr->ifline has ended */
+            newlines--;
+        }
         --ifptr;
         break;
 
@@ -418,6 +423,7 @@ static int  do_if( int hash)
 {
     int     c;
     int     found;
+    DEFBUF *    defp;
 
     if ((c = skip_ws()) == '\n') {
         unget_ch();
@@ -427,13 +433,30 @@ static int  do_if( int hash)
     if (hash == L_if) {                 /* #if or #elif             */
         unget_ch();
         found = (eval_if() != 0L);      /* Evaluate expression      */
+        if (mcpp_debug & MACRO_CALL) {
+            mcpp_fputc( '\n', OUT);     /* Should terminate the line*/
+            in_if = FALSE;      /* 'in_if' is dynamically set in eval_lex() */
+            newlines = -1;
+        }
         hash = L_ifdef;                 /* #if is now like #ifdef   */
     } else {                            /* #ifdef or #ifndef        */
         if (scan_token( c, (workp = work_buf, &workp), work_end) != NAM) {
             cerror( not_ident, work_buf, 0L, NULL);
             return  FALSE;      /* Next token is not an identifier  */
         }
-        found = (look_id( identifier) != NULL); /* Look in table    */
+        found = ((defp = look_id( identifier)) != NULL);    /* Look in table*/
+        if (mcpp_debug & MACRO_CALL) {
+            if (found) {
+                if (option_flags.v)
+                    mcpp_fprintf( OUT, "/*i%s %ld %s:%ld*/", defp->name
+                            , src_line, defp->fname, defp->mline);
+                else
+                    mcpp_fprintf( OUT, "/*i%s %ld*/", defp->name, src_line);
+            }
+            mcpp_fputc( '\n', OUT);
+            /* An empty line if the macro is not defined    */
+            newlines = -1;
+        }
     }
     if (found == (hash == L_ifdef)) {
         compiling = TRUE;
@@ -1428,6 +1451,10 @@ int undefine(
     if (standard && dp->push)
         return  FALSE;                  /* 'Pushed' macro           */
     *prevp = dp->link;          /* Link the previous and the next   */
+    if (mcpp_debug & MACRO_CALL) {
+        mcpp_fprintf( OUT, "/*u%s %ld*/\n", dp->name, src_line);
+        newlines = -1;
+    }
     free( dp);                          /* Delete the definition    */
     if (standard)
         num_of_macro--;

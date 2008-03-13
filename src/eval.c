@@ -500,6 +500,8 @@ static int  eval_lex( void)
 
     ev.sign = SIGNED;                       /* Default signedness   */
     ev.val = 0L;            /* Default value (on error or 0 value)  */
+    in_if = ! skip; /* Inform to expand_macro() that the macro is   */
+                    /*      in #if line and not skipped expression. */
     c = skip_ws();
     if (c == '\n') {
         unget_ch();
@@ -518,8 +520,19 @@ static int  eval_lex( void)
             if (c == '(')                   /* Allow defined (name) */
                 c = skip_ws();
             if (scan_token( c, (workp = work_buf, &workp), work_end) == NAM) {
-                if (warn)
-                    ev.val = (look_id( identifier) != NULL);
+                DEFBUF *    defp = look_id( identifier);
+                if (warn) {
+                    ev.val = (defp != NULL);
+                    if ((mcpp_debug & MACRO_CALL) && ! skip && defp) {
+                        /* Annotate if the macro is in non-skipped expr.    */
+                        if (option_flags.v)
+                            mcpp_fprintf( OUT, "/*i%s %ld %s:%ld*/", defp->name
+                                    , src_line, defp->fname, defp->mline);
+                        else
+                            mcpp_fprintf( OUT, "/*i%s %ld*/", defp->name
+                                    , src_line);
+                    }
+                }
                 if (c1 != '(' || skip_ws() == ')')  /* Balanced ?   */
                     return  VAL;            /* Parsed ok            */
             }

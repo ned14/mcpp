@@ -669,6 +669,13 @@ static char *   replace(
         dump_a_def( "replace entry", defp, FALSE, TRUE, fp_debug);
         dump_unget( "replace entry");
     }
+    if ((mcpp_debug & MACRO_CALL) && in_if) {
+        if (option_flags.v)
+             mcpp_fprintf( OUT, "/*i%s %ld %s:%ld*/", defp->name, src_line
+                    , defp->fname, defp->mline);
+        else
+             mcpp_fprintf( OUT, "/*i%s %ld*/", defp->name, src_line);
+    }
 
     enable_trace_macro = trace_macro && defp->nargs != DEF_PRAGMA;
     if (enable_trace_macro) {

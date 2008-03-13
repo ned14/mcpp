@@ -385,7 +385,7 @@ int     get_unexpandable(
     while (c != EOS && c != '\n'                /* In a line        */
             && (fp = infile->fp         /* Preserve current state   */
                 , (token_type
-                        = scan_token( c, (workp = work_buf, &workp), work_end))
+                    = scan_token( c, (workp = work_buf, &workp), work_end))
                     == NAM)                     /* Identifier       */
             && fp != NULL                       /* In source !      */
             && (defp = is_macro( NULL)) != NULL) {      /* Macro    */

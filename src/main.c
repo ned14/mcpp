@@ -125,6 +125,7 @@
     int     in_define = FALSE;      /* TRUE scanning #define line   */
     int     in_getarg = FALSE;      /* TRUE collecting macro arguments      */
     int     in_include = FALSE;     /* TRUE scanning #include line  */
+    int     in_if = FALSE;  /* TRUE scanning #if and in non-skipped expr.   */
     long    in_asm = 0L;    /* Starting line of #asm - #endasm block*/
 
 /*

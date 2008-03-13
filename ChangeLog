@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2008/03/08      kmatsui
+2008/03/13  kmatsui
         * V.2.7-prerelease
         * Created macro notification mode, implemented -K option and '#
         pragma MCPP debug macro_call' sub-directive to enable this mode
@@ -8,9 +8,10 @@ ChangeLog of MCPP and its accompanying Validation Suite
         print_macro_arg(), close_macro_inf(), chk_magic_balance(),
         remove_magics(), some MAC_* macros to define magic characters,
         struct LINE_COL, MACRO_INF.  Revised many functions.
-        (Specifications by Taras Glek, implemented mostly by kmatsui and
-        partly by Taras Glek).  (internal.H, main.c, directive.c, expand.
-        c, support.c, system.c)
+        (Specifications mostly by Taras Glek, partly by Samuel,
+        implemented mostly by kmatsui and partly by Taras Glek and
+        Samuel).  (internal.H, main.c, directive.c, expand.c, support.c,
+        system.c)
         * Created -k option to keep horizontal white spaces as they are
         and convert comment to spaces of the same length on STD mode.
         (Specs by Taras Glek, implemented by kmatsui).  (internal,H,
@@ -64,16 +65,16 @@ ChangeLog of MCPP and its accompanying Validation Suite
         * Bundled some variables into structs (std_limits, option_flags,
         etc.).  Tidied up the sources removing unused codes, rewriting
         old comments.  (most of the sources)
-        * Added porting to Mac OS X / Apple-GCC.  Enabled searching of
+        * Ported to Mac OS X / Apple-GCC.  Enabled searching of
         "framework" directories for #include.  Enabled to search "header
         map" file.  Enabled #import, which is #include with
-        unconditional once only feature.  Implemented -F, -arch,
+        unconditional "once only" feature.  Implemented -F, -arch,
         -isysroot options.  Created init_framework(), search_framework(),
         search_subdir(), search_header_map(), hmap_hash().  (system.c,
         directive.c, set_mcpp.sh, unset_mcpp.sh, configure.ac, src/
         Makefile.am)
-        * Added porting to Visual C++ 2008.  Enabled '$' in identifier
-        by default in Visual-C-specific-build and GCC-specific-build.
+        * Ported to Visual C++ 2008.  Enabled '$' in identifier by
+        default in Visual-C-specific-build and GCC-specific-build.
         (system.H, internal.H, support.c, system.c)
         * Added documentation on source checking of firefox 3.0pre.
         Added comments on system headers in Mac OS X.  (mcpp-manual.html)
@@ -206,9 +207,9 @@ ChangeLog of MCPP and its accompanying Validation Suite
         * Revised path-list handling on CygWIN.  Enabled -mno-cygwin
         option for CygWIN GCC-specific-build.  (configure.ac, noconfig.H,
         system.c)
-        * Added porting to MinGW.  Created cc1.c to be invoked from GCC
-        and to invoke mcpp or GCC's cc1/cc1plus from it, because MinGW
-        GCC rejects to invoke a shell-script even if it is named cc1 and
+        * Ported to MinGW.  Created cc1.c to be invoked from GCC and to
+        invoke mcpp or GCC's cc1/cc1plus from it, because MinGW GCC
+        rejects to invoke a shell-script even if it is named cc1 and
         because MinGW does not support symbolic link.  (configure.ac,
         src/Makefile.am, configed.H, noconfig.H, system.c)
         * Fixed bugs in some noconfig/*.mak.
@@ -237,8 +238,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         (system.c)
         * Revised #line output and its related problem at the end of an
         included file.  (thanks to Jay Prakash).  (internal.H, support.c)
-        * Added portings to GCC V.4.0, CygWIN 1.5.18, Visual C++ 2005
-        and LCC-Win32 2006-03.  (noconfig.H, system.c)
+        * Ported to GCC V.4.0, CygWIN 1.5.18, Visual C++ 2005 and LCC-
+        Win32 2006-03.  (noconfig.H, system.c)
         * Added some options for Visual C++.  (system.c)
         * Removed settings for pre-C90 compiler (string concatenation by
         preprocessor, '\a' and '\v' handling, no unsigned long #if, no
