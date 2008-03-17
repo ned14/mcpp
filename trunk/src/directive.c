@@ -42,7 +42,7 @@
 #include    "internal.H"
 #endif
 
-static int      do_if( int hash);
+static int      do_if( int hash, const char * directive_name);
                 /* #if, #elif, #ifdef, #ifndef      */
 static long     do_line( void);
                 /* Process #line directive          */
@@ -239,7 +239,7 @@ void    directive( void)
         }
         hash = L_if;
 ifdo:
-        c = do_if( hash);
+        c = do_if( hash, tp);
         if (mcpp_debug & IF) {
             mcpp_fprintf( DBG
                     , "#if (#elif, #ifdef, #ifndef) evaluate to %s.\n"
@@ -271,6 +271,11 @@ ifdo:
             else
                 compiling = TRUE;
         }
+        if ((mcpp_debug & MACRO_CALL) && (ifptr->stat & WAS_COMPILING)) {
+            mcpp_fprintf( OUT, "/*else %ld:%c*/\n", src_line
+                    , compiling ? 'T' : 'F');   /* Show that #else is seen  */
+            newlines--;
+        }
         break;
 
     case L_endif:
@@ -286,8 +291,8 @@ ifdo:
             wrong_line = TRUE;
         compiling = (ifptr->stat & WAS_COMPILING);
         if ((mcpp_debug & MACRO_CALL) && compiling) {
-            mcpp_fprintf( OUT, "/*e %ld-%ld*/\n", ifptr->ifline, src_line);
-            /* Show that the block beginning at ifptr->ifline has ended */
+            mcpp_fprintf( OUT, "/*endif %ld*/\n", src_line);
+            /* Show that #if block has ended    */
             newlines--;
         }
         --ifptr;
@@ -343,6 +348,7 @@ ifdo:
 
     switch (hash) {
     case L_if       :
+    case L_elif     :
     case L_define   :
     case L_line     :
         goto  skip_line;    /* To prevent duplicate error message   */
@@ -412,7 +418,7 @@ ret:
         newlines++;
 }
 
-static int  do_if( int hash)
+static int  do_if( int hash, const char * directive_name)
 /*
  * Process an #if (#elif), #ifdef or #ifndef.  The latter two are straight-
  * forward, while #if needs a subroutine to evaluate the expression.
@@ -430,14 +436,13 @@ static int  do_if( int hash)
         cerror( no_arg, NULL, 0L, NULL);
         return  FALSE;
     }
+    if (mcpp_debug & MACRO_CALL)
+        mcpp_fprintf( OUT, "/*%s %ld*/", directive_name, src_line);
     if (hash == L_if) {                 /* #if or #elif             */
         unget_ch();
         found = (eval_if() != 0L);      /* Evaluate expression      */
-        if (mcpp_debug & MACRO_CALL) {
-            mcpp_fputc( '\n', OUT);     /* Should terminate the line*/
+        if (mcpp_debug & MACRO_CALL)
             in_if = FALSE;      /* 'in_if' is dynamically set in eval_lex() */
-            newlines = -1;
-        }
         hash = L_ifdef;                 /* #if is now like #ifdef   */
     } else {                            /* #ifdef or #ifndef        */
         if (scan_token( c, (workp = work_buf, &workp), work_end) != NAM) {
@@ -446,16 +451,8 @@ static int  do_if( int hash)
         }
         found = ((defp = look_id( identifier)) != NULL);    /* Look in table*/
         if (mcpp_debug & MACRO_CALL) {
-            if (found) {
-                if (option_flags.v)
-                    mcpp_fprintf( OUT, "/*i%s %ld %s:%ld*/", defp->name
-                            , src_line, defp->fname, defp->mline);
-                else
-                    mcpp_fprintf( OUT, "/*i%s %ld*/", defp->name, src_line);
-            }
-            mcpp_fputc( '\n', OUT);
-            /* An empty line if the macro is not defined    */
-            newlines = -1;
+            if (found)
+                mcpp_fprintf( OUT, "/*%s*/", defp->name);
         }
     }
     if (found == (hash == L_ifdef)) {
@@ -463,6 +460,11 @@ static int  do_if( int hash)
         ifptr->stat |= TRUE_SEEN;
     } else {
         compiling = FALSE;
+    }
+    if (mcpp_debug & MACRO_CALL) {
+        mcpp_fprintf( OUT, "/*i %c*/\n", compiling ? 'T' : 'F');
+        /* Report wheather the directive is evaluated TRUE or FALSE */
+        newlines = -1;
     }
     return  TRUE;
 }
@@ -1452,7 +1454,7 @@ int undefine(
         return  FALSE;                  /* 'Pushed' macro           */
     *prevp = dp->link;          /* Link the previous and the next   */
     if (mcpp_debug & MACRO_CALL) {
-        mcpp_fprintf( OUT, "/*u%s %ld*/\n", dp->name, src_line);
+        mcpp_fprintf( OUT, "/*undef %ld*//*%s*/\n", src_line, dp->name);
         newlines = -1;
     }
     free( dp);                          /* Delete the definition    */

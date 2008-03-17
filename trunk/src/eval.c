@@ -523,15 +523,9 @@ static int  eval_lex( void)
                 DEFBUF *    defp = look_id( identifier);
                 if (warn) {
                     ev.val = (defp != NULL);
-                    if ((mcpp_debug & MACRO_CALL) && ! skip && defp) {
+                    if ((mcpp_debug & MACRO_CALL) && ! skip && defp)
                         /* Annotate if the macro is in non-skipped expr.    */
-                        if (option_flags.v)
-                            mcpp_fprintf( OUT, "/*i%s %ld %s:%ld*/", defp->name
-                                    , src_line, defp->fname, defp->mline);
-                        else
-                            mcpp_fprintf( OUT, "/*i%s %ld*/", defp->name
-                                    , src_line);
-                    }
+                        mcpp_fprintf( OUT, "/*%s*/", defp->name);
                 }
                 if (c1 != '(' || skip_ws() == ')')  /* Balanced ?   */
                     return  VAL;            /* Parsed ok            */

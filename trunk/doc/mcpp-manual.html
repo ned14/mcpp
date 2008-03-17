@@ -1171,7 +1171,7 @@ This mode is specified also by -K option.</p>
 <p>The goal for macro expansion mode is to annotate every macro expansion, while still allowing the output to be compiled.
 On the other hand, '<samp>#pragma MCPP debug expand</samp>' is to trace macro expansion and outputs detailed informations, but its output is not compilable.</p>
 <p>Note:</p>
-<p>*1 The specifications of macro notification mode were proposed by Taras Glek.
+<p>*1 Most of the specifications of macro notification mode were proposed by Taras Glek.
 He is working on refactoring of sources at mozilla project:</p>
 <p><a href="http://blog.mozilla.com/tglek/"> http://blog.mozilla.com/tglek/</a></p>
 
@@ -1189,7 +1189,7 @@ He is working on refactoring of sources at mozilla project:</p>
 /*mBAZ 3:9-3:24*/
 </pre>
 <p>where the format means:</p>
-<samp>/*m&lt;NAME&gt; &lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;*/</samp>
+<samp>/*m[NAME] [start line]:[start column]-[end line]:[end column]*/</samp>
 <p>Line and column numbers start from 1.
 When you specify -K option, predefined macros are output too, which have no location information.</p>
 
@@ -1199,26 +1199,26 @@ When you specify -K option, predefined macros are output too, which have no loca
 </pre>
 <p>The above line produces the output:
 <pre>
-/*uBAZ 10*/
+/*undef 10*//*BAZ*/
 </pre>
-<p>The &lt;num&gt; in the format of /*u&lt;NAME&gt; &lt;num&gt;*/ indicates line number of the line.</p>
+<p>The [lnum] and [NAME] in the format of /*undef [lnum]*//*[NAME]*/ indicate line number of the line and the undefined MACRO name.</p>
 
 <h4><a name="3.5.8.3">3.5.8.3. Comment on Macro Expansion</a></h4>
 <p>Within source code other than directives, macros are expanded with markers indicating start and stop of the macro expansion.
 The format allows for HTML-like nesting. <samp>/*<...*/</samp> signals start of macro expansion and <samp>/*>*/</samp> the end.
 The start of macro expansion takes the following format replacing <samp>/*m</samp> of start of macro definition format to <samp>/*<</samp>:</p>
-<samp>/*&lt;&lt;NAME&gt; &lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;*/</samp>
+<samp>/*<[NAME] [start line]:[start column]-[end line]:[end column]*/</samp>
 <p>On macro with arguments, markers indicating source location of each argument and markers indicating start and end of each argument expansion are output too.
 The marker for argument location takes the format of <samp>/*!...*/</samp>.
 When a macro is found in an argument, informations on that macro is output recursively, with its location information if it is on the source file.
 Macro argument marker also have a disambiguating naming scheme. An argument name is of the format:</p>
-<samp>&lt;func-like-macro-name&gt;:&lt;nesting level&gt;-&lt;argument number&gt;</samp>
-<p>This way if someone calls <samp>BAZ(BAZ(a,b), c)</samp> it would possible to distinguish nested macros of the same name and their arguments from each other.
+<samp>[func-like-macro-name]:[nesting level]-[argument number]</samp>
+<p>This way if someone calls '<samp>BAZ(BAZ(a,b), c)</samp>', it would possible to distinguish nested macros of the same name and their arguments from each other.
 The argument number starts from 0.
 Then the location format follows it as:</p>
-<samp>&lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;</samp>
+<samp>[start line]:[start column]-[end line]:[end column]</samp>
 <p>The marker for start of an argument also takes the format:</p>
-<samp>/*&lt;&lt;func-like-macro-name&gt;:&lt;nesting level&gt;-&lt;argument number&gt;*/</samp>
+<samp>/*<[func-like-macro-name]:[nesting level]-[argument number]*/</samp>
 <p>The marker for end of an argument is the same with the one for end of a macro expansion: <samp>/*>*/</samp>.</p>
 <p>The following code:</p>
 <pre>
@@ -1276,43 +1276,29 @@ Hence, you can judge their correspondence automatically even without -v option.<
 /*mBAR 2:9-2:25*/
 /*mBAZ 3:9-3:24*/
 #line 2 "/dir/foo.c"
-/*iBAR 2*/
-/*iBAZ 3*/
-
-/*e 7-8*/
-/*iBAZ 9*//*iBAR 9*/
-/*uBAZ 10*/
-/*e 9-11*/
-/*e 3-12*/
-/*e 2-13*/
+/*ifdef 2*//*BAR*//*i T*/
+/*ifndef 3*//*BAZ*//*i F*/
+/*else 6:T*/
+/*if 7*//*i T*/
+/*endif 8*/
+/*if 9*//*BAZ*//*BAR*//*i T*/
+/*undef 10*//*BAZ*/
+/*endif 11*/
+/*endif 12*/
+/*endif 13*/
 </pre>
-<p>As you see, on #if and the like line, a macro information is displayed in /*i&lt;NAME&gt; line*/ format, that is 'i' followed by the macro name and the current line number.
+<p>As you see, on #if line, an annotation starts with a /*if [lnum]*/ format where [lnum] indicates the current line number.
+Then some /*[NAME]*/ follow, if some macro [NAME] are found, a /*[NAME]*/ for each macro.
+The annotation terminates with /*i T*/ or /*i F*/ which indicates that the directive is evaluated true or false, respectively.
 The expansion result is not displayed, unlike a macro on lines other than directives.
-On a line such as '<samp>#if 1</samp>' which has no macro, an empty line is put out.
-The same can be said on <samp>#ifdef</samp> and <samp>#ifndef</samp>.
-On a line '<samp>#ifndef MACRO</samp>', a macro information is displayed if and only the MACRO has been defined, in other words, when the line evaluates to false.
-This is the same with '<samp>#if ! defined( MACRO)</samp>'.</p>
-<p>If you specify -v option too, the format becomes /*i&lt;NAME&gt; cur-line file:line*/, and location of the macro definition is displayed as shown below.</p>
-<pre>
-#line 1 "/dir/foo.c"
-#line 1 "/dir/bar.c"
-/*mNULL 1:9-1:16*/
-/*mBAR 2:9-2:25*/
-/*mBAZ 3:9-3:24*/
-#line 2 "/dir/foo.c"
-/*iBAR 2 /dir/bar.c:2*/
-/*iBAZ 3 /dir/bar.c:3*/
+On a line such as '<samp>#if 1</samp>' which has no macro, no /*[NAME]*/ is displayed.</p>
+<p>Also annotations on <samp>#elif, #ifdef</samp> and <samp>#ifndef</samp> start with /*elif [lnum]*/, /*ifdef [lnum]*/ and /*ifndef [lnum]*/, respectively, followed by /*[NAME]*/, if some macros are found, and terminate with /*i T*/ or /*i F*/.</p>
+<p>In any blocks where compilation is to be skipped, no annotation is displayed.</p>
 
-/*e 7-8*/
-/*iBAZ 9 /dir/bar.c:3*//*iBAR 9 /dir/bar.c:2*/
-/*uBAZ 10*/
-/*e 9-11*/
-/*e 3-12*/
-/*e 2-13*/
-</pre>
-
-<h4><a name="3.5.8.5">3.5.8.5. Comment on #endif</a></h4>
-<p>On #endif line, as the above examples, an information is displayed in /*e l1-l2*/ format, where l1 indicates line number of the corresponding #if (#ifdef, #ifndef) and l2 indicates the current line.</p>
+<h4><a name="3.5.8.5">3.5.8.5. Comment on #else and #endif</a></h4>
+<p>On #else line, as the above examples, an information is displayed in /*else [lnum]:[C]*/ format where [lnum] is the current line number and [C] is 'T' or 'F' which indicates that the #else - #endif block is to be compiled or to be skipped.</p>
+<p>On #endif line, as the above examples, an information is displayed in /*endif [lnum]*/ format where [lnum] indicates the current line number.
+Of course, the #endif corresponds to the last #if (#ifdef, #ifndef) which is not yet closed.</p>
 
 <h4><a name="3.5.8.6">3.5.8.6. #line Output</a></h4>
 <p>In addition, on the macro notification mode, the output format of filename in #line line differs from the default.

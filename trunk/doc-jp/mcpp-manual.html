@@ -1274,7 +1274,7 @@ C/C++ にはプリプロセスというフェーズのあることが refactoring tool にとって困難な
 <p>#pragma MCPP debug expand と似ていますが、expand のほうはマクロの展開過程をトレースするためのもので、詳細な情報が出力されるものの、それをコンパイルすることはできません。
 それに対して、macro_call はソース上の正確な位置を伝えるためのもので、情報をコメントに埋め込むので、出力をそのまま再プリプロセスしてコンパイルすることができるのが特徴です。</p>
 <p>注:</p>
-<p>*1 この仕様は Taras Glek の提案によるものである。
+<p>*1 この仕様は主として Taras Glek の提案によるものである。
 彼自身は次のところで mozilla のソースの refactoring に取り組んでいる。</p>
 <p><a href="http://blog.mozilla.com/tglek/"> http://blog.mozilla.com/tglek/</a></p>
 
@@ -1292,7 +1292,7 @@ C/C++ にはプリプロセスというフェーズのあることが refactoring tool にとって困難な
 /*mBAZ 3:9-3:24*/
 </pre>
 <p>このフォーマットは</p>
-<samp>/*m&lt;NAME&gt; &lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;*/</samp>
+<samp>/*m[NAME] [start line]:[start column]-[end line]:[end column]*/</samp>
 <p>を意味します。
 行とカラムはともに 1 から始まります。
 -K オプションを指定した場合は事前定義マクロも出力されますが、事前定義マクロには位置情報はありません。</p>
@@ -1304,27 +1304,27 @@ C/C++ にはプリプロセスというフェーズのあることが refactoring tool にとって困難な
 </pre>
 <p>という行では、次のようなコメントが出力されます。</p>
 <pre>
-/*uBAZ 10*/
+/*undef 10*//*BAZ*/
 </pre>
-<p>/*u&lt;NAME&gt; &lt;num&gt;*/ というフォーマットで、&lt;num&gt; はその行の行番号を示します。</p>
+<p>/*undef [lnum]*//*[NAME]*/ というフォーマットで、[lnum] はその行の行番号を、[NAME] はそのマクロ名を示します。</p>
 
 <h4><a name="3.5.8.3">3.5.8.3. マクロ展開に関するコメント</a></h4>
 <p>マクロが呼び出されるたびに、それを挟んでその開始と終了を示すマーカが出力されます。
 このマーカのフォーマットは HTML に似たネスト可能なもので、<samp>/*<...*/</samp> がマクロ展開の開始を示し、<samp>/*>*/</samp> がその終了を示します。
 マクロ開始のフォーマットはマクロ定義のフォーマットの <samp>/*m</samp> を <samp>/*<</samp> に変えた次の形をとります。</p>
-<samp>/*&lt;&lt;NAME&gt; &lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;*/</samp>
+<samp>/*<[NAME] [start line]:[start column]-[end line]:[end column]*/</samp>
 <p>マクロが引数をとる場合は、ソース上の引数の位置を示すマーカと、引数の展開の開始と終了を示すマーカも出力されます。
 引数の位置を示すフォーマットは <samp>/*!...*/</samp> という形をしています。
 引数中にマクロがある場合は、再帰的にそのマクロの情報が出力されます。
 ただし、そのマクロがソース上にあったものでなければ、位置情報は出力されません。
 どのマクロの何番目の引数であるかを示すために、引数の id が次の形で示されます。</p>
-<samp>&lt;func-like-macro-name&gt;:&lt;nesting level&gt;-&lt;argument number&gt;</samp>
+<samp>[func-like-macro-name]:[nesting level]-[argument number]</samp>
 <p>これによって <samp>BAZ(BAZ(a,b), c)</samp> といったネストされた同名のマクロとその引数も互いに区別することができます。
 引数の番号は 0 から始まります。
 そして、これに次の形の位置情報が続きます。</p>
-<samp>&lt;start line&gt;:&lt;start column&gt;-&lt;end line&gt;:&lt;end column&gt;</samp>
+<samp>[start line]:[start column]-[end line]:[end column]</samp>
 <p>また、引数の展開の開始を示すマーカは次の形です。</p>
-<samp>/*&lt;&lt;func-like-macro-name&gt;:&lt;nesting level&gt;-&lt;argument number&gt;*/</samp>
+<samp>/*<[func-like-macro-name]:[nesting level]-[argument number]*/</samp>
 <p>引数の展開の終了を示すマーカはマクロ展開の終わりのマーカと同じ <samp>/*>*/</mamp> です。</p>
 <p>すなわち、次のソースは</p>
 <pre>
@@ -1352,7 +1352,7 @@ bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:
 したがって、-v オプションを指定しなくても、自動的に対応関係を判断することができます。</p>
 
 <h4><a name="3.5.8.4">3.5.8.4. #if (#elif, #ifdef, #ifndef) に関するコメント</a></h4>
-<p>#if (#elif, #ifdef, #ifndef) 行に関しては、その行にあるマクロの情報が出力されます。
+<p>#if (#elif, #ifdef, #ifndef) 行に関しては、その行にあるマクロ等の情報が出力されます。
 例えば、このソースを bar.c とし、</p>
 <pre>
 #define NULL 0L
@@ -1383,48 +1383,34 @@ bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:
 /*mBAR 2:9-2:25*/
 /*mBAZ 3:9-3:24*/
 #line 2 "/dir/foo.c"
-/*iBAR 2*/
-/*iBAZ 3*/
-
-/*e 7-8*/
-/*iBAZ 9*//*iBAR 9*/
-/*uBAZ 10*/
-/*e 9-11*/
-/*e 3-12*/
-/*e 2-13*/
+/*ifdef 2*//*BAR*//*i T*/
+/*ifndef 3*//*BAZ*//*i F*/
+/*else 6:T*/
+/*if 7*//*i T*/
+/*endif 8*/
+/*if 9*//*BAZ*//*BAR*//*i T*/
+/*undef 10*//*BAZ*/
+/*endif 11*/
+/*endif 12*/
+/*endif 13*/
 </pre>
-<p>すなわち、/*i&lt;NAME&gt; line*/ というフォーマットで、i に続いてマクロ名と現在の行番号が表示されます。
+<p>すなわち、まず /*if [lnum]*/ というフォーマットで、ディレクティブ名に続いて現在の行番号が表示されます。
+そして、その行にマクロがあれば、それが１つずつ /*[NAME]*/ というフォーマットで表示されます。
+最後に、/*i T*/ または /*i F*/ で、その行の評価が true であるか false であるか、すなわちその #if で始まるブロックがコンパイルされるブロックかスキップされるブロックかが示されます。
 地の文と違って、マクロの展開結果は表示されません。
-<samp>#if 1</samp> のようにマクロのない行については空行が出力されます。
-<samp>#ifdef, #ifndef</samp> についても同様です。
-したがって、<samp>#ifndef MACRO</samp> では MACRO が定義されている場合だけ、すなわちこの行の評価が false になる場合だけ、マクロ情報が表示されます。
-<samp>#if ! defined( MACRO)</samp> も同じです。</p>
-<p>さらに -v オプションも指定すると、次のように /*i&lt;NAME&gt; cur-line file:line*/ というフォーマットになり、マクロ定義のあるファイルとその行番号も表示されます。</p>
-<pre>
-#line 1 "/dir/foo.c"
-#line 1 "/dir/bar.c"
-/*mNULL 1:9-1:16*/
-/*mBAR 2:9-2:25*/
-/*mBAZ 3:9-3:24*/
-#line 2 "/dir/foo.c"
-/*iBAR 2 /dir/bar.c:2*/
-/*iBAZ 3 /dir/bar.c:3*/
+<samp>#if 1</samp> のようにマクロのない行については、マクロを表示する /*[NAME]*/ がないだけです。</p>
+<p><samp>#elif, #ifdef, #ifndef</samp> についても同様に /*elif [lnum]*/, /*ifdef [lnum]*/, /*ifndef [lnum]*/ で始まり、マクロが定義されていれば /*[NAME]*/ が続き、/*i T*/ または /*i F*/ で終わります。</p>
+<p>スキップされるブロック中のディレクティブについては何も表示されません。</p>
 
-/*e 7-8*/
-/*iBAZ 9 /dir/bar.c:3*//*iBAR 9 /dir/bar.c:2*/
-/*uBAZ 10*/
-/*e 9-11*/
-/*e 3-12*/
-/*e 2-13*/
-</pre>
-
-<h4><a name="3.5.8.5">3.5.8.5. #endif に関するコメント</a></h4>
-<p>#endif 行では上の例のように、/*e l1-l2*/ というフォーマットで、対応する #if (#ifdef, #ifndef) 行の行番号と現在の行番号が表示されます。</p>
+<h4><a name="3.5.8.5">3.5.8.5. #else, #endif に関するコメント</a></h4>
+<p>#else 行では上の例のように、/*else [lnum]:[C]*/ というフォーマットで情報が表示されます。
+[lnum] は行番号、[C] は T または F で、その #else - #endif ブロックがコンパイルされるブロックかそれともスキップされるブロックかを示します。</p>
+<p>#endif 行では上の例のように、/*endif [lnum]*/ というフォーマットで、現在の行番号が表示されます。
+これはもちろん、まだ #endif に対応づけられていない最後の #if (#ifdef, #ifndef) に対応します。</p>
 <p></p>
 
 <h4><a name="3.5.8.6">3.5.8.6. #line の出力</a></h4>
-<p>なお、macro notification mode では #line 行のファイル名の出力がデフォルトの場合と違い、
-#include 行の指定を full-path-list に正規化したものが出力されます（<a href="#3.2">3.2</a> 参照）。
+<p>なお、macro notification mode では #line 行のファイル名の出力がデフォルトの場合と違い、#include 行の指定を full-path-list に正規化したものが出力されます（<a href="#3.2">3.2</a> 参照）。
 Refactoring tool の作成を容易にするためです。</p>
 <br>
 
