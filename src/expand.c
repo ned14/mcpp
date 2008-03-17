@@ -532,8 +532,9 @@ static char *   chk_magic_balance(
         case MAC_ARG_END    :
             arg--;
             if (option_flags.v) {
-                if (arg < 0) {              /* Perhaps moved magic  */
-                    cwarn( mesg, "Redundant", (long) -arg, "argument");
+                if (arg < 0) {          /* Perhaps moved magic  */
+                    if (diag)
+                        cwarn( mesg, "Redundant", (long) -arg, "argument");
                 } else if (memcmp( arg_id[ arg], buf_p, ARG_E_LEN_V - 2) != 0)
                 {
                     char *      to_be_edge = NULL;
@@ -669,13 +670,8 @@ static char *   replace(
         dump_a_def( "replace entry", defp, FALSE, TRUE, fp_debug);
         dump_unget( "replace entry");
     }
-    if ((mcpp_debug & MACRO_CALL) && in_if) {
-        if (option_flags.v)
-             mcpp_fprintf( OUT, "/*i%s %ld %s:%ld*/", defp->name, src_line
-                    , defp->fname, defp->mline);
-        else
-             mcpp_fprintf( OUT, "/*i%s %ld*/", defp->name, src_line);
-    }
+    if ((mcpp_debug & MACRO_CALL) && in_if)
+        mcpp_fprintf( OUT, "/*%s*/", defp->name);
 
     enable_trace_macro = trace_macro && defp->nargs != DEF_PRAGMA;
     if (enable_trace_macro) {
@@ -871,9 +867,6 @@ static char *   replace(
         }
         *out_p = EOS;
     }
-#if DEBUG_MACRO_ANN
-    chk_magic_balance( out, out_p, FALSE, TRUE);
-#endif
 
     return  out_p;
 }
@@ -2497,7 +2490,7 @@ static int  collect_args(
             } else {                    /* ')'                      */
                 break;
             }
-        case '\n':      /* Unterminated macro call in control line  */
+        case '\n':      /* Unterminated macro call in directive line*/
             unget_ch();                 /* Fall through             */
         case RT_END:                    /* Error of missing ')'     */
             diag_macro( CERROR, unterm_macro, sequence, 0L, NULL, defp, NULL);
@@ -2647,6 +2640,7 @@ static int  get_an_arg(
                 argp += len;
             }
         }
+        memset( &mgc_seq, 0, sizeof (MAGIC_SEQ));
     }
 
     while (1) {
@@ -2791,8 +2785,7 @@ static int  get_an_arg(
                 *argp++ = (m_num % UCHARMAX) + 1;
                 *argp++ = nargs + 1;
                 *argp = EOS;
-                *argpp = chk_magic_balance( *argpp, argp, TRUE
-                        , DEBUG_MACRO_ANN);
+                *argpp = chk_magic_balance( *argpp, argp, TRUE, FALSE);
                     /* Check a stray magic caused by abnormal macro */
                     /* and move it to an edge if found.             */
             }
