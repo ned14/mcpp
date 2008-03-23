@@ -1353,7 +1353,7 @@ bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:
 
 <h4><a name="3.5.8.4">3.5.8.4. #if (#elif, #ifdef, #ifndef) に関するコメント</a></h4>
 <p>#if (#elif, #ifdef, #ifndef) 行に関しては、その行にあるマクロ等の情報が出力されます。
-例えば、このソースを bar.c とし、</p>
+例えば、このソースを bar.h とし、</p>
 <pre>
 #define NULL 0L
 #define BAR(x, y) x ## y
@@ -1361,7 +1361,7 @@ bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:
 </pre>
 <p>こちらを foo.c とすると、</p>
 <pre>
-#include "bar.c"
+#include "bar.h"
 #ifdef  BAR
 #ifndef BAZ
 #if 1 + BAR( 2, 3)
@@ -1378,7 +1378,7 @@ bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:
 <p>foo.c は次のような結果を出力します。</p>
 <pre>
 #line 1 "/dir/foo.c"
-#line 1 "/dir/bar.c"
+#line 1 "/dir/bar.h"
 /*mNULL 1:9-1:16*/
 /*mBAR 2:9-2:25*/
 /*mBAZ 3:9-3:24*/
