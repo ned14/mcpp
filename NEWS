@@ -1,6 +1,6 @@
 This file summarizes new major features of each MCPP release.  (kmatsui)
 
-MCPP V.2.7-prerelease (2008/03)
+MCPP V.2.7 (2008/03)
 
 1. Implemented -K option to enable macro notification mode.  This mode
     is designed for C/C++ refactoring tools and embeds macro annotations

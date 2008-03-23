@@ -605,7 +605,8 @@ static char *   chk_magic_balance(
             mac--;
             if (option_flags.v) {
                 if (mac < 0) {
-                    cwarn( mesg, "Redundant", (long) -mac, "macro");
+                    if (diag)
+                        cwarn( mesg, "Redundant", (long) -mac, "macro");
                 } else if (memcmp( mac_id[ mac], buf_p, MAC_E_LEN_V - 2) != 0)
                 {
                     char *      mac_p = mac_id[ mac];

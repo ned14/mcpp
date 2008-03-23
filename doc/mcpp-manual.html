@@ -1197,7 +1197,7 @@ When you specify -K option, predefined macros are output too, which have no loca
 <pre>
 #undef  BAZ
 </pre>
-<p>The above line produces the output:
+<p>This line produces the output:
 <pre>
 /*undef 10*//*BAZ*/
 </pre>
@@ -1213,28 +1213,28 @@ The marker for argument location takes the format of <samp>/*!...*/</samp>.
 When a macro is found in an argument, informations on that macro is output recursively, with its location information if it is on the source file.
 Macro argument marker also have a disambiguating naming scheme. An argument name is of the format:</p>
 <samp>[func-like-macro-name]:[nesting level]-[argument number]</samp>
-<p>This way if someone calls '<samp>BAZ(BAZ(a,b), c)</samp>', it would possible to distinguish nested macros of the same name and their arguments from each other.
+<p>This way, if someone calls '<samp>BAZ(BAZ(a,b), c)</samp>', it would possible to distinguish nested macros of the same name and their arguments from each other.
 The argument number starts from 0.
 Then the location format follows it as:</p>
 <samp>[start line]:[start column]-[end line]:[end column]</samp>
 <p>The marker for start of an argument also takes the format:</p>
 <samp>/*<[func-like-macro-name]:[nesting level]-[argument number]*/</samp>
 <p>The marker for end of an argument is the same with the one for end of a macro expansion: <samp>/*>*/</samp>.</p>
-<p>The following code:</p>
+<p>The following lines:</p>
 <pre>
 foo(NULL);
 foo(BAR(some_, var));
 foo = BAZ(NULL, 2);
 bar = BAZ(BAZ(a,b), c);
 </pre>
-<p>would expand to:</p>
+<p>expand to:</p>
 <pre>
 foo(/*&lt;NULL 4:5-4:9*/0L/*&gt;*/);
 foo(/*&lt;BAR 5:5-5:20*//*!BAR:0-0 5:9-5:14*//*!BAR:0-1 5:16-5:19*/some_var/*&gt;*/);
 foo = /*&lt;BAZ 6:7-6:19*//*!BAZ:0-0 6:11-6:15*//*!BAZ:0-1 6:17-6:18*//*&lt;BAZ:0-0*//*&lt;NULL 6:11-6:15*/0L/*&gt;*//*&gt;*/ + /*&lt;BAZ:0-1*/2/*&gt;*//*&gt;*/;
 bar = /*&lt;BAZ 7:7-7:23*//*!BAZ:0-0 7:11-7:19*//*!BAZ:0-1 7:21-7:22*//*&lt;BAZ:0-0*//*&lt;BAZ 7:11-7:19*//*!BAZ:1-0*//*!BAZ:1-1*//*&lt;BAZ:1-0*/a/*&gt;*/ + /*&lt;BAZ:1-1*/b/*&gt;*//*&gt;*//*&gt;*/ + /*&lt;BAZ:0-1*/c/*&gt;*//*&gt;*/;
 </pre>
-<p>Moreover, when -v option is specified along with -K option, the marker for end of macro expansion and the marker for end of an argument expansion also output the same macro name and its number with their starting markers as:</p>
+<p>Moreover, when -v option is specified along with -K option, the marker for end of macro expansion and the marker for end of an argument expansion also output the macro name and its number same with their starting markers as:</p>
 <pre>
 foo(/*&lt;NULL 4:5-4:9*/0L/*NULL&gt;*/);
 foo(/*&lt;BAR 5:5-5:20*//*!BAR:0-0 5:9-5:14*//*!BAR:0-1 5:16-5:19*/some_var/*BAR&gt;*/);
@@ -1246,15 +1246,15 @@ Hence, you can judge their correspondence automatically even without -v option.<
 
 <h4><a name="3.5.8.4">3.5.8.4. Comment on #if (#elif, #ifdef, #ifndef)</a></h4>
 <p>On #if (#elif, #ifdef, #ifndef) line, informations on the macros in the line are shown.</p>
-<p>For example, this is bar.c:</p>
+<p>For example, this is bar.h:</p>
 <pre>
 #define NULL 0L
 #define BAR(x, y) x ## y
 #define BAZ(a, b) a + b
 </pre>
-<p>And here is foo.c.</p>
+<p>And here is foo.c:</p>
 <pre>
-#include "bar.c"
+#include "bar.h"
 #ifdef  BAR
 #ifndef BAZ
 #if 1 + BAR( 2, 3)
@@ -1271,7 +1271,7 @@ Hence, you can judge their correspondence automatically even without -v option.<
 <p>Then, foo.c produces the following output:</p>
 <pre>
 #line 1 "/dir/foo.c"
-#line 1 "/dir/bar.c"
+#line 1 "/dir/bar.h"
 /*mNULL 1:9-1:16*/
 /*mBAR 2:9-2:25*/
 /*mBAZ 3:9-3:24*/
@@ -1288,7 +1288,7 @@ Hence, you can judge their correspondence automatically even without -v option.<
 /*endif 13*/
 </pre>
 <p>As you see, on #if line, an annotation starts with a /*if [lnum]*/ format where [lnum] indicates the current line number.
-Then some /*[NAME]*/ follow, if some macro [NAME] are found, a /*[NAME]*/ for each macro.
+Then one or more /*[NAME]*/ markers follow, if some macros are found, a /*[NAME]*/ for each macro.
 The annotation terminates with /*i T*/ or /*i F*/ which indicates that the directive is evaluated true or false, respectively.
 The expansion result is not displayed, unlike a macro on lines other than directives.
 On a line such as '<samp>#if 1</samp>' which has no macro, no /*[NAME]*/ is displayed.</p>

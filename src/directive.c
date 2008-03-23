@@ -1453,7 +1453,8 @@ int undefine(
     if (standard && dp->push)
         return  FALSE;                  /* 'Pushed' macro           */
     *prevp = dp->link;          /* Link the previous and the next   */
-    if (mcpp_debug & MACRO_CALL) {
+    if ((mcpp_debug & MACRO_CALL) && dp->mline) {
+        /* Notice this directive unless the macro is predefined     */
         mcpp_fprintf( OUT, "/*undef %ld*//*%s*/\n", src_line, dp->name);
         newlines = -1;
     }
