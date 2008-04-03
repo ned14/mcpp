@@ -1,5 +1,10 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
+2008/04/03  kmatsui
+        * V.2.7-postrelease
+        * Fixed a bug of newline synchronization on -K option.  Created
+        sync_linenum().  (Thanks to Benjamin Smedberg) (directive.c)
+
 2008/03/23  kmatsui
         * V.2.7
         * Created macro notification mode, implemented -K option and '#
