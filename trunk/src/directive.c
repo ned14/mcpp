@@ -44,6 +44,8 @@
 
 static int      do_if( int hash, const char * directive_name);
                 /* #if, #elif, #ifdef, #ifndef      */
+static void     sync_linenum( void);
+                /* Synchronize number of newlines   */
 static long     do_line( void);
                 /* Process #line directive          */
 static int      get_parm( void);
@@ -272,9 +274,9 @@ ifdo:
                 compiling = TRUE;
         }
         if ((mcpp_debug & MACRO_CALL) && (ifptr->stat & WAS_COMPILING)) {
+            sync_linenum();
             mcpp_fprintf( OUT, "/*else %ld:%c*/\n", src_line
                     , compiling ? 'T' : 'F');   /* Show that #else is seen  */
-            newlines--;
         }
         break;
 
@@ -291,9 +293,9 @@ ifdo:
             wrong_line = TRUE;
         compiling = (ifptr->stat & WAS_COMPILING);
         if ((mcpp_debug & MACRO_CALL) && compiling) {
+            sync_linenum();
             mcpp_fprintf( OUT, "/*endif %ld*/\n", src_line);
             /* Show that #if block has ended    */
-            newlines--;
         }
         --ifptr;
         break;
@@ -436,8 +438,10 @@ static int  do_if( int hash, const char * directive_name)
         cerror( no_arg, NULL, 0L, NULL);
         return  FALSE;
     }
-    if (mcpp_debug & MACRO_CALL)
+    if (mcpp_debug & MACRO_CALL) {
+        sync_linenum();
         mcpp_fprintf( OUT, "/*%s %ld*/", directive_name, src_line);
+    }
     if (hash == L_if) {                 /* #if or #elif             */
         unget_ch();
         found = (eval_if() != 0L);      /* Evaluate expression      */
@@ -464,9 +468,23 @@ static int  do_if( int hash, const char * directive_name)
     if (mcpp_debug & MACRO_CALL) {
         mcpp_fprintf( OUT, "/*i %c*/\n", compiling ? 'T' : 'F');
         /* Report wheather the directive is evaluated TRUE or FALSE */
-        newlines = -1;
     }
     return  TRUE;
+}
+
+static void sync_linenum( void)
+/*
+ * Put out newlines or #line line to synchronize line number with the
+ * annotations about #if, #elif, #ifdef, #ifndef, #else or #endif on -K option.
+ */
+{
+    if (wrong_line || newlines > 10) {
+        sharp( NULL, 0);
+    } else {
+        while (newlines-- > 0)
+            mcpp_fputc('\n', OUT);
+    }
+    newlines = -1;
 }
 
 static long do_line( void)
@@ -1456,7 +1474,7 @@ int undefine(
     if ((mcpp_debug & MACRO_CALL) && dp->mline) {
         /* Notice this directive unless the macro is predefined     */
         mcpp_fprintf( OUT, "/*undef %ld*//*%s*/\n", src_line, dp->name);
-        newlines = -1;
+        wrong_line = TRUE;
     }
     free( dp);                          /* Delete the definition    */
     if (standard)

@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2008/03)<br>
+<h4>for V.2.7-postrelease (2008/04)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -1278,11 +1278,14 @@ Hence, you can judge their correspondence automatically even without -v option.<
 #line 2 "/dir/foo.c"
 /*ifdef 2*//*BAR*//*i T*/
 /*ifndef 3*//*BAZ*//*i F*/
+
+
 /*else 6:T*/
 /*if 7*//*i T*/
 /*endif 8*/
 /*if 9*//*BAZ*//*BAR*//*i T*/
 /*undef 10*//*BAZ*/
+#line 11 "/dir/foo.c"
 /*endif 11*/
 /*endif 12*/
 /*endif 13*/
