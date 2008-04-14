@@ -11,7 +11,7 @@
 <h2>== How to Port MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7 (2008/03)<br>
+<h4>for V.2.7-postrelease (2008/04)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -168,7 +168,7 @@ In November 2006, V.2.6.2 was released.  In this version, most of the text file 
 In April 2007, V.2.6.3 was released.  In this version, compatibility of GCC-specific-build to GCC was increased, and output to memory buffer was implemented in subroutine-build by contribution from Greg Kress.  In addition, binary packages for some systems were begun to be provided.<br>
 In May 2007, V.2.6.4 was released.  This is a bug-fixed version of V.2.6.3.<br>
 <br>
-<li>In February 2008, V.2.7 was released.
+<li>In March 2008, V.2.7 was released.
 In this version, 'macro notification mode' to embed macro informations into comments was implemented, and much codes were added.
 This mode enables to know the line and column position of macro calls on the source file from the preprocessed output.
 It was implemented for C/C++ refactoring tools.<br>
@@ -638,7 +638,8 @@ sudo make install
 Then libmcpp.so and libmcpp.so.0 will be created as links to libmcpp.so.$(SHLIB_VER).
 The *.a is a static library, and the *.so is a shared library.
 The file named libmcpp.la will also be created, which is for the tool 'libtool'.
-$(SHLIB_VER) is 0.0.0 on <b>mcpp</b> V.2.6.3, 0.0.1 on V.2.6.4, 0.1.0 on V.2.7 and later.</p>
+$(SHLIB_VER) is 0.0.0 on <b>mcpp</b> V.2.6.3, 0.0.1 on V.2.6.4, 0.1.0 on V.2.7 and later.
+Also header files mcpp_lib.h and mcpp_out.h are installed into /usr/local/include, which are necessary for user program to use libmcpp.</p>
 <p>On Mac OS X, the name of the shared library is *.dylib, not *.so.
 And, if you specify some CPUs by -arch option, such as "<samp>make CFLAGS+='-arch i386 -arch ppc'</samp>", a universal binary for those CPUs will be generated.
 In addition, you can widen the range of Mac OS X version on which the binary will run by -isysroot and -mmacosx-version-min= options.
@@ -650,9 +651,16 @@ make CFLAGS+='-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.
 On CygWIN, libmcpp.a, libmcpp.dll.a, libmcpp.la will be generated and installed into /usr/local/lib, and cygmcpp-0.dll will be generated and installed into /usr/local/bin.
 On MinGW, those are the same with CygWIN, except cygmcpp-0.dll changes to libmcpp-0.dll.
 To use the DLL, link your main program against libmcpp.dll.a, which is an 'import library' for the DLL.</p>
-<p>In order to test the generated libraries, compile testmain.c and link it against one of the libraries.
-This cannot be done by configure.
+<p>Also main_libmcpp.c is compiled and installed into /usr/local/bin under the name of <b>mcpp</b> which links the generated libmcpp.so.
+As you see in the source, you should include mcpp_lib.h to use libmcpp. *1</p>
+<p>Minimal documents are installed too.<p>
+<p>You can compile testmain.c as well and link it against one of the libraries.
+The configure does not do this.
 See 3.12.2.</p>
+<p>Note:</p>
+<p>*1 The compiler-independent-build of stand-alone mcpp, which does not use libmcpp, is installed into the same directory under the same name.
+So, they overwrite each other.
+As for documents, the same ones are installed into the same directory, so overwrite each other.</p>
 
 <h3><a name="3.12.2" href="#toc.3.12.2">3.12.2. Using noconfig/*.mak</a></h3>
 
@@ -664,7 +672,7 @@ make MCPP_LIB=1 mcpplib_install
 <p>While the above commands makes a compiler-independent-build, you can also make a compiler-specific-build by adding an option <samp>'COMPILER=MSC'</samp> or the like, unless the compiler is GCC.<br>
 For Visual C, use <samp>'nmake'</samp> instead of <samp>'make'</samp>.<br>
 Since the 'make' command attached to LCC-Win32 cannot handle 'if' directive, you must edit the makefile whenever you do different 'make's.</p>
-<p>On Linux, FreeBSD, Max OS X, CygWIN and MinGW, the result is the same with that of the configure above, except libmcpp.la is not created.<br>
+<p>On Linux, FreeBSD, Max OS X, CygWIN and MinGW, the result is the same with that of the configure above, except libmcpp.la is not created and the documents are not installed.<br>
 On Mac OS X, if you remove the '#' which comments out the definition of variable UFLAGS in mac_osx.mak, universal binary will be generated for each library.<br>
 On Windows, the name of the libraries are different from those on Linux as shown in the table below.</p>
 
@@ -681,12 +689,14 @@ If the first digit of $(SHLIB_VER) or $(DLL_VER) is the same, the versions with 
 In order to use the DLL, you must link your main program against this import library.
 The static library and the import library are installed into the $(LIBDIR) specified in the makefile, and the DLL itself is installed into the $(BINDIR).
 Note that any DLL must be located at some of the execution directories specified by the environment variable PATH on Windows.</p>
-<p>After installing the libraries, you can test them by compiling testmain.c as a main program and linking it against one of the libraries as follows.</p>
+<p>mcpp_lib.h and mcpp_out.h are installed into $(INCDIR).</p>
+<p>main_mcpplib.c is compiled and installed into $(BINDIR) under the name of <b>mcpp</b>, which links libmcpp.
+On Windows, an option <samp>'DLL_IMPORT=1'</samp> specifies to link against DLL.</p>
+<p>You can test libmcpp further by compiling testmain.c as a main program and linking it against one of the libraries as follows.</p>
 <pre>
-make MCPP_LIB=1 testmain
-make MCPP_LIB=1 testmain_install
+make testmain
+make testmain_install
 </pre>
-<p>On Windows, an option <samp>'DLL_IMPORT=1'</samp> specifies to link against DLL.</p>
 <p>testmain.c also has a sample to pass output via memory buffer.
 To enable the memory buffer, include the header file <samp>'mcpp_lib.h'</samp> in your main program, and use the functions declared in it.
 The option <samp>'OUT2MEM=1'</samp> will enable this in testmain.c.
@@ -704,10 +714,12 @@ On the other hand, a shared library (or a DLL) is linked at run time, and shared
 From the DLL of <b>mcpp</b>, for example, only the names in mcpp_lib.h can be imported.</p>
 <p>On UNIXes, the global names in the shared library are all visible from outside by default, hence you have to be sensitive to name collisions.
 GCC 4.0 and later, however, can cope with this problem.
-From the shared library of <b>mcpp</b> V.2.7 and later, compiled by GCC V.4.0 or later, only the names in mcpp_lib.h are visible. *1</p>
+From the shared library of <b>mcpp</b> V.2.7 and later, compiled by GCC V.4.0 or later, only the names in mcpp_lib.h are visible. *1, *2</p>
 <p>To sum up, it is recommended to use DLL on Windows and shared library compiled by GCC 4.0 or later on UNIXes, because you need not to worry about name collision on these libraries.</p>
 <p>Note:</p>
 <p>*1 <b>mcpp</b> V.2.7 and later uses <samp>'#pragma GCC visibility *'</samp> directive which has been implemented since GCC V.4.0.</p>
+<p>*2 Though GCC V.4.1 and later have '-fstack-protector' option, the option does not seem to coexist with <samp>'#pragma GCC visibility hidden'</samp> directive.
+So, the option can't be used to compile libmcpp.</p>
 <br>
 
 <h1><a name="4" href="#toc.4">4. How to port <b>mcpp</b> to each compiler system: Details</a></h1>

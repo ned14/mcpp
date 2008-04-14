@@ -1,9 +1,19 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2008/04/03  kmatsui
+2008/04/14  kmatsui
         * V.2.7-postrelease
         * Fixed a bug of newline synchronization on -K option.  Created
         sync_linenum().  (Thanks to Benjamin Smedberg) (directive.c)
+        * Made GCC-specific-build on x86_64 or ppc64 has two sets of
+        predefines for 32bit mode and 64bit mode.  (Thanks to Benjamin
+        Smedberg) (configure.ac, set_mcpp.sh, system.c)
+        * Made library-build install also a mcpp executable and minimal
+        documents for a convenience of Debian's package.  Created
+        main_mcpplib.c.  (Thanks to Yutaka Niibe) (Makefile.am, src/
+        Makefile.am)
+        * Split mcpp_out.h from mcpp_lib.h.
+        * Updated autoconf 2.59 to 2.61 and automake 1.9.6 to 1.10.
+        * Updated the documents accordingly.
 
 2008/03/23  kmatsui
         * V.2.7

@@ -639,6 +639,13 @@ For example, if the default include directory is /usr/include and &lt;dir&gt; is
 Add &lt;dir&gt; to the include path immediately before system-specific directories and immediately after site-specific directories.<br>
 <li><samp>-lang-c, -x c</samp><br>
 Perform C preprocessing.  The same as not specifying this option at all.<br>
+<li><samp>-m64</samp><br>
+Predefine macros for 64bit system.
+If the CPU is <samp>x86_64</samp> or <samp>ppc64</samp>, predefined macros for <samp>i386</samp> or <samp>ppc</samp> respectively are used by default.
+With this option, however, those for <samp>x86_64</samp> or <samp>ppc64</samp> are used.
+If the CPU is neither of above 2, this option causes an error.<br>
+<li><samp>-mmmx</samp><br>
+Predefine a macro <tt>__MMX__</tt> to 1.
 <li><samp>-nostdinc</samp><br>
 Same as -I- for other compiler systems.<br>
 <li><samp>-undef</samp><br>

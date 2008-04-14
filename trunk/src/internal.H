@@ -38,7 +38,11 @@
     #error "system.H" must be included prior to "internal.H"
 #endif
 
+#include "mcpp_out.h"
+
+#if MCPP_LIB
 #include "mcpp_lib.h"   /* External interface when used as library  */
+#endif
 
 #define EOS             '\0'        /* End of string                */
 #define CHAR_EOF        0           /* Returned by get_ch() on eof  */

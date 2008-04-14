@@ -1,6 +1,7 @@
-# makefile to compile MCPP version 2.7 and later for Borland C / BC make
-#       2008/03 kmatsui
-# You must first edit BINDIR, LIBDIR and LINKER according to your system.
+# makefile to compile MCPP version 2.7.1 and later for Borland C / BC make
+#       2008/04 kmatsui
+# You must first edit BINDIR, INCDIR, LIBDIR and LINKER according to your
+#		system.
 # To make compiler-independent-build of MCPP do:
 #       make
 #       make install
@@ -18,8 +19,8 @@
 #       make -DMCPP_LIB mcpplib_install
 # To make testmain.c (sample to use mcpp.lib) against mcpp.lib do
 #   (add '-DDLL_IMPORT' to link against the DLL):
-#       make -DMCPP_LIB [-DOUT2MEM] testmain
-#       make -DMCPP_LIB [-DOUT2MEM] testmain_install
+#       make [-DOUT2MEM] testmain
+#       make [-DOUT2MEM] testmain_install
 
 NAME = mcpp
 
@@ -86,6 +87,7 @@ clean	:
 # subroutine-build
 CFLAGS = $(CFLAGS) -DMCPP_LIB=1
 LIBDIR = \PUB\COMPILERS\BCC55\LIB
+INCDIR = \PUB\COMPILERS\BCC55\INCLUDE
 #LINKER = tlink32   # BCC40
 LINKER = ilink32   # BCC55
 ADD_OBJS = +main +directive +eval +expand +support +system +mbchar
@@ -110,13 +112,19 @@ mcpplib_install:
 	copy mcpp.lib $(LIBDIR)
 	copy mcpp$(DLL_VER).lib $(LIBDIR)
 	copy mcpp$(DLL_VER).dll $(BINDIR)
+	copy mcpp_lib.h $(INCDIR)
+	copy mcpp_out.h $(INCDIR)
+	$(CC) main_libmcpp.c -e$(NAME).exe mcpp$(DLL_VER).lib
+	copy $(NAME).exe $(BINDIR)
 
 mcpplib_uninstall:
 	del $(LIBDIR)\mcpp.lib $(LIBDIR)\mcpp$(DLL_VER).lib \
             $(BINDIR)\mcpp$(DLL_VER).dll
+	del $(BINDIR)/$(NAME).exe
+	del $(INCDIR)/mcpp*
+!endif
 
 # use mcpp as a subroutine from testmain.c
-NAME = testmain
 !if	$d( DLL_IMPORT)
 CFLAGS = $(CFLAGS) -DDLL_IMPORT=1
 LINKLIB = mcpp$(DLL_VER).lib
@@ -127,12 +135,10 @@ LINKLIB = mcpp.lib
 # output to memory buffer
 CFLAGS = $(CFLAGS) -DOUT2MEM=1
 !endif
-LINKFLAGS = $(NAME).obj -e$(NAME).exe $(LINKLIB)
-$(NAME)	:	$(NAME).obj
+LINKFLAGS = testmain.obj -etestmain.exe $(LINKLIB)
+testmain	:	testmain.obj
 	$(CC) $(LINKFLAGS)
-$(NAME)_install	:
-	copy $(NAME).exe $(BINDIR)
-$(NAME)_uninstall	:
-	del $(BINDIR)\$(NAME).exe
-
-!endif
+testmain_install	:
+	copy testmain.exe $(BINDIR)
+testmain_uninstall	:
+	del $(BINDIR)\testmain.exe

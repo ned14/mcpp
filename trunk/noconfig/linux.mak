@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.7 for Linux / GCC / GNU make
-#       2008/03 kmatsui
+# makefile to compile MCPP version 2.7.1 for Linux / GCC / GNU make
+#       2008/04 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP:
@@ -18,8 +18,8 @@
 #       make MCPP_LIB=1 mcpplib
 #    	sudo make MCPP_LIB=1 mcpplib_install
 # To make testmain using libmcpp:
-#       make MCPP_LIB=1 [OUT2MEM=1] testmain
-#       sudo make MCPP_LIB=1 [OUT2MEM=1] testmain_install
+#       make [OUT2MEM=1] testmain
+#       sudo make [OUT2MEM=1] testmain_install
 
 # COMPILER:
 #   Specify whether make a compiler-independent-build or GCC-specific-build
@@ -34,19 +34,21 @@ NAME = mcpp
 CC = gcc
 CXX = g++
 CFLAGS = -c -O2 -Wall   # -ggdb -v
-#CFLAGS += -fstack-protector     # for gcc 4.1 or later
+# for gcc 4.1 or later (Don't use this option to compile libmcpp)
+#CFLAGS += -fstack-protector
 CPPFLAGS =
 
 LINKFLAGS = -o $(NAME)
-#LINKFLAGS += -fstack-protector  # for gcc 4.1 or later
+# for gcc 4.1 or later (Don't use this option to compile libmcpp)
+#LINKFLAGS += -fstack-protector
 
 ifeq    ($(COMPILER), )
 # compiler-independent-build
 CPPOPTS =
 # BINDIR:   directory to install mcpp: /usr/bin or /usr/local/bin
 BINDIR = /usr/local/bin
-# INCDIR:   empty
-INCDIR =
+# INCDIR:   directory to install mcpp_lib.h, mcpp_out.h for mcpplib
+INCDIR = /usr/local/include
 
 else
 # compiler-specific-build:  Adjust for your system
@@ -61,7 +63,7 @@ gcc_min_ver = 3
 # INCDIR:   GCC's version specific include directory
 #INCDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include
 #INCDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2/include
-# Vine 4.1
+# Vine 4.2
 INCDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6/include
 #INCDIR = /usr/local/lib/gcc/i686-pc-linux-gnu/4.1.1/include
 # Debian 4.0
@@ -70,14 +72,19 @@ CPPOPTS = -DCOMPILER=$(COMPILER)
 
 #BINDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3
 #BINDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2
-# Vine 4.1
+# Vine 4.2
 BINDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6
 #BINDIR = /usr/local/libexec/gcc/i686-pc-linux-gnu/4.1.1
 # Debian 4.0
 #BINDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2
-target = i386-vine-linux
-#target = i686-pc-linux-gnu
+#target = i386-vine-linux
+target = i686-pc-linux-gnu
 #target = i486-linux-gnu
+cpu = i386
+#cpu = ppc
+cpu64 = none
+#cpu64 = x86_64
+#cpu64 = ppc64
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0
 else
@@ -133,7 +140,7 @@ install :
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s' \
-            '$(INCDIR)' SYS_LINUX
+            '$(INCDIR)' SYS_LINUX $(cpu) $(cpu64)
 endif
 
 clean	:
@@ -170,7 +177,7 @@ SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 .c.so	:
 	$(CC) $(CFLAGS) $(MEM_MACRO) -c -fpic -o $*.so $*.c
 mcpplib_so: $(SOBJS)
-	$(CC) -shared -o libmcpp.so.$(SHLIB_VER) $(SOBJS) # -fstack-protector
+	$(CC) -shared -o libmcpp.so.$(SHLIB_VER) $(SOBJS)
 	chmod a+x libmcpp.so.$(SHLIB_VER)
 
 mcpplib_install:
@@ -179,27 +186,30 @@ mcpplib_install:
 	ln -sf libmcpp.so.$(SHLIB_VER) $(LIBDIR)/libmcpp.so
 	ln -sf libmcpp.so.$(SHLIB_VER) $(LIBDIR)/libmcpp.so.$(CUR)
     # You should do 'ldconfig' as a root after install.
+	cp mcpp_lib.h mcpp_out.h $(INCDIR)
+	$(CC) -o $(NAME) main_libmcpp.c -l $(NAME)
+	install -s $(NAME) $(BINDIR)
 mcpplib_uninstall:
 	rm -f $(LIBDIR)/libmcpp.a $(LIBDIR)/libmcpp.so.$(SHLIB_VER) $(LIBDIR)/libmcpp.so.$(CUR) $(LIBDIR)/libmcpp.so 
+	rm -f $(BINDIR)/$(NAME)
+	rm -f $(INCDIR)/mcpp*
+endif
 
 # use mcpp as a subroutine from testmain.c
-NAME = testmain
 ifeq    ($(OUT2MEM), 1)
 # output to memory buffer
 CFLAGS += -DOUT2MEM
 endif
-LINKFLAGS = $(NAME).o -o $(NAME) -lmcpp
+LINKFLAGS = testmain.o -o testmain -l $(NAME)
 ifeq	($(MALLOC), KMMALLOC)
 	LINKFLAGS += -lkmmalloc_debug
 endif
-#LINKFLAGS += -fstack-protector
-$(NAME)	:	$(NAME).o
+testmain	:	testmain.o
 	$(CC) $(LINKFLAGS)
-$(NAME)_install	:
-	install -s $(NAME) $(BINDIR)/$(NAME)
-$(NAME)_uninstall	:
-	rm -f $(BINDIR)/$(NAME)
+testmain_install	:
+	install -s testmain $(BINDIR)/testmain
+testmain_uninstall	:
+	rm -f $(BINDIR)/testmain
 
-endif
 endif
 

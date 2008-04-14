@@ -704,6 +704,12 @@ Identifier 中に '$' を認めない（デフォルトでは認める）。<br>
 &lt;dir&gt; をインクルードパスの system-specific な directory の前に（site-specific な directory の後に）加える。<br>
 <li><samp>-lang-c, -x c</samp><br>
 C のプリプロセスを行う。指定しなくても同じ。<br>
+<li><samp>-m64</samp><br>
+事前定義マクロを 64 ビット用にする。
+CPU が x86_64 または ppc64 の場合、デフォルトではそれぞれ i386, ppc 用の事前定義マクロが使われるが、このオプションを指定するとそれぞれ x86_64, ppc64 用のものが使われる。
+他の CPU でこのオプションを指定するとエラーになる。<br>
+<li><samp>-mmmx</samp><br>
+マクロ <tt>__MMX__</tt> を 1 に定義する。<br>
 <li><samp>-nostdinc</samp><br>
 他の処理系での -I- 
 オプションと同じ。<br>

@@ -4,13 +4,13 @@
  * Refer to mcpp-porting.html section 3.12 for compiling mcpp as a subroutine.
  *
  * 2007/03  Updated to enable testing of memory buffer output.
+ * 2008/04  The macro MCPP_LIB is no longer necessary.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
-#define MCPP_LIB    1
 #include "mcpp_lib.h"
 
 int main(int argc, char *argv[])
