@@ -319,6 +319,8 @@ static int      gcc_maj_ver;                    /* __GNUC__         */
 static int      gcc_min_ver;                    /* __GNUC_MINOR__   */
 static int      dDflag = FALSE;         /* Flag of -dD option       */
 static int      dMflag = FALSE;         /* Flag of -dM option       */
+#define MAX_ARCH_LEN    16
+static char     arch[ MAX_ARCH_LEN];        /* -arch or -m64 option */
 #endif
 
 #if COMPILER == GNUC || COMPILER == MSC
@@ -350,9 +352,6 @@ static int      sys_framework;          /* System framework dir     */
 static const char **    to_search_framework;
                         /* Search framework[] next to the directory */
 static int      in_import;          /* #import rather than #include */
-#if COMPILER == GNUC
-static char *   arch = NULL;                /* -arch ppc or such    */
-#endif
 #endif
 
 #if MCPP_LIB
@@ -426,9 +425,6 @@ void    do_options(
     char *      sysdir[ NSYSDIR] = { NULL, };
     char **     sysdir_end = sysdir;
     int         integrated_cpp; /* Flag of cc1 which integrates cpp in it   */
-#if SYSTEM == SYS_MAC
-    static char ar[ 7];
-#endif
 #elif   COMPILER == LCC
     const char *    debug_name = "__LCCDEBUGLEVEL";
 #endif
@@ -452,6 +448,7 @@ void    do_options(
     gcc_min_ver = atoi( defp->repl);
     integrated_cpp = ((gcc_maj_ver == 3 && gcc_min_ver >= 3)
             || gcc_maj_ver == 4);
+    arch[ 0] = 0;
 #endif
 #if COMPILER == GNUC || COMPILER == MSC
     option_flags.dollar_in_name = TRUE;
@@ -531,7 +528,7 @@ plus:
             break;
         case 'a':
             if (str_eq( mcpp_optarg, "nsi")) {      /* -ansi                */
-                look_and_install( "__STRICT_ANSI__", DEF_NOARGS_PREDEF, ""
+                look_and_install( "__STRICT_ANSI__", DEF_NOARGS_PREDEF, null
                         , "1");
                 ansi = TRUE;
                 break;
@@ -540,7 +537,7 @@ plus:
                 break;  /* Ignore '-auxbase some' or such nonsence  */
 #if SYSTEM == SYS_MAC
             } else if (str_eq( mcpp_optarg, "rch")) {   /* -arch    */
-                arch = argv[ mcpp_optind++];
+                strcpy( arch, argv[ mcpp_optind++]);
                 if (str_eq( arch, "ppc") || str_eq( arch, "ppc7400")
                         || str_eq( arch, "ppc64")
                         || str_eq( arch, "i386") || str_eq( arch, "i686")
@@ -896,6 +893,30 @@ plus:
 
 #if COMPILER == GNUC
         case 'm':
+            if (str_eq( mcpp_optarg, "64")) {               /* -m64 */
+                if (str_eq( CPU_STD2, "__i386__"))
+                    strcpy( arch, "x86_64");
+                else if (str_eq( CPU_STD2, "__ppc__"))
+                    strcpy( arch, "ppc64");
+                else if (str_eq( CPU_STD2, "__x86_64__")
+                        || str_eq( CPU_STD2, "__ppc64__"))
+                    ;
+                else {
+                    mcpp_fputs( "-m64 option is invalid\n", ERR);
+                    longjmp( error_exit, -1);
+                }
+                break;
+            } else if (str_eq( mcpp_optarg, "32")) {
+                if (str_eq( CPU_STD2, "__x86_64__"))
+                    strcpy( arch, "i386");
+                else if (str_eq( CPU_STD2, "__ppc64__"))
+                    strcpy( arch, "ppc");
+                /* Else ignore, since this is the default   */
+                break;
+            } else if (str_eq( mcpp_optarg, "mmx")) {   /* -mmmx    */
+                look_and_install( "__MMX__", DEF_NOARGS_PREDEF, null, "1");
+                break;
+            }
 #if SYSTEM == SYS_CYGWIN
             if (str_eq( mcpp_optarg, "no-cygwin")) {    /* -mno-cygwin      */
                 no_cygwin = TRUE;
@@ -905,13 +926,11 @@ plus:
             if (! integrated_cpp)
                 usage( opt);
             break;
-#endif
 
-#if COMPILER == GNUC
         case 'u':
             if (! str_eq( mcpp_optarg, "ndef"))     /* -undef       */
                 usage( opt);                /* Else fall through    */
-#endif
+#endif  /* COMPILER == GNUC */
 
 #if COMPILER == MSC
         case 'u':
@@ -944,7 +963,7 @@ plus:
                 else if ((isdigit( *mcpp_optarg) && *mcpp_optarg != '0')
                         || *mcpp_optarg == 's' || *mcpp_optarg == 'z')
                                             /* -O1, -O2 -Os, -Oz    */
-                    look_and_install( "__OPTIMIZE__", DEF_NOARGS_PREDEF, ""
+                    look_and_install( "__OPTIMIZE__", DEF_NOARGS_PREDEF, null
                             , "1");
                 else if (! isdigit( *mcpp_optarg))
                     usage( opt);
@@ -1051,8 +1070,8 @@ plus:
                 } else if (memcmp( cp, "iso9899:", 8) == 0
                         && strlen( cp) >= 14) { /* std=iso9899:199409, etc. */
                     mcpp_optarg = cp + 8;
-                    look_and_install( "__STRICT_ANSI__", DEF_NOARGS_PREDEF, ""
-                            , "1");
+                    look_and_install( "__STRICT_ANSI__", DEF_NOARGS_PREDEF
+                            , null, "1");
                     ansi = TRUE;
                     goto Version;
                 } else if (memcmp( cp, "iso14882", 8) == 0) {
@@ -1071,8 +1090,8 @@ plus:
                 }
                 if (! cplus_val && memcmp( cp, "gnu", 3) != 0) {
                     /* 'std=gnu*' does not imply -ansi  */
-                    look_and_install( "__STRICT_ANSI__", DEF_NOARGS_PREDEF, ""
-                            , "1");
+                    look_and_install( "__STRICT_ANSI__", DEF_NOARGS_PREDEF
+                            , null, "1");
                     ansi = TRUE;
                 }
                 stdc_val = 1;
@@ -1251,8 +1270,11 @@ Version:
     set_a_dir( NULL);                       /* Initialize incdir[]  */
     to_search_framework = incend;
                         /* Search framework[] next to the directory */
+#endif
+
 #if COMPILER == GNUC
-    if (arch) {                     /* -arch option is specified    */
+#if SYSTEM == SYS_MAC
+    if (arch[ 0]) {                 /* -arch option is specified    */
         if (((str_eq( CPU_STD2, "__i386__") || str_eq( CPU_STD2, "__x86_64__"))
                 && (! str_eq( arch, "i386") && ! str_eq( arch, "x86_64")))
             || ((str_eq( CPU_STD2, "__ppc__")
@@ -1261,6 +1283,9 @@ Version:
             mcpp_fprintf( ERR, "Wrong argument of -arch option: %s\n", arch);
             longjmp( error_exit, -1);
         }
+#else
+    if (arch[ 0]) {                 /* -m64 option is specified     */
+#endif
         /* The CPU-specific-macros will be defined in init_gcc_macro(). */
         undefine( CPU_STD2);
 #ifdef  CPU_OLD
@@ -1275,13 +1300,14 @@ Version:
 #ifdef  CPU_SP_OLD
         undefine( CPU_SP_OLD);
 #endif
-    } else {
-        memcpy( ar, CPU_STD2+2, strlen( CPU_STD2) - 4);
-        ar[ strlen( CPU_STD2) - 4] = EOS;
-        arch = ar;
-    }
-#endif
-#endif
+    } else if (str_eq( CPU_STD2, "__i386__") || str_eq( CPU_STD2, "__ppc__")
+            || str_eq( CPU_STD2, "__x86_64__")
+            || str_eq( CPU_STD2, "__ppc64__")) {
+        memcpy( arch, CPU_STD2+2, strlen( CPU_STD2) - 4);
+        arch[ strlen( CPU_STD2) - 4] = EOS;
+    }   /* GCC for other CPUs are not bi-targeted for 32bit and 64bit mode  */
+#endif  /* COMPILER == GNUC */
+
 #if COMPILER == GNUC
     if (sysdir < sysdir_end) {
         char **     dp = sysdir;
@@ -1343,8 +1369,7 @@ static void version( void)
     const char *    mes[] = {
 
 #if     MCPP_LIB
-/* Write messages here. */
-        NULL, " with ",
+/* Write messages here, for example, "MySomeTool with ".    */
 #endif
 
 #ifdef  VERSION_MSG
@@ -1375,9 +1400,6 @@ static void version( void)
         };
 
     const char **   mpp = mes;
-#if     MCPP_LIB
-    mes[ 0] = argv0;
-#endif
     while (*mpp)
         mcpp_fputs( *mpp++, ERR);
 }
@@ -1570,7 +1592,7 @@ static void usage(
     const char * const *    mpp = mes;
 
     if (opt != '?')
-        mcpp_fprintf( ERR, illegopt, opt, mcpp_optarg ? mcpp_optarg : "");
+        mcpp_fprintf( ERR, illegopt, opt, mcpp_optarg ? mcpp_optarg : null);
     version();
 #if MCPP_LIB
     mes[ 1] = argv0;
@@ -2029,7 +2051,7 @@ static void put_info(
                 , std_line_prefix ? "#line " : LINE_PREFIX , 1);
     mcpp_fprintf( OUT, "%s%ld \"%s\"%s\n"
             , std_line_prefix ? "#line " : LINE_PREFIX, 1, cur_fullname
-            , ! str_eq( cur_fullname, sharp_file->full_fname) ? " 1" : "");
+            , ! str_eq( cur_fullname, sharp_file->full_fname) ? " 1" : null);
             /* Suffix " 1" for the file specified by -include   */
 #endif
 }
@@ -2425,7 +2447,7 @@ static char *   norm_path(
     if (inf) {
         if (slbuf2[ 0])
             mcpp_fprintf( DBG, "Dereferenced \"%s%s\" to \"%s\"\n"
-                    , dir, fname ? fname : "", slbuf1);
+                    , dir, fname ? fname : null, slbuf1);
     }
 #endif
     len = strlen( slbuf1);
@@ -2559,7 +2581,7 @@ static char *   norm_path(
     if (inf) {
         char    debug_buf[ PATHMAX+1];
         strcpy( debug_buf, dir);
-        strcat( debug_buf, fname ? fname : "");
+        strcat( debug_buf, fname ? fname : null);
 #if SYS_FAMILY == SYS_WIN
         bsl2sl( debug_buf);
 #endif
@@ -2632,18 +2654,18 @@ static void init_gcc_macro( void)
     if (nflag)                                  /* -undef option    */
         goto  undef_special;
 
-    tmp = xmalloc( strlen( INC_DIR) + strlen( "/mcpp-gcc") + 10);
+    tmp = xmalloc( strlen( INC_DIR) + strlen( "/mcpp-gcc") + MAX_ARCH_LEN);
 #if     SYSTEM == SYS_CYGWIN
     if (no_cygwin) {
-        sprintf( tmp, "%s/%s/mcpp-gcc", INC_DIR, "mingw");
+        sprintf( tmp, "%s/%s/mcpp-gcc-%s", INC_DIR, "mingw", arch);
     } else {
-        sprintf( tmp, "%s/mcpp-gcc", INC_DIR);
+        sprintf( tmp, "%s/mcpp-gcc-%s", INC_DIR, arch);
     }
-#elif   SYSTEM == SYS_MAC
-    /* Apple-GCC has -arch * option which changes many predefined macros.   */
-    sprintf( tmp, "%s/mcpp-gcc-%s", INC_DIR, arch);
 #else
-    sprintf( tmp, "%s/mcpp-gcc", INC_DIR);
+    if (arch[ 0])                       /* i386, x86_64, ppc, ppc64 */
+        sprintf( tmp, "%s/mcpp-gcc-%s", INC_DIR, arch);
+    else
+        sprintf( tmp, "%s/mcpp-gcc", INC_DIR);
 #endif
     include_dir = norm_path( tmp, NULL, TRUE, FALSE);
     free( tmp);

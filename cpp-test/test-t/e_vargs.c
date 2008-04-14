@@ -20,5 +20,5 @@
     /* No argument to correspond __VA_ARGS__    */
     #define debug( ...) fprintf( stderr, __VA_ARGS__)
     debug();
-/* { dg-error "Empty argument" "" { target *-*-* } 22 } */
-
+/* { dg-warning "Empty argument" "" { target *-*-* } 22 } */
+/* dg-warning, not dg-error to avoid a problem of GCC 4.3 testsuite */

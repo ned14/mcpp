@@ -1,6 +1,6 @@
-# makefile to compile MCPP version 2.7 and later for LCC-Win32 / LCC make
-#       2008/03 kmatsui
-# You must first edit BINDIR according to your system.
+# makefile to compile MCPP version 2.7.1 and later for LCC-Win32 / LCC make
+#       2008/04 kmatsui
+# You must first edit BINDIR, INCDIR and LIBDIR  according to your system.
 # To compile MCPP do:
 #       make
 #       make install
@@ -69,6 +69,7 @@ clean	:
 	-del *.obj *.exe mcpp.H *.lib *.dll *.exp _*.c
 
 LIBDIR = \PUBLIC\COMPILERS\LCC\lib
+INCDIR = \PUBLIC\COMPILERS\LCC\include
 # For subroutine-build, uncomment the following line.
 #CFLAGS = -A -DMCPP_LIB=1 -DDLL_EXPORT $(MEM_MACRO)
 DLL_VER = 0
@@ -87,19 +88,24 @@ mcpplib_install:
 	copy mcpp.lib $(LIBDIR)
 	copy mcpp$(DLL_VER).lib $(LIBDIR)
 	copy mcpp$(DLL_VER).dll $(BINDIR)
+	copy mcpp_lib.h $(INCDIR)
+	copy mcpp_out.h $(INCDIR)
+	$(CC) main_libmcpp.c -o $(NAME).exe mcpp$(DLL_VER).lib
+	copy $(NAME).exe $(BINDIR)
 
 mcpplib_uninstall:
 	del $(LIBDIR)\mcpp.lib $(LIBDIR)\mcpp$(DLL_VER).lib \
             $(BINDIR)\mcpp$(DLL_VER).dll
+	del $(BINDIR)/$(NAME).exe
+	del $(INCDIR)/mcpp*
 
 # To use mcpp as a subroutine from testmain.c, uncomment the following lines.
-#NAME = testmain
 # To output to memory buffer, uncomment the next line.
-#CFLAGS = -A -DMCPP_LIB -DOUT2MEM -DDLL_IMPORT
-#LINKFLAGS = -o $(NAME).exe $(NAME).obj mcpp$(DLL_VER).lib $(MEMLIB)
-#$(NAME)	:	$(NAME).obj
+#CFLAGS = -A -DOUT2MEM -DDLL_IMPORT
+#LINKFLAGS = -o testmain.exe testmain.obj mcpp$(DLL_VER).lib $(MEMLIB)
+#testmain	:	testmain.obj
 #	lcclnk $(LINKFLAGS)
-#$(NAME)_install	:
-#	copy $(NAME).exe $(BINDIR)
-#$(NAME)_uninstall	:
-#	del $(BINDIR)\$(NAME).exe
+#testmain_install	:
+#	copy testmain.exe $(BINDIR)
+#testmain_uninstall	:
+#	del $(BINDIR)\testmain.exe

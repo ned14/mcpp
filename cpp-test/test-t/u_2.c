@@ -7,7 +7,8 @@
 #endif
 
 /* u.2.2:   Illegal bit shift count.    */
-#if     1 << -1 /* { dg-error "Illegal shift count" } */
+/* dg-warning, not dg-error to avoid a problem of GCC 4.3 testsuite */
+#if     1 << -1 /* { dg-warning "Illegal shift count" } */
 #endif
 #if     1 << 64 /* { dg-error "integer overflow | Illegal shift count" } */
 #endif

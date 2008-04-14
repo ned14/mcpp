@@ -25,8 +25,8 @@ fi
 echo "  rm -fr $inc_dir/mcpp-gcc*"
 rm -fr $inc_dir/mcpp-gcc*
 if test $host_system = SYS_CYGWIN; then
-    echo "  rm -fr $inc_dir/mingw/mcpp-gcc"
-    rm -fr $inc_dir/mingw/mcpp-gcc
+    echo "  rm -fr $inc_dir/mingw/mcpp-gcc*"
+    rm -fr $inc_dir/mingw/mcpp-gcc*
 fi
 
 echo "  cd $cpp_path"

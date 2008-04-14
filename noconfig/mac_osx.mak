@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.7 for Mac OS X / GCC / GNU make
-#       2008/03 kmatsui
+# makefile to compile MCPP version 2.7.1 for Mac OS X / GCC / GNU make
+#       2008/04 kmatsui
 #
 # First, you must edit NAME, GCCDIR, BINDIR, INCDIR, 
 #       gcc_maj_ver, gcc_min_ver, arch, target_cc.
@@ -19,8 +19,8 @@
 #       make MCPP_LIB=1 mcpplib
 #    	sudo make MCPP_LIB=1 mcpplib_install
 # To make testmain using libmcpp:
-#       make MCPP_LIB=1 [OUT2MEM=1] testmain
-#       sudo make MCPP_LIB=1 [OUT2MEM=1] testmain_install
+#       make [OUT2MEM=1] testmain
+#       sudo make [OUT2MEM=1] testmain_install
 
 # COMPILER:
 #   Specify whether make a compiler-independent-build or GCC-specific-build
@@ -43,10 +43,12 @@ CXX = g++
 #CXX = powerpc-apple-darwin9-g++-4.0.1
 #CXX = i686-apple-darwin9-g++-4.0.1
 CFLAGS = -c -Wall -O2   # -ggdb -O0 -v
-#CFLAGS += -fstack-protector     # for gcc 4.1 or later
+# for gcc 4.1 or later (Don't use this option to compile libmcpp)
+#CFLAGS += -fstack-protector
 CPPFLAGS =
 
 LINKFLAGS = -o $(NAME)
+# for gcc 4.1 or later (Don't use this option to compile libmcpp)
 #LINKFLAGS += -fstack-protector  # for gcc 4.1 or later
 
 # for universal binary of MacOS 10.4 and 10.5, x86 and ppc
@@ -57,8 +59,8 @@ ifeq    ($(COMPILER), )
 CPPOPTS =
 # BINDIR:   directory to install mcpp: /usr/bin or /usr/local/bin
 BINDIR = /usr/local/bin
-# INCDIR:   empty
-INCDIR =
+# INCDIR:	directory to install mcpp_lib.h, mcpp_out.h for mcpplib
+INCDIR = /usr/local/include
 
 else
 # compiler-specific-build:  Adjust for your system
@@ -88,6 +90,8 @@ target_cc = gcc
 #target_cc = i686-apple-darwin9-gcc-4.0.1
 arch = i386
 #arch = ppc
+cpu64 = x86_64
+#cpu64 = ppc64
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0
 else
@@ -143,7 +147,7 @@ install :
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'  \
-            '$(INCDIR)' SYS_MAC $(arch) $(target_cc)
+            '$(INCDIR)' SYS_MAC $(arch) $(cpu64) $(target_cc)
 endif
 
 clean	:
@@ -190,28 +194,31 @@ mcpplib_install:
 	ranlib $(LIBDIR)/libmcpp.a
 	ln -sf libmcpp.$(SHLIB_VER).dylib $(LIBDIR)/libmcpp.dylib
 	ln -sf libmcpp.$(SHLIB_VER).dylib $(LIBDIR)/libmcpp.0.dylib
+	cp mcpp_lib.h mcpp_out.h $(INCDIR)
     # You should do 'ldconfig' as a root after install.
+	$(CC) -o $(NAME) main_libmcpp.c -l $(NAME)
+	install -s $(NAME) $(BINDIR)
 mcpplib_uninstall:
 	rm -f $(LIBDIR)/libmcpp.a $(LIBDIR)/libmcpp.$(SHLIB_VER).dylib $(LIBDIR)/libmcpp.0.dylib $(LIBDIR)/libmcpp.dylib
+	rm -f $(BINDIR)/$(NAME)
+	rm -f $(INCDIR)/mcpp*
+endif
 
 # use mcpp as a subroutine from testmain.c
-NAME = testmain
 ifeq    ($(OUT2MEM), 1)
 # output to memory buffer
 CFLAGS += -DOUT2MEM
 endif
-LINKFLAGS = $(NAME).o -o $(NAME) -lmcpp
+LINKFLAGS = testmain.o -o testmain -l $(NAME)
 ifeq	($(MALLOC), KMMALLOC)
-	LINKFLAGS += -lkmmalloc_debug
+	LINKFLAGS += -l kmmalloc_debug
 endif
-#LINKFLAGS += -fstack-protector
-$(NAME)	:	$(NAME).o
+testmain	:	testmain.o
 	$(CC) $(UFLAGS) $(LINKFLAGS)
-$(NAME)_install	:
-	install -s $(NAME) $(BINDIR)/$(NAME)
-$(NAME)_uninstall	:
-	rm -f $(BINDIR)/$(NAME)
+testmain_install	:
+	install -s testmain $(BINDIR)/testmain
+testmain_uninstall	:
+	rm -f $(BINDIR)/testmain
 
-endif
 endif
 
