@@ -82,9 +82,12 @@ target = i686-pc-linux-gnu
 #target = i486-linux-gnu
 cpu = i386
 #cpu = ppc
-cpu64 = none
-#cpu64 = x86_64
-#cpu64 = ppc64
+#cpu = x86_64
+#cpu = ppc64
+# If cpu is x86_64 or ppc64, set cpu32 as i386 or ppc respectively
+# If cpu is neither x86_64 nor ppc64, set cpu32 as cpu
+cpu32 = i386
+#cpu32 = ppc
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0
 else
@@ -140,7 +143,7 @@ install :
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s' \
-            '$(INCDIR)' SYS_LINUX $(cpu) $(cpu64)
+            '$(INCDIR)' SYS_LINUX $(cpu) $(cpu32)
 endif
 
 clean	:
@@ -165,12 +168,12 @@ mcpplib_a:	$(OBJS)
 	ar -rv libmcpp.a $(OBJS)
 
 # shared library
-# mcpp 2.6.*: 0, mcpp 2.7: 1
-CUR = 1
-# mcpp 2.6.3: 0, mcpp 2.6.4: 1, mcpp 2.7: 0
+# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2
+CUR = 2
+# mcpp 2.6.3: 0, mcpp 2.6.4: 1, mcpp 2.7: 0, mcpp 2.7.1: 0
 REV = 0
-# mcpp 2.6.*: 0, mcpp 2.7: 1
-AGE = 1
+# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2
+AGE = 2
 SHLIB_VER = 0.$(CUR).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 .SUFFIXES: .so

@@ -530,7 +530,7 @@ extern void     at_end( void);
                 /* Do the final commands        */
 extern void     print_heap( void);
                 /* Print blocks of heap memory  */
-#if ! HOST_HAVE_STPCPY || HOST_COMPILER == GNUC
+#if ! HOST_HAVE_STPCPY
 extern char *   stpcpy( char * dest, const char * src);
                 /* Non-Standard library function*/
 #endif
@@ -555,4 +555,8 @@ extern void     init_system( void);
 #if HOST_COMPILER == GNUC && (SYS_FAMILY == SYS_UNIX && SYSTEM != SYS_CYGWIN)
 #pragma GCC visibility pop
 #endif
+#endif
+
+#if HOST_HAVE_STPCPY
+extern char *   stpcpy( char * dest, const char * src);
 #endif

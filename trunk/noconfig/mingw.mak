@@ -64,8 +64,10 @@ BINDIR = /mingw/libexec/gcc/mingw32/3.4.5
 cpp_call = $(BINDIR)/cc1.exe
 target = mingw32
 cpu = i386
-cpu64 = none
-#cpu64 = x86_64
+#cpu = x86_64
+# If cpu is x86_64, set cpu32 as i386
+# If cpu is not x86_64, set cpu32 as cpu
+cpu32 = i386
 endif
 endif
 
@@ -118,7 +120,7 @@ install :
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'    \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'   \
-            '$(INCDIR)' SYS_MINGW $(cpu) $(cpu64)
+            '$(INCDIR)' SYS_MINGW $(cpu) $(cpu32)
 endif
 
 clean	:

@@ -869,7 +869,7 @@ target_cc
 gcc_path
 host_system
 Target_Cpu
-Target_Cpu64
+Target_Cpu32
 inc_dir
 gcc_maj_ver
 gcc_min_ver
@@ -19460,29 +19460,33 @@ if test x$enable_replace_cpp = xyes    \
 { echo "$as_me:$LINENO: setting predefined macros for target cpu" >&5
 echo "$as_me: setting predefined macros for target cpu" >&6;}
 
-## If $target_cpu is x86_64, $Target_Cpu64 is x86_64 and $Target_Cpu should
-## be i386, which is the default.
-## If $target_cpu is ppc64, $Target_Cpu64 is ppc64 and $Target_Cpu should
-## be ppc, which is the default.
-Target_Cpu64="none"
+## If $target_cpu is x86_64, $Target_Cpu is x86_64, which is the default,
+## and $Target_Cpu32 should be i386.
+## If $target_cpu is ppc64, $Target_Cpu is ppc64, which is the default,
+## and $Target_Cpu32 should be ppc.
+## If $target_cpu is neither x86_64 nor ppc64, both of $Target_Cpu and
+## $Target_Cpu32 are $target_cpu.
 
 case $target_cpu in
 x86_64|amd64)
-    Target_Cpu64=x86_64
-    Target_Cpu=i386
+    Target_Cpu=x86_64
+    Target_Cpu32=i386
     ;;
 i?86*)
     Target_Cpu=i386
+    Target_Cpu32=i386
     ;;
 powerpc64|ppc64)
-    Target_Cpu64=ppc64
-    Target_Cpu=ppc
+    Target_Cpu=ppc64
+    Target_Cpu32=ppc
     ;;
 powerpc|ppc|ppc7400)
     Target_Cpu=ppc
+    Target_Cpu32=ppc
     ;;
 *)
     Target_Cpu=$target_cpu
+    Target_Cpu32=$target_cpu
     ;;
 esac
 
@@ -19789,6 +19793,102 @@ _ACEOF
 
 
 fi
+
+
+
+
+for ac_func in stpcpy
+do
+as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
+{ echo "$as_me:$LINENO: checking for $ac_func" >&5
+echo $ECHO_N "checking for $ac_func... $ECHO_C" >&6; }
+if { as_var=$as_ac_var; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+/* Define $ac_func to an innocuous variant, in case <limits.h> declares $ac_func.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define $ac_func innocuous_$ac_func
+
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char $ac_func (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+
+#undef $ac_func
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_func ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined __stub_$ac_func || defined __stub___$ac_func
+choke me
+#endif
+
+int
+main ()
+{
+return $ac_func ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  eval "$as_ac_var=yes"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	eval "$as_ac_var=no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+fi
+ac_res=`eval echo '${'$as_ac_var'}'`
+	       { echo "$as_me:$LINENO: result: $ac_res" >&5
+echo "${ECHO_T}$ac_res" >&6; }
+if test `eval echo '${'$as_ac_var'}'` = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define `echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
 
 
 
@@ -20531,11 +20631,6 @@ _ACEOF
 echo "$as_me: WARNING: Ignores enable-replace-cpp option" >&2;}
         enable_replace_cpp=no
     fi
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        ## Do not use GCC's built-in stpcpy() in libmcpp mode, since some
-        ## GCC version (e.g. 4.3.0) cause link error on "hidden" stpcpy().
-        ac_cv_func_stpcpy=no
-    fi
 
 else
 
@@ -20848,105 +20943,6 @@ fi
 
 
 fi  # not gcc
-
-
-if test x$ac_cv_func_stpcpy != xno; then
-    ## after the libmcpp checking
-
-for ac_func in stpcpy
-do
-as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
-{ echo "$as_me:$LINENO: checking for $ac_func" >&5
-echo $ECHO_N "checking for $ac_func... $ECHO_C" >&6; }
-if { as_var=$as_ac_var; eval "test \"\${$as_var+set}\" = set"; }; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-/* Define $ac_func to an innocuous variant, in case <limits.h> declares $ac_func.
-   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
-#define $ac_func innocuous_$ac_func
-
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char $ac_func (); below.
-    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-    <limits.h> exists even on freestanding compilers.  */
-
-#ifdef __STDC__
-# include <limits.h>
-#else
-# include <assert.h>
-#endif
-
-#undef $ac_func
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $ac_func ();
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined __stub_$ac_func || defined __stub___$ac_func
-choke me
-#endif
-
-int
-main ()
-{
-return $ac_func ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-  eval "$as_ac_var=yes"
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	eval "$as_ac_var=no"
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-fi
-ac_res=`eval echo '${'$as_ac_var'}'`
-	       { echo "$as_me:$LINENO: result: $ac_res" >&5
-echo "${ECHO_T}$ac_res" >&6; }
-if test `eval echo '${'$as_ac_var'}'` = yes; then
-  cat >>confdefs.h <<_ACEOF
-#define `echo "HAVE_$ac_func" | $as_tr_cpp` 1
-_ACEOF
-
-fi
-done
-
-fi
 
 
 { echo "$as_me:$LINENO: checking for some compiler specific elements" >&5
@@ -22685,7 +22681,7 @@ for ac_last_try in false false false false false :; do
 gcc_path!$gcc_path$ac_delim
 host_system!$host_system$ac_delim
 Target_Cpu!$Target_Cpu$ac_delim
-Target_Cpu64!$Target_Cpu64$ac_delim
+Target_Cpu32!$Target_Cpu32$ac_delim
 inc_dir!$inc_dir$ac_delim
 gcc_maj_ver!$gcc_maj_ver$ac_delim
 gcc_min_ver!$gcc_min_ver$ac_delim

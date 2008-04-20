@@ -314,13 +314,12 @@ static const char **    sys_dirp = NULL;        /* System header directory  */
 static const char *     sysroot = NULL; /* Logical root directory of header */
 static int      i_split = FALSE;                /* For -I- option   */
 static int      gcc_work_dir = FALSE;           /* For -fworking-directory  */
-static int      no_exceptions = FALSE;  /* For -fno-deprecated option       */
 static int      gcc_maj_ver;                    /* __GNUC__         */
 static int      gcc_min_ver;                    /* __GNUC_MINOR__   */
 static int      dDflag = FALSE;         /* Flag of -dD option       */
 static int      dMflag = FALSE;         /* Flag of -dM option       */
 #define MAX_ARCH_LEN    16
-static char     arch[ MAX_ARCH_LEN];        /* -arch or -m64 option */
+static char     arch[ MAX_ARCH_LEN];        /* -arch or -m32 option */
 #endif
 
 #if COMPILER == GNUC || COMPILER == MSC
@@ -373,7 +372,7 @@ void    init_system( void)
 #if COMPILER == GNUC
     sys_dirp = NULL;
     sysroot = NULL;
-    gcc_work_dir = no_exceptions = i_split = FALSE;
+    gcc_work_dir = i_split = FALSE;
     quote_dir_end = quote_dir;
     dDflag = dMflag = FALSE;
 #endif
@@ -648,7 +647,7 @@ plus:
                 look_and_install( "__EXCEPTIONS", DEF_NOARGS_PREDEF, null
                         , "1");
             } else if (str_eq( mcpp_optarg, "no-exceptions")) {
-                no_exceptions = TRUE;
+                undef_list[ undef_cnt++] = "__EXCEPTIONS";
             } else if (str_eq( mcpp_optarg, "PIC")
                     || str_eq( mcpp_optarg, "pic")
                     || str_eq( mcpp_optarg, "PIE")
@@ -894,19 +893,15 @@ plus:
 #if COMPILER == GNUC
         case 'm':
             if (str_eq( mcpp_optarg, "64")) {               /* -m64 */
-                if (str_eq( CPU_STD2, "__i386__"))
-                    strcpy( arch, "x86_64");
-                else if (str_eq( CPU_STD2, "__ppc__"))
-                    strcpy( arch, "ppc64");
-                else if (str_eq( CPU_STD2, "__x86_64__")
-                        || str_eq( CPU_STD2, "__ppc64__"))
-                    ;
-                else {
+                if (! str_eq( CPU_STD2, "__x86_64__")
+                        && ! str_eq( CPU_STD2, "__ppc64__")) {
+                    /* -m64 option is valid only for x86_64 and ppc64   */
                     mcpp_fputs( "-m64 option is invalid\n", ERR);
                     longjmp( error_exit, -1);
                 }
+                /* Else ignore, since this is the default   */
                 break;
-            } else if (str_eq( mcpp_optarg, "32")) {
+            } else if (str_eq( mcpp_optarg, "32")) {        /* -m32 */
                 if (str_eq( CPU_STD2, "__x86_64__"))
                     strcpy( arch, "i386");
                 else if (str_eq( CPU_STD2, "__ppc64__"))
@@ -915,6 +910,9 @@ plus:
                 break;
             } else if (str_eq( mcpp_optarg, "mmx")) {   /* -mmmx    */
                 look_and_install( "__MMX__", DEF_NOARGS_PREDEF, null, "1");
+                break;
+            } else if (str_eq( mcpp_optarg, "no-mmx")) {    /* -mno-mmx     */
+                undef_list[ undef_cnt++] = "__MMX__";
                 break;
             }
 #if SYSTEM == SYS_CYGWIN
@@ -1284,7 +1282,7 @@ Version:
             longjmp( error_exit, -1);
         }
 #else
-    if (arch[ 0]) {                 /* -m64 option is specified     */
+    if (arch[ 0]) {                 /* -m32 option is specified     */
 #endif
         /* The CPU-specific-macros will be defined in init_gcc_macro(). */
         undefine( CPU_STD2);
@@ -2706,8 +2704,6 @@ static void init_gcc_macro( void)
 undef_special:
     if (look_id( "__OPTIMIZE__"))       /* -O option is specified   */
         undefine( "__NO_INLINE__");
-    if (no_exceptions)                  /* -fno-exceptions option   */
-        undefine( "__EXCEPTIONS");
 }
 
 static void chk_env( void)

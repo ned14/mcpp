@@ -1585,7 +1585,8 @@ int     get_ch( void)
     if (file->fp) {                         /* Source file included */
         free( file->filename);              /* Free filename        */
         free( file->src_dir);               /* Free src_dir         */
-        fclose( file->fp);                  /* Close finished file  */
+        if(file->fp != stdin)
+            fclose( file->fp);              /* Close finished file  */
         /* Do not free file->real_fname and file->full_fname        */
         cur_fullname = infile->full_fname;
         cur_fname = infile->real_fname;     /* Restore current fname*/
