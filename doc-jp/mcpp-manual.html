@@ -131,7 +131,7 @@
 <h1><a name="1" href="#toc.1">1. 概要</a></h1>
 <p><b>mcpp</b> は Martin Minow の DECUS cpp を元に kmatsui（松井 
 潔）が全面的に書き直したＣプリプロセッサです。<b>mcpp</b> という名前は Matsui cpp という意味です。これはソースで提供するもので、各処理系で使うにはその処理系に合わせてソースに若干の変更を加えた上でコンパイルして <b>mcpp</b> の実行プログラムを作る必要があります。*1</p>
-<p>このマニュアルでは、すでに特定の処理系に移植された実行プログラムの仕様を説明しています。さらに詳細を知りたい人、ソースから何らかの処理系に移植してみたい人は、ソースと mcpp-porting.html というドキュメントを参照してください。<br>
+<p>このマニュアルでは、すでに特定の処理系に移植された実行プログラムの仕様を説明しています。さらに詳細を知りたい人、ソースから何らかの処理系に移植してみたい人は、ソースと <a href="mcpp-porting.html">mcpp-porting.html</a> というドキュメントを参照してください。<br>
 これらのソース、ドキュメントはすべてオープンソース・ソフトウェアとして提供します。<br>
 マニュアルの内容に入る前に、まず <b>mcpp</b> の特徴を紹介しておきます。</p>
 <p>注:</p>
@@ -292,7 +292,8 @@ Standard モード では preprocessing number
 その仕様については <a href="#2.5">2.5</a> を見てください。</p>
 <p>こういうことで <b>mcpp</b> の実行プログラムにはいくつもの仕様があるので、マニュアルを注意して読んでください。この章ではまず <b>mcpp</b> の共通のオプションを説明し、次に動作モードによって異なるオプションを述べ、次に特定の処理系専用版を除いて共通のオプションを述べ、そのあとで処理系専用版の処理系ごとに異なるオプションを記載します。</p>
 <p>注:</p>
-<p>*1 このほか subroutine-build というものもある。何らかの他のメインプログラムから <b>mcpp</b> がサブルーチンとして呼び出されるものである。しかし、その仕様は <b>mcpp</b> をコンパイルした時の設定によって compiler-specific-build または compiler-independent-build のどちらかと同じになるので、このマニュアルでは特にとりあげない。</p>
+<p>*1 このほか subroutine-build というものもある。何らかの他のメインプログラムから <b>mcpp</b> がサブルーチンとして呼び出されるものである。しかし、その仕様は <b>mcpp</b> をコンパイルした時の設定によって compiler-specific-build または compiler-independent-build のどちらかと同じになるので、このマニュアルでは特にとりあげない。
+Subroutine-build については <a href="mcpp-porting.html#3.12">mcpp-porting.html#3.12</a> を参照のこと。</p>
 <p>*2 SourceForge のサイトで提供するバイナリ・パッケージはすべて compiler-independent-build である。</p>
 <p>*3 V.2.5 までは Standard モードと pre-Standard モードとで実行プログラムが別になっていたが、V.2.6 から１つに統合された。</p>
 <p>*4 これは GCC, Visual C++ 等の主要な処理系との互換性のためのオプションである。'<i>COMPAT</i>' は "compatible" の意味である。</p>
@@ -677,7 +678,7 @@ C のソースであることを指示する。
 プリプロセスの最後にその時点で有効なマクロ定義を #define 行の形で出力する。-dM オプションではプリプロセス結果は出力しない。また、事前定義されたマクロも規格の標準事前定義マクロでなければ出力する。-dD オプションではプリプロセス結果も出力する。また、事前定義マクロは出力しない。*3, *4<br>
 <li><samp>-fexceptions</samp><br>
 マクロ <tt>__EXCEPTIONS</tt> を 1 に定義する。<br>
-<samp>-fno-exceptions</samp> ではこのマクロを定義しない。
+<samp>-fno-exceptions</samp> ではこのマクロを定義しない。<br>
 <li><samp>-finput-charset=&lt;encoding&gt;</samp><br>
 -e &lt;encoding&gt; オプションと同じ。GCC はこのオプションを指定すると &lt;encoding&gt; を UTF-8 に変換するが、<b>mcpp</b> は変換はしないことに注意。<br>
 <li><samp>-fno-dollars-in-identifiers</samp><br>
@@ -704,29 +705,24 @@ Identifier 中に '$' を認めない（デフォルトでは認める）。<br>
 &lt;dir&gt; をインクルードパスの system-specific な directory の前に（site-specific な directory の後に）加える。<br>
 <li><samp>-lang-c, -x c</samp><br>
 C のプリプロセスを行う。指定しなくても同じ。<br>
-<li><samp>-m64</samp><br>
-事前定義マクロを 64 ビット用にする。
-CPU が x86_64 または ppc64 の場合、デフォルトではそれぞれ i386, ppc 用の事前定義マクロが使われるが、このオプションを指定するとそれぞれ x86_64, ppc64 用のものが使われる。
-他の CPU でこのオプションを指定するとエラーになる。<br>
+<li><samp>-m32</samp><br>
+事前定義マクロを 32 ビット用にする。
+CPU が x86_64 または ppc64 の場合、デフォルトでは 64 ビット用の事前定義マクロが使われるが、このオプションを指定するとそれぞれ i386, ppc 用のものが使われる。<br>
 <li><samp>-mmmx</samp><br>
 マクロ <tt>__MMX__</tt> を 1 に定義する。<br>
+<samp>-mno-mmx</samp> では <tt>__MMX__</tt> を定義しない。<br>
 <li><samp>-nostdinc</samp><br>
-他の処理系での -I- 
-オプションと同じ。<br>
+他の処理系での -I- オプションと同じ。<br>
 <li><samp>-undef</samp><br>
--N オプションと同じ。
-<br>
+-N オプションと同じ。<br>
 <li><samp>-O?</samp><br>
-? が 0 以外の数字であればマクロ <tt>__OPTIMIZE__</tt> を 1 に定義する。
+? が 0 以外の数字であればマクロ <tt>__OPTIMIZE__</tt> を 1 に定義する。<br>
 <li><samp>-Wcomment, -Wcomments, -Wsign-compare</samp><br>
--W1 オプションと同じ。指定しなくても同じ。
-<br>
+-W1 オプションと同じ。指定しなくても同じ。<br>
 <li><samp>-Wundef</samp><br>
--W4 オプションと同じ。
-<br>
+-W4 オプションと同じ。<br>
 <li><samp>-Wtrigraphs</samp><br>
--W16 オプションと同じ。
-<br>
+-W16 オプションと同じ。<br>
 <li><samp>-Wall</samp><br>
 -W17 (-W1 -W16) オプションと同じ（class 2, 4 の warning は 
 Linux 等の標準ヘッダでは頻発しやすくうるさいので、-Wall からはずしてある。class 8 の warning も通常は余計なお節介である。しかし、これらには portability を確かめる等の有用な使い道がある。使う時は gcc -Wp,-W31 とすること）。<br>

@@ -40,6 +40,11 @@ int main(int argc, char *argv[])
     }
 
     /* this works only if called function does not manipulate pointer array! */
+    /*
+     * Note that mcpp no longer uses freopen() since 2008/04/20, so you can 
+     * output multiple input to different files, though this sample output
+     * to stdout, which may be redirected.
+     */
     for (j = i; i < argc; ++i) {
         int     retval;
         char *  result;

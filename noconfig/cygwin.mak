@@ -65,8 +65,10 @@ CPPOPTS = -DCOMPILER=$(COMPILER)
 BINDIR = /usr/lib/gcc/i686-pc-cygwin/3.4.4
 target = i686-pc-cygwin
 cpu = i386
-cpu64 = none
-#cpu64 = x86_64
+#cpu = x86_64
+# If cpu is x86_64, set cpu32 as i386
+# If cpu is not x86_64, set cpu32 as cpu
+cpu32 = i386
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0.exe
 else
@@ -112,7 +114,7 @@ install :
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'        \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'   \
-            '$(INCDIR)' SYS_CYGWIN $(cpu) $(cpu64)
+            '$(INCDIR)' SYS_CYGWIN $(cpu) $(cpu32)
 endif
 
 clean	:

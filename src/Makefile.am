@@ -8,7 +8,7 @@ mcpp_LDADD = -lmcpp
 lib_LTLIBRARIES = libmcpp.la
 libmcpp_la_SOURCES = system.H configed.H internal.H main.c directive.c  \
     eval.c expand.c mbchar.c support.c system.c
-libmcpp_la_LDFLAGS = -no-undefined -version-info 1:0:1
+libmcpp_la_LDFLAGS = -no-undefined -version-info 2:0:2
 include_HEADERS = mcpp_lib.h mcpp_out.h
 
 main.lo directive.lo eval.lo expand.lo mbohar.lo support.lo system.lo	\
@@ -42,7 +42,7 @@ install-exec-hook:
 	@$(srcdir)/set_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver)  \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x$(EXEEXT)'  \
 			'$(LN_S)' '$(inc_dir)' $(host_system) $(Target_Cpu) 		\
-			$(Target_Cpu64) $(target_cc)
+			$(Target_Cpu32) $(target_cc)
 uninstall-hook:
 	@$(srcdir)/unset_mcpp.sh '$(gcc_path)' $(gcc_maj_ver) $(gcc_min_ver)\
              '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(EXEEXT)' '$(LN_S)'      \

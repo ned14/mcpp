@@ -90,8 +90,6 @@ target_cc = gcc
 #target_cc = i686-apple-darwin9-gcc-4.0.1
 arch = i386
 #arch = ppc
-cpu64 = x86_64
-#cpu64 = ppc64
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0
 else
@@ -147,7 +145,7 @@ install :
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'  \
-            '$(INCDIR)' SYS_MAC $(arch) $(cpu64) $(target_cc)
+            '$(INCDIR)' SYS_MAC $(arch) $(arch) $(target_cc)
 endif
 
 clean	:
@@ -173,12 +171,12 @@ mcpplib_a:	$(OBJS)
 	ar -rv libmcpp.a $(OBJS)
 
 # shared library
-# mcpp 2.7: 1
-CUR = 1
-# mcpp 2.7: 0
+# mcpp 2.7: 1, mcpp 2.7.1: 2
+CUR = 2
+# mcpp 2.7: 0, mcpp 2.7.1: 0
 REV = 0
-# mcpp 2.7: 1
-AGE = 1
+# mcpp 2.7: 1, mcpp 2.7.1: 2
+AGE = 2
 SHLIB_VER = 0.$(CUR).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 

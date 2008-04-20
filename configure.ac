@@ -124,29 +124,33 @@ dnl Define target specific predefined macros.
 
 AC_MSG_NOTICE( [setting predefined macros for target cpu])
 
-## If $target_cpu is x86_64, $Target_Cpu64 is x86_64 and $Target_Cpu should 
-## be i386, which is the default.
-## If $target_cpu is ppc64, $Target_Cpu64 is ppc64 and $Target_Cpu should 
-## be ppc, which is the default.
-Target_Cpu64="none"
+## If $target_cpu is x86_64, $Target_Cpu is x86_64, which is the default,
+## and $Target_Cpu32 should be i386.
+## If $target_cpu is ppc64, $Target_Cpu is ppc64, which is the default,
+## and $Target_Cpu32 should be ppc.
+## If $target_cpu is neither x86_64 nor ppc64, both of $Target_Cpu and 
+## $Target_Cpu32 are $target_cpu.
 
 case $target_cpu in
 x86_64|amd64)
-    Target_Cpu64=x86_64
-    Target_Cpu=i386
+    Target_Cpu=x86_64
+    Target_Cpu32=i386
     ;;
 i?86*)
     Target_Cpu=i386
+    Target_Cpu32=i386
     ;;
 powerpc64|ppc64)
-    Target_Cpu64=ppc64
-    Target_Cpu=ppc
+    Target_Cpu=ppc64
+    Target_Cpu32=ppc
     ;;
 powerpc|ppc|ppc7400)
     Target_Cpu=ppc
+    Target_Cpu32=ppc
     ;;
 *)
     Target_Cpu=$target_cpu
+    Target_Cpu32=$target_cpu
     ;;
 esac
 
@@ -179,6 +183,10 @@ AC_CHECK_HEADERS( [unistd.h, stdint.h, inttypes.h])
 dnl Checks for typedefs, and compiler characteristics.
 
 AC_CHECK_TYPES( [intmax_t, long long])
+
+dnl Check for library functions.
+
+AC_CHECK_FUNCS( [stpcpy])
 
 dnl Checks for some system characteristics.
 
@@ -443,11 +451,6 @@ if test x$enable_mcpplib = xyes; then               ## mcpplib mode
         AC_MSG_WARN( Ignores enable-replace-cpp option)
         [enable_replace_cpp=no]
     fi
-    if test x$ac_cv_c_compiler_gnu = xyes; then
-        ## Do not use GCC's built-in stpcpy() in libmcpp mode, since some 
-        ## GCC version (e.g. 4.3.0) cause link error on "hidden" stpcpy().
-        [ac_cv_func_stpcpy=no]
-    fi
 
 else
 
@@ -595,13 +598,6 @@ AC_ARG_WITH( cxx-include-dir,
 
 fi  # not gcc
 
-dnl Check for library functions.
-
-if test x$ac_cv_func_stpcpy != xno; then
-    ## after the libmcpp checking
-    AC_CHECK_FUNCS( [stpcpy])
-fi
-
 dnl Define compiler specific elements.
 
 AC_MSG_NOTICE( checking for some compiler specific elements)
@@ -723,7 +719,7 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     AC_SUBST( [CPPFLAGS])
     AC_SUBST( [host_system])
     AC_SUBST( [Target_Cpu])
-    AC_SUBST( [Target_Cpu64])
+    AC_SUBST( [Target_Cpu32])
     AC_SUBST( [inc_dir])
     AC_SUBST( [gcc_maj_ver])
     AC_SUBST( [gcc_min_ver])

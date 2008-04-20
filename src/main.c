@@ -371,7 +371,7 @@ int     main
 
     /* Open input file, "-" means stdin.    */
     if (in_file != NULL && ! str_eq( in_file, "-")) {
-        if (freopen( in_file, "r", fp_in) == NULL) {
+        if ((fp_in = fopen( in_file, "r")) == NULL) {
             mcpp_fprintf( ERR, "Can't open input file \"%s\".\n", in_file);
 #if MCPP_LIB
             goto  fatal_error_exit;
@@ -384,7 +384,7 @@ int     main
     }
     /* Open output file, "-" means stdout.  */
     if (out_file != NULL && ! str_eq( out_file, "-")) {
-        if (freopen( out_file, "w", fp_out) == NULL) {
+        if ((fp_out = fopen( out_file, "w")) == NULL) {
             mcpp_fprintf( ERR, "Can't open output file \"%s\".\n", out_file);
 #if MCPP_LIB
             goto  fatal_error_exit;
@@ -394,7 +394,7 @@ int     main
         }
     }
     if (option_flags.q) {                   /* Redirect diagnostics */
-        if (freopen( "mcpp.err", "a", fp_err) == NULL) {
+        if ((fp_err = fopen( "mcpp.err", "a")) == NULL) {
             mcpp_fprintf( OUT, "Can't open \"mcpp.err\"\n");
 #if MCPP_LIB
             goto  fatal_error_exit;
@@ -429,6 +429,11 @@ fatal_error_exit:
     clear_filelist();
     clear_symtable();
 #endif
+
+    if(fp_out != stdout)
+        fclose( fp_out);
+    if(fp_err != stderr)
+        fclose( fp_err);
 
     if (mcpp_debug & MEMORY)
         print_heap();

@@ -130,7 +130,7 @@ Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 
 <h1><a name="1" href="#toc.1">1. Overview</a></h1>
 <p><b>mcpp</b> is a C preprocessor developed by kmatsui (Kiyoshi Matsui) based on DECUS cpp written by Martin Minow, and then rewritten entirely.  <b>mcpp</b> means Matsui cpp.  This software is supplied as source codes, and to use <b>mcpp</b> in any compiler systems, a small amount of modifications to adapt to the compiler system are required before it can be compiled into an executable. *1</p>
-<p>This document describes the specification for <b>mcpp</b> executables that has been already ported to certain compiler systems.  For those who want to know more about <b>mcpp</b> or want to port it to other compiler systems, refer to <b>mcpp</b> source and its document "mcpp-porting.html".</p>
+<p>This document describes the specification for <b>mcpp</b> executables that has been already ported to certain compiler systems.  For those who want to know more about <b>mcpp</b> or want to port it to other compiler systems, refer to <b>mcpp</b> source and its document <a href="mcpp-porting.html">mcpp-porting.html</a>.</p>
 <p>All these sources and related documents are provided as an open-source-software.</p>
 <p>Before going into detail, some of the <b>mcpp</b> features are introduced here.</p>
 <p>Note:</p>
@@ -277,8 +277,8 @@ While <i>POST_STD</i> cannot become this mode, <i>STD, KR</i> and <i>OLD</i> get
 See <a href="#2.5">2.5</a> for its specifications.</p>
 <p>For the above reasons, there are some different specifications in <b>mcpp</b> executables.  So, please read this manual carefully.  This chapter describes first the common options, next the behavioral-mode-dependent options, then the the options common to most compiler systems, finally the compiler-dependent options for each compiler-specific-build.</p>
 <p>Note:</p>
-<p>*1 There is another one named <b>subroutine-build</b> which is called as a subroutine from some other main program.  The behavioral specification of subroutine-build is, however, the same with either of compiler-specific-build or compiler-independent-build according to its compile time setting.  Hence, this manual does not mention subroutine-build particularly.</p>
-This manual does not explain this build.</p>
+<p>*1 There is another one named <b>subroutine-build</b> which is called as a subroutine from some other main program.  The behavioral specification of subroutine-build is, however, the same with either of compiler-specific-build or compiler-independent-build according to its compile time setting.  Hence, this manual does not mention subroutine-build particularly.
+As for subroutine-build, refer to <a href="mcpp-porting.html#3.12">mcpp-porting.html#3.12</a>.</p>
 <p>*2 The binary packages provided at the SourceForge site are of compiler-independent-builds.</p>
 <p>*3 <b>mcpp</b> had two separate executables for Standard mode and pre-Standard mode; they were integrated into one at V.2.6.</p>
 <p>*4 This option is for compatibility with GCC, Visual C++ and other major implementations.  'compat' means "compatible mode".</p>
@@ -639,19 +639,19 @@ For example, if the default include directory is /usr/include and &lt;dir&gt; is
 Add &lt;dir&gt; to the include path immediately before system-specific directories and immediately after site-specific directories.<br>
 <li><samp>-lang-c, -x c</samp><br>
 Perform C preprocessing.  The same as not specifying this option at all.<br>
-<li><samp>-m64</samp><br>
-Predefine macros for 64bit system.
-If the CPU is <samp>x86_64</samp> or <samp>ppc64</samp>, predefined macros for <samp>i386</samp> or <samp>ppc</samp> respectively are used by default.
-With this option, however, those for <samp>x86_64</samp> or <samp>ppc64</samp> are used.
-If the CPU is neither of above 2, this option causes an error.<br>
+<li><samp>-m32</samp><br>
+Predefine macros for 32bit mode.
+If the CPU is <samp>x86_64</samp> or <samp>ppc64</samp>, predefined macros for 64bit mode are used by default.
+With this option, however, those for <samp>i386</samp> or <samp>ppc</samp> respectively are used.<br>
 <li><samp>-mmmx</samp><br>
-Predefine a macro <tt>__MMX__</tt> to 1.
+Predefine a macro <tt>__MMX__</tt> to 1.<br>
+<samp>-mno-mmx</samp> undefines <tt>__MMX__</tt>.<br>
 <li><samp>-nostdinc</samp><br>
 Same as -I- for other compiler systems.<br>
 <li><samp>-undef</samp><br>
 Same as -N.<br>
 <li><samp>-O?</samp><br>
-If ? is a non-0 digit, define a macro <tt>__OPTIMIZE__</tt> to 1.
+If ? is a non-0 digit, define a macro <tt>__OPTIMIZE__</tt> to 1.<br>
 <li><samp>-Wcomment, -Wcomments</samp><br>
 Same as -W1.  The result is same with or without this option.<br>
 <li><samp>-Wtrigraphs</samp><br>
