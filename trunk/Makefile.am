@@ -14,7 +14,7 @@ man1_MANS = $(man_page).1
 
 EXTRA_DIST = $(top_srcdir)/LICENSE $(top_srcdir)/INSTALL*   \
   $(top_srcdir)/ChangeLog.old $(top_srcdir)/NEWS    \
-  $(top_srcdir)/mcpp.1 $(top_srcdir)/mcpp-gcc.1 $(top_srcdir)/config/mb_*   \
+  $(top_srcdir)/mcpp.1 $(top_srcdir)/mcpp-gcc.1 $(top_srcdir)/config    \
   $(top_srcdir)/src/preproc.c $(top_srcdir)/src/noconfig.H  \
   $(top_srcdir)/src/cc1.c $(top_srcdir)/src/*set_mcpp.sh 	\
   $(top_srcdir)/src/testmain.c $(top_srcdir)/src/mcpp_lib.def	\

@@ -196,7 +196,8 @@ typedef struct sizes {
 #define S_PDOUBLE   (sizeof (double *))
 #define S_PFPTR     (sizeof (int (*)()))
 #if HAVE_LONG_LONG
-#if HOST_COMPILER == BORLANDC
+#if (HOST_COMPILER == BORLANDC)
+        || (HOST_COMPILER == MSC && defined(_MSC_VER) && (_MSC_VER < 1300))
 #define S_LLINT     (sizeof (__int64))
 #define S_PLLINT    (sizeof (__int64 *))
 #else

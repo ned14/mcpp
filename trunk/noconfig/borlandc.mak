@@ -55,6 +55,8 @@ MEM_LIB =
 OBJS = main.obj directive.obj eval.obj expand.obj support.obj system.obj  \
 		mbchar.obj
 
+all:	$(NAME).exe
+
 $(NAME).exe : $(OBJS)
 	$(CC) $(LINKFLAGS) $(OBJS) $(MEMLIB)
 
@@ -114,14 +116,14 @@ mcpplib_install:
 	copy mcpp$(DLL_VER).dll $(BINDIR)
 	copy mcpp_lib.h $(INCDIR)
 	copy mcpp_out.h $(INCDIR)
-	$(CC) main_libmcpp.c -e$(NAME).exe mcpp$(DLL_VER).lib
+	$(CC) -e$(NAME).exe main_libmcpp.c mcpp$(DLL_VER).lib
 	copy $(NAME).exe $(BINDIR)
 
 mcpplib_uninstall:
 	del $(LIBDIR)\mcpp.lib $(LIBDIR)\mcpp$(DLL_VER).lib \
             $(BINDIR)\mcpp$(DLL_VER).dll
-	del $(BINDIR)/$(NAME).exe
-	del $(INCDIR)/mcpp*
+	del $(BINDIR)\$(NAME).exe
+	del $(INCDIR)\mcpp*
 !endif
 
 # use mcpp as a subroutine from testmain.c
@@ -135,9 +137,9 @@ LINKLIB = mcpp.lib
 # output to memory buffer
 CFLAGS = $(CFLAGS) -DOUT2MEM=1
 !endif
-LINKFLAGS = testmain.obj -etestmain.exe $(LINKLIB)
+TMAIN_LINKFLAGS = testmain.obj -etestmain.exe $(LINKLIB)
 testmain	:	testmain.obj
-	$(CC) $(LINKFLAGS)
+	$(CC) $(TMAIN_LINKFLAGS)
 testmain_install	:
 	copy testmain.exe $(BINDIR)
 testmain_uninstall	:

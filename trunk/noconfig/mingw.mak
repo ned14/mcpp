@@ -171,18 +171,18 @@ ifeq    ($(OUT2MEM), 1)
 # output to memory buffer
 CFLAGS += -DOUT2MEM
 endif
-LINKFLAGS = testmain.o -o testmain.exe
+TMAIN_LINKFLAGS = testmain.o -o testmain.exe
 ifeq    ($(DLL_IMPORT), 1)
-LINKFLAGS += $(LIBDIR)/libmcpp.dll.a
+TMAIN_LINKFLAGS += $(LIBDIR)/libmcpp.dll.a
 CFLAGS += -DDLL_IMPORT
 else
-LINKFLAGS += $(LIBDIR)/libmcpp.a
+TMAIN_LINKFLAGS += $(LIBDIR)/libmcpp.a
 endif
 ifeq    ($(MALLOC), KMMALLOC)
-    LINKFLAGS += -lkmmalloc_debug
+    TMAIN_LINKFLAGS += -lkmmalloc_debug
 endif
 testmain :   testmain.o
-	$(CC) $(LINKFLAGS)
+	$(CC) $(TMAIN_LINKFLAGS)
 testmain_install :
 	install -s testmain.exe $(BINDIR)/testmain.exe
 testmain_uninstall   :

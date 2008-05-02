@@ -193,12 +193,12 @@ mcpplib_uninstall:
 # output to memory buffer
 CFLAGS += -DOUT2MEM
 .endif
-LINKFLAGS = testmain.o -o testmain -L /usr/local/lib -l $(NAME)
+TMAIN_LINKFLAGS = testmain.o -o testmain -L /usr/local/lib -l $(NAME)
 .if ! empty(MALLOC) && $(MALLOC) == KMMALLOC
-    LINKFLAGS += -l kmmalloc_debug
+    TMAIN_LINKFLAGS += -l kmmalloc_debug
 .endif
 testmain :   testmain.o
-	$(CC) $(LINKFLAGS)
+	$(CC) $(TMAIN_LINKFLAGS)
 testmain_install :
 	install -s testmain $(BINDIR)/testmain
 testmain_uninstall   :

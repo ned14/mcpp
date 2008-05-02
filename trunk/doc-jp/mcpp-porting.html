@@ -460,11 +460,11 @@ CygWIN V.1.5.18 / GCC V.3.4.4 では cyg1518.dif を使います。</p>
 他の version では <i>VERSION_MSG</i> マクロを変更します。</p>
 
 <h3><a name="3.1.8" href="#toc.3.1.8">3.1.8. Visual C++ 2002, 2003, 2005, 2008</a></h3>
-<p>Visual C++ 2008, 2005, 2003, 2002 ではそれぞれ vc2008.dif, vc2005.dif, vc2003.dif, vc2002.dif のような変更を加えます。もちろん、compiler-specific-build では <i>COMPILER</i> マクロを書き換えるか、nmake -DCOMPILER=MSC オプションで上書きします。</p>
+<p>Visual C++ 2008, 2005, 2003, 2002, 6.0 ではそれぞれ vc2008.dif, vc2005.dif, vc2003.dif, vc2002.dif, vc6.dif のような変更を加えます。もちろん、compiler-specific-build では <i>COMPILER</i> マクロを書き換えるか、nmake -DCOMPILER=MSC オプションで上書きします。</p>
 <p>Visual C の他のバージョンでは、<i>VERSION_MSG</i> マクロを変更するほか、<tt>_MSC_VER</tt> および <tt>_MSC_FULL_VER</tt> という組み込みマクロの値をそれぞれ <i>COMPILER_EXT_VAL</i>, <i>COMPILER_EXT2_VAL</i> というマクロの設定を変えることで対応させます。</p>
 
 <h3><a name="3.1.9" href="#toc.3.1.9">3.1.9. Borland C++ V.4.*, V.5.*</a></h3>
-<p>Borland C V.4.0, V.5.5 / bcc32 ではそれぞれ bc40.dif, bc55.dif のような変更を加えます。</p>
+<p>Borland C V.4.0, V.5.5, V.5.9 (C++Builder 2007) / bcc32 ではそれぞれ bc40.dif, bc55.dif, bc59.dif のような変更を加えます。</p>
 <p>Borland C/C++ の別のバージョンでは <i>VERSION_MSG</i> のほか、<tt>__TURBOC__</tt>, <tt>__BORLANDC__</tt>, <tt>__BCPLUSPLUS__</tt> という組み込みマクロの値をそれぞれ <samp>noconfig.H</samp> の <i>COMPILER_STD2_VAL</i>, <i>COMPILER_EXT_VAL</i>, <i>COMPILER_CPLUS_VAL</i> というマクロの設定を変えることで、対応させます（<a href="#4.1.1.1">4.1.1.1</a> 参照）。Digraphs の実装されているバージョンであれば、<i>HAVE_DIGRAPHS</i> の設定を変更します。<tt>__STDC_VERSION__</tt> の実装されているバージョンであれば、<i>STDC_VERSION</i> の設定を変更します。</p>
 <p>また、Borland C 4.* までのバージョンでは、</p>
 <pre>

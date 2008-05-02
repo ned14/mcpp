@@ -20185,13 +20185,19 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+    cw=`pwd`
+    if test x$srcdir = "x." || test x$srcdir = x; then
+        src_dir=$cw
+    else
+        src_dir=$srcdir
+    fi
     if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN; then
         { echo "$as_me:$LINENO: checking the root directory" >&5
 echo $ECHO_N "checking the root directory... $ECHO_C" >&6; }
 if test "${ac_cv_cygwin_root+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ac_cv_cygwin_root=`mount | grep ' on / ' | sed 's, on / .*,,' | tr '\\\' '/'`
+  ac_cv_cygwin_root=`$src_dir/config/cygwin_root`
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_cygwin_root" >&5
@@ -20208,8 +20214,7 @@ echo $ECHO_N "checking the root directory... $ECHO_C" >&6; }
 if test "${ac_cv_msys_root+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  cw=`pwd`
-            cd /
+  cd /tmp
             cat > getcwd.c <<\_EOF
 #include <stdio.h>
 #include <unistd.h>
@@ -20222,8 +20227,8 @@ int main( int argc, char ** argv)
 }
 _EOF
             $CC getcwd.c
-            ac_cv_msys_root=`./a.exe | tr '\\\', '/'`
-            ## redundant \ to work around MinGW's problem
+            cd /
+            ac_cv_msys_root=`$src_dir/config/mingw_root`
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_msys_root" >&5
@@ -20234,13 +20239,13 @@ if test "${ac_cv_mingw_dir+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cd /mingw
-            ac_cv_mingw_dir=`/a.exe | tr '\\\', '/'`
+            ac_cv_mingw_dir=`$src_dir/config/mingw_root`
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_mingw_dir" >&5
 echo "${ECHO_T}$ac_cv_mingw_dir" >&6; }
-        rm -f /getcwd.c /a.exe
         cd $cw
+        rm -f /tmp/getcwd.c /tmp/a.exe
 
 cat >>confdefs.h <<_ACEOF
 #define MSYS_ROOT_DIRECTORY "$ac_cv_msys_root"
