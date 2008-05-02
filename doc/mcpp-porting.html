@@ -442,11 +442,11 @@ For CygWIN V.1.5.18 / GCC V.3.4.4, apply cyg1518.dif.</p>
 <p>In LCC-WIN32 2003-08 or 2006-03, it needs to be changed as per lcc0308.dif, lcc0603.dif respectively.  In other versions, the <i>VERSION_MSG</i> macro needs to be modified.</p>
 
 <h3><a name="3.1.8" href="#toc.3.1.8">3.1.8. Visual C++ 2002, 2003, 2005, 2008</a></h3>
-<p>In Visual C++ 2002, 2003, 2005, 2008, it needs modifications as vc2002.dif, vc2003.dif, vc2005.dif, vc2008.dif respectively.  For the compiler-specific-build, modify <i>COMPILER</i> or overwrite it by the nmake option, of course.</p>
+<p>In Visual C++ 6.0, 2002, 2003, 2005, 2008, it needs modifications as vc6.dif, vc2002.dif, vc2003.dif, vc2005.dif, vc2008.dif respectively.  For the compiler-specific-build, modify <i>COMPILER</i> or overwrite it by the nmake option, of course.</p>
 <p>For other versions of Visual C, besides modifying <i>VERSION_MSG</i> macro, the values of predefined macros, <tt>_MSC_VER</tt> and <tt>_MSC_FULL_VER</tt>, should be changed by modifying the definition of <i>COMPILER_EXT_VAL</i> and <i>COMPILER_EXT2_VAL</i> respectively.</p>
 
 <h3><a name="3.1.9" href="#toc.3.1.9">3.1.9. Borland C++ V.4.*, V.5.*</a></h3>
-<p>In Borland C V.4.0, V.5.5 / bcc32, it needs to be changed with bc40.dif or bc55.dif respectively.</p>
+<p>In Borland C V.4.0, V.5.5, V.5.9 (C++Builder 2007) / bcc32, it needs to be changed with bc40.dif, bc55.dif, bc59.dif respectively.</p>
 <p>In other versions of Borland C++, besides the <i>VERSION_MSG</i> macro, the values of predefined macros, <tt>__TURBOC__</tt>, <tt>__BORLANDC__</tt> and <tt>__BCPLUSPLUS__</tt> should be changed by modifying macros <i>COMPILER_STD2_VAL</i>, <i>COMPILER_EXT_VAL</i> and <i>COMPILER_CPLUS_VAL</i>, in <samp>noconfig.H</samp>.  (Refer Sec 
 <a href="#4.1.1.1">4.1.1.1</a>.)  If the version can handle digraphs, the definition of <i>HAVE_DIGRAPHS</i> needs to be changed.  If the version has <tt>__STDC_VERSION__</tt> macro, change the definition of <i>STDC_VERSION</i>.</p>
 <p>For the versions till Borland C 4.*, change the line as:</p>

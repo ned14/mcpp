@@ -207,12 +207,12 @@ ifeq    ($(OUT2MEM), 1)
 # output to memory buffer
 CFLAGS += -DOUT2MEM
 endif
-LINKFLAGS = testmain.o -o testmain -l $(NAME)
+TMAIN_LINKFLAGS = testmain.o -o testmain -l $(NAME)
 ifeq	($(MALLOC), KMMALLOC)
-	LINKFLAGS += -l kmmalloc_debug
+	TMAIN_LINKFLAGS += -l kmmalloc_debug
 endif
 testmain	:	testmain.o
-	$(CC) $(UFLAGS) $(LINKFLAGS)
+	$(CC) $(UFLAGS) $(TMAIN_LINKFLAGS)
 testmain_install	:
 	install -s testmain $(BINDIR)/testmain
 testmain_uninstall	:

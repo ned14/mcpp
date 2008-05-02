@@ -90,7 +90,7 @@ CFLAGS = $(CFLAGS) -DMCPP_LIB
 
 mcpplib: mcpplib_lib mcpplib_dll
 # To use in Visual C IDE
-#mcpplib: mcpplib_lib mcpplib_dll mcpplib_install
+mcpplib: mcpplib_lib mcpplib_dll mcpplib_install
 
 mcpplib_lib:	$(OBJS)
 	lib -out:mcpp.lib $(OBJS)
@@ -126,14 +126,14 @@ LINKLIB = mcpp$(DLL_VER).lib
 !else
 LINKLIB = mcpp.lib
 !endif
-LINKFLAGS = testmain.obj -Fetestmain.exe $(LIBDIR)\$(LINKLIB) \
+TMAIN_LINKFLAGS = testmain.obj -Fetestmain.exe $(LIBDIR)\$(LINKLIB) \
 			-link -force:multiple
 !ifdef	OUT2MEM
 # output to memory buffer
 CFLAGS = $(CFLAGS) -DOUT2MEM
 !endif
 testmain	: testmain.obj
-	$(CC) $(LINKFLAGS)
+	$(CC) $(TMAIN_LINKFLAGS)
 testmain_install	:
 	copy testmain.exe $(BINDIR)
 testmain_uninstall	:

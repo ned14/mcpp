@@ -1,4 +1,4 @@
-dnl configure.ac for MCPP   2003/11, 2008/04  kmatsui
+dnl configure.ac for MCPP   2003/11, 2008/05  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
@@ -305,10 +305,16 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     AC_DEFINE_UNQUOTED( [GCC_MINOR_VERSION], "$gcc_min_ver",
         [Define gcc minor version.])
 
+    cw=`pwd`
+    if test x$srcdir = "x." || test x$srcdir = x; then
+        src_dir=$cw
+    else
+        src_dir=$srcdir
+    fi
     if test $ac_c_define_HOST_SYSTEM = SYS_CYGWIN; then
         AC_CACHE_CHECK( the root directory,
             ac_cv_cygwin_root,
-            [ac_cv_cygwin_root=`mount | grep ' on / ' | sed 's, on / .*,,' | tr '\\\' '/'`]
+            [ac_cv_cygwin_root=`$src_dir/config/cygwin_root`]
         )
         AC_DEFINE_UNQUOTED( [CYGWIN_ROOT_DIRECTORY], "$ac_cv_cygwin_root",
             [Define root directory of CYGWIN.])
@@ -316,8 +322,7 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     if test $ac_c_define_HOST_SYSTEM = SYS_MINGW; then
         AC_CACHE_CHECK( the root directory,
             ac_cv_msys_root,
-            cw=`pwd`
-            cd /
+            cd /tmp
             cat > getcwd.c <<\_EOF
 #include <stdio.h>
 #include <unistd.h>
@@ -330,16 +335,16 @@ int main( int argc, char ** argv)
 }
 _EOF
             $CC getcwd.c
-            [ac_cv_msys_root=`./a.exe | tr '\\\', '/'`]
-            ## redundant \ to work around MinGW's problem
+            cd /
+            [ac_cv_msys_root=`$src_dir/config/mingw_root`]
         )
         AC_CACHE_CHECK( the /mingw directory,
             ac_cv_mingw_dir,
             cd /mingw
-            [ac_cv_mingw_dir=`/a.exe | tr '\\\', '/'`]
+            [ac_cv_mingw_dir=`$src_dir/config/mingw_root`]
         )
-        rm -f /getcwd.c /a.exe
         cd $cw
+        rm -f /tmp/getcwd.c /tmp/a.exe
         AC_DEFINE_UNQUOTED( [MSYS_ROOT_DIRECTORY], "$ac_cv_msys_root",
             [Define root directory of MSYS.])
         AC_DEFINE_UNQUOTED( [MINGW_DIRECTORY], "$ac_cv_mingw_dir",
