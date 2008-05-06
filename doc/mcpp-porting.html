@@ -11,7 +11,7 @@
 <h2>== How to Port MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7-postrelease (2008/04)<br>
+<h4>for V.2.7.1 (2008/05)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -175,10 +175,14 @@ It was implemented for C/C++ refactoring tools.<br>
 A porting to Mac OS X / Apple-GCC was added.
 Also a porting to Visual C++ 2008 was done.
 GCC-specific-build became more close to GCC.
-Some bugs of the previous version were fixed.
+Some bugs of the previous version were fixed.<br>
+<br>
+<li>In May 2008, V.2.7.1 was released.
+This is a bug-fixed version of V.2.7.
+This version changed each binary package on UNIX-like systems to install a shared library or DLL of mcpp and an mcpp executable linking the library.<br>
 </ol>
 <p>Note:</p>
-<p>*1 The outline of the "Exploratory Software Project" can be seen at the following site (the documents are only in Japanese).</p>
+<p>*1 The outline of the "Exploratory Software Project" can be seen at the following site (Japanese pages only).</p>
 <blockquote>
 <p><a href="http://www.ipa.go.jp/jinzai/esp/">http://www.ipa.go.jp/jinzai/esp/</a></p>
 </blockquote>
@@ -677,13 +681,16 @@ On Mac OS X, if you remove the '#' which comments out the definition of variable
 On Windows, the name of the libraries are different from those on Linux as shown in the table below.</p>
 
 <table border='1' frame='below'>
-  <tr><th></th><th>Linux, FreeBSD / GCC</th><th>Mac OS X / GCC</th><th>CygWIN / GCC</th><th>MinGW / GCC</th><th>Visual C, Borland C, LCC-Win32</th></tr>
-  <tr><th>static library</th><td>libmcpp.a</td><td>libmcpp.a</td><td>libmcpp.a</td><td>libmcpp.a</td><td>mcpp.lib</td></tr>
-  <tr><th>shared library or DLL</th><td>libmcpp.so.$(SHLIB_VER)</td><td>libmcpp.$(SHLIB_VER).dylib</td><td>cygmcpp-$(DLL_VER).dll<td>libmcpp-$(DLL_VER).dll</td><td>mcpp$(DLL_VER).dll</td></tr>
-  <tr><th>import library of DLL</th><td></td><td></td><td>libmcpp-$(DLL_VER).dll.a</td><td>libmcpp-$(DLL_VER).dll.a</td><td>mcpp$(DLL_VER).lib</td></tr>
+  <tr><th></th><th>FreeBSD / GCC</th><th>Linux / GCC</th><th>Mac OS X / GCC</th><th>CygWIN / GCC</th><th>MinGW / GCC</th><th>Visual C, Borland C, LCC-Win32</th></tr>
+  <tr><th>static library</th><td>libmcpp.a</td><td>libmcpp.a</td><td>libmcpp.a</td><td>libmcpp.a</td><td>libmcpp.a</td><td>mcpp.lib</td></tr>
+  <tr><th>shared library or DLL</th><td>libmcpp.so.$(SHL_VER)</td><td>libmcpp.so.$(SHLIB_VER)</td><td>libmcpp.$(SHLIB_VER).dylib</td><td>cygmcpp-$(DLL_VER).dll<td>libmcpp-$(DLL_VER).dll</td><td>mcpp$(DLL_VER).dll</td></tr>
+  <tr><th>import library of DLL</th><td></td><td></td><td></td><td>libmcpp-$(DLL_VER).dll.a</td><td>libmcpp-$(DLL_VER).dll.a</td><td>mcpp$(DLL_VER).lib</td></tr>
 </table>
 
-<p>$(SHLIB_VER) is 0.0.0, 0.0.1, 0.1.0, 0.2.0 on <b>mcpp</b> V.2.6.3, V.2.6.4, V.2.7, V.2.7.1 (2.7-postrelease) and later, respectively.  $(DLL_VER) is 0 on any of <b>mcpp</b> V.2.6.3, V.2.6.4, V.2.7, V.2.7.1 and later.
+<p>
+$(SHL_VER) is 0, 1, 2 on <b>mcpp</b> V.2.6.3-V.2.6.4, V.2.7, V.2.7.1 and later, respectively.
+$(SHLIB_VER) is 0.0.0, 0.0.1, 0.1.0, 0.2.0 on <b>mcpp</b> V.2.6.3, V.2.6.4, V.2.7, V.2.7.1 and later, respectively.
+$(DLL_VER) is 0 on any of <b>mcpp</b> V.2.6.3, V.2.6.4, V.2.7, V.2.7.1 and later.
 If the first digit of $(SHLIB_VER) or $(DLL_VER) is the same, the versions with the higher second or third digit of $(SHLIB_VER) are upper-compatible to the one with lower second or third digit.</p>
 <p>On Windows, so-called 'import library' is generated too, which is to use the DLL.
 In order to use the DLL, you must link your main program against this import library.

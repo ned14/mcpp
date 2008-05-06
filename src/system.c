@@ -1371,7 +1371,7 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.7-postrelease (2008/04) "
+        "MCPP V.2.7.1 (2008/05) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif

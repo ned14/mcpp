@@ -4,6 +4,7 @@ if MCPP_LIB
 
 bin_PROGRAMS = mcpp
 mcpp_SOURCES = main_libmcpp.c
+mcpp_DEPENDENCIES = libmcpp.la
 mcpp_LDADD = -lmcpp
 lib_LTLIBRARIES = libmcpp.la
 libmcpp_la_SOURCES = system.H configed.H internal.H main.c directive.c  \
