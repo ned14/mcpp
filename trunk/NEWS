@@ -1,5 +1,14 @@
 This file summarizes new major features of each MCPP release.  (kmatsui)
 
+MCPP V.2.7.1 (2008/05)
+
+1. This is a bug-fixed version of V.2.7, fixing several bugs of the
+    previous release.
+
+2. Made subroutine-build also install an mcpp executable and minimal
+    documents as well as libmcpp for a convenience of library package.
+
+
 MCPP V.2.7 (2008/03)
 
 1. Implemented -K option to enable macro notification mode.  This mode
@@ -7,7 +16,8 @@ MCPP V.2.7 (2008/03)
     into comments.  This mode is also enabled by '#pragma MCPP debug
     macro_call' sub-directive.
 
-2. Fixed several bugs of the previous release.
+2. Fixed several bugs of the previous release, including a bug of UTF-8
+    multibyte character handling.
 
 3. Ported to Mac OS X / GCC and Visual C++ 2008.
 
@@ -46,7 +56,8 @@ MCPP V.2.6.3 (2007/04)
     mcpp-manual.html.
 
 6. Provided stand-alone-and-compiler-independent-build binary packages
-    port, rpm, deb, zip and their corresponding source packages.
+    port, rpm, deb, zip and their corresponding source packages on
+    SourceForge.
 
 7. Added documentation on source checking of glibc 2.4.
 

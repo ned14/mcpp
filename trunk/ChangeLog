@@ -1,7 +1,7 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2008/05/02  kmatsui
-        * V.2.7-postrelease
+2008/05/06  kmatsui
+        * V.2.7.1
         * Fixed a bug of newline synchronization on -K option.  Created
         sync_linenum().  (Thanks to Benjamin Smedberg) (directive.c)
         * Made GCC-specific-build on x86_64 or ppc64 has two sets of
@@ -15,10 +15,10 @@ ChangeLog of MCPP and its accompanying Validation Suite
         Builder 2007).  (by Dwayne Boone) (vc6.dif, bc59.dif, eval.c)
         * Revised declaration of stpcpy().  (internal.H)
         * Split mcpp_out.h from mcpp_lib.h.
-        * Made library-build install also a mcpp executable and minimal
-        documents for a convenience of library package.  Created
-        main_mcpplib.c.  (by Yutaka Niibe and kmatsui) (Makefile.am, src
-        /Makefile.am)
+        * Made library-build install also an mcpp executable and minimal
+        documents as well as libmcpp for a convenience of library
+        package.  Created main_mcpplib.c.  (by Yutaka Niibe and kmatsui)
+        (Makefile.am, src/Makefile.am)
         * Split config/cygwin_root and config/mingw_root from
         configure.ac to avoid a trouble of backslash character handling
         on some version of bqsh.  (Thanks to Aleksandar Samardzic)

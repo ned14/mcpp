@@ -37,6 +37,7 @@ host_triplet = @host@
 target_triplet = @target@
 @MCPP_LIB_FALSE@bin_PROGRAMS = mcpp$(EXEEXT)
 @MCPP_LIB_TRUE@bin_PROGRAMS = mcpp$(EXEEXT)
+@MCPP_LIB_FALSE@mcpp_DEPENDENCIES =
 @GNUC_TRUE@@MINGW_TRUE@@REPLACE_CPP_TRUE@cc1_PROGRAMS = cc1$(EXEEXT)
 subdir = src
 DIST_COMMON = $(am__include_HEADERS_DIST) $(srcdir)/Makefile.am \
@@ -85,7 +86,6 @@ am__mcpp_SOURCES_DIST = system.H configed.H internal.H main.c \
 @MCPP_LIB_FALSE@	mcpp-support.$(OBJEXT) mcpp-system.$(OBJEXT)
 @MCPP_LIB_TRUE@am_mcpp_OBJECTS = mcpp-main_libmcpp.$(OBJEXT)
 mcpp_OBJECTS = $(am_mcpp_OBJECTS)
-mcpp_DEPENDENCIES =
 mcpp_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(mcpp_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -231,6 +231,7 @@ top_srcdir = @top_srcdir@
 @MCPP_LIB_FALSE@    expand.c mbchar.c support.c system.c mcpp_out.h
 
 @MCPP_LIB_TRUE@mcpp_SOURCES = main_libmcpp.c
+@MCPP_LIB_TRUE@mcpp_DEPENDENCIES = libmcpp.la
 @MCPP_LIB_TRUE@mcpp_LDADD = -lmcpp
 @MCPP_LIB_TRUE@lib_LTLIBRARIES = libmcpp.la
 @MCPP_LIB_TRUE@libmcpp_la_SOURCES = system.H configed.H internal.H main.c directive.c  \

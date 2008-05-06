@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7.1 for Linux / GCC / GNU make
-#       2008/04 kmatsui
+#       2008/05 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP:
