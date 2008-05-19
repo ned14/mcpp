@@ -2864,10 +2864,12 @@ void    put_depend(
                 *cp = c;
             }
         }
-        if (fp == fp_out)   /* To the same path with normal preprocessing   */
+        if (fp == fp_out) { /* To the same path with normal preprocessing   */
             mcpp_fputs( output, OUT);
-        else            /* To the file specified by -MF, -MD, -MMD options  */
+        } else {        /* To the file specified by -MF, -MD, -MMD options  */
             fputs( output, fp);
+            fclose( fp);
+        }
         fp = NULL;      /* Clear for the next call in MCPP_LIB build        */
         return;
     }
