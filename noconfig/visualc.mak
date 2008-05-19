@@ -90,10 +90,18 @@ CFLAGS = $(CFLAGS) -DMCPP_LIB
 
 mcpplib: mcpplib_lib mcpplib_dll
 # To use in Visual C IDE
-mcpplib: mcpplib_lib mcpplib_dll mcpplib_install
+#mcpplib: mcpplib_lib mcpplib_dll mcpplib_install
+
+# Debug mode: Do 'nmake DEBUG=1 ...'
+!ifdef DEBUG
+CFLAGS = $(CFLAGS) -MDd -D_DEBUG
+LIBSUFFIX = d
+!else
+CFLAGS = $(CFLAGS) -O2 -MD -DNDEBUG
+!endif
 
 mcpplib_lib:	$(OBJS)
-	lib -out:mcpp.lib $(OBJS)
+	lib -out:mcpp$(LIBSUFFIX).lib $(OBJS)
 
 # DLL
 DLL_VER = 0
@@ -102,19 +110,21 @@ SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 .c.so	:
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(MEM_MACRO) -DDLL_EXPORT -TC -Fo$*.so $<
 mcpplib_dll:	$(SOBJS)
-	$(CC) -LD -Femcpp$(DLL_VER) $(SOBJS) $(MEMLIB)
+	$(CC) -LD -Femcpp$(DLL_VER)$(LIBSUFFIX) $(SOBJS) $(MEMLIB)
 mcpplib_install:
-	copy mcpp.lib $(LIBDIR)
-	copy mcpp$(DLL_VER).lib $(LIBDIR)
-	copy mcpp$(DLL_VER).dll $(BINDIR)
+	copy mcpp$(LIBSUFFIX).lib $(LIBDIR)
+	copy mcpp$(DLL_VER)$(LIBSUFFIX).lib $(LIBDIR)
+	copy mcpp$(DLL_VER)$(LIBSUFFIX).dll $(BINDIR)
 	copy mcpp_lib.h $(INCDIR)
 	copy mcpp_out.h $(INCDIR)
-	$(CC) main_libmcpp.c -Fe$(NAME).exe $(LIBDIR)\mcpp$(DLL_VER).lib	\
+	$(CC) main_libmcpp.c -Fe$(NAME).exe 	\
+			$(LIBDIR)\mcpp$(DLL_VER)$(LIBSUFFIX).lib	\
 			-link -force:multiple
 	copy $(NAME).exe $(BINDIR)
 mcpplib_uninstall:
-	del $(LIBDIR)\mcpp.lib $(LIBDIR)\mcpp$(DLL_VER).lib \
-			$(BINDIR)\mcpp$(DLL_VER).dll
+	del $(LIBDIR)\mcpp$(LIBSUFFIX).lib	\
+			$(LIBDIR)\mcpp$(DLL_VER)$(LIBSUFFIX).lib	\
+			$(BINDIR)\mcpp$(DLL_VER)$(LIBSUFFIX).dll
 	del $(NAME).exe $(BINDIR)
 	del $(INCDIR)/mcpp*
 !endif
@@ -122,9 +132,9 @@ mcpplib_uninstall:
 # use mcpp as a subroutine from testmain.c
 !ifdef	DLL_IMPORT
 CFLAGS = $(CFLAGS) -DDLL_IMPORT
-LINKLIB = mcpp$(DLL_VER).lib
+LINKLIB = mcpp$(DLL_VER)$(LIBSUFFIX).lib
 !else
-LINKLIB = mcpp.lib
+LINKLIB = mcpp$(LIBSUFFIX).lib
 !endif
 TMAIN_LINKFLAGS = testmain.obj -Fetestmain.exe $(LIBDIR)\$(LINKLIB) \
 			-link -force:multiple
