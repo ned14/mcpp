@@ -8,7 +8,7 @@
 
 #define     TRUE            1
 #define     FALSE           0
-#define     DATE            "2008/05"               /* Date of mcpp     */
+#define     DATE            "2008/10"               /* Date of mcpp     */
 
 /*
  *  'Target' means the O.S. and the compiler to which cpp is implemented.
@@ -84,8 +84,6 @@
  * These may not be defined, if they are not needed.
  * They should not be #defined to no token or to "".
  *
- * CPU_OLD, CPU_STD1, CPU_STD2, CPU_SP_OLD, CPU_SP_STD
- *      define the target cpu (by name).
  * SYSTEM_OLD, SYSTEM_STD1, SYSTEM_STD2, SYSTEM_EXT, SYSTEM_EXT2
  *      define the target operating system (by name).
  * SYSTEM_SP_OLD, SYSTEM_SP_STD     define the target-OS specific macro name
@@ -99,7 +97,7 @@
  * <macro>_VAL      specify the value of the <macro>.
  *      If not specified, these values default to "1".
  *      To define the value of no-token, specify as "" rather than no-token.
- * CPU_*, SYSTEM_OLD, SYSTEM_STD?, COMPILER_OLD have the value of "1".
+ * SYSTEM_OLD, SYSTEM_STD?, COMPILER_OLD have the value of "1".
  */
 
 /*
@@ -156,25 +154,15 @@
 
 #if     SYSTEM == SYS_MAC
 #define SYSTEM_EXT          "__APPLE__"
-#if     COMPILER == INDEPENDENT
-/* Apple-GCC changes CPU-specific macros by -arch option.  These    */
-/* should be defined at compile time rather than configuration time.*/
-#if     defined (__i386__)
-#define CPU_OLD             "i386"
-#define CPU_STD2            "__i386__"
-#elif   defined (__x86_64__)
-#define CPU_STD2            "__x86_64__"
-#elif   defined (__ppc__)
-#define CPU_STD2            "__ppc__"
-#elif   defined (__ppc64__)
-#define CPU_STD2            "__ppc64__"
 #endif
-#endif
-#endif  /* SYSTEM == SYS_MAC    */
 
 #if     SYSTEM == SYS_CYGWIN
 #define SYSTEM_EXT          "__CYGWIN__"
+#if     defined (__CYGWIN64__)
+#define SYSTEM_EXT2         "__CYGWIN64__"
+#else
 #define SYSTEM_EXT2         "__CYGWIN32__"
+#endif
 #ifndef MBCHAR
 #define MBCHAR              SJIS
 #endif
@@ -182,7 +170,11 @@
 
 #if     SYSTEM == SYS_MINGW
 #define SYSTEM_EXT          "__MINGW__"
+#if     defined (__MINGW64__)
+#define SYSTEM_EXT2         "__MINGW64__"
+#else
 #define SYSTEM_EXT2         "__MINGW32__"
+#endif
 #ifndef MBCHAR
 #define MBCHAR              SJIS
 #endif
@@ -190,7 +182,7 @@
 
 #if     SYS_FAMILY == SYS_UNIX
 #ifndef MBCHAR
-#define MBCHAR              EUC_JP
+#define MBCHAR              EUC_JP      /* UTF8 if you like */
 #endif
 #endif
 

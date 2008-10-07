@@ -1,5 +1,5 @@
-*** noconfig.H	2007-12-23 21:34:39.000000000 +0900
---- noconfig.H.linux_gcc32	2007-12-23 22:07:19.000000000 +0900
+*** noconfig.H	2008-09-25 15:34:56.000000000 +0900
+--- noconfig.H.linux_gcc32	2008-09-26 13:40:04.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -35,7 +35,7 @@
       "LCC-Win32 2006-03"
       "Visual C 2005"
 ***************
-*** 319,325 ****
+*** 282,288 ****
   #define COMPILER_EXT        "__GNUC__"
   #define COMPILER_EXT_VAL    "3"     /* "3" for V.3.* "4" for V.4.*  */
   #define COMPILER_EXT2       "__GNUC_MINOR__"
@@ -43,7 +43,7 @@
   #define COMPILER_CPLUS      "__GNUG__"
   #define COMPILER_CPLUS_VAL  "3"     /* "3" for V.3.*, "4" for V.4.* */
   #define GCC_MAJOR_VERSION   3       /* Value of __GNUC__ as a digit */
---- 319,325 ----
+--- 282,288 ----
   #define COMPILER_EXT        "__GNUC__"
   #define COMPILER_EXT_VAL    "3"     /* "3" for V.3.* "4" for V.4.*  */
   #define COMPILER_EXT2       "__GNUC_MINOR__"
@@ -52,7 +52,7 @@
   #define COMPILER_CPLUS_VAL  "3"     /* "3" for V.3.*, "4" for V.4.* */
   #define GCC_MAJOR_VERSION   3       /* Value of __GNUC__ as a digit */
 ***************
-*** 331,340 ****
+*** 294,303 ****
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
   #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */
@@ -63,7 +63,7 @@
   /* #define C_INCLUDE_DIR2   */
   #ifndef INC_DIR
   #ifdef  C_INCLUDE_DIR1
---- 331,340 ----
+--- 294,303 ----
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
   #define STDC_VERSION        0L  /* 199409L for V.2.9, 0L for V.3.*,V.4.*    */

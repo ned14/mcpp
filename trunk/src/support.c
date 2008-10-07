@@ -732,6 +732,8 @@ char *  scan_quote(
                         = "Unterminated string literal%s";
     const char * const      unterm_char
                         = "Unterminated character constant %s%.0ld%s";
+    const char * const      empty_const
+                        = "Empty character constant %s%.0ld%s";
     const char *    skip;
     size_t      len;
     int         c;
@@ -862,7 +864,7 @@ chk_limit:
                         cwarn( unterm_char, out, 0L, NULL); /* _W1_ */
                     goto  done;
                 } else {
-                    cerror( unterm_char, out, 0L, skip);        /* _E_  */
+                    cerror( unterm_char, out, 0L, skip);    /* _E_  */
                 }
             } else {
                 cerror( "Unterminated header name %s%.0ld%s"        /* _E_  */
@@ -870,14 +872,20 @@ chk_limit:
             }
             out_p = NULL;
         } else if (delim == '\'' && out_p - out <= 2) {
-            cerror( "Empty character constant %s%.0ld%s"    /* _E_  */
-                    , out, 0L, skip);
-            out_p = NULL;
-        }
-        else if (mcpp_mode == POST_STD && delim == '>' && (warn_level & 2))
+            if (mcpp_mode != POST_STD && option_flags.lang_asm) {
+                /* STD, KR      */
+                if (warn_level & 1)
+                    cwarn( empty_const, out, 0L, skip);     /* _W1_ */
+            } else {
+                cerror( empty_const, out, 0L, skip);        /* _E_  */
+                out_p = NULL;
+                goto  done;
+            }
+        } else if (mcpp_mode == POST_STD && delim == '>' && (warn_level & 2)) {
             cwarn(
         "Header-name enclosed by <, > is an obsolescent feature %s" /* _W2_ */
                     , out, 0L, skip);
+        }
 #if NWORK-2 > SLEN90MIN
         if (standard && out_p - out > std_limits.str_len && (warn_level & 4))
             cwarn( "Quotation longer than %.0s%ld bytes"    /* _W4_ */

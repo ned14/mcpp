@@ -329,7 +329,7 @@ extern struct std_limits_ {
 extern struct option_flags_ {
         int     c;                  /* -C option (keep comments)    */
         int     k;                  /* -k option (keep white spaces)*/
-        int     z;      /* -Z option (no-output of included file)   */
+        int     z;      /* -z option (no-output of included file)   */
         int     p;                  /* -P option (no #line output)  */
         int     q;                  /* -Q option (diag to mcpp.err) */
         int     v;                  /* -v option (verbose)          */

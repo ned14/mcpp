@@ -29,8 +29,23 @@ compiler-specific-build: 特定の処理系のプリプロセッサを（もし可能なら）
 
   MCPP をコンパイルするには、UNIX 系のシステムおよび CygWIN, MinGW では
 configure スクリプトを使うことができます。configure と make は任意のディ
-レクトリで実行できます。以下の説明では mcpp-2.7 ディレクトリのある path
-を ${mcpp-dir} と表記します。
+レクトリで実行できます。以下の説明では mcpp-${VERSION} ディレクトリのあ
+る path を ${mcpp-dir} と表記します。${VERSION} は 2.6.4, 2.7.1 等の
+MCPP のバージョンです。
+
+Configure はコンパイラを cc (c++) または gcc (g++) という名前で、環境変
+数 $PATH にセットされた path list の順にサーチします。したがって、gcc-4.
+3.0, g++-4.3.0 といった名前のコンパイラを使うなら、configure する前にそ
+れを環境変数 CC, CXX で指定するか、または gcc, g++ にリンクしておいてく
+ださい。もし、path list 上で最初にサーチされるコンパイラ以外のコンパイラ
+を使うなら、$PATH を次のように変更しなければなりません。
+
+    export PATH=/my/gcc/bin:$PATH
+
+この設定は make が終わるまで維持してください。Path list 上で最初にサーチ
+されるコンパイラ以外のコンパイラを CC, CXX で指定してはいけません。たと
+え絶対パスで指定してもダメです。Path list は configure のすべてに影響を
+与えるからです。
 
 2、1、compiler-independent-build
 
@@ -80,9 +95,9 @@ build でも同様です。MCPP を gdb でデバッグする時には CFLAGS+='-ggdb -O0'
 インストールされるようにしました。これはバイナリ・パッケージを作るつごう
 に合わせたものです。
 
-  Linux や CygWIN ではシステムの標準ヘッダに欠陥があるので、compiler-
-independent-build の MCPP ではその対策が必要です。この問題については
-mcpp-manual.html 3.9.9 を見てください。
+  Linux, Mac OS X, CygWIN, MinGW ではシステムの標準ヘッダに欠陥があるの
+で、compiler-independent-build の MCPP ではその対策が必要です。この問題
+については mcpp-manual.html 3.9.9 を見てください。
 
 2、2、compiler-specific-build
 
@@ -122,7 +137,9 @@ testsuite 版検証セットで MCPP の Standard モードのテストをすることができ
 ます。Testsuite 版検証セットは GCC / testsuite の一部として使うようにな
 っているので、あらかじめ GCC / testsuite がインストールされ実行できる状
 態になっていることが必要です。GCC / testsuite は通常は GCC のソースの一
-部となっています（別のパッケージとなっている場合もある）。
+部となっています（別のパッケージとなっている場合もある）。GCC V.2.95.*
+以降の testsuite が使えますが、V.4.3.* のものには若干の問題があるので、V.
+4.2.* までのものを使ってください。
   また、configure する時に GCC / testsuite の置かれているディレクトリを
 指定しておく必要があります。そのためには次のようにします。
 
@@ -166,7 +183,9 @@ make uninstall で削除されます。GCC に検証セットを適用するには、手動で検
   GCC-specific-build の configure で生成された何本かの Makefile は MCPP
 を uninstall するときに必要なので、そのまま残しておいてください。make
 distclean する場合は、その前に make uninstall を実行してください。手動で
-uninstall するのは少し手間がかかるからです。
+uninstall するのは少し手間がかかるからです。同様に、configure や
+Makefile.in が更新される場合は、その前に make uninstall; make distclean
+しておかなければなりません。MCPP を update する場合は注意してください。
 
 2、2、2、処理系が Mac OS X の Apple-GCC の場合
 
@@ -444,6 +463,6 @@ MCPP の "pre-preprocess" という機能を使って MCPP をリコンパイルしてみる
 MCPP だけでなく任意のプリプロセッサに適用することができます。その使い方
 については、cpp-test.html 3.1, 3.2 を参照してください。
 
-2008/03
+2008/10
                                          松井　潔 <kmatsui@t3.rim.or.jp>
 

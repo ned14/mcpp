@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.7.1 and later for MinGW / GCC / GNU make
-#   2008/05   kmatsui
+# makefile to compile MCPP version 2.7.2 and later for MinGW / GCC / GNU make
+#   2008/09   kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -62,12 +62,8 @@ CPPOPTS = -DCOMPILER=$(COMPILER)
 # BINDIR:   the directory where cc1 resides
 BINDIR = /mingw/libexec/gcc/mingw32/3.4.5
 cpp_call = $(BINDIR)/cc1.exe
-target = mingw32
 cpu = i386
 #cpu = x86_64
-# If cpu is x86_64, set cpu32 as i386
-# If cpu is not x86_64, set cpu32 as cpu
-cpu32 = i386
 endif
 endif
 
@@ -119,8 +115,8 @@ install :
 	install -s -b $(NAME).exe $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'    \
-            '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'   \
-            '$(INCDIR)' SYS_MINGW $(cpu) $(cpu32)
+            '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x.exe' 'ln -s'   \
+            '$(INCDIR)' SYS_MINGW $(cpu)
 endif
 
 clean	:
@@ -149,7 +145,7 @@ SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 .SUFFIXES: .so
 .c.so   :
 	$(CC) $(CFLAGS) $(MEM_MACRO) -DDLL_EXPORT -c -o $*.so $*.c
-        # -fPIC is not necessary for MinGW
+# -fPIC is not necessary for MinGW
 mcpplib_dll: $(SOBJS)
 	$(CC) -shared $(SOBJS) -o libmcpp-$(DLL_VER).dll -Wl,--enable-auto-image-base,--out-implib,libmcpp.dll.a
 

@@ -1,5 +1,22 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
+2008/10/07  kmatsui
+        * V.2.7.2-prerelease
+        * Enabled some CPU-specific predefined macros in compiler-
+        independent-build as well as compiler-specific-build, because
+        there are some occasions which require those macros when we use
+        some compiler system's header files.  Created init_cpu_macro().
+        (configure.ac, noconfig.H, configed.H, main.c, system.c)
+        * Enabled -m32 and -m64 options even on 32-bits systems and on
+        compiler-independent-build, when the OS is UNIX-like one.  These
+        options change some predefined macros.  (system.c)
+        * Made -z option to output #include lines themselves.  (system.c)
+        * Fixed a few minor bugs.
+        * Dropped support for Borland C 4.0.
+        * Updated the shell-scripts, makefiles and difference files, and
+        revised some mistakes.
+        * Updated the documents.
+
 2008/05/19  kmatsui
         * V.2.7.1
         * Fixed a bug of newline synchronization on -K option.  Created

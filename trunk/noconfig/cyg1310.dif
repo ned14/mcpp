@@ -1,5 +1,5 @@
-*** noconfig.H	2007-12-23 21:34:39.000000000 +0900
---- noconfig.H.cyg1310	2007-12-23 22:04:46.000000000 +0900
+*** noconfig.H	2008-09-25 15:34:56.000000000 +0900
+--- noconfig.H.cyg1310	2008-09-26 13:31:21.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -35,7 +35,7 @@
       "LCC-Win32 2006-03"
       "Visual C 2005"
 ***************
-*** 317,328 ****
+*** 280,291 ****
   #if     COMPILER_FAMILY == GNUC
   #define CMP_NAME            "GCC"
   #define COMPILER_EXT        "__GNUC__"
@@ -48,7 +48,7 @@
   #define LINE_PREFIX         "# "
   #ifndef HAVE_DIGRAPHS
   #define HAVE_DIGRAPHS       TRUE
---- 317,328 ----
+--- 280,291 ----
   #if     COMPILER_FAMILY == GNUC
   #define CMP_NAME            "GCC"
   #define COMPILER_EXT        "__GNUC__"
@@ -62,7 +62,7 @@
   #ifndef HAVE_DIGRAPHS
   #define HAVE_DIGRAPHS       TRUE
 ***************
-*** 330,341 ****
+*** 293,304 ****
   #ifndef TARGET_HAVE_LONG_LONG
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
@@ -75,7 +75,7 @@
   #ifndef INC_DIR
   #ifdef  C_INCLUDE_DIR1
   #define INC_DIR             C_INCLUDE_DIR1  /* GNUC version specific dir    */
---- 330,341 ----
+--- 293,304 ----
   #ifndef TARGET_HAVE_LONG_LONG
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
@@ -89,7 +89,7 @@
   #ifdef  C_INCLUDE_DIR1
   #define INC_DIR             C_INCLUDE_DIR1  /* GNUC version specific dir    */
 ***************
-*** 357,363 ****
+*** 320,326 ****
   #define COMPILER_SP3        "__WCHAR_TYPE__"
   #define COMPILER_SP1_VAL    "unsigned int"
   #define COMPILER_SP2_VAL    "int"
@@ -97,7 +97,7 @@
       /* SYS_FREEBSD: "int", SYS_CYGWIN, SYS_MINGW: "short unsigned int"
               , others: "long int"  */
   #endif  /* GCC_MAJOR_VERSION < 3    */
---- 357,363 ----
+--- 320,326 ----
   #define COMPILER_SP3        "__WCHAR_TYPE__"
   #define COMPILER_SP1_VAL    "unsigned int"
   #define COMPILER_SP2_VAL    "int"

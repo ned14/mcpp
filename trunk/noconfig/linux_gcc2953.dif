@@ -1,5 +1,5 @@
-*** noconfig.H	2007-12-23 21:34:39.000000000 +0900
---- noconfig.H.linux_gcc2953	2007-12-23 22:06:27.000000000 +0900
+*** noconfig.H	2008-09-25 15:34:56.000000000 +0900
+--- noconfig.H.linux_gcc2953	2008-09-26 13:38:28.000000000 +0900
 ***************
 *** 15,21 ****
    */
@@ -35,7 +35,7 @@
       "LCC-Win32 2006-03"
       "Visual C 2005"
 ***************
-*** 317,328 ****
+*** 280,291 ****
   #if     COMPILER_FAMILY == GNUC
   #define CMP_NAME            "GCC"
   #define COMPILER_EXT        "__GNUC__"
@@ -48,7 +48,7 @@
   #define LINE_PREFIX         "# "
   #ifndef HAVE_DIGRAPHS
   #define HAVE_DIGRAPHS       TRUE
---- 317,328 ----
+--- 280,291 ----
   #if     COMPILER_FAMILY == GNUC
   #define CMP_NAME            "GCC"
   #define COMPILER_EXT        "__GNUC__"
@@ -62,7 +62,7 @@
   #ifndef HAVE_DIGRAPHS
   #define HAVE_DIGRAPHS       TRUE
 ***************
-*** 330,340 ****
+*** 293,303 ****
   #ifndef TARGET_HAVE_LONG_LONG
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
@@ -74,7 +74,7 @@
   /* #define C_INCLUDE_DIR2   */
   #ifndef INC_DIR
   #ifdef  C_INCLUDE_DIR1
---- 330,340 ----
+--- 293,303 ----
   #ifndef TARGET_HAVE_LONG_LONG
   #define TARGET_HAVE_LONG_LONG       TRUE
   #endif
@@ -82,12 +82,12 @@
 ! #define CPLUS_INCLUDE_DIR1  "/usr/include/g++-3" /* "/usr/include/c++/3.4" */ /* "/usr/include/c++/3.3.6" */  /* "/usr/include/c++/4.1.2" */
 ! /* #define CPLUS_INCLUDE_DIR2  "/usr/include/c++/3.4/backward" */ /* "/usr/include/c++/3.3.6/i386-vine-linux" */  /* "/usr/include/c++/4.1.2/i486-linux-gnu" */
   /* #define CPLUS_INCLUDE_DIR3   */  /* "/usr/include/c++/3.3.6/backward"    */  /* "/usr/include/c++/4.1.2/backward"    */
-! #define C_INCLUDE_DIR1      "/usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include" /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/lib/gcc/i486-linux-gnu/4.1.2/include" */
+! #define C_INCLUDE_DIR1      "/usr/lib/gcc-lib/i386-vine-linux/2.95.3/include" /* "/usr/lib/gcc-lib/i386-vine-linux/3.3.6/include" */  /* "/usr/lib/gcc/i486-linux-gnu/4.1.2/include" */
   /* #define C_INCLUDE_DIR2   */
   #ifndef INC_DIR
   #ifdef  C_INCLUDE_DIR1
 ***************
-*** 357,363 ****
+*** 320,326 ****
   #define COMPILER_SP3        "__WCHAR_TYPE__"
   #define COMPILER_SP1_VAL    "unsigned int"
   #define COMPILER_SP2_VAL    "int"
@@ -95,7 +95,7 @@
       /* SYS_FREEBSD: "int", SYS_CYGWIN, SYS_MINGW: "short unsigned int"
               , others: "long int"  */
   #endif  /* GCC_MAJOR_VERSION < 3    */
---- 357,363 ----
+--- 320,326 ----
   #define COMPILER_SP3        "__WCHAR_TYPE__"
   #define COMPILER_SP1_VAL    "unsigned int"
   #define COMPILER_SP2_VAL    "int"

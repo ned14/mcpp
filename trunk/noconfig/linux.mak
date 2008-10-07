@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.7.1 for Linux / GCC / GNU make
-#       2008/05 kmatsui
+# makefile to compile MCPP version 2.7.2 for Linux / GCC / GNU make
+#       2008/09 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP:
@@ -14,7 +14,7 @@
 # To link malloc() package of kmatsui do:
 #       make [COMPILER=GNUC] [PREPROCESSED=1] MALLOC=KMMALLOC
 #       sudo make [COMPILER=GNUC] [PREPROCESSED=1] MALLOC=KMMALLOC install
-# To make libmcpp (subroutine build of mcpp):
+# To make libmcpp (subroutine build of mcpp) and mcpp binary linking it:
 #       make MCPP_LIB=1 mcpplib
 #    	sudo make MCPP_LIB=1 mcpplib_install
 # To make testmain using libmcpp:
@@ -61,7 +61,7 @@ GCCDIR = /usr/bin
 gcc_maj_ver = 3
 gcc_min_ver = 3
 # INCDIR:   GCC's version specific include directory
-#INCDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3/include
+#INCDIR = /usr/lib/gcc-lib/i386-vine-linux/2.95.3/include
 #INCDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2/include
 # Vine 4.2
 INCDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6/include
@@ -70,24 +70,17 @@ INCDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6/include
 #INCDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2/include
 CPPOPTS = -DCOMPILER=$(COMPILER)
 
-#BINDIR = /usr/lib/gcc-lib/i386-redhat-linux/2.95.3
+#BINDIR = /usr/lib/gcc-lib/i386-vine-linux/2.95.3
 #BINDIR = /usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2
 # Vine 4.2
 BINDIR = /usr/lib/gcc-lib/i386-vine-linux/3.3.6
 #BINDIR = /usr/local/libexec/gcc/i686-pc-linux-gnu/4.1.1
 # Debian 4.0
 #BINDIR = /usr/lib/gcc/i486-linux-gnu/4.1.2
-#target = i386-vine-linux
-target = i686-pc-linux-gnu
-#target = i486-linux-gnu
 cpu = i386
 #cpu = ppc
 #cpu = x86_64
 #cpu = ppc64
-# If cpu is x86_64 or ppc64, set cpu32 as i386 or ppc respectively
-# If cpu is neither x86_64 nor ppc64, set cpu32 as cpu
-cpu32 = i386
-#cpu32 = ppc
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0
 else
@@ -143,7 +136,7 @@ install :
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s' \
-            '$(INCDIR)' SYS_LINUX $(cpu) $(cpu32)
+            '$(INCDIR)' SYS_LINUX $(cpu)
 endif
 
 clean	:
@@ -157,10 +150,11 @@ ifeq    ($(COMPILER), GNUC)
 endif
 
 ifeq    ($(COMPILER), )
+# the directory to install libmcpp into
+LIBDIR = /usr/local/lib
 ifeq    ($(MCPP_LIB), 1)
 # compiler-independent-build and MCPP_LIB=1
 CFLAGS += -DMCPP_LIB
-LIBDIR = /usr/local/lib
 
 mcpplib :   mcpplib_a mcpplib_so
 
@@ -168,12 +162,12 @@ mcpplib_a:	$(OBJS)
 	ar -rv libmcpp.a $(OBJS)
 
 # shared library
-# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2
-CUR = 2
-# mcpp 2.6.3: 0, mcpp 2.6.4: 1, mcpp 2.7: 0, mcpp 2.7.1: 0
+# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2, mcpp 2.7.2: 3
+CUR = 3
+# mcpp 2.6.3: 0, mcpp 2.6.4: 1, mcpp 2.7, 2.7.1, 2.7.2: 0
 REV = 0
-# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2
-AGE = 2
+# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2, mcpp 2.7.2: 3
+AGE = 3
 SHLIB_VER = 0.$(CUR).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 .SUFFIXES: .so
@@ -188,7 +182,7 @@ mcpplib_install:
 	ranlib $(LIBDIR)/libmcpp.a
 	ln -sf libmcpp.so.$(SHLIB_VER) $(LIBDIR)/libmcpp.so
 	ln -sf libmcpp.so.$(SHLIB_VER) $(LIBDIR)/libmcpp.so.$(CUR)
-    # You should do 'ldconfig' as a root after install.
+# You should do 'ldconfig' as a root after install.
 	cp mcpp_lib.h mcpp_out.h $(INCDIR)
 	$(CC) -o $(NAME) main_libmcpp.c -l $(NAME)
 	install -s $(NAME) $(BINDIR)
@@ -203,7 +197,7 @@ ifeq    ($(OUT2MEM), 1)
 # output to memory buffer
 CFLAGS += -DOUT2MEM
 endif
-TMAIN_LINKFLAGS = testmain.o -o testmain -l $(NAME)
+TMAIN_LINKFLAGS = testmain.o -o testmain -L$(LIBDIR) -l$(NAME)
 ifeq	($(MALLOC), KMMALLOC)
 	TMAIN_LINKFLAGS += -lkmmalloc_debug
 endif
