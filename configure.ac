@@ -1,10 +1,10 @@
-dnl configure.ac for MCPP   2003/11, 2008/05  kmatsui
+dnl configure.ac for MCPP   2003/11, 2008/10  kmatsui
 dnl Process this file with autoconf to produce a configure script.
 
 dnl WARNING: This script does not assume cross-compiling.
 dnl To cross-compile you must edit here and there of this file.
 
-AC_INIT( mcpp, 2.7.1, kmatsui@t3.rim.or.jp)
+AC_INIT( mcpp, 2.7.2-prerelease, kmatsui@t3.rim.or.jp)
 AC_CONFIG_SRCDIR( src/main.c)
 AM_CONFIG_HEADER( src/config.h)
 AC_CONFIG_AUX_DIR( config)
@@ -107,67 +107,41 @@ AC_ARG_WITH( target_cc,
         target_cc=$withval
         target_name=`echo $target_cc | sed 's/-gcc.*$//'`
         if test $target_name != $target_alias; then
-            AC_MSG_ERROR( [The argument of --with-target-cc option conflicts with --target option])
+            AC_MSG_ERROR( [The argument of --with-target-cc option conflicts with --target option.])
         fi
         AC_SUBST( [target_cc])
     fi
 )
 fi
 
-## compiler-specific or not Mac OS
-## To enable "universal binary" by Apple-GCC, CPU-dependent macros should be
-## defined at compile time rather than configuration time.
-if test x$enable_replace_cpp = xyes    \
-        || test $ac_c_define_HOST_SYSTEM != SYS_MAC; then
+dnl Define a target specific macro.
 
-dnl Define target specific predefined macros.
+AC_MSG_CHECKING( for target cpu)
 
-AC_MSG_NOTICE( [setting predefined macros for target cpu])
-
-## If $target_cpu is x86_64, $Target_Cpu is x86_64, which is the default,
-## and $Target_Cpu32 should be i386.
-## If $target_cpu is ppc64, $Target_Cpu is ppc64, which is the default,
-## and $Target_Cpu32 should be ppc.
-## If $target_cpu is neither x86_64 nor ppc64, both of $Target_Cpu and 
-## $Target_Cpu32 are $target_cpu.
+## These are not predefined macros of MCPP.  MCPP will define predefined macros
+## on compile time based on the CPU macro, and possibly redefine them at an
+## execution time.
 
 case $target_cpu in
 x86_64|amd64)
     Target_Cpu=x86_64
-    Target_Cpu32=i386
     ;;
 i?86*)
     Target_Cpu=i386
-    Target_Cpu32=i386
     ;;
 powerpc64|ppc64)
     Target_Cpu=ppc64
-    Target_Cpu32=ppc
     ;;
 powerpc|ppc|ppc7400)
     Target_Cpu=ppc
-    Target_Cpu32=ppc
     ;;
 *)
     Target_Cpu=$target_cpu
-    Target_Cpu32=$target_cpu
     ;;
 esac
 
-if test x$mcpp_ac_c_define_CPU_STD != x__$Target_Cpu; then
-    AC_DEFINE_UNQUOTED( [CPU_STD1], "__$Target_Cpu",
-        [Define the cpu-specific-predefined-macro.])
-fi
-if test x$mcpp_ac_c_define_CPU_STD != x__${Target_Cpu}__; then
-    AC_DEFINE_UNQUOTED( [CPU_STD2], "__${Target_Cpu}__",
-        [Define the cpu-specific-predefined-macro.])
-fi
-if test x$mcpp_ac_c_define_CPU_OLD != x$Target_Cpu; then
-    AC_DEFINE_UNQUOTED( [CPU_OLD], "$Target_Cpu",
-        [Define the cpu-specific-predefined-macro.])
-fi
-
-fi  ## compiler-specific or not Mac OS
+AC_MSG_RESULT( $Target_Cpu)
+AC_DEFINE_UNQUOTED( [CPU], "$Target_Cpu", [Define the cpu-specific-macro.])
 
 ## Build into cross-compiler on Mac OS
 if test x$enable_replace_cpp = xyes    \
@@ -362,12 +336,12 @@ AC_DEFUN([mcpp_AC_C_DEFINE], [
     if test x$stripped_mcpp_macro != x$mcpp_macro; then
         stripped_name=`echo $name | sed 's/^_//'`
         if test x$stripped_name = x$name; then
-            AC_MSG_ERROR( the macro name '$name' should begin with '_')
+            AC_MSG_ERROR( The macro name '$name' should begin with '_'.)
         fi
     else
         stripped_name=`echo $name | sed 's/^@<:@A-Za-z@:>@//'`
         if test x$stripped_name = x$name; then
-            AC_MSG_ERROR( the macro name '$name' should begin with an alphabetic letter)
+            AC_MSG_ERROR( The macro name '$name' should begin with an alphabetic letter.)
         fi
     fi
     if test x$name = x$3; then
@@ -387,7 +361,7 @@ AC_DEFUN([mcpp_AC_C_PREDEF], [
         AC_HELP_STRING( --enable-$1-$2-macro=name@<:@=replace@:>@,
             [specify the $1-specific $2-style predefined macro.  $3]),
         if test x$enableval = xyes || test x$enableval = xno; then
-            AC_MSG_ERROR( This option requires an argument as 'name@<:@=replace@:>@')
+            AC_MSG_ERROR( This option requires an argument as 'name@<:@=replace@:>@'.)
         fi
         mcpp_AC_C_DEFINE( $1, $2, $enableval)
         AH_TEMPLATE( [$1_SP_$2],
@@ -584,7 +558,7 @@ AC_ARG_WITH( compiler-name,
     AC_HELP_STRING( [--with-compiler-name=NAME],
         [specify the compiler name which is used as the definition of COMPILER macro]),
     AC_DEFINE_UNQUOTED( [COMPILER], $compiler_name, [specify the compiler name]),
-    AC_MSG_ERROR( --with-compiler-name=NAME option should be specified to define [COMPILER] macro)
+    AC_MSG_ERROR( --with-compiler-name=NAME option should be specified to define [COMPILER] macro.)
 )
 
 # Specify the C++ header file directory
@@ -597,7 +571,7 @@ AC_ARG_WITH( cxx-include-dir,
         AC_DEFINE_UNQUOTED( [CPLUS_INCLUDE_DIR1], $cxx_include_dir,
             [Define the C++ include directory.])
         ;;
-    *)  AC_MSG_ERROR( $withval should be an absolute path) ;;
+    *)  AC_MSG_ERROR( $withval should be an absolute path.) ;;
     esac]
 )
 
@@ -619,6 +593,10 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     AC_MSG_RESULT( $bindir)
 
     AC_PATH_PROG( [gcc_path], [$CC], , [$PATH])
+    cc_path=`echo $CC | $EGREP "/"`
+    if test x$cc_path != x; then
+        AC_MSG_ERROR( [Environment variables CC and CXX for GCC-specific-build should not contain a directory part.]);
+    fi
     ## force to set $prefix to GCC's prefix
     ## (i.e. "/usr/local" of "/usr/local/bin/gcc")
     gcc_prefix=`echo $gcc_path | $EGREP "/bin/$CC\$" | sed "s,/bin/$CC\$,,"`
@@ -724,7 +702,6 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
     AC_SUBST( [CPPFLAGS])
     AC_SUBST( [host_system])
     AC_SUBST( [Target_Cpu])
-    AC_SUBST( [Target_Cpu32])
     AC_SUBST( [inc_dir])
     AC_SUBST( [gcc_maj_ver])
     AC_SUBST( [gcc_min_ver])
@@ -784,10 +761,10 @@ AC_ARG_WITH( [gcc-testsuite-dir],
         if test x$enable_replace_cpp = xyes; then
             [gcc_testsuite_dir=`echo $withval | sed 's,/$,,'`]
         else
-            AC_MSG_ERROR( [--with-gcc-testsuite-dir option requires --enable-replace-cpp option])
+            AC_MSG_ERROR( [--with-gcc-testsuite-dir option requires --enable-replace-cpp option.])
         fi
     else
-        AC_MSG_ERROR( [--with-gcc-testsuite-dir option requires an argument])
+        AC_MSG_ERROR( [--with-gcc-testsuite-dir option requires an argument.])
     fi
 )
 AC_SUBST( [gcc_testsuite_dir])

@@ -55,13 +55,13 @@
 #define SYS_MAC             0x1E00  /* (SYS_MAC & 0xF000) == SYS_UNIX       */
 #define SYS_WIN             0x7000
 #define SYS_WIN32           0x7400  /* (SYS_WIN32 & 0xF000) == SYS_WIN      */
+#define SYS_WIN64           0x7800  /* (SYS_WIN64 & 0xF000) == SYS_WIN      */
 #define SYS_MINGW           0x7C00  /* (SYS_MINGW & 0xF000) == SYS_WIN      */
 
 /* COMPILER */
 #define COMPILER_UNKNOWN    0
 #define MSC                 0x7400  /* Microsoft C, Visual C++      */
 #define BORLANDC            0x7440  /* Borland C    */
-#define WIN_SYMANTECC       0x7470  /* Symantec for Windows         */
 #define LCC                 0x74C0  /* LCC-Win32    */
 #define GNUC                0x00E0  /* GNU C (GCC)  */
 #define INDEPENDENT         0xFFFF  /* No target, compiler-independent build*/
@@ -92,14 +92,12 @@
  * several macros are defined here:
  * *_OLD define the macro beginning with an alphabetic letter,
  * *_STD, *_STD?, *_EXT, *_EXT2 define the macro beginning with an '_'.
- * *_STD1 define the macro beginning with '__' and ending with an alpha-
- *          numeric letter.
+ * *_STD1 define the macro beginning with '__' and ending with an alphanumeric
+ *      letter.
  * *_STD2 define the macro beginning with '__' and ending with '__'.
  * These may not be defined, if they are not needed.
  * They should not be #defined to no token or to "".
  *
- * CPU_OLD, CPU_STD1, CPU_STD2, CPU_SP_OLD, CPU_SP_STD
- *      define the target cpu (by name).
  * SYSTEM_OLD, SYSTEM_STD1, SYSTEM_STD2, SYSTEM_EXT, SYSTEM_EXT2
  *      define the target operating system (by name).
  * SYSTEM_SP_OLD, SYSTEM_SP_STD     define the target-OS specific macro name
@@ -107,13 +105,13 @@
  *          , COMPILER_SP_OLD, COMPILER_SP_STD
  *      define the target compiler (by name).
  * COMPILER_CPLUS        defines the target C++ compiler.
- * COMPILER_SP1, COMPILER_SP2, COMPILER_SP3, COMPILER_SP4
+ * COMPILER_SP1, COMPILER_SP2, COMPILER_SP3
  *      define the compiler-specific macros.
  *
  * <macro>_VAL      specify the value of the <macro>.
  *      If not specified, these values default to "1".
  *      To define the value of no-token, specify as "" rather than no-token.
- * CPU_*, SYSTEM_OLD, SYSTEM_STD?, COMPILER_OLD have the value of "1".
+ * SYSTEM_OLD, SYSTEM_STD?, COMPILER_OLD have the value of "1".
  */
 
 /*
@@ -164,11 +162,6 @@
 #define SYSTEM_OLD          "unix"
 #define SYSTEM_STD1         "__unix"
 #define SYSTEM_STD2         "__unix__"
-#endif
-
-#if     SYSTEM == SYS_FREEBSD || SYSTEM == SYS_LINUX
-#define CPU_STD2            "__i386__"
-#endif
 
 #if     SYSTEM == SYS_FREEBSD
 #define SYSTEM_EXT          "__FreeBSD__"
@@ -184,32 +177,88 @@
 #define FNAME_FOLD          TRUE    /* Case-insensitive file-system */
 #define FRAMEWORK1          "/System/Library/Frameworks"
 #define FRAMEWORK2          "/Library/Frameworks"
-#if     COMPILER == INDEPENDENT
-/* Apple-GCC changes CPU-specific macros by -arch option.  These    */
-/* should be defined at compile time rather than configuration time.*/
-#if     defined (__i386__)
-#define CPU_OLD             "i386"
-#define CPU_STD2            "__i386__"
-#elif   defined (__x86_64__)
-#define CPU_STD2            "__x86_64__"
-#elif   defined (__ppc__)
-#define CPU_STD2            "__ppc__"
-#elif   defined (__ppc64__)
-#define CPU_STD2            "__ppc64__"
-#endif
-#elif   ! defined (CPU_STD2)
-#define CPU_STD2            "__i386__"
-#endif
 #endif  /* SYSTEM == SYS_MAC    */
 
 #if     SYSTEM == SYS_CYGWIN
-#define CPU_STD2            "__i386__"
 #define SYSTEM_EXT          "__CYGWIN__"
 #define SYSTEM_EXT2         "__CYGWIN32__"
 #define MBCHAR              SJIS
 #define FNAME_FOLD          TRUE
 #define CYGWIN_ROOT_DIRECTORY   "c:/pub/compilers/cygwin"
 #endif  /* SYSTEM == SYS_CYGWIN */
+
+#ifndef MBCHAR
+#define MBCHAR              EUC_JP  /* UTF8 if you like */
+#endif
+#ifndef FNAME_FOLD
+#define FNAME_FOLD          FALSE
+#endif
+
+#endif  /* SYS_FAMILY == SYS_UNIX   */
+
+#if     SYS_FAMILY == SYS_WIN
+
+#define SYSTEM_SP_STD       "__FLAT__"
+#define SYSTEM_SP_STD_VAL   "1"
+
+#ifndef MBCHAR
+#define MBCHAR              SJIS    /* Multi-byte char is encoded in SJIS   */
+#endif
+
+#if     COMPILER == MSC
+#define CMP_NAME            "Visual C++"
+#if     _MSC_VER >= 1200    /* Visual C++ V.6.0 or later    */
+    /* When HOST == TARGET  */
+#define ONE_PASS            TRUE
+#endif
+#define COMPILER_EXT        "_MSC_VER"
+#define COMPILER_EXT_VAL    "1500"      /* VC 6.0: "1200"   */
+    /* VC 2002: "1300", VC 2003: "1310", VC 2005: "1400", VC 2008: "1500"   */
+#define COMPILER_EXT2       "_MSC_FULL_VER"
+#define COMPILER_EXT2_VAL   "150021022" /* VC 6.0: "12008804"       */
+    /* VC 2002: "13009466", VC 2003: "13103077", VC 2005: "140050320"       */
+    /* VC 2008: "150021022" */
+#define COMPILER_SP1        "_MSC_EXTENSIONS"
+#define COMPILER_SP1_VAL    "1"
+#define COMPILER_SP2        "_INTEGRAL_MAX_BITS"
+#define COMPILER_SP2_VAL    "64"        /* VC 2003, VC2005, VC2008: 64      */
+#define TARGET_HAVE_LONG_LONG       TRUE
+    /* __int64 instead of long long (VC 2.0 through 8.0)    */
+#define EXPAND_PRAGMA       TRUE
+#define HAVE_DIGRAPHS       TRUE
+#define BIGFIVE_IS_ESCAPE_FREE      TRUE 
+#define SEARCH_INIT         SOURCE
+
+#elif   COMPILER == BORLANDC                /* Borland C 5.* and C++Builder */
+#define CMP_NAME            "Borland C"
+#define ONE_PASS            TRUE
+#define COMPILER_STD2       "__TURBOC__"
+#if     __BORLANDC__        /* Borland C    */
+#define COMPILER_STD2_VAL   "0x0550"
+    /* BC 5.5: "0x0550", BC 5.9: "0x5930"   */
+#define COMPILER_EXT        "__BORLANDC__"
+#define COMPILER_EXT_VAL    "0x0550"
+    /* BC 5.5: "0x0550", BC 5.9: "0x5930"   */
+#define COMPILER_CPLUS      "__BCPLUSPLUS__"
+#define COMPILER_CPLUS_VAL  "0x0550"
+    /* BC 5.5: "0x0550", BC 5.9: "0x5930"   */
+#define EXPAND_PRAGMA       TRUE
+#define SEARCH_INIT         (CURRENT & SOURCE)
+#define TARGET_HAVE_LONG_LONG       TRUE    /* __int64 instead of long long */
+#endif  /* __BORLANDC__ */
+
+#elif     COMPILER == LCC
+#define CMP_NAME            "LCC-Win32"
+#define COMPILER_STD2       "__LCC__"
+#define COMPILER_SP1        "__LCCDEBUGLEVEL"
+#define COMPILER_SP1_VAL    "0"
+#define COMPILER_SP2        "__LCCOPTIMLEVEL"
+#define COMPILER_SP2_VAL    "0"
+#define ONE_PASS            TRUE
+#define TARGET_HAVE_LONG_LONG       TRUE
+#define SJIS_IS_ESCAPE_FREE         FALSE 
+
+#endif
 
 #if     SYSTEM == SYS_MINGW
 #define SYSTEM_EXT          "__MINGW__"
@@ -221,92 +270,6 @@
 #define INC_DIR             C_INCLUDE_DIR2
 #endif
 #endif  /* SYSTEM == SYS_MINGW  */
-
-#if     SYS_FAMILY == SYS_UNIX
-#ifndef MBCHAR
-#define MBCHAR              EUC_JP  /* UTF8 if you like */
-#endif
-#ifndef FNAME_FOLD
-#define FNAME_FOLD          FALSE
-#endif
-#endif
-
-#if     SYS_FAMILY == SYS_WIN
-/*
- * Here we assume that the operating system is WIN32, the processor is
- * an Intel i386.
- */
-#if     SYSTEM == SYS_WIN32
-#define CPU_STD2            "__i386__"
-#define SYSTEM_OLD          "WIN32"
-#define SYSTEM_STD2         "__WIN32__"
-#define SYSTEM_EXT          "__FLAT__"
-#define SYSTEM_EXT2         "_WIN32"
-#endif  /* SYSTEM == SYS_WIN32  */
-
-#ifndef MBCHAR
-#define MBCHAR              SJIS    /* Multi-byte char is encoded in SJIS   */
-#endif
-
-#if     COMPILER == LCC
-#define CMP_NAME            "LCC-Win32"
-#define COMPILER_STD2       "__LCC__"
-#define COMPILER_SP1        "__LCCDEBUGLEVEL"
-#define COMPILER_SP1_VAL    "0"
-#define COMPILER_SP2        "__LCCOPTIMLEVEL"
-#define COMPILER_SP2_VAL    "0"
-#define ONE_PASS            TRUE
-#define TARGET_HAVE_LONG_LONG       TRUE
-#define SJIS_IS_ESCAPE_FREE         FALSE 
-
-#elif   COMPILER == MSC
-#define CMP_NAME            "Visual C++"
-#if     _MSC_VER >= 1200    /* Visual C++ V.6.0 or later    */
-    /* When HOST == TARGET  */
-#define ONE_PASS            TRUE
-#endif
-#define COMPILER_EXT        "_MSC_VER"
-#define COMPILER_EXT_VAL    "1500"
-    /* VC 2002: "1300", VC 2003: "1310", VC 2005: "1400", VC 2008: "1500"   */
-#define COMPILER_EXT2       "_MSC_FULL_VER"
-#define COMPILER_EXT2_VAL   "150021022"
-    /* VC 2002:13009466, VC 2003:13103077, VC 2005: "140050320" */
-    /* VC 2008 "150021022"  */
-#define COMPILER_SP1        "_MSC_EXTENSIONS"
-#define COMPILER_SP1_VAL    "1"
-#define COMPILER_SP2        "_M_IX86"
-#define COMPILER_SP2_VAL    "600"       /* Overwritten by -G<n> opt */
-#define COMPILER_SP3        "_M_IX86_FP"
-#define COMPILER_SP3_VAL    "0"         /* Overwritten by -arch:* option    */
-#define COMPILER_SP4        "_INTEGRAL_MAX_BITS"
-#define COMPILER_SP4_VAL    "64"        /* VC 2003, VC2005, VC2008: 64      */
-#define TARGET_HAVE_LONG_LONG       TRUE
-    /* __int64 instead of long long (VC 2.0 through 8.0)    */
-#define EXPAND_PRAGMA       TRUE
-#define HAVE_DIGRAPHS       TRUE
-#define BIGFIVE_IS_ESCAPE_FREE      TRUE 
-#define SEARCH_INIT         SOURCE
-
-#elif   COMPILER == BORLANDC
-#define CMP_NAME            "Borland C"
-#define ONE_PASS            TRUE
-#define COMPILER_STD2       "__TURBOC__"
-#if     __BORLANDC__        /* Borland C    */
-#define COMPILER_STD2_VAL   "0x0550"
-    /* BC 2.0:"0x0297", BC 3.0:"0x0400", BC 4.0:"0x0452", BC 5.5:"0x0550"   */
-#define COMPILER_EXT        "__BORLANDC__"
-#define COMPILER_EXT_VAL    "0x0550"
-    /* BC 2.0:"0x0297", BC 3.0:"0x0400", BC 4.0:"0x0452", BC 5.5:"0x0550"   */
-#define COMPILER_CPLUS      "__BCPLUSPLUS__"
-#define COMPILER_CPLUS_VAL  "0x0550"            /* BC++ 2.0: "0x0200",
-        BC++ 3.0: "0x0300", BC++ 4.0: "0x0320", BC++ 5.5: "0x0550"  */
-#define SEARCH_INIT         (CURRENT & SOURCE)
-    /* BC++ 5.*: (CURRENT & SOURCE), BC++ 4.* or former: CURRENT    */
-#if     __BORLANDC__ >= 0x550
-#define TARGET_HAVE_LONG_LONG       TRUE    /* __int64 instead of long long */
-#endif
-#endif  /* __BORLANDC__ */
-#endif  /* COMPILER == BORLANDC */
 
 #ifndef SJIS_IS_ESCAPE_FREE
 #define SJIS_IS_ESCAPE_FREE TRUE    /* or FALSE following your compiler     */
@@ -375,6 +338,23 @@
 #define ISO2022_JP_IS_ESCAPE_FREE   TRUE    /* Do not treat specially       */
 #define TARGET_HAVE_LONG_LONG       TRUE    /* dummy    */
 #define STDC_VERSION        199409L /* Initial value of __STDC_VERSION__    */
+#endif
+
+/*
+ * Each OS has some different target architectures.  The followings define
+ * the target CPU.
+ * MCPP defines some predefined macros based on the CPU macro, and possibly
+ * redefine them on an execution time by some options.
+ */
+#if     defined (__x86_64__) || defined (__amd64__) || defined (_M_AMD64)    \
+            || defined (_AMD64_) || defined (_X64_)
+#define CPU                 "x86_64"
+#elif   defined (__ppc64__) || defined (__powerpc64__)
+#define CPU                 "ppc64"
+#elif   defined (__ppc__) || defined (__powerpc__)
+#define CPU                 "ppc"
+#else   /* Defaults to i386 */
+#define CPU                 "i386"
 #endif
 
 /*
@@ -519,6 +499,7 @@
 #if     __GNUC__ >= 3
 #define HAVE_INTMAX_T               TRUE
 #define HAVE_INTTYPES_H             TRUE
+#define HAVE_STDINT_H               TRUE
 #endif
 #define HOST_HAVE_LONG_LONG         TRUE 
 #if     HOST_SYSTEM == SYS_LINUX

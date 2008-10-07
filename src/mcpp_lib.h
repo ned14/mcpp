@@ -6,7 +6,8 @@
 #include    "mcpp_out.h"            /* declaration of OUTDEST   */
 #endif
 
-#if _WIN32 || __CYGWIN__ || __MINGW32__
+#if _WIN32 || _WIN64 || __CYGWIN__ || __CYGWIN64__ || __MINGW32__   \
+            || __MINGW64__
 #if     DLL_EXPORT || (__CYGWIN__ && PIC)
 #define DLL_DECL    __declspec( dllexport)
 #elif   DLL_IMPORT

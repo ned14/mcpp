@@ -95,7 +95,7 @@
  * OBJEXT is the suffix to denote "object" file.
  */
 #ifndef OBJEXT
-#if     SYS_FAMILY == SYS_UNIX
+#if     SYS_FAMILY == SYS_UNIX || HOST_COMPILER == GNUC
 #define OBJEXT     "o"
 #elif   SYS_FAMILY == SYS_WIN
 #define OBJEXT     "obj"
@@ -116,6 +116,10 @@ static void     def_a_macro( int opt, char * def);
                 /* Do a -D option                   */
 static void     chk_opts( int sflag, int trad);
                 /* Check consistency of options     */
+#if COMPILER != GNUC
+static void     init_cpu_macro( int gval, int sse);
+                /* Predefine CPU-dependent macros   */
+#endif
 static void     init_predefines( void);
                 /* Set and unset predefined macros  */
 static void     init_std_defines( void);
@@ -302,6 +306,8 @@ static char *   argv0;      /* argv[ 0] for usage() and version()   */
 static int      ansi;           /* __STRICT_ANSI__ flag for GNUC    */ 
 static int      compat_mode;
                 /* "Compatible" mode of recursive macro expansion   */
+#define MAX_ARCH_LEN    16
+static char     arch[ MAX_ARCH_LEN];    /* -arch or -m64, -m32 options      */
 
 #if COMPILER == GNUC
 #define N_QUOTE_DIR     8
@@ -318,8 +324,6 @@ static int      gcc_maj_ver;                    /* __GNUC__         */
 static int      gcc_min_ver;                    /* __GNUC_MINOR__   */
 static int      dDflag = FALSE;         /* Flag of -dD option       */
 static int      dMflag = FALSE;         /* Flag of -dM option       */
-#define MAX_ARCH_LEN    16
-static char     arch[ MAX_ARCH_LEN];        /* -arch or -m32 option */
 #endif
 
 #if COMPILER == GNUC || COMPILER == MSC
@@ -416,6 +420,7 @@ void    do_options(
     int         sflag;                      /* -S option or similar */
     int         trad;                       /* -traditional         */
     int         old_mode;                   /* backup of 'mcpp_mode'*/
+    int         gval, sse;
     char *      cp;
     int         i;
 #if COMPILER == GNUC
@@ -430,6 +435,8 @@ void    do_options(
 
     argv0 = argv[ 0];
     nflag = unset_sys_dirs = show_path = sflag = trad = FALSE;
+    arch[ 0] = 0;
+    gval = sse = 0;
     set_cplus_dir = TRUE;
 
     /* Get current directory for -I option and #pragma once */
@@ -447,7 +454,6 @@ void    do_options(
     gcc_min_ver = atoi( defp->repl);
     integrated_cpp = ((gcc_maj_ver == 3 && gcc_min_ver >= 3)
             || gcc_maj_ver == 4);
-    arch[ 0] = 0;
 #endif
 #if COMPILER == GNUC || COMPILER == MSC
     option_flags.dollar_in_name = TRUE;
@@ -492,10 +498,10 @@ plus:
                 usage( opt);
             }
 #endif
-        case '2':                   /* Revert digraphs recognition  */
+        case '2':                   /* Reverse digraphs recognition */
             option_flags.dig = ! option_flags.dig;
             break;
-        case '3':                   /* Revert trigraph recogniion   */
+        case '3':                   /* Reverse trigraph recogniion  */
             option_flags.trig = ! option_flags.trig;
             break;
 
@@ -557,12 +563,10 @@ plus:
             if (memcmp( mcpp_optarg, "rch", 3) == 0) {
                 if (str_eq( mcpp_optarg + 3, ":SSE")        /* -arch:SSE    */
                         || str_eq( mcpp_optarg + 3, ":sse"))
-                    look_and_install( "_M_IX86_FP", DEF_NOARGS_PREDEF, null
-                            , "1");
+                    sse = 1;
                 else if (str_eq( mcpp_optarg + 3, ":SSE2")  /* -arch:SSE2   */
                         || str_eq( mcpp_optarg + 3, ":sse2"))
-                    look_and_install( "_M_IX86_FP", DEF_NOARGS_PREDEF, null
-                            , "2");
+                    sse = 2;
                 /* Else ignore  */
             } else {
                 usage( opt);
@@ -594,15 +598,15 @@ plus:
                 usage( opt);
             break;                  /* Else ignore this option      */
         case 'd':
-            if (str_eq( mcpp_optarg, "M"))       {          /* -dM          */
+            if (str_eq( mcpp_optarg, "M")) {                /* -dM          */
                 dMflag = TRUE;
                 no_output++;
-            } else if (str_eq( mcpp_optarg, "D"))  {        /* -dD          */
+            } else if (str_eq( mcpp_optarg, "D")) {         /* -dD          */
                 dDflag = TRUE;
             } else if (str_eq( mcpp_optarg, "igraphs")) {   /* -digraphs    */
                 option_flags.dig = TRUE;
             } else if (str_eq( mcpp_optarg, "umpbase")) {   /* -dumpbase    */
-                ;                                   /* Ignore       */
+                ;                                           /* Ignore       */
             } else {
                 usage( opt);
             }
@@ -681,14 +685,12 @@ plus:
 #elif COMPILER == MSC
         case 'G':
             if (*(mcpp_optarg + 1) == EOS) {    /* -Gx              */
-                char    val[ 4] = "000";
-
                 switch (*mcpp_optarg) {
                 case '3':   case '4':   case '5':   case '6':
-                    *val = *mcpp_optarg;    /* "300", "400", "500", "600"   */
+                    gval = *mcpp_optarg;
                     break;
                 case 'B':                   /* -GB                  */
-                    *val = '6';
+                    gval = '6';
                     break;
                 case 'R':
                     look_and_install( "_CPPRTTI", DEF_NOARGS_PREDEF, null
@@ -705,9 +707,6 @@ plus:
                 default :
                     mcpp_fprintf( ERR, warning, opt, mcpp_optarg);
                 }
-                if (*val)                   /* Redefine _M_IX86     */
-                    look_and_install( COMPILER_SP2, DEF_NOARGS_PREDEF, null
-                            , val);
             } else {
                 usage( opt);
             }
@@ -890,23 +889,21 @@ plus:
             mkdep |= MD_MKDEP;
             break;
 
-#if COMPILER == GNUC
+#if SYS_FAMILY == SYS_UNIX
         case 'm':
             if (str_eq( mcpp_optarg, "64")) {               /* -m64 */
-                if (! str_eq( CPU_STD2, "__x86_64__")
-                        && ! str_eq( CPU_STD2, "__ppc64__")) {
-                    /* -m64 option is valid only for x86_64 and ppc64   */
-                    mcpp_fputs( "-m64 option is invalid\n", ERR);
-                    longjmp( error_exit, -1);
-                }
-                /* Else ignore, since this is the default   */
+                if (str_eq( CPU, "i386"))
+                    strcpy( arch, "x86_64");
+                else if (str_eq( CPU, "ppc"))
+                    strcpy( arch, "ppc64");
+                /* Else ignore  */
                 break;
             } else if (str_eq( mcpp_optarg, "32")) {        /* -m32 */
-                if (str_eq( CPU_STD2, "__x86_64__"))
+                if (str_eq( CPU, "x86_64"))
                     strcpy( arch, "i386");
-                else if (str_eq( CPU_STD2, "__ppc64__"))
+                else if (str_eq( CPU, "ppc64"))
                     strcpy( arch, "ppc");
-                /* Else ignore, since this is the default   */
+                /* Else ignore  */
                 break;
             } else if (str_eq( mcpp_optarg, "mmx")) {   /* -mmmx    */
                 look_and_install( "__MMX__", DEF_NOARGS_PREDEF, null, "1");
@@ -915,6 +912,8 @@ plus:
                 undef_list[ undef_cnt++] = "__MMX__";
                 break;
             }
+#endif  /* SYS_FAMILY == UNIX   */
+#if COMPILER == GNUC
 #if SYSTEM == SYS_CYGWIN
             if (str_eq( mcpp_optarg, "no-cygwin")) {    /* -mno-cygwin      */
                 no_cygwin = TRUE;
@@ -1270,41 +1269,25 @@ Version:
                         /* Search framework[] next to the directory */
 #endif
 
-#if COMPILER == GNUC
-#if SYSTEM == SYS_MAC
-    if (arch[ 0]) {                 /* -arch option is specified    */
-        if (((str_eq( CPU_STD2, "__i386__") || str_eq( CPU_STD2, "__x86_64__"))
+#if COMPILER == GNUC && SYSTEM == SYS_MAC
+    if (arch[ 0]) {             /* -arch option has been specified  */
+        if (((str_eq( CPU, "i386") || str_eq( CPU, "x86_64"))
                 && (! str_eq( arch, "i386") && ! str_eq( arch, "x86_64")))
-            || ((str_eq( CPU_STD2, "__ppc__")
-                    || str_eq( CPU_STD2, "__ppc64__"))
+            || ((str_eq( CPU, "ppc") || str_eq( CPU, "ppc64"))
                 && (! str_eq( arch, "ppc") && ! str_eq( arch, "ppc64")))) {
             mcpp_fprintf( ERR, "Wrong argument of -arch option: %s\n", arch);
             longjmp( error_exit, -1);
         }
-#else
-    if (arch[ 0]) {                 /* -m32 option is specified     */
+    }
 #endif
-        /* The CPU-specific-macros will be defined in init_gcc_macro(). */
-        undefine( CPU_STD2);
-#ifdef  CPU_OLD
-        undefine( CPU_OLD);
+    if (! arch[ 0]) {
+        /* None of -arch, -m32 or -m64 options has been specified.  */
+        /* The CPU-specific-macros will be defined in init_cpu_macro(). */
+        strcpy( arch, CPU);
+    }
+#if COMPILER != GNUC
+    init_cpu_macro( gval, sse);
 #endif
-#ifdef  CPU_STD1
-        undefine( CPU_STD1);
-#endif
-#ifdef  CPU_SP_STD
-        undefine( CPU_SP_STD);
-#endif
-#ifdef  CPU_SP_OLD
-        undefine( CPU_SP_OLD);
-#endif
-    } else if (str_eq( CPU_STD2, "__i386__") || str_eq( CPU_STD2, "__ppc__")
-            || str_eq( CPU_STD2, "__x86_64__")
-            || str_eq( CPU_STD2, "__ppc64__")) {
-        memcpy( arch, CPU_STD2+2, strlen( CPU_STD2) - 4);
-        arch[ strlen( CPU_STD2) - 4] = EOS;
-    }   /* GCC for other CPUs are not bi-targeted for 32bit and 64bit mode  */
-#endif  /* COMPILER == GNUC */
 
 #if COMPILER == GNUC
     if (sysdir < sysdir_end) {
@@ -1371,7 +1354,7 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.7.1 (2008/05) "
+        "MCPP V.2.7.2-prerelease (2008/10) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif
@@ -1471,6 +1454,10 @@ static void usage(
 "-j          Don't output the source line in diagnostics.\n",
 "-M, -MM, -MD, -MMD, -MP, -MQ target, -MT target, -MF file\n",
 "            Output source file dependency line for makefile.\n",
+#if SYS_FAMILY == SYS_UNIX
+"-m32        Change target CPU from x86_64, ppc64 to i386, ppc, respectively.\n",
+"-m64        Change target CPU from i386, ppc to x86_64, ppc64, respectively.\n",
+#endif
 "-N          Don't predefine any non-standard macros.\n",
 
 #if COMPILER == GNUC
@@ -1613,8 +1600,12 @@ static void set_opt_list(
     "b",
 #endif
 
+#if SYS_FAMILY == SYS_UNIX
+    "m:",
+#endif
+
 #if COMPILER == GNUC
-    "$A:a:cd:Ef:g:i:l:m:n:r:s:t:u:O:p:q:wx:",
+    "$A:a:cd:Ef:g:i:l:n:r:s:t:u:O:p:q:wx:",
 #elif COMPILER == MSC
     "Aa:F:G:JR:T:XZ:uw",
 #elif   COMPILER == LCC
@@ -1803,6 +1794,75 @@ static void     chk_opts(
     expand_init( compat_mode, ansi);
                 /* Set function pointer to macro expansion routine  */
 }
+
+#if COMPILER != GNUC
+
+static void init_cpu_macro (
+    int     gval,               /* Argument of -G option for MSC    */
+    int     sse                 /* Argument of -sse: option for MSC */
+)
+/*
+ * Set predefined macros for CPU.
+ * This routine is called from do_options() only once.
+ * GCC-specific-build defines these macro by init_gcc_macro().
+ */
+{
+    const char *    cpu_macro[][ 7] = {
+#if SYS_FAMILY == SYS_UNIX
+            { "__i386__"
+#if SYSTEM == SYS_CYGWIN
+                , "_X86_"
+#endif
+                , NULL,},
+            { "__x86_64__", "__amd64__", NULL,},
+            { "__ppc__", "__powerpc__", NULL,},
+            { "__ppc64__", "__powerpc64__", NULL,}
+#elif   SYS_FAMILY == SYS_WIN
+            { "_WIN32", "__WIN32__", "_X86_"
+#if SYSTEM == SYS_MINGW
+                , "__i386__"
+#endif
+                , NULL,},
+            { "_WIN32", "_WIN64", "__WIN64__", "_M_AMD64", "_AMD64_", "_X64_"
+                , NULL,},       /* "_WIN32" is defined even on Windows 64   */
+            { NULL,},                               /* Not supported  */
+            { NULL,}                                /* Not supported  */
+#endif
+        };
+    const char **   macro;
+    int             index;
+
+    if (str_eq( arch, "i386"))
+        index = 0;
+    else if (str_eq( arch, "x86_64"))
+        index = 1;
+    else if (str_eq( arch, "ppc"))
+        index = 2;
+    else if (str_eq( arch, "ppc64"))
+        index = 3;
+    else
+        index = 9;
+
+    if (index == 9) {                               /* Unknown CPU  */
+        look_and_install( "__" CPU "__", DEF_NOARGS_PREDEF, null, "1");
+        return;
+    }
+    macro = cpu_macro[ index];
+    while (*macro)
+        look_and_install( *macro++, DEF_NOARGS_PREDEF, null, "1");
+#if SYS_FAMILY == SYS_WIN
+    if (index == 0) {
+        char    val[] = "600";
+        if (gval)
+            val[ 0] = gval;
+        look_and_install( "_M_IX86", DEF_NOARGS_PREDEF, null, val);
+        val[ 0] = '0' + sse;
+        val[ 1] = '\0';
+        look_and_install( "_M_IX86_FP", DEF_NOARGS_PREDEF, null, val);
+    }
+#endif
+}
+#endif  /* COMPILER != GNUC */
 
 static void init_predefines( void)
 /*
@@ -2505,7 +2565,7 @@ static char *   norm_path(
             mingw_dir = xmalloc( mingw_dir_len + 1);
             strcpy( mingw_dir, MINGW_DIRECTORY);
         }
-        cp1 = xmalloc( mingw_dir_len + len);
+        cp1 = xmalloc( mingw_dir_len + len + 1);
         strcpy( cp1, mingw_dir);
         strcat( cp1, norm_name + 6);    /* Convert to absolute path */
         free( norm_name);
@@ -2652,18 +2712,16 @@ static void init_gcc_macro( void)
     if (nflag)                                  /* -undef option    */
         goto  undef_special;
 
-    tmp = xmalloc( strlen( INC_DIR) + strlen( "/mcpp-gcc") + MAX_ARCH_LEN);
-#if     SYSTEM == SYS_CYGWIN
+    tmp = xmalloc( strlen( INC_DIR) + strlen( "/mingw/mcpp-gcc-")
+            + strlen( arch) + 1);
+#if SYSTEM == SYS_CYGWIN
     if (no_cygwin) {
-        sprintf( tmp, "%s/%s/mcpp-gcc-%s", INC_DIR, "mingw", arch);
+        sprintf( tmp, "%s/mingw/mcpp-gcc-%s", INC_DIR, arch);
     } else {
         sprintf( tmp, "%s/mcpp-gcc-%s", INC_DIR, arch);
     }
 #else
-    if (arch[ 0])                       /* i386, x86_64, ppc, ppc64 */
-        sprintf( tmp, "%s/mcpp-gcc-%s", INC_DIR, arch);
-    else
-        sprintf( tmp, "%s/mcpp-gcc", INC_DIR);
+    sprintf( tmp, "%s/mcpp-gcc-%s", INC_DIR, arch);
 #endif
     include_dir = norm_path( tmp, NULL, TRUE, FALSE);
     free( tmp);
@@ -2681,8 +2739,8 @@ static void init_gcc_macro( void)
                 , gcc_maj_ver, gcc_min_ver, cp);
             /* Note that norm_path() append a PATH_DELIM.   */
         if ((fp = fopen( fname, "r")) == NULL) {
-            mcpp_fprintf( ERR, "Predefined macro file '%s' is not found\n"
-                    , fname);
+            mcpp_fprintf( ERR, "The mode for %s has not been installed.\n"
+                    , arch);
             longjmp( error_exit, -1);
         }
         nargs = i ? 0 : DEF_NOARGS_PREDEF_OLD;
@@ -3414,6 +3472,9 @@ search:
 
     if (option_flags.z) {
         no_output++;        /* Don't output the included file       */
+        if (include_nest == 2)
+            mcpp_fprintf( OUT, "#include \"%s\"\n", fullname);
+            /* Output #include line instead, if it is in main source file   */
     } else if (! include_opt) {     /* Do not sharp() on -include   */
         src_line = 1;                   /* Working on line 1 now    */
         sharp( NULL, 1);    /* Print out the included file name     */
@@ -4687,7 +4748,7 @@ static void dump_path( void)
  *  Use this mcpp_getopt() for mcpp.
  */
 
-/* Based on the public-domain-software released by AT&T.    */
+/* Based on the public-domain-software released by AT&T in 1985.    */
 
 #define OPTERR( s, c)   if (mcpp_opterr) {  \
     mcpp_fputs( argv[0], ERR);  \

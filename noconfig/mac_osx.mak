@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.7.1 for Mac OS X / GCC / GNU make
-#       2008/05 kmatsui
+# makefile to compile MCPP version 2.7.2 for Mac OS X / GCC / GNU make
+#       2008/09 kmatsui
 #
 # First, you must edit NAME, GCCDIR, BINDIR, INCDIR, 
 #       gcc_maj_ver, gcc_min_ver, arch, target_cc.
@@ -145,7 +145,7 @@ install :
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'   \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'  \
-            '$(INCDIR)' SYS_MAC $(arch) $(arch) $(target_cc)
+            '$(INCDIR)' SYS_MAC $(arch) $(target_cc)
 endif
 
 clean	:
@@ -171,12 +171,12 @@ mcpplib_a:	$(OBJS)
 	ar -rv libmcpp.a $(OBJS)
 
 # shared library
-# mcpp 2.7: 1, mcpp 2.7.1: 2
-CUR = 2
-# mcpp 2.7: 0, mcpp 2.7.1: 0
+# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2, mcpp 2.7.2: 3
+CUR = 3
+# mcpp 2.6.3: 0, mcpp 2.6.4: 1, mcpp 2.7, 2.7.1, 2.7.2: 0
 REV = 0
-# mcpp 2.7: 1, mcpp 2.7.1: 2
-AGE = 2
+# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2, mcpp 2.7.2: 3
+AGE = 3
 SHLIB_VER = 0.$(CUR).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 
@@ -193,7 +193,7 @@ mcpplib_install:
 	ln -sf libmcpp.$(SHLIB_VER).dylib $(LIBDIR)/libmcpp.dylib
 	ln -sf libmcpp.$(SHLIB_VER).dylib $(LIBDIR)/libmcpp.0.dylib
 	cp mcpp_lib.h mcpp_out.h $(INCDIR)
-    # You should do 'ldconfig' as a root after install.
+# You should do 'ldconfig' as a root after install.
 	$(CC) -o $(NAME) main_libmcpp.c -l $(NAME)
 	install -s $(NAME) $(BINDIR)
 mcpplib_uninstall:

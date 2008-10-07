@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.7.1 for FreeBSD / GCC / UCB make
-#       2008/05 kmatsui
+# makefile to compile MCPP version 2.7.2 for FreeBSD / GCC / UCB make
+#       2008/09 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -62,22 +62,18 @@ gcc_min_ver = 4
 # INCDIR:   the compiler's version specific include directory, if it exists,
 #       /usr/local/include or /usr/include, if it does not exist
 INCDIR = /usr/local/include
-#INCDIR ?= /usr/local/gcc-4.1.1/lib/gcc-lib/i386-unknown-freebsd6.2/4.1.1/include
+#INCDIR ?= /usr/local/gcc-4.1.1/lib/gcc-lib/i386-unknown-freebsd6.3/4.1.1/include
 CPPOPTS = -DCOMPILER=$(COMPILER) -DINC_DIR=\"$(INCDIR)\"
 
 # BINDIR:   the directory where cpp0 or cc1 resides
 BINDIR ?= /usr/libexec
-#BINDIR ?= /usr/local/gcc-4.1.1/lib/gcc-lib/i386-unknown-freebsd6.2/4.1.1
+#BINDIR ?= /usr/local/gcc-4.1.1/lib/gcc-lib/i386-unknown-freebsd6.3/4.1.1
 target = ''
-#target = i386-unknown-freebsd6.2
+#target = i386-unknown-freebsd6.3
 cpu = i386
 #cpu = ppc
 #cpu = x86_64
 #cpu = ppc64
-# If cpu is x86_64 or ppc64, set cpu32 as i386 or ppc respectively
-# If cpu is neither x86_64 nor ppc64, set cpu32 as cpu
-cpu32 = i386
-#cpu32 = ppc
 .if $(gcc_maj_ver) == 2
 cpp_call = $(BINDIR)/cpp0
 .else
@@ -132,7 +128,7 @@ install :
 .if ! empty(COMPILER) && $(COMPILER) == GNUC
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'    \
             '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'  \
-            '$(INCDIR)' SYS_FREEBSD $(cpu) $(cpu32)
+            '$(INCDIR)' SYS_FREEBSD $(cpu)
 .endif
 
 clean	:
@@ -157,12 +153,12 @@ mcpplib_a:  $(OBJS)
 	ar -rv libmcpp.a $(OBJS)
 
 # shared library
-# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2
-CUR = 2
-# mcpp 2.6.3: 0, mcpp 2.6.4: 1, mcpp 2.7: 0, mcpp 2.7.1: 0
+# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2, mcpp 2.7.2: 3
+CUR = 3
+# mcpp 2.6.3: 0, mcpp 2.6.4: 1, mcpp 2.7, 2.7.1, 2.7.2: 0
 REV = 0
-# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2
-AGE = 2
+# mcpp 2.6.*: 0, mcpp 2.7: 1, mcpp 2.7.1: 2, mcpp 2.7.2: 3
+AGE = 3
 SHLIB_VER = 0.$(CUR).$(REV)
 SOBJS = main.so directive.so eval.so expand.so support.so system.so mbchar.so
 .SUFFIXES: .so

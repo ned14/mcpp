@@ -1,6 +1,6 @@
 #!/bin/sh
 # script to set GNU CPP or CC1, CC1PLUS to be called from gcc
-# ./unset_mcpp.sh $gcc_path $gcc_maj_ver $gcc_min_ver $cpp_call $CC $CXX    \
+# ./unset_mcpp.sh $gcc_path $gcc_maj_ver $gcc_min_ver $cpp_call $CC $CXX
 #       x$EXEEXT $LN_S $inc_dir $host_system $target_cc
 
 gcc_maj_ver=$2
@@ -25,8 +25,8 @@ fi
 echo "  rm -fr $inc_dir/mcpp-gcc*"
 rm -fr $inc_dir/mcpp-gcc*
 if test $host_system = SYS_CYGWIN; then
-    echo "  rm -fr $inc_dir/mingw/mcpp-gcc*"
-    rm -fr $inc_dir/mingw/mcpp-gcc*
+    echo "  rm -fr $inc_dir/mingw"
+    rm -fr $inc_dir/mingw
 fi
 
 echo "  cd $cpp_path"

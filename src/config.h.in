@@ -39,8 +39,8 @@
 /* Define compiler-specific C++ include directory 4. */
 #undef CPLUS_INCLUDE_DIR4
 
-/* Define the cpu-specific-predefined-macro. */
-#undef CPU_OLD
+/* Define the cpu-specific-macro. */
+#undef CPU
 
 /* Define the name of CPU-specific OLD-style predefined macro. */
 #undef CPU_SP_OLD
@@ -53,12 +53,6 @@
 
 /* Define the value of CPU-specific STD-style predefined macro. */
 #undef CPU_SP_STD_VAL
-
-/* Define the cpu-specific-predefined-macro. */
-#undef CPU_STD1
-
-/* Define the cpu-specific-predefined-macro. */
-#undef CPU_STD2
 
 /* Define root directory of CYGWIN. */
 #undef CYGWIN_ROOT_DIRECTORY

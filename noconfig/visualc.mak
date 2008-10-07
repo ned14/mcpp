@@ -1,4 +1,4 @@
-# makefile to compile MCPP version 2.7.1 for Visual C / nmake
+# makefile to compile MCPP version 2.7.1 and later for Visual C / nmake
 #       2008/05 kmatsui
 # You must first edit BINDIR, LIBDIR and INCDIR according to your system.
 # To make compiler-independent-build of MCPP do:

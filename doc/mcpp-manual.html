@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7.1 (2008/05)<br>
+<h4>for V.2.7.2-prerelease (2008/10)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -227,8 +227,7 @@ The <i>OLDPREP</i> mode.<br>
 <p>There are differences in the macro expansion methods between Standard and pre-Standard modes.  Roughly speaking, this difference is the difference between C90 and pre-C90.  The biggest difference is the expansion of the function-like macros (macros with arguments).  For the arguments with macros, while in Standard mode, <b>mcpp</b> substitutes the parameter within the replacement list of the original macro after completely expanding the arguments, in pre-Standard, <b>mcpp</b> substitutes the parameter without expanding, then expands the argument at rescan time.</p>
 <p>Also, in Standard mode, a macro is not expanded recursively in principle, even if the macro definition is recursive directly or indirectly.  If there is a recursive macro definition in pre-Standard mode, it causes infinite recursion and becomes an error at expansion time.</p>
 <p>Handling of \ at line end is also different by mode.  In Standard mode, after processing the trigraph, the sequence of &lt;backslash&gt;&lt;newline&gt; gets deleted before tokenization, but in pre-Standard mode, these only get deleted when they are within the string literals or in a #define line.</p>
-<p>There is a subtle difference in tokenization (token parsing, decomposition to tokens).  In Standard mode, it tokenizes on "token based processing" principle.  To put it concretely, in Standard mode, spaces will be inserted surrounding the expanded macro to prevent the unexpected merging with its adjacent tokens.  In pre-Standard mode, traditional, convenient and tacit tokenization and the macro expansion methods of "character based text replacement" are left a trace.  About these, please see 
-<a href="cpp-test.html#2"> cpp-test.html#2</a>.</p>
+<p>There is a subtle difference in tokenization (token parsing, decomposition to tokens).  In Standard mode, it tokenizes on "token based processing" principle.  To put it concretely, in Standard mode, spaces will be inserted surrounding the expanded macro to prevent the unexpected merging with its adjacent tokens.  In pre-Standard mode, traditional, convenient and tacit tokenization and the macro expansion methods of "character based text replacement" are left a trace.  About these, please see <a href="cpp-test.html#2"> cpp-test.html#2</a>.</p>
 <p>In Standard mode, it handles the numeric token, called preprocessing number, according to the Standard specification.  In pre-Standard, the numeric tokens are the same as integer constant tokens or floating point tokens.  The suffix 'U', 'u', 'LL' and 'll' of the integer constant and the suffixes 'F', 'f', 'L' and 'l' of floating point are not recognized as a part of the tokens in pre-Standard.</p>
 <p>The string literals and character constants of wide characters are recognized as single tokens only in Standard mode.</p>
 <p>Digraph, #error, #pragma, and _Pragma() operator are available only in Standard mode.  Also, -S &lt;n&gt; option (strict-ansi specs) and -+ option (the one run as C++ preprocessor) are used only in Standard mode.  Pre-defined macros <tt>__STDC__</tt>, <tt>__STDC_VERSION__</tt> are defined in Standard mode, and they don't get defined in pre-Standard.</p>
@@ -236,8 +235,7 @@ The <i>OLDPREP</i> mode.<br>
 <p>On the other hand, #assert, #asm (#endasm), #put_defines and #debug are available in pre-Standard mode only.</p>
 <p>#if expression is evaluated in long / unsigned long or long long / unsigned long long at Standard mode, and in (signed) long only at pre-Standard.  sizeof (type) in #if expression can be used only in pre-Standard.</p>
 <p>Trigraphs and UCN (universal character name) are available only in <i>STD</i> mode.</p>
-<p>The output of diagnostic messages is also slightly different between the modes.  Please see chapter 
-<a href="#5"> 5</a> for details.</p>
+<p>The output of diagnostic messages is also slightly different between the modes.  Please see chapter <a href="#5"> 5</a> for details.</p>
 <p>Any other items, which do not have any distinct rules between K&amp;R 1st and the Standards, follow the C90 rules in pre-Standard mode.</p>
 <p>The difference of <i>OLDPREP</i> mode from <i>KR</i> mode and the difference of <i>POSTSTD</i> and <i>COMPAT</i> modes from <i>STD</i> mode are as follows:</p>
 <ul>
@@ -253,8 +251,7 @@ The <i>OLDPREP</i> mode.<br>
 <li><i>COMPAT</i><br>
 Expand recursive macro more than the Standard's specification.  On expanding recursive macro, set the range of non-re-replacing of the same name narrower than the Standard.<br>
 <br>
-Refer to 
-<a href="cpp-test.html#3.4.26"> cpp-test.html#3.4.26</a> about the specifications of recursive macro expansion.  See test-t/recurs.t for a sample of recursive macro. *4<br>
+Refer to <a href="cpp-test.html#3.4.26"> cpp-test.html#3.4.26</a> about the specifications of recursive macro expansion.  See test-t/recurs.t for a sample of recursive macro. *4<br>
 <br>
 <li><i>POSTSTD</i><br>
 This mode differs from <i>STD</i> mode in the following points:<br>
@@ -314,16 +311,13 @@ A macro with arguments can be defined by this option.<br>
 This option can be specified repeatedly.<br>
 <br>
 <li><samp>-e &lt;encoding&gt;</samp><br>
-Change a multi-byte character encoding to &lt;encoding&gt;. For &lt;encoding&gt;, refer to 
-<a href="#2.8"> 2.8</a>.<br>
+Change a multi-byte character encoding to &lt;encoding&gt;. For &lt;encoding&gt;, refer to <a href="#2.8"> 2.8</a>.<br>
 <br>
 <li><samp>-I &lt;directory&gt;</samp><br>
-Specify the first directory in the include directory search path order with &lt;directory&gt;.  For a search path, refer to 
-<a href="#4.2"> 4.2</a>.  If a directory name contains spaces, it has to be enclosed with " and ".<br>
+Specify the first directory in the include directory search path order with &lt;directory&gt;.  For a search path, refer to <a href="#4.2"> 4.2</a>.  If a directory name contains spaces, it has to be enclosed with " and ".<br>
 <br>
 <li><samp>-I 1, -I 2, -I 3</samp><br>
-Specify a directory from which <b>mcpp</b> begins searching when it encounters a #include "header" directive (i.e. not &lt;header&gt; format).  -I1, -I2 and -I3 indicate the current directory, the source file (i.e. includer) directory, and the both respectively.  For details, see 
-<a href="#4.2"> 4.2</a>.<br>
+Specify a directory from which <b>mcpp</b> begins searching when it encounters a #include "header" directive (i.e. not &lt;header&gt; format).  -I1, -I2 and -I3 indicate the current directory, the source file (i.e. includer) directory, and the both respectively.  For details, see <a href="#4.2"> 4.2</a>.<br>
 <br>
 <li><samp>-j</samp><br>
 On outputting a diagnostic message, <b>mcpp</b> displays only one line of diagnostic without additional information, such as source lines.  (By default, one line of diagnostic message is followed by a source code line having a problem.  If the source code line in question is found in a #included file, all the #including file names and including line numbers are also displayed in sequence.  For a diagnostic on macro, <b>mcpp</b> displays also its definition information).<br>
@@ -387,11 +381,10 @@ Output the <b>mcpp</b> version and a search order of include directories to stde
 However, when -K option, explained at <a href="#2.4">2.4</a>, is specified or #pragma MCPP macro_call directive, explained at <a href="#3.5.8">3.5.8</a>, is specified, this option changes its meaning.<br>
 <br>
 <li><samp>-W &lt;level&gt;</samp><br>
-Specify a warning level with &lt;level&gt;.  &lt;level&gt; should be 0 or "OR" of any one or more values of 1, 2, 4, 8 and 16.  1, 2, 4, 8 or 16 indicates a warning class.  For example, if -W 5 is specified, warnings of classes 1 and 4 are output.  If 0 is specified, no warnings are output.  If this option is specified several times, all the specified values are "ORed" together.  For example, -W 1 -W 2 -W 4 is equivalent to -W 7.  Instead of -W 7 you can also write as -W "1|2|4". (Enclose with " and " so as | is not interpreted as a pipe.)  If this option is omitted, -W 1 is assumed.  For warning messages, refer from
-<a href="#5.5"> 5.5</a> through <a href="#5.9"> 5.9</a>.<br>
+Specify a warning level with &lt;level&gt;.  &lt;level&gt; should be 0 or "OR" of any one or more values of 1, 2, 4, 8 and 16.  1, 2, 4, 8 or 16 indicates a warning class.  For example, if -W 5 is specified, warnings of classes 1 and 4 are output.  If 0 is specified, no warnings are output.  If this option is specified several times, all the specified values are "ORed" together.  For example, -W 1 -W 2 -W 4 is equivalent to -W 7.  Instead of -W 7 you can also write as -W "1|2|4". (Enclose with " and " so as | is not interpreted as a pipe.)  If this option is omitted, -W 1 is assumed.  For warning messages, refer from <a href="#5.5"> 5.5</a> through <a href="#5.9"> 5.9</a>.<br>
 <br>
 <li><samp>-z</samp><br>
-The preprocessing result of the #included files is not output, but macros are defined.  This option is used in debug of preprocessing.<br>
+The preprocessing results of the #included files are not output, but macros are defined.  The #include lines themselves are output instead, though #include lines in an included file is not output.  This option is used in debug of preprocessing.<br>
 </ul>
 <p>Note:</p>
 <p>*1 <b>mcpp</b> differs from GCC in that:</p>
@@ -402,8 +395,7 @@ The preprocessing result of the #included files is not output, but macros are de
 <br>
 
 <h2><a name="2.4" href="#toc.2.4">2.4. Options by <b>mcpp</b> Behavioral Modes</a></h2>
-<p><b>mcpp</b> has several behavioral modes.  For their specifications refer to sec 
-<a href="#2.1"> 2.1</a>.</p>
+<p><b>mcpp</b> has several behavioral modes.  For their specifications refer to sec <a href="#2.1"> 2.1</a>.</p>
 <p>This manual shows a list of various <b>mcpp</b> behaviors by mode, which may not be readable.  Please be patient.  In this manual, all the uppercased names that do not begin with "__" and displayed in italics, such as <i>DIGRAPHS_INIT</i>, <i>TRUE</i>, <i>FALSE</i>, etc, are macros defined in system.H.  These macros are only used for compiling <b>mcpp</b> itself and a <b>mcpp</b> executable generated does not predefine these macros.  You must understand this point clearly.</p>
 <p>The following options are available in Standard mode:</p>
 <ul>
@@ -425,14 +417,13 @@ These macros are disabled only by -ansi or -std=iso* options.<br>
 <li><samp>-V &lt;value&gt;</samp><br>
 Change the values of the predefined macros <tt>__STDC_VERSION__</tt> for C and <tt>__cplusplus</tt> for C++ to &lt;value&gt;.  &lt;value&gt; is of a long type. (In C95, C99, and C++ Standard, this value is set to 199409L, 199901L and 199711L, respectively.)  With <tt>__STDC__</tt> set to 0, <tt>__STDC_VERSION__</tt> is always set to 0L, overriding the -V option.<br>
 <br>
-If this option is omitted for C, <tt>__STDC_VERSION__</tt> is set to the value of <i>STDC_VERSION</i> in system.H. (For GCC V.2.7 - V.2.9, 199409L.  For others, 0L.)  If specifying -V199901L results in <tt>__STDC_VERSION__</tt> &gt;= 199901L, <b>mcpp</b> conforms to the following C99 specifications (See 
-<a href="#3.7"> 3.7</a>.):<br>
+If this option is omitted for C, <tt>__STDC_VERSION__</tt> is set to the value of <i>STDC_VERSION</i> in system.H. (For GCC V.2.7 - V.2.9, 199409L.  For others, 0L.)  If specifying -V199901L results in <tt>__STDC_VERSION__</tt> &gt;= 199901L, <b>mcpp</b> conforms to the following C99 specifications (See <a href="#3.7"> 3.7</a>.):<br>
 <br>
 <ol>
 <li>Treats the text from // to the end of a line as a comment. *3<br>
 <li>Allows the sequence of p+, P+, p-, and P-, as well as e+, E+, e-, and E-, in the preprocessing-number.  This is to represent a bit pattern of a floating-point number in Hex, like 0x1.FFFFFEp+128.<br>
 <li>Enables the _Pragma operator (A _Pragma( "foo bar") has the same effect as specifying a #pragma foo bar.)<br>
-<li><b>mcpp</b> compiled with the <i>EXPAND_PRAGMA</i> macro set to <i>TRUE</i> will macro-expand an argument on a #pragma line that does not begin with STDC or MCPP. (By default, <i>EXPAND_PRAGMA</i> is set to <i>FALSE</i> in other than Visual C-specific-build, so macro expansion does not occur.)<br>
+<li><b>mcpp</b> compiled with the <i>EXPAND_PRAGMA</i> macro set to <i>TRUE</i> will macro-expand an argument on a #pragma line that does not begin with STDC or MCPP. (By default, <i>EXPAND_PRAGMA</i> is set to <i>FALSE</i> in other than Visual C-specific-build and Borland C-specific-build, so macro expansion does not occur.)<br>
 <li>Allows an escape sequence of Universal-Character-Name (UCN) in identifiers, character constants, string literals and pp-numbers. (This is only enabled in <i>STD</i> mode.)<br>
 </ol>
 Note that although C99 provides for variable argument macros, <b>mcpp</b> allows them in the C90 and C++ modes. *4<br>
@@ -457,7 +448,7 @@ This option implies -k option.
 The -v option changes its meaning in this mode, and outputs more verbose notations.
 On the other hand, -a (-x assembler-with-cpp) or -C options automatically disable -K option. *6<br>
 <li><samp>-k</samp><br>
-Keep horizontal whitespaces ('\t' and space characters) without squeezing them into one space.
+Keep horizontal white spaces ('\t' and space characters) without squeezing them into one space.
 Comment is converted to spaces of the same length.
 This option is to keep column position of source file in preprocessed output except within macro expansion. (Column position of macros are known by -K option.) *7
 </ul>
@@ -480,6 +471,19 @@ Note that each '\v' and '\f' is converted to a space with or without this option
 <br>
 
 <h2><a name="2.5" href="#toc.2.5">2.5. Common Options Except for Some Compiler Systems</a></h2>
+<p>The following 2 options can be used on UNIX-like systems, for either of compiler-independent-build and GCC-specific-build.
+On GCC-specific-build, however, these will get an error if the GCC does not support them.</p>
+<ul>
+<li><samp>-m32</samp><br>
+Predefine macros for 32bit mode.
+If the CPU is <samp>x86_64</samp> or <samp>ppc64</samp>, predefined macros for 64bit mode are used by default.
+With this option, however, those for <samp>i386</samp> or <samp>ppc</samp> respectively are used.<br>
+<li><samp>-m64</samp><br>
+Predefine macros for 64bit mode.
+If the CPU is <samp>i386</samp> or <samp>ppc</samp>, predefined macros for 32bit mode are used by default.
+With this option, however, those for <samp>x86_64</samp> or <samp>ppc64</samp> respectively are used.<br>
+</ul>
+
 <p>Since GCC has so many options that GCC-specific-build of <b>mcpp</b> has some different options from the other builds in order to avoid conflicts with GCC.  Note that the options in compiler-independent-build are all the same even if compiled by GCC.  The options common to the builds other than GCC-specific are as follows.</p>
 <ul>
 <li><samp>-a</samp><br>
@@ -510,8 +514,7 @@ This option cannot be used in <i>POSTSTD</i> mode.<br>
 This manual calls this mode <b>lang-asm</b> mode.<br>
 This mode is recommended when you use <b>mcpp</b> as a macro processor for some text other than C/C++, for example, as a cpp called from xrdb.</p>
 <li><samp>-I-</samp><br>
-Cancel default include directories and enable only ones specified with an environment variable and the -I option.  Instead of -I-, GCC-specific-build uses -nostdinc.  In GCC, the -I- option provides quite different functionality.  See 
-<a href="#2.6"> 2.6</a>.<br>
+Cancel default include directories and enable only ones specified with an environment variable and the -I option.  Instead of -I-, GCC-specific-build uses -nostdinc.  In GCC, the -I- option provides quite different functionality.  See <a href="#2.6"> 2.6</a>.<br>
 </ul>
 <br>
 
@@ -526,9 +529,7 @@ gcc -Wp,-W31,-Q23
 </pre>
 <p>The -W31 and -Q23 options are passed to preprocessor.  The options you want to pass to preprocessor have to be specified following -Wp with each option delimited by ", ". *1, *2</p>
 <p>For other compiler systems, if their compiler driver source is available, it is recommended that this type of an almighty option should be added to the source.  If you modify the compiler driver source code in the way that, for example, when -P&lt;opt&gt; is specified, only -&lt;opt&gt; is passed to preprocessor, it would be very convenient because any options can be passed.</p>
-<p>An alternative way to use all the options of <b>mcpp</b> is to write a makefile in which first preprocess with <b>mcpp</b>, then compile the output file of <b>mcpp</b> as a source file.  For this method, refer to sections 
-<a href="#2.9"> 2.9</a> and 
-<a href="#2.10"> 2.10</a>.</p>
+<p>An alternative way to use all the options of <b>mcpp</b> is to write a makefile in which first preprocess with <b>mcpp</b>, then compile the output file of <b>mcpp</b> as a source file.  For this method, refer to sections <a href="#2.9"> 2.9</a> and <a href="#2.10"> 2.10</a>.</p>
 <p>The following options are available for some compiler-specific-builds.  The compiler-independent-build has not these options, of course.</p>
 
 <p>The following options are available for the LCC-Win32-specific-build.</p>
@@ -632,17 +633,12 @@ include the &lt;file&gt; before processing the main source file.  This is equiva
 <li><samp>-iquote &lt;dir&gt;</samp><br>
 Add &lt;dir&gt; to the include path for #include "header.h" form.<br>
 <li><samp>-isysroot=&lt;dir&gt;, -isysroot &lt;dir&gt;, --sysroot=&lt;dir&gt;, --sysroot &lt;dir&gt;</samp><br>
-Use &lt;dir&gt; as the logical root directory for system headers,
-that is, prefix &lt;dir&gt; to the path-list of system header directory.
+Use &lt;dir&gt; as the logical root directory for system headers, that is, prefix &lt;dir&gt; to the path-list of system header directory.
 For example, if the default include directory is /usr/include and &lt;dir&gt; is /Developer/SDKs/MacOSX10.4u.sdk, then alter the include directory to /Developer/SDKs/MacOSX10.4u.sdk/usr/include.<br>
 <li><samp>-isystem &lt;dir&gt;</samp><br>
 Add &lt;dir&gt; to the include path immediately before system-specific directories and immediately after site-specific directories.<br>
 <li><samp>-lang-c, -x c</samp><br>
 Perform C preprocessing.  The same as not specifying this option at all.<br>
-<li><samp>-m32</samp><br>
-Predefine macros for 32bit mode.
-If the CPU is <samp>x86_64</samp> or <samp>ppc64</samp>, predefined macros for 64bit mode are used by default.
-With this option, however, those for <samp>i386</samp> or <samp>ppc</samp> respectively are used.<br>
 <li><samp>-mmmx</samp><br>
 Predefine a macro <tt>__MMX__</tt> to 1.<br>
 <samp>-mno-mmx</samp> undefines <tt>__MMX__</tt>.<br>
@@ -741,13 +737,10 @@ Alter the include directory from /usr/include to /usr/include/mingw, and alter t
 <br>
 
 <h2><a name="2.7" href="#toc.2.7">2.7. Environment Variables</a></h2>
-<p>In compiler-independent-build of <b>mcpp</b>, the include directories are not set up other than /usr/include and /usr/local/include in UNIX systems.  Other directories, if required, must be specified using environment variables or runtime options.  The environment variable in compiler-independent-build is INCLUDE for C and CPLUS_INCLUDE for C++.  Searching the file starts from the includer's source directory by default. (refer to 
-<a href="#4.2"> 4.2</a> for the search rule.)  Besides, in Linux there is a confusion of include directories, hence special setup is necessary to cope with this problem.
+<p>In compiler-independent-build of <b>mcpp</b>, the include directories are not set up other than /usr/include and /usr/local/include in UNIX systems.  Other directories, if required, must be specified using environment variables or runtime options.  The environment variable in compiler-independent-build is INCLUDE for C and CPLUS_INCLUDE for C++.  Searching the file starts from the includer's source directory by default. (refer to <a href="#4.2"> 4.2</a> for the search rule.)  Besides, in Linux there is a confusion of include directories, hence special setup is necessary to cope with this problem.
 Refer to <a href="#3.9.9"> 3.9.9</a> for the problem.</p>
-<p>For the default include directories on GCC-specific-build, refer to noconfig/*.dif files, and for search rule and environment variable name, refer to 
-<a href="#4.2"> 4.2</a>.</p>
-<p>For the environment variable LC_ALL, LC_CTYPE, LANG, refer to 
-<a href="#2.8"> 2.8</a>.</p>
+<p>For the default include directories on GCC-specific-build, refer to noconfig/*.dif files, and for search rule and environment variable name, refer to <a href="#4.2"> 4.2</a>.</p>
+<p>For the environment variable LC_ALL, LC_CTYPE, LANG, refer to <a href="#2.8"> 2.8</a>.</p>
 <br>
 
 <h2><a name="2.8" href="#toc.2.8">2.8. Multi-Byte Character Encodings</a></h2>
@@ -808,8 +801,7 @@ Also GCC info says that, besides LANG, environmental variables LC_ALL and LC_CTY
 <p>Compilers whose preprocessor is integrated into themselves are called one-pass compilers.  These includes Visual C, Borland C, and LCC-Win32.  Such compilers are becoming more popular because they can achieve a little higher processing speed.  However, the time for preprocessing becomes shorter due to better hardware performance.  In the first place, there is much point for preprocessing to be a common phase, mostly independent of run-time environment and compiler systems. It is not desirable that one-pass compilers become more popular.  There will be more compiler-system-specific specifications.</p>
 <p>Anyhow, it is impossible to replace the preprocessor of a one-pass compiler with <b>mcpp</b>.  To use <b>mcpp</b>, a source program is preprocessed with <b>mcpp</b> and then the output is passed to a one-pass compiler.  As you see, preprocessing takes place twice.  It is useless but inevitable.  Using of <b>mcpp</b> still has merits of source checking and can avail functions not available in resident preprocessor.</p>
 <p>To use <b>mcpp</b> with a one-pass compiler, the procedure must be written in makefile.  For sample procedures, refer to the makefile re-compilation settings used to compile <b>mcpp</b> itself, such as visualc.mak, borlandc.mak, and lcc_w32.mak.</p>
-<p>Although GCC 3 or 4 compiler now integrates its preprocessing facility into itself, gcc provides an option to use an external preprocessor.  Use this option when <b>mcpp</b> is used. (See 
-<a href="#3.9.7"> 3.9.7</a>.)</p>
+<p>Although GCC 3 or 4 compiler now integrates its preprocessing facility into itself, gcc provides an option to use an external preprocessor.  Use this option when <b>mcpp</b> is used. (See <a href="#3.9.7"> 3.9.7</a>.)</p>
 <br>
 
 <h2><a name="2.10" href="#toc.2.10">2.10. How to Use <b>mcpp</b> in IDE</a></h2>
@@ -822,8 +814,8 @@ Also GCC info says that, besides LANG, environmental variables LC_ALL and LC_CTY
 <p>"Creating a Makefile Project" of a Visual C++ 2003 document, Visual C++ 2005 Express Edition Help and Visual C++ 2008 Express Edition Help describe how to make a makefile project.  Perform the following procedure to create a makefile project.</p>
 <ol>
 <li>Login as a user with debugging privilege. *1<br>
-<li>Write a makefile that specifies <b>mcpp</b>. (Refer to noconfig/visualc.mak.)<br>
-<li>Start Visual Studio. *2<br>
+<li>Write a makefile that specifies <b>mcpp</b>. (Refer to noconfig/visualc.mak.) *2<br>
+<li>Start Visual Studio. *3<br>
 <li>Click "New Project" to display the "New Project" window.  Select "Makefile Project" and specify "Name" and "Location", and then click "OK".<br>
 <li>Then the "Makefile Application Wizard" windows appears.  Click "Application settings", and enter appropriate values in the "Build command line", "Output", "Clean commands", and "Rebuild command line" fields.<br>
 Let me explain the appropriate values for these fields by taking an example of making the compiler-independent-build of <b>mcpp</b> itself. (Assuming the name of <b>mcpp</b> executable as mcpp.exe.)<br>
@@ -840,15 +832,16 @@ To make the Visual C-specific-build of <b>mcpp</b>, add an option COMPILER=MSC a
 "Clean command":        nmake clean
 "Rebuild command line": nmake COMPILER=MSC PREPROCESSED=1
 </pre>
-Since a Makefile project does not provide a 'make install' equivalent command, you must write the makefile in such a way that the commands you specify in "Build command line" and "Rebuild command line" also perform installation.<br>
+Since a Makefile project does not provide a 'make install' equivalent command, you must write the makefile in such a way that the commands you specify in "Build command line" and "Rebuild command line" also perform installation. *4<br>
 If you do not compile <b>mcpp</b>, "Build command line" and "Rebuild command line" can be the same.<br>
 When completed, click "Finish".<br>
 <li>Then the Makefile project appears in "Solution Explorer".  Click the "Source Files" folder, choose "Add Existing Solution Item" from the "Project" menu, select all the source files, and then click "OK".  Then the source file names appear in Solution Explorer.<br>
 </ol>
 <p>You can now use every functions, including Edit, Build, Rebuild and Debugging.</p>
 <p>Note:</p>
-<p>*1  To use the debugging function under Windows XP pro or Windows 2000, a user must belong to a group called "Debugger users".  However, Windows XP HE does not provide such a group, so one has to login as an administrator.  In addition, in order to perform the source level debugging function, makefile must be written in such a way that cl.exe is called with the -Zi option appended to generate debugging information.</p>
-<p>*2  If you start Visual Studio by selecting "Start" -&gt; "Programs", environment variables, such as for include directories, are not set.  In order to have these variables set, you should open the 'Visual Studio command prompt' to start Visual Studio by typing on VC 2003:</p>
+<p>*1 On VC 2003 and 2005, to use the debugging function under Windows XP pro or Windows 2000, a user must belong to a group called "Debugger users".  However, Windows XP HE does not provide such a group, so one has to login as an administrator. On VC 2008, such a limitation on users group was lifted.</p>  
+<p>*2 In order to perform the source level debugging function, makefile must be written in such a way that cl.exe is called with the -Zi option appended to generate debugging information.</p>
+<p>*3 If you start Visual Studio by selecting "Start" -&gt; "Programs", environment variables, such as for include directories, are not set.  In order to have these variables set, you should open the 'Visual Studio command prompt' to start Visual Studio by typing on VC 2003:</p>
 <pre>
 devenv &lt;Project File&gt; /useenv
 </pre>
@@ -856,6 +849,10 @@ devenv &lt;Project File&gt; /useenv
 <pre>
 vcexpress &lt;Project File&gt; /useenv
 </pre>
+<p>*4 You must have a writing permission to the directory into which you install <b>mcpp</b>.
+If you try to install into 'bin' or 'lib' directories of the compiler system, the permission should be carefully set by an administrator account.
+It is recommended to make the user account belong to "Power users" or "Authenticated users" group and set "write" and "modify" permissions to the directory for the group.
+Another way of controlling the permission is to install the compiler system into a directory which the user has wrinting permission on, such as a shared directory.</p>
 
 <h3><a name="2.10.2" href="#toc.2.10.2">2.10.2. How to Make <b>mcpp</b> available in Mac OS X / Xcode.app</a></h3>
 <p>You can use Xcode.app, which is an IDE on Mac OS X, with <b>mcpp</b> without problems. *1</p>
@@ -894,7 +891,7 @@ The options should be specified following '-Wp,' and separated by commas, for ex
 <p>Principally, <b>mcpp</b> outputs #pragma lines as they are.  This principle is applied to the #pragma lines processed by <b>mcpp</b> itself.  This is because the compiler-proper may interpret the same #pragma for itself.</p>
 <p>However, <b>mcpp</b> does not outputs the lines beginning with '#pragma MCPP', since these are for <b>mcpp</b> only.  Also, <b>mcpp</b> does not outputs lines of '#pragma GCC' followed by either 'poison', 'dependency' or 'system_header'.  Moreover, <b>mcpp</b> outputs neither of '#pragma once', '#pragma push_macro', nor '#pragma pop_macro' because they are useless on the later phases.
 On the other hand, '#pragma GCC visibility *' is outputted, because it is for the compiler and the linker. *1</p>
-<p><b>mcpp</b> compiled with <i>EXPAND_PRAGMA</i> == <i>TRUE</i> expands macros in #pragma line (in actual, <i>EXPAND_PRAGMA</i> is set <i>TRUE</i> only for Visual C-specific-build).  However, #pragma lines followed by STDC, MCPP or GCC are never expanded.</p>
+<p><b>mcpp</b> compiled with <i>EXPAND_PRAGMA</i> == <i>TRUE</i> expands macros in #pragma line (in actual, <i>EXPAND_PRAGMA</i> is set <i>TRUE</i> only for Visual C-specific-build and Borland C-specific-build).  However, #pragma lines followed by STDC, MCPP or GCC are never expanded.</p>
 <p>#pragma sub-directives are implementation-defined, hence there are risks of same name sub-directive having different meanings to different compiler-systems.  Some device is necessary to avoid name collision.  Moreover, when <i>EXPAND_PRAGMA</i> == <i>TRUE</i>, there should be a device to avoid the name of #pragma sub-directive itself being macro expanded.  This is why <b>mcpp</b>-specific sub-directives begin with '#pragma MCPP' and are not subject to macro expansion.  This device is adopted from '#pragma STDC' of C99 and '#pragma GCC' of GCC 3.</p>
 <p>'#pragma once' is, however, implemented as it is, since this pragma has been implemented in many preprocessors and has now no risk of name collision.  '#pragma __setlocale' is prefixed with "__" instead of MCPP, because it has also meaning for compiler-proper, and because the prefix avoids user-name-space.</p>
 <p>Note:</p>
@@ -985,8 +982,7 @@ mcpp &gt; mcpp.H
 /* Contents of stdio.h */
 #endif
 </pre>
-<p>Note that #pragma once must not be written in &lt;assert.h&gt;.  For the reason, see 
-<a href="cpp-test.html#5.1.2"> cpp-test.html#5.1.2</a>.  The same thing can be said with &lt;cassert&gt; and &lt;cassert.h&gt; of C++.</p>
+<p>Note that #pragma once must not be written in &lt;assert.h&gt;.  For the reason, see <a href="cpp-test.html#5.1.2"> cpp-test.html#5.1.2</a>.  The same thing can be said with &lt;cassert&gt; and &lt;cassert.h&gt; of C++.</p>
 <p>Another problem is that the recent GCC/GLIBC system has header files, like &lt;stddef.h&gt;, which are repeatedly #included by other system headers.  They define  macros, such as <tt>__need_NULL</tt>, <tt>__need_size_t</tt>, and <tt>__need_ptrdiff_t</tt>, and then #include &lt;stddef.h&gt;.  Each time they do so, definitions such as <tt>NULL</tt>, size_t, and ptrdiff_t are defined in the &lt;stddef.h&gt;.  The same thing can be said with &lt;errno.h&gt; and &lt;signal.h&gt;, and even with &lt;stdio.h&gt;.  Other system headers define macros, such as <tt>__need_FILE, __need___FILE</tt>, and then #include &lt;stdio.h&gt;.  Each time they do so, definitions such as FILE may be defined in &lt;stdio.h&gt;.  #pragma once can not be used in such header files. *4</p>
 <p>Note:</p>
 <p>*1 The normalized result can be seen by <samp>'#pragma MCPP debug path'</samp>.  See <a href="#3.5.1">3.5.1</a>.
@@ -1000,7 +996,7 @@ But, if -K option is specified, it is normalized so as to be easily utilized by 
 
 <h3><a name="3.2.1" href="#toc.3.2.1">3.2.1. Tool to Write #pragma once to Header Files</a></h3>
 <p>With a small number of header files, writing #pragma once to them does not require much effort, but it would be tremendous work if there are many header files.  I wrote a simple tool to write it automatically to header files.</p>
-<p>tool/ins_once.c is a tool written for old versions of GCC.  As Borland C 4.0, 5.5 conform to the same standard header file notation with GCC, this tool can be used.  However, it is advisable that this tool should not be used in the systems like Glibc 2 that has many exceptions shown above.</p>
+<p>tool/ins_once.c is a tool written for old versions of GCC.  As Borland 5.5 conform to the same standard header file notation with GCC, this tool can be used.  However, it is advisable that this tool should not be used in the systems like Glibc 2 that has many exceptions shown above.</p>
 <p>Even in the compiler systems that can use the tool, some header files do not strictly conform to the GCC notation.  GCC's read-once functionality also does not work properly for these header files.</p>
 <p>Compile ins_once.c and perform the following command in a directory, such as /usr/include or /usr/local/include, under UNIX.</p>
 <pre>
@@ -1021,7 +1017,7 @@ ins_once *.h */*.h */*/*.h
 <li>-p:  Insert a #pragma once line at the beginning of file.  By default, this line is inserted immediate below the #ifndef or #if !defined line.<br>
 <li>-g:  For GCC system, &lt;stddef.h&gt;, &lt;stdio.h&gt;, &lt;signal.h&gt;, &lt;errno.h&gt; are also excluded.  By default, only &lt;assert.h&gt;, &lt;cassert&gt; and &lt;cassert.h&gt; are excluded.<br>
 </ul>
-<p>ins_once roughly checks to write a #pragma once line only once in the same header file even if it is executed several times, but the check is not very strict.  As this ins_once is of temporary and tentative nature, it scarcely performs tokenization.  It worked as I expected with FreeBSD 2.0 and 2.2.7, Borland C 4.0, 5.5, but it may not work properly for special header files.  So before executing this tool, be sure to make a backup of an original file.</p>
+<p>ins_once roughly checks to write a #pragma once line only once in the same header file even if it is executed several times, but the check is not very strict.  As this ins_once is of temporary and tentative nature, it scarcely performs tokenization.  It worked as I expected with FreeBSD 2.0 and 2.2.7, Borland C 5.5, but it may not work properly for special header files.  So before executing this tool, be sure to make a backup of an original file.</p>
 <p>Have the shell expand a wild-card. (In case of buffer overflow, execute ins_once several times by specifying some of your system header files.)</p>
 <br>
 
@@ -1046,8 +1042,7 @@ ins_once *.h */*.h */*/*.h
 <p>'#pragma MCPP push_macro( "MACRO")' and '#pragma MCPP pop_macro( "MACRO")' are used to "push" or "pop" a macro definition (MACRO) to the current macro definition stack.</p>
 <p>'#pragma push_macro( "MACRO")' and '#pragma pop_macro( "MACRO")' are also available for Visual C.</p>
 <p>push_macro saves a macro definition to the stack, and pop_macro retrieves the macro definition.  The pushed macro definition remains valid after push_macro.  To invalidate it, use #undef or redefine the macro with a new definition.  push_macro can be used multiple times for a same name macro.</p>
-<p>'#pragma __setlocale( "&lt;encoding&gt;")' changes the current multi-byte character encoding to &lt;encoding&gt;.  The argument of setlocale must be a string literal.  For &lt;encoding&gt;, refer to 
-<a href="#2.8"> 2.8</a>.  This directive allows you to use several encodings in one translation unit.</p>
+<p>'#pragma __setlocale( "&lt;encoding&gt;")' changes the current multi-byte character encoding to &lt;encoding&gt;.  The argument of setlocale must be a string literal.  For &lt;encoding&gt;, refer to <a href="#2.8"> 2.8</a>.  This directive allows you to use several encodings in one translation unit.</p>
 <p>In Visual C++, '#pragma __setlocale' cannot be used.  Use '#pragma setlocale' instead.  Encoding specification must be conveyed not only to <b>mcpp</b> but also to the compiler-proper.  The latter can recognize only #pragma setlocale.  For other compiler systems, when the compiler-proper cannot recognize an encoding, <b>mcpp</b> complements it.</p>
 <p>There is not yet any compiler-proper which can recognize '#pragma __setlocale'.</p>
 <br>
@@ -1163,8 +1158,7 @@ These magic characters are displayed as:</p>
 <p>In any way, using these directives outputs a huge amount of data, so you scarcely need to use them.</p>
 
 <h3><a name="3.5.7" href="#toc.3.5.7">3.5.7. #pragma MCPP debug memory, #debug memory</a></h3>
-<p>With these directives, <b>mcpp</b> reports the status of the heap memory it has internally allocated or released using malloc(), realloc() or free() only once.  Only the kmmalloc I developed and some other types of malloc() provide this functionality.  Refer to 
-<a href="mcpp-porting.html#4.extra"> mcpp-porting.html#4.extra</a>.  In case of other malloc(), <b>mcpp</b> will neither cause an error nor report a status.</p>
+<p>With these directives, <b>mcpp</b> reports the status of the heap memory it has internally allocated or released using malloc(), realloc() or free() only once.  Only the kmmalloc I developed and some other types of malloc() provide this functionality.  Refer to <a href="mcpp-porting.html#4.extra"> mcpp-porting.html#4.extra</a>.  In case of other malloc(), <b>mcpp</b> will neither cause an error nor report a status.</p>
 <p><b>mcpp</b> reports the heap memory status again when it terminates with these directives on.  The same thing happens when <b>mcpp</b> terminates due to out of memory.</p>
 
 <h3><a name="3.5.8" href="#toc.3.5.8">3.5.8. #pragma MCPP debug macro_call</a></h3>
@@ -1357,7 +1351,7 @@ asm (
 <br>
 <li>Enables the _Pragma() operator.<br>
 <br>
-<li><b>mcpp</b> compiled with the <i>EXPAND_PRAGMA</i> macro set to <i>TRUE</i> macro-expands the argument of #pragma line that do not begin with STDC, MCPP nor GCC.  (By default, <b>mcpp</b> is compiled with <i>EXPAND_PRAGMA</i> == <i>FALSE</i>, so it is not subject to macro expansion.  It is macro expanded only in Visual C-specific-build.)<br>
+<li><b>mcpp</b> compiled with the <i>EXPAND_PRAGMA</i> macro set to <i>TRUE</i> macro-expands the argument of #pragma line that do not begin with STDC, MCPP nor GCC.  (By default, <b>mcpp</b> is compiled with <i>EXPAND_PRAGMA</i> == <i>FALSE</i>, so it is not subject to macro expansion.  It is macro expanded only in Visual C-specific-build and Borland C-specific-build.)<br>
 <br>
 <li>For compiler-systems with long long, a #if expression is evaluated in long long or unsigned long long.<br>
 <br>
@@ -1391,10 +1385,10 @@ Such particular specifications, other than execution option and #pragma, are exp
 <h3><a name="3.8.1" href="#toc.3.8.1">3.8.1. Variadic macro of GCC and Visual C</a></h3>
 <p>GCC has variadic macro of its own specification from V.2 as shown in <a href="#3.9.1.6">3.9.1.6</a>.
 In this manual we call this as GCC2-spec variadic macro.
-Moreover, GCC implemented one more spec of variadics from V.3 as shown in <a href="#3.9.6.3">3.9.6.3</a>, which we call GCC3-spec variadic macro.
-GCC V.2.95 and later implements C99 variadics, too.
-Nevertheless, softwares such as glibc or Linux system headers do not use C99 variadics, nor even GCC3-spec one, and still use that of GCC2-spec.</p>
-<p><b>mcpp</b> of GCC-specific-build on <i>STD</i> mode implemented GCC3-spec variadics from V.2.6.3, and GCC2-spec one from V.2.7, in order to avoid inconveniences on Linux or some other softwares.
+Moreover, GCC implemented one more spec of variadic from V.3 as shown in <a href="#3.9.6.3">3.9.6.3</a>, which we call GCC3-spec variadic macro.
+GCC V.2.95 and later implements C99 variadic, too.
+Nevertheless, softwares such as glibc or Linux system headers do not use C99 variadic, nor even GCC3-spec one, and still use that of GCC2-spec.</p>
+<p><b>mcpp</b> of GCC-specific-build on <i>STD</i> mode implemented GCC3-spec variadic from V.2.6.3, and GCC2-spec one from V.2.7, in order to avoid inconveniences on Linux or some other softwares.
 Yet, <b>mcpp</b> warns at use of them.
 GCC-spec variadics, especially GCC2-spec one, are not only unportable, but also syntactically unclean.
 Use of them in sources to write in future is not recommendable.</p>
@@ -1650,8 +1644,7 @@ SYSCTL_NODE(, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 #define INW(x)      inb(x)
 </pre>
 <p>Note:</p>
-<p>*1 ISO 9899:1990 Corrigendum 1:1994 regarded the notation as undefined.  C99 replaced this article with other.  However, Standard documents are still confusing about this.  For details, see 
-<a href="cpp-test.html#2.7.6"> cpp-test.html#2.7.6</a>.</p>
+<p>*1 ISO 9899:1990 Corrigendum 1:1994 regarded the notation as undefined.  C99 replaced this article with other.  However, Standard documents are still confusing about this.  For details, see <a href="cpp-test.html#2.7.6"> cpp-test.html#2.7.6</a>.</p>
 
 <h4>3.9.1.9. Preprocessing .S File</h4>
 <p>Some kernel sources are contained in several ".S" files, that is, they are written in assembler.  These sources contain #include's or #ifdef's, which require preprocessing.  To preprocess them, in FreeBSD 2.2.2-R, 'cc' is called with the '-x assembler-with-cpp' option, and 'cc' calls '/usr/libexec/cpp' with the '-lang-asm' option and then calls 'as'.</p>
@@ -2045,8 +2038,7 @@ mv g++ g++_proper
 ln -sf gcc.sh gcc
 ln -sf g++.sh g++
 </pre>
-<p>In the directory where cpp is located (on my Linux, <samp>/usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2</samp>), create a script that executes <b>mcpp</b> when cpp0 is invoked, as you did for GCC 2 (See 
-<a href="#3.9.5)"> 3.9.5)</a>.  By doing this, gcc or g++ first invokes <b>mcpp</b> and then invokes cc1 or cc1plus with the -fpreprocessed option appended.  -fpreprocessed indicates the source has been preprocessed already. *1</p>
+<p>In the directory where cpp is located (on my Linux, <samp>/usr/local/gcc-3.2/lib/gcc-lib/i686-pc-linux-gnu/3.2</samp>), create a script that executes <b>mcpp</b> when cpp0 is invoked, as you did for GCC 2 (See <a href="#3.9.5)"> 3.9.5)</a>.  By doing this, gcc or g++ first invokes <b>mcpp</b> and then invokes cc1 or cc1plus with the -fpreprocessed option appended.  -fpreprocessed indicates the source has been preprocessed already. *1</p>
 <p>Note that when a GCC version other than the system standard one is installed, additional include directory settings may be required.  <b>mcpp</b> embeds these settings when <b>mcpp</b> itself is compiled, thus eliminating the need to set them with environment variables.</p>
 <p>If possible, I want to replace the cpplib source, the preprocessing part of cc1 or cc1plus, with <b>mcpp</b>.  The source files that define the internal interface between cpplib and ccl or cc1plus, as well as the external interface between cpplib and user programs that use it, amount to as much as 46KB.  It is impossible to replace.  Why is the interfaces so complex?  It is a pity.</p>
 <p>Note:</p>
@@ -2061,7 +2053,7 @@ ln -sf g++.sh g++
 </ol>
 <p>GCC / cc1 is becoming one huge and complex compiler absorbing preprocessor and some system header's contents.  I doubt whether this is a better way of compiler construction, especially of developing open source one.</p>
 <p>As regards <b>mcpp</b>, it is a nuisance that gcc arbitrarily hands to preprocessor some irrelevant options.  Since it is risky to ignore all the options unrecognized by <b>mcpp</b>, I didn't adopt this.  Although <b>mcpp</b> ignores the wrong options such as -c or -m* which are frequently handed from gcc, it will get an error if other unexpected options are passed on.</p>
-<p>In order to avoid conflicts with those wrong options, <b>mcpp</b> changed some options, -c to -@compat, -m to -e, and some others.</p>
+<p>In order to avoid conflicts with those wrong options, <b>mcpp</b> V.2.5 changed some options, -c to -@compat, -m to -e, and some others.</p>
 <p>To use <b>mcpp</b> with GCC 3.2 or former, it is necessary only to replace invoking of cpp0 by <b>mcpp</b>.  To use <b>mcpp</b> with GCC 3.3 or later, it is necessary to divide invoking of cc1 to <b>mcpp</b> and cc1.  src/set_mcpp.sh will write shell-scripts for this purpose in the GCC libexec directory on <b>mcpp</b> installation.  The 'make install' command will also get GCC predefined macros using -dM option and set those for <b>mcpp</b>. *1, *2, *3</p>
 <p>In addition, GCC 3.4 changed processing of multi-byte characters.  Its document says as: *4</p>
 <ol>
@@ -2073,14 +2065,17 @@ ln -sf g++.sh g++
 <p>There is a trend to identify "internationalization" with "unicodization", especially in the Western people who do not use multi-byte characters.  It seems that this trend has reached to GCC.</p>
 <p>What is worse, GCC 3.4 or later does not implement their specification sufficiently.  In actual, it behaves as:</p>
 <ol>
-<li>As for EUC-JP, GB2312, KSC-5601 and Big5, it converts these encodings to UTF-8 correctly with -finput-charset option, and it passes them as they are without this option.<br>
-<li>The -fexec-charset option has no effect on V.3.4 nor V.4.0.  On V.4.1, the option has effect, and works correctly for EUC-JP, GB2312, KSC-5601 and Big5.<br>
-<li>With ISO2022-JP, GCC cannot preprocess on V.3.4 or 4.0, whereas on V.4.1 it can preprocess the encoding and misbehaves in converting back with -fexec-charset option.<br>
-<li>On shift-JIS, all the versions confuse in preprocessing.<br>
+<li>As for EUC-JP, GB2312, KSC-5601 and Big5, it converts these encodings to UTF-8 correctly with -finput-charset option, and it passes them as they are without this option. *6<br>
+<li>The -fexec-charset option has no effect on V.3.4 nor V.4.0.  On V.4.1-4.3, the option has effect, and works correctly.<br>
+<li>With ISO2022-JP, GCC cannot preprocess on V.3.4 or 4.0, whereas on V.4.1-4.3 it can preprocess the encoding.<br>
+<li>As for shift-JIS, all the versions confuse in preprocessing when -finput-charset is specified.<br>
 </ol>
-<p><b>mcpp</b> takes -e &lt;encoding&gt; option to specify an encoding, and the GCC-specific-build inserts &lt;backslash&gt; to the byte in multi-byte character which has the same value with &lt;backslash&gt;, '"' or '\'', when the encoding is one of BIG-5, shift-JIS or ISO2022-JP, in order to complement GCC's inability.  However, it does not convert the encoding to UTF-8.  <b>mcpp</b> also treats -finput-charset as the same option as -e.  I adopted these specifications because: *6, *7</p>
+<p><b>mcpp</b> takes -e &lt;encoding&gt; option to specify an encoding, and the GCC-specific-build inserts &lt;backslash&gt; to the byte in multi-byte character which has the same value with &lt;backslash&gt;, '"' or '\'', when the encoding is one of BIG-5, shift-JIS or ISO2022-JP, in order to complement GCC's inability.  However, it does not convert the encoding to UTF-8.  <b>mcpp</b> also treats -finput-charset as the same option as -e.  I adopted these specifications because: *7</p>
 <ol>
-<li>As for shift-JIS and ISO2022-JP, the encoding converted to UTF-8 cannot be converted back correctly even on GCC V.4.1.  If the encoding is not converted but supplemented with &lt;backslash&gt;es, the multi-byte characters are output as they are by cc1 on any version of GCC.  That is to say, the multi-byte characters are treated as single-byte character sequences.<br>
+<li>As for shift-JIS, GCC of any version cannot process it if -f*-charset options are specified.
+But, as for shift-JIS, ISO2022-JP and Big5, if the encodings are not converted but supplemented with &lt;backslash&gt;es, the multi-byte characters are output as they are by cc1 on any version of GCC.
+Also EUC-JP, GB2312, KSC-5601 and UTF-8 are passed as they are, if -f*-charset are not specified.
+That is to say, the multi-byte characters are treated as single-byte character sequences.<br>
 <li>GCC up to V.4.0 / cc1 does not convert back from UTF-8 to the original encodings.<br>
 <li>I hope that GCC will change the multi-byte character handling in the near future.<br>
 </ol>
@@ -2094,8 +2089,8 @@ As a result, the whole picture cannot be grasped easily.</p>
 It was the same with FreeBSD 5.3 and 6.2, too.</p>
 <p>*5 This conversion seems not to be done in preprocessing phase, but in compilation phase.
 Output of -E option is still UTF-8.</p>
-<p>*6 When you pass the output of <b>mcpp</b> to cc1, you should not specify -fexec-charset option as well as -finput-charset option.</p>
-<p>*7 <b>mcpp</b> V.2.5 did not supplement multi-byte characters with &lt;backslash&gt; for GCC V.3.4.  Since GCC's behavior was not stable, I have waited to see where it settles down.  However, it is still not stable on V.4.1, hence I reverted the <b>mcpp</b> specification of V.2.6 to that of V.2.4, that is, it treats GCC 3.4 and later as GCC 3.3 and former.</p>
+<p>*6 GCC V.4.1-4.3 fail to compile due to a bug of GCC, if -save-temps or -no-integrated-cpp option is specified at the same time with -f*-charset option.</p>
+<p>*7 When you pass the output of <b>mcpp</b> to cc1, you should not specify -fexec-charset option as well as -finput-charset option.</p>
 
 <h3><a name="3.9.8" href="#toc.3.9.8">3.9.8. Preprocessing Linux/glibc 2.4</a></h3>
 
@@ -2377,7 +2372,7 @@ On the other hand, the latter part of each line starting with # are supposed to 
 <samp>'# column.'</samp> is, however, syntactically indistinguishable from invalid directive, since the # is the first non-white-space-character of the line.
 <samp>'# + DW_EH_PE_sdata4'</samp> causes even syntax error in C.<br>
 Another file has the following line, where a single character appears singly.
-In C, a pair of the single quote is used to quote a character constant, and unmatching single quote causes a tokenization error.</p> 
+In C, a pair of the single quote is used to quote a character constant, and unmatched single quote causes a tokenization error.</p> 
 
 <pre>
     movl 12(%esp), %eax     # that `fixup' takes its parameters in regs.
@@ -2494,8 +2489,7 @@ It makes source incomplete, and is not recommendable.</p>
 <h4>3.9.8.10. Undocumented Predefined Macros</h4>
 
 <p>This is not a problem of glibc but of GCC.
-While a few important predefined macros were undocumented in GCC 2,
-they got documented in GCC 3.
+While a few important predefined macros were undocumented in GCC 2, they got documented in GCC 3.
 On the other hand, GCC 3.3 and later predefines many macros, and most of them are undocumented.</p>
 
 <h4>3.9.8.11. Other Problems</h4>
@@ -2717,7 +2711,7 @@ This time <tt>_GCC_LIMITS_H_</tt> has been defined already, so the block beginni
 <li>C++ include directories do not exist other than <samp>/usr/include/c++/VERSION/*</samp>.  In order to make C++ standard include directories independent on GCC version, <samp>/usr/include/c++</samp> should be used instead of <samp>/usr/include/c++/VERSION</samp> which should be limited to GCC specific headers.
 Though, having said that, this is a difficult task, since the C++ standard library is libstdc++ distributed with GCC on all of FreeBSD, Linux and Mac OS X.<br>
 <li>The behavior of GCC on #include_next differs from its specification and is inconsistent.<br>
-<li>It is meaningless to process the complicated limits.h headers, since GCC practically predefines the Standard required macros.  It is doubly meaningless, since <samp>/usr/lib/gcc-lib/SYSTEM/VERSION/include/limits.h</samp> does #undef all.  As far as Linux and CygWIN are concerned, there seems to be no necessity for splitting limits.h to two.  Since these headers in this directory are autogenarated ones by GCC installation, some redundancies are inevitable.  Yet, these are too dirty to install as system headers.<br>
+<li>It is meaningless to process the complicated limits.h headers, since GCC practically predefines the Standard required macros.  It is doubly meaningless, since <samp>/usr/lib/gcc-lib/SYSTEM/VERSION/include/limits.h</samp> does #undef all.  As far as Linux and CygWIN are concerned, there seems to be no necessity for splitting limits.h to two.  Since these headers in this directory are auto-generated ones by GCC installation, some redundancies are inevitable.  Yet, these are too dirty to install as system headers.<br>
 </ol>
 <p>Under these problems lies the excessively complicated system header structure.  The extension directive #include_next enhances the complication.  The use of this directive is very limited.  Though GCC and glibc use it in compiling and installing of themselves, it does not exist in the installed system headers except for limits.h.  The rare example in limits.h causes GCC above mentioned confusion.  This presents a question on the reason of its existence.</p>
 <p>Anyway, the compiler-independent-build of <b>mcpp</b> needs the following workarounds for the present.  In order to avoid confusion, the compiler-independent-build does not implement #include_next nor uses GCC specific include directories.</p>
@@ -2730,7 +2724,7 @@ Though, having said that, this is a difficult task, since the C++ standard libra
 </ol>
 <p>For the GCC-specific-build of <b>mcpp</b>, no special setting is required, because it has GCC specific include directories list, implements #include_next as its specification, and predefines the macros as GCC does.</p>
 <p>Note:</p>
-<p>*1 I have checked the descriptions of this 3.9.9 section on Linux / GCC 2.95.3, 3.2, 3.3.2, 3.4.3, 4.0.2, 4.1.1 and on CygWIN / GCC 2.95.3, 3.4.4.  As with CygWIN, the behavior on #include_next was as its specification on GCC 2.95.3, but on 3.4.4 it changed to the same behavior as Linux.  The C++ include directories in CygWIN was <samp>/usr/include/g++-3</samp> on 2.95.3, while they are <samp>/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++</samp> and its sub-directories on 3.4.4.</p>
+<p>*1 I have checked the descriptions of this 3.9.9 section on Linux / GCC 2.95.3, 3.2, 3.3.2, 3.4.3, 4.0.2, 4.1.1, 4.3.0 and on CygWIN / GCC 2.95.3, 3.4.4.  As with CygWIN, the behavior on #include_next was as its specification on GCC 2.95.3, but on 3.4.4 it changed to the same behavior as Linux.  The C++ include directories in CygWIN was <samp>/usr/include/g++-3</samp> on 2.95.3, while they are <samp>/usr/lib/gcc/i686-pc-cygwin/3.4.4/include/c++</samp> and its sub-directories on 3.4.4.</p>
 <p>*2 On FreeBSD 6.2 or 6.3 and its bundled GCC 3.4.6, all the Standard C headers are present in <samp>/usr/include</samp>, #include_next is not used in any system headers, and GCC specific C include directory does not exist.  However, C++ include directories are GCC version dependent as <samp>/usr/include/c++/3.4, /usr/include/c++/3.4/backward</samp>.<br>
 Even on FreeBSD, an installation of another version of GCC makes GCC-version-specific include directory.  Most of the headers in the directory are redundant.  However, the headers in <samp>/usr/include</samp> remain unchanged.</p>
 <p>*3 On Mac OS X Leopard / Apple-GCC 4.0.1, as on Linux, there is a GCC-version-specific include directory, #include_next is used in <samp>limits.h</samp> and a few other headers, also two <samp>limits.h</samp> are found.
@@ -2739,7 +2733,7 @@ However, #include_next in <samp>syslimits.h</samp> has been deleted by Apple.
 But, <samp>float.h, stdarg.h</samp> are only for GCC and Metrowerks (for powerpc), so if you use them with <b>mcpp</b>, you must rewrite <samp>float.h</samp> yourself and make <samp>stdarg.h</samp> to include GCC-version-specific one.
 Note that some definitions in <samp>float.h</samp> are different between x86 and powerpc.</p>
 <p>*4 On MinGW / GCC 3.4.*, though the include directories and their precedence differ from the other systems, the behavior of GCC on #include_next is the same, and also some Standard headers are not in the standard include directory <samp>/mingw/include</samp> but in its version-specific-directory.</p>
-<p>*5 It can be written as follows referring to GCC's setting:</p>
+<p>*5 float.h for i386 system can be written as follows referring to GCC's setting:</p>
 <pre>
 /* float.h  */
 
@@ -3154,8 +3148,7 @@ Some conversion tools should be used when one edit source file on Windows.</p>
 <ol>
 <li>Since when Visual C++ scarcely implemented the C99 specifications, // comments have often been used in C source code.<br>
 <li>Object-like macro definitions that are expanded into function-like macro names are sometimes found.<br>
-<li>On Visual C++ 2003, there was one wrong macro definition in limits.h. (It was revised on Visual C++ 2005.  See Note 2 in 
-<a href="cpp-test.html#5.1.3.1)"> cpp-test.html#5.1.3.1)</a><br>
+<li>On Visual C++ 2003, there was one wrong macro definition in limits.h. (It was revised on Visual C++ 2005.  See Note 2 in <a href="cpp-test.html#5.1.3.1)"> cpp-test.html#5.1.3.1)</a><br>
 </ol>
 <p>Although the Linux system-headers and glibc sources often contain GCC local specification based coding, Visual C++ system headers has only a few Visual C++ local coding.</p>
 
@@ -3201,7 +3194,7 @@ But, on Visual C++ 2008, they are found here and there.</p>
 <p>'<samp>Microsoft Visual Studio 9.0/VC/include/sal.h</samp>' is the most conspicuous one.
 This header defines macros for so-called SAL (standard source code annotation language) of Microsoft, and has many names containing '$'.
 This file is included from many standard headers via '<samp>Microsoft Visual Studio 9.0/VC/include/crtdefs.h</samp>', so most sources are compiled with these macros without knowing it.</p>
-<p>If you specify -Za option to invoke the compiler cl, ths SAL is disabled and all of the names with '$' in the <samp>sal.h</samp> disappear.
+<p>If you specify -Za option to invoke the compiler cl, the SAL is disabled and all of the names with '$' in the <samp>sal.h</samp> disappear.
 The necessity of this notation is, however, hard to understand.
 Though GCC also enables '$' in identifiers by default, its actual use is rarely found nowadays.</p>
 <p>This kind of names are also found in the system headers named <samp>specstrings*.h</samp> in '<samp>Microsoft SDKs/Windows/v6.0A/Include</samp>' directory.
@@ -3211,8 +3204,7 @@ So, you cannot use the -Za option to compile a source which includes <samp>Windo
 <br>
 
 <h1><a name="4" href="#toc.4">4. Implementation-defined Behaviors</a></h1>
-<p>This chapter does not contain all the C preprocessor specifications.  For details on Standard C preprocessing, refer to cpp-test.html.  For <b>mcpp</b> behaviors in each mode, refer to 
-<a href="#2.1"> 2.1</a>.  This chapter covers several preprocessor-related specifications, including those called implementation-defined by Standards.  For more details on <b>mcpp</b> implementation-defined-behaviors, see Chapter 5, "Diagnostic Messages".</p>
+<p>This chapter does not contain all the C preprocessor specifications.  For details on Standard C preprocessing, refer to cpp-test.html.  For <b>mcpp</b> behaviors in each mode, refer to <a href="#2.1"> 2.1</a>.  This chapter covers several preprocessor-related specifications, including those called implementation-defined by Standards.  For more details on <b>mcpp</b> implementation-defined-behaviors, see Chapter 5, "Diagnostic Messages".</p>
 <br>
 
 <h2><a name="4.1" href="#toc.4.1">4.1. Status Value on Exit</a></h2>
@@ -3235,7 +3227,7 @@ So, you cannot use the -Za option to compile a source which includes <samp>Windo
 </ol>
 <br>
 By default, the compiler-specific-builds for UNIX compiler systems, GCC or Visual C begin searching from the source file directory.
-The other compiler-specific-builds begin searching at the current directory.  However, Borland C-specific-build for BC 4 or lower, search begins at current directory.  For BC 5, current first and then source file directory.
+The other compiler-specific-builds begin searching at the current directory.  However, Borland C-specific-build searches current first and then source file directory.
 The compiler-independent-build of <b>mcpp</b> begins search from the source file directory.<br>
 For GCC, the directories specified by -iqoute option are searched next.
 For Visual C, also the directories of each ancestor file of source file are searched one by one.<br>
@@ -3322,28 +3314,28 @@ In pre-Standard mode, an integer constant token is evaluated within the range of
 <p>This compression and deletion occurs during the intermediate phase.  The next phase 4 involves macro expansion and preprocess-directive-line processing.  Macro expansion may sometimes produce several space characters before and after the macro.  Of course, the number of space characters does not affect compilation results.</p>
 <p>Standard C says that whether implementation compresses a white-space sequence into one space character during the translation phase 3 is implementation-defined, but you usually do not have to worry about this.  &lt;Vertical-tab&gt; or &lt;form-feed&gt; in a preprocessor directive line may adversely affect portability, since this is undefined in Standard C.  <b>mcpp</b> converts it to one space character.</p>
 <p>Note:</p>
-<p>*1 Upto V.2.6.3 <b>mcpp</b> squeezed line top white spaces into one space.
+<p>*1 Up to V.2.6.3 <b>mcpp</b> squeezed line top white spaces into one space.
 In V.2.6.4, it changed the behavior.</p>
 <br>
 
 <h2><a name="4.8" href="#toc.4.8">4.8. Default Specifications for <b>mcpp</b> Executables</a></h2>
 <p>This section describes the specifications of <b>mcpp</b> executables generated when DIFfile and makefile for each compiler system in the noconfig directory are used to compile <b>mcpp</b> with default settings.  When a configure script is used to compile <b>mcpp</b>, the generated <b>mcpp</b> may differ, depending on configure's results, however, as long as OS and compiler system versions are same, generated <b>mcpp</b>s would be same except for include directories.</p>
-<p>The compiler-independent-build of <b>mcpp</b> has the constant specifications regardless of the compiler system with which <b>mcpp</b> was compiled, except a few OS-dependent features and the evaluation type of #if expression which depends on whether the host compiler has long long or not.</p>
-<p>There are compiler-independent-build and compiler-specific-build for <b>mcpp</b> executables, and each executable has several behavioral modes.  For those, refer to 
-<a href="#2.1"> 2.1</a>.  This section describes the settings centering on <i>STD</i> mode.</p>
+<p>The compiler-independent-build of <b>mcpp</b> has the constant specifications regardless of the compiler system with which <b>mcpp</b> was compiled, except a few features dependent on OS and CPU.</p>
+<p>There are compiler-independent-build and compiler-specific-build for <b>mcpp</b> executables, and each executable has several behavioral modes.  For those, refer to <a href="#2.1"> 2.1</a>.  This section describes the settings centering on <i>STD</i> mode.</p>
 <p>DIFfiles and makefiles are for the following compiler systems:</p>
 <blockquote>
 <table>
   <tr><th>FreeBSD 6.3        </th><td>GCC V.3.4</td></tr>
-  <tr><th>VineLinux 4.2/x86  </th><td>GCC V.2.95, V.3.2, V.3.3, V.3.4, V.4.1</td></tr>
-  <tr><th>Debian GNU/Linux 4.0/x86  </th><td>GCC V.4.1</td></tr>
-  <tr><th>Fedora 8/x86       </th><td>GCC V.4.1</td></tr>
-  <tr><th>Mac OS X Leopard/x86      </th><td>GCC V.4.0</td></tr>
+  <tr><th>Vine Linux 4.2 / x86          </th><td>GCC V.2.95, V.3.2, V.3.3, V.3.4, V.4.1</td></tr>
+  <tr><th>Debian GNU/Linux 4.0 / x86    </th><td>GCC V.4.1</td></tr>
+  <tr><th>Ubuntu Linux 8.04 / x86_64    </th><td>GCC V.4.2</td></tr>
+  <tr><th>Fedora Linux 9 / x86          </th><td>GCC V.4.3</td></tr>
+  <tr><th>Mac OS X Leopard / x86        </th><td>GCC V.4.0</td></tr>
   <tr><th>CygWIN             </th><td>1.3.10 (GCC V.2.95), 1.5.18 (GCC 3.4)</td></tr>
-  <tr><th>MinGW &amp; MSYS       </th><td>GCC 3.4</td></tr>
+  <tr><th>MinGW &amp; MSYS   </th><td>GCC 3.4</td></tr>
   <tr><th>WIN32              </th><td>LCC-Win32 2003-08, 2006-03</td></tr>
   <tr><th>WIN32              </th><td>Visual C++ 2003, 2005, 2008</td></tr>
-  <tr><th>WIN32              </th><td>Borland C++ V.4.0, V.5.5</td></tr>
+  <tr><th>WIN32              </th><td>Borland C++ V.5.5</td></tr>
 </table>
 </blockquote>
 <p>In addition, for the following compilers which I don't have, the difference files contributed from some users are contained here.</p>
@@ -3400,7 +3392,7 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
 <p><i>EXPAND_PRAGMA</i>   (Is a #pragma line macro-expanded in C99?):</p>
 <blockquote>
 <table>
-  <tr><th>Visual C</th><td><i>TRUE</i></td></tr>
+  <tr><th>Visual C, Borland C</th><td><i>TRUE</i></td></tr>
   <tr><th>Others  </th><td><i>FALSE</i></td></tr>
 </table>
 </blockquote>
@@ -3430,7 +3422,7 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
 <p>When you use the -+ (-lang-c++) option to specify C++ preprocessing, <tt>__cplusplus</tt> is predefined with its initial value of 1L.  In addition, some other macros are also predefined:</p>
 <p>Although there are some predefined macros in GCC, those predefined by GCC were few, until GCC V.3.2.  Most of them are passed from gcc to cpp by the -D option.  So, it is not necessary for <b>mcpp</b> to define them for compatibility.  However, <b>mcpp</b> predefines these macros for being used in a stand alone manner, such as pre-preprocessing.</p>
 <p>GCC V.3.3 and later predefines 60 or 70 macros (suddenly).  GCC-specific-build of <b>mcpp</b> V.2.5 and later for GCC V.3.3 or later also includes these predefined macros other than the above ones.  These GCC-specific predefined macros are written in <samp>mcpp_g*.h</samp> header files, which is generated by installation of <b>mcpp</b>.</p>
-<p>Since FreeBSD, Linux, CygWIN, MinGW / GCC and LCC-Win32, Visual C 2008 have a type long long, an #if expression is evaluated in long long or unsigned long long.  Visual C 2003, 2005 and Borland C 5.5 do not have a "long long" type but __int64 and unsigned __int64 instead.  These types are used.  In Borland C 4.0, which has not long long nor __int64, it is evaluated in long or unsigned long.</p>
+<p>Since FreeBSD, Linux, CygWIN, MinGW / GCC and LCC-Win32, Visual C 2008 have a type long long, an #if expression is evaluated in long long or unsigned long long.  Visual C 6.0, 2002, 2003, 2005 and Borland C 5.5 do not have a "long long" type but __int64 and unsigned __int64 instead.  These types are used.</p>
 <p>In the above compiler systems with type long ranges:</p>
 <pre>
 [-2147483647-1, 2147483647] ([-0x7fffffff-1, 0x7fffffff])
@@ -3452,8 +3444,7 @@ With <i>OK_MBIDENT</i> set to <i>FALSE</i>, multi-byte-characters cannot be used
 <p>Right shift of a negative integer is an arithmetic shift.  This can be applied to <b>mcpp</b>'s #if expression. (Right shifting an integer by one bit halves the value with the sign retained)</p>
 <p>In an integer division or modulus operation, if either or both operands are negative values, an algebraic operation like Standard C's ldiv() function is performed.  This can be applied to <b>mcpp</b>'s #if expression.</p>
 <p>These OSs use the ASCII basic character set.  So does <b>mcpp</b>.</p>
-<p>There is a memory management routine, kmmalloc, that I developed.  This routine has malloc(), free(), realloc() and other memory handling functions.  If kmmalloc is installed in systems other than CygWIN or Visual C 2005 or 2008, kmmalloc is linked when the MALLOC=KMMALLOC (or -DKMMALLOC=1) option is specified in make.  Also its heap memory debugging routine is linked.  <b>mcpp</b> for Linux and LCC-Win32 uses <i>EFREEP</i>, <i>EFREEBLK</i>, <i>EALLOCBLK</i>, <i>EFREEWRT</i> and <i>ETRAILWRT</i> with an errno of 2120, 2121,2122, 2123 and 2124 assigned, and other <b>mcpp</b> uses 120, 121, 122, 123, and 124. (Refer to 
-<a href="mcpp-porting.html#4.extra"> mcpp-porting.html#4.extra</a>.)  *2</p>
+<p>There is a memory management routine, kmmalloc, that I developed.  This routine has malloc(), free(), realloc() and other memory handling functions.  If kmmalloc is installed in systems other than CygWIN or Visual C 2005 or 2008, kmmalloc is linked when the MALLOC=KMMALLOC (or -DKMMALLOC=1) option is specified in make.  Also its heap memory debugging routine is linked.  <b>mcpp</b> for Linux and LCC-Win32 uses <i>EFREEP</i>, <i>EFREEBLK</i>, <i>EALLOCBLK</i>, <i>EFREEWRT</i> and <i>ETRAILWRT</i> with an errno of 2120, 2121,2122, 2123 and 2124 assigned, and other <b>mcpp</b> uses 120, 121, 122, 123, and 124. (Refer to <a href="mcpp-porting.html#4.extra"> mcpp-porting.html#4.extra</a>.)  *2</p>
 <p>On the systems other than GNU and Visual C, you should preset the environment variable TZ, for example JST-9 in Japan. Or, the <tt>__DATE__</tt> and  <tt>__TIME__</tt> macros are not set correctly.</p>
 <p>Note:</p>
 <p>*1 This limit applies also to the line spliced by &lt;backslash&gt;&lt;newline&gt; deletion.  Moreover, it applies to the line after converting a comment into a space and possibly concatenated multiple logical lines by a comment spreading across the lines.</p>
@@ -3620,7 +3611,8 @@ A character constant is not terminated.  <b>mcpp</b> in <i>OLDPREP</i> mode and 
 A header-name is not terminated.  " or ' in a header-name enclosed with &lt; and &gt; causes the above two errors, not this one.  If /* is found in a header-name enclosed with &lt; and &gt;, <b>mcpp</b> regards it and the following text as a comment.<br>
 <br>
 <li><samp>Empty character constant ''</samp><br>
-A character constant is empty.<br>
+A character constant is empty.
+In lang-asm mode, <b>mcpp</b> only issues a warning, but an error in other modes.<br>
 <br>
 <li><samp>Illegal UCN sequence</samp><br>
 <b>mcpp</b> in <i>STD</i> mode invoked with <tt>__STDC_VERSION__</tt> set to 199901L or in C++ mode can recognizes UCN.  This message is issued when the number of orders of a hex sequence that begins with \u and \U in an identifier is less than four and eight, respectively.  (If this occurs in a character constant in a #if expression, an undefined escape sequence warning results.  Other tokens are not checked by <b>mcpp</b>.)<br>
@@ -3951,8 +3943,7 @@ It cannot be used in a directive line.
 <li>Doubled \: Although it is implementation-defined in C99 whether a single \ is changed into double \ (\\) when the # operator converts a UCN sequence into a string, <b>mcpp</b> does not issue a warning to this.  <b>mcpp</b> does not double \.<br>
 </ol>
 <p>As you see, <b>mcpp</b> can perform almost all the portability checks necessary at a preprocessing level.</p>
-<p><i>POSTSTD</i> mode is identical with <i>STD</i> mode except for some specification differences described in section 
-<a href="#2.1"> 2.1</a>.</p>
+<p><i>POSTSTD</i> mode is identical with <i>STD</i> mode except for some specification differences described in section <a href="#2.1"> 2.1</a>.</p>
 <p>Regardless of the number of warnings, <b>mcpp</b> always returns a status of success.  <b>mcpp</b> invoked with the -W0 option does not issue a warning.</p>
 
 <h3><a name="5.5.1" href="#toc.5.5.1">5.5.1. Character, Token and Comment Related Warnings</a></h3>
@@ -4004,6 +3995,9 @@ An octal numeric token contains 8 or 9.  The only pre-Standard mode issues this 
 Although an unterminated string literal in a logical line is normally regarded as an error, <b>mcpp</b> invoked with the -lang-asm (-x assembler-with-cpp, -a) option regards it as a multi-line string literal and concatenates the line with the next by inserting '\n'.  This way of writing has no advantage.  Using a functionality to concatenate adjacent string literals is preferable.<br>
 <li><samp>Unterminated character constant 't understand.</samp><br>
 <b>mcpp</b> in lang-asm mode does not regard this an error.<br>
+<li><samp>Empty character constant ''</samp><br>
+A character constant is empty.
+In lang-asm mode, <b>mcpp</b> only issues a warning.<br>
 </ul>
 
 <h3><a name="5.5.2" href="#toc.5.5.2">5.5.2. Unterminated Source File Related Warnings</a></h3>
@@ -4081,8 +4075,7 @@ The pragmas for compiler or linker such as <samp>#pragma GCC visibility *</samp>
 A #pragma line does not have any argument.  The line is ignored.<br>
 <br>
 <li><samp>Unknown encoding "encoding"</samp><br>
-The encoding name, "encoding", specified with #pragma __setlocale( "encoding") is not implemented.  For the encoding name, refer to 
-<a href="#2.8"> 2.8</a>.<br>
+The encoding name, "encoding", specified with #pragma __setlocale( "encoding") is not implemented.  For the encoding name, refer to <a href="#2.8"> 2.8</a>.<br>
 <br>
 <li><samp>Too long encoding name "encoding"</samp><br>
 The encoding name, "long-long-encoding", specified with #pragma __setlocale( "long-long-encoding") exceeds 19 bytes.  <b>mcpp</b> ignores it.<br>
@@ -4469,7 +4462,7 @@ Therefore, the compiler-proper is not necessary to be able to handle digraphs.  
 <tr><td><samp>Division by zero</samp></td><td></td><td><a href='#5.4.6'>5.4.6</td><td></td><td></td><td></td><td><a href='#5.8'>5.8</td></tr>
 <tr><td><samp>Duplicate parameter names "a"</samp></td><td></td><td><a href='#5.4.7'>5.4.7</td></tr>
 <tr><td><samp>Empty argument in macro call "MACRO( a, ,"</samp></td><td></td><td></td><td></td><td><a href='#5.6'>5.6</td></tr>
-<tr><td><samp>Empty character constant ''</samp></td><td></td><td><a href='#5.4.1'>5.4.1</td></tr>
+<tr><td><samp>Empty character constant ''</samp></td><td></td><td><a href='#5.4.1'>5.4.1</td><td><a href='#5.5.1'>5.5.1</td></tr>
 <tr><td><samp>Empty parameter</samp></td><td></td><td><a href='#5.4.7'>5.4.7</td></tr>
 <tr><td><samp>End of file with no newline, supplemented the newline</samp></td><td></td><td></td><td><a href='#5.5.2'>5.5.2</td></tr>
 <tr><td><samp>End of file with unterminated #asm block started at line 123</samp></td><td></td><td><a href='#5.4.2'>5.4.2</td><td><a href='#5.5.2'>5.5.2</td></tr>

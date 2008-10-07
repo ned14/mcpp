@@ -1,5 +1,5 @@
-# makefile to compile MCPP version 2.7.1 and later for CygWIN / GCC / GNU make
-# 2008/05   kmatsui
+# makefile to compile MCPP version 2.7.2 and later for CygWIN / GCC / GNU make
+# 		2008/09   kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -63,12 +63,8 @@ CPPOPTS = -DCOMPILER=$(COMPILER)
 # BINDIR:   the directory where cpp0 or cc1 resides
 #BINDIR = /usr/lib/gcc-lib/i686-pc-cygwin/2.95.3-5
 BINDIR = /usr/lib/gcc/i686-pc-cygwin/3.4.4
-target = i686-pc-cygwin
 cpu = i386
 #cpu = x86_64
-# If cpu is x86_64, set cpu32 as i386
-# If cpu is not x86_64, set cpu32 as cpu
-cpu32 = i386
 ifeq ($(gcc_maj_ver), 2)
 cpp_call = $(BINDIR)/cpp0.exe
 else
@@ -87,7 +83,7 @@ PREPROCESSED = 0
 ifeq	($(PREPROCESSED), 1)
 CMACRO = -DPREPROCESSED
 #CPPFLAGS += -std=c99
-    # '-std=c99' option is sometimes nessecary to work around 
+    # '-std=c99' option is sometimes necessary to work around 
     # the confusion of system header files
 # Make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H noconfig.H internal.H
@@ -113,8 +109,8 @@ install :
 	install -s -b $(NAME).exe $(BINDIR)/$(NAME).exe
 ifeq    ($(COMPILER), GNUC)
 	@./set_mcpp.sh '$(GCCDIR)' '$(gcc_maj_ver)' '$(gcc_min_ver)'        \
-            '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x' 'ln -s'   \
-            '$(INCDIR)' SYS_CYGWIN $(cpu) $(cpu32)
+            '$(cpp_call)' '$(CC)' '$(CXX)' 'x$(CPPFLAGS)' 'x.exe' 'ln -s'   \
+            '$(INCDIR)' SYS_CYGWIN $(cpu)
 endif
 
 clean	:
@@ -128,10 +124,10 @@ ifeq    ($(COMPILER), GNUC)
 endif
 
 ifeq    ($(COMPILER), )
+LIBDIR = /usr/local/lib
 ifeq    ($(MCPP_LIB), 1)
 # compiler-independent-build and MCPP_LIB=1
 CFLAGS += -DMCPP_LIB
-LIBDIR = /usr/local/lib
 
 mcpplib :   mcpplib_a mcpplib_dll
 
