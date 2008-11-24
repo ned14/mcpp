@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7.1 and later for Visual C / nmake
-#       2008/05 kmatsui
+#       2008/11 kmatsui
 # You must first edit BINDIR, LIBDIR and INCDIR according to your system.
 # To make compiler-independent-build of MCPP do:
 #       nmake
@@ -26,8 +26,9 @@ CC = cl
 CFLAGS = $(CFLAGS) -Za -c	# -Zi
 	# Add -Zi for debugging on Visual C / IDE
 LINKFLAGS = -Fe$(NAME)	# -Zi
-CPPFLAGS = $(CPPFLAGS) -D_CRT_SECURE_NO_DEPRECATE -Za
+CPPFLAGS = $(CPPFLAGS) -D_CRT_SECURE_NO_DEPRECATE # -Za
 	# -D_CRT_SECURE_NO_DEPRECATE for Visual C 2005, 2008
+	# -Za should not be specified for compiler-independent-built MCPP
 
 !if "$(COMPILER)"=="MSC"
 CPPFLAGS = $(CPPFLAGS) -DCOMPILER=MSC
@@ -61,7 +62,7 @@ $(NAME).exe : $(OBJS)
 !ifdef PREPROCESSED
 # make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H internal.H
-	$(NAME) $(CPPFLAGS) $(LANG) $(MEM_MACRO) preproc.c mcpp.H
+	$(BINDIR)\$(NAME) $(CPPFLAGS) $(LANG) $(MEM_MACRO) preproc.c mcpp.H
 $(OBJS) : mcpp.H
 system.H: noconfig.H
 !else
@@ -72,7 +73,7 @@ main.obj directive.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
 
 !ifdef PREPROCESSED
 .c.obj	:
-	$(NAME) -DPREPROCESSED $(CPPFLAGS) $< $(<B).i
+	$(BINDIR)\$(NAME) -DPREPROCESSED $(CPPFLAGS) $< $(<B).i
 	$(CC) $(CFLAGS) -TC $(<B).i
 !else
 .c.obj	:
@@ -125,8 +126,8 @@ mcpplib_uninstall:
 	del $(LIBDIR)\mcpp$(LIBSUFFIX).lib	\
 			$(LIBDIR)\mcpp$(DLL_VER)$(LIBSUFFIX).lib	\
 			$(BINDIR)\mcpp$(DLL_VER)$(LIBSUFFIX).dll
-	del $(NAME).exe $(BINDIR)
-	del $(INCDIR)/mcpp*
+	del $(BINDIR)\$(NAME).exe
+	del $(INCDIR)\mcpp*
 !endif
 
 # use mcpp as a subroutine from testmain.c

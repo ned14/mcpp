@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7.1 and later for Borland C / BC make
-#       2008/09 kmatsui
+#       2008/11 kmatsui
 # You must first edit BINDIR, INCDIR, LIBDIR and LINKER according to your
 #		system.
 # To make compiler-independent-build of MCPP do:
@@ -58,7 +58,7 @@ $(NAME).exe : $(OBJS)
 !if 	$d( PREPROCESSED)
 # Make a "pre-preprocessed" header file to recompile MCPP with MCPP.
 mcpp.H	: system.H noconfig.H internal.H
-	$(NAME) $(CPPFLAGS) $(MEM_MACRO) preproc.c mcpp.H
+	$(BINDIR)\$(NAME) $(CPPFLAGS) $(MEM_MACRO) preproc.c mcpp.H
 $(OBJS) : mcpp.H
 !else
 main.obj directive.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
@@ -67,7 +67,7 @@ main.obj directive.obj eval.obj expand.obj support.obj system.obj mbchar.obj: \
 
 !if 	$d( PREPROCESSED)
 .c.obj	:
-	$(NAME) -DPREPROCESSED=1 $(CPPFLAGS) $< $(<B).i
+	$(BINDIR)\$(NAME) -DPREPROCESSED=1 $(CPPFLAGS) $< $(<B).i
 	$(CC) $(CFLAGS) $(<B).i
 !else
 .c.obj	:

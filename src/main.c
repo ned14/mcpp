@@ -308,9 +308,8 @@ static void     init_main( void)
     errors = src_col = 0;
     warn_level = -1;
     infile = NULL;
-    in_directive = in_define = in_getarg = in_include = FALSE;
-    in_asm = 0L;
-    macro_line = 0L;
+    in_directive = in_define = in_getarg = in_include = in_if = FALSE;
+    src_line = macro_line = in_asm = 0L;
     mcpp_debug = mkdep = no_output = keep_comments = keep_spaces = 0;
     include_nest = 0;
     insert_sep = NO_SEP;
