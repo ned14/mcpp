@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7.1 and later for LCC-Win32 / LCC make
-#       2008/05 kmatsui
+#       2008/11 kmatsui
 # You must first edit BINDIR, INCDIR and LIBDIR  according to your system.
 # To compile MCPP do:
 #       make
@@ -59,7 +59,7 @@ CPPFLAGS = -DPREPROCESSED=$(PREPROCESSED)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPOPTS) $(CMACRO) $<
 # To make MCPP using MCPP itself, comment out the above line and
 #		uncomment the next 2 lines.
-#	$(NAME) $(CPPFLAGS) $< _$<
+#	$(BINDIR)\$(NAME) $(CPPFLAGS) $< _$<
 #	$(CC) $(CFLAGS) $(CMACRO) _$<
 
 install :

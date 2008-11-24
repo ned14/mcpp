@@ -357,6 +357,12 @@ static const char **    to_search_framework;
 static int      in_import;          /* #import rather than #include */
 #endif
 
+#define NO_DIR  FALSE
+#if NO_DIR
+/* Unofficial feature to strip directory part of include file   */
+static int      no_dir;
+#endif
+
 #if MCPP_LIB
 void    init_system( void)
 /* Initialize static variables  */
@@ -391,6 +397,9 @@ void    init_system( void)
 #elif   SYSTEM == SYS_MAC
     num_framework = sys_framework = 0;
     to_search_framework = NULL;
+#endif
+#if NO_DIR
+    no_dir = FALSE;
 #endif
 }
 
@@ -937,8 +946,14 @@ plus:
             nflag = TRUE;
             break;
 
-#if COMPILER == GNUC
+#if COMPILER == GNUC || NO_DIR
         case 'n':
+#if NO_DIR
+            if (str_eq( mcpp_optarg, "odir")) {     /* -nodir       */
+                no_dir = TRUE;
+            }
+#endif
+#if COMPILER == GNUC
             if (str_eq( mcpp_optarg, "ostdinc")) {  /* -nostdinc    */
                 unset_sys_dirs = TRUE;  /* Unset pre-specified directories  */
             } else if (str_eq( mcpp_optarg, "ostdinc++")) { /* -nostdinc++  */
@@ -946,7 +961,9 @@ plus:
             } else if (str_eq( mcpp_optarg, "oprecomp")) {  /* -noprecomp   */
                 mcpp_fprintf( ERR, warning, opt, mcpp_optarg);
                 break;
-            } else {
+            }
+#endif
+            else {
                 usage( opt);
             }
             break;
@@ -1354,7 +1371,7 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.7.2-prerelease (2008/10) "
+        "MCPP V.2.7.2-prerelease (2008/11) "
 #else
         "MCPP V.", VERSION, " (", DATE, ") "
 #endif
@@ -1605,7 +1622,7 @@ static void set_opt_list(
 #endif
 
 #if COMPILER == GNUC
-    "$A:a:cd:Ef:g:i:l:n:r:s:t:u:O:p:q:wx:",
+    "$A:a:cd:Ef:g:i:l:r:s:t:u:O:p:q:wx:",
 #elif COMPILER == MSC
     "Aa:F:G:JR:T:XZ:uw",
 #elif   COMPILER == LCC
@@ -1624,7 +1641,7 @@ static void set_opt_list(
 
     const char * const *    lp = & list[ 0];
 
-    strcpy( optlist, "23+@:e:h:jko:vzCD:I:KM:NPQS:U:V:W:");
+    strcpy( optlist, "23+@:e:h:jkn:o:vzCD:I:KM:NPQS:U:V:W:");
                                                 /* Default options  */
     while (*lp)
         strcat( optlist, *lp++);
@@ -3078,6 +3095,7 @@ int     do_include(
     char    header[ PATHMAX + 16];
     int     token_type;
     char *  fname;
+    char *  filename;
     int     delim;                          /* " or <, >            */
 
     if ((delim = skip_ws()) == '\n') {      /* No argument          */
@@ -3143,13 +3161,25 @@ found_name:
         }
     }
 
-    if (open_include( fname, (delim == '"'), next)) {
+#if SYS_FAMILY == SYS_WIN
+    bsl2sl( fname);
+#endif
+    filename = fname;
+#if NO_DIR                              /* Unofficial feature           */
+    if (no_dir) {                       /* Strip directory components   */
+        char    src_dir[ PATHMAX] = { EOS, };
+        if (has_directory( fname, src_dir))
+            filename = fname + strlen( src_dir);
+        delim = '"';    /* Even a system header is handled as a local one   */
+    }
+#endif
+    if (open_include( filename, (delim == '"'), next)) {
         /* 'fname' should not be free()ed, it is used as file->         */
         /*      real_fname and has been registered into fnamelist[]     */
         return  TRUE;
     }
 
-    cerror( "Can't open include file \"%s\"", fname, 0L, NULL);     /* _E_  */
+    cerror( "Can't open include file \"%s\"", filename, 0L, NULL);  /* _E_  */
 error:
     free( fname);
     return  FALSE;
@@ -3178,10 +3208,6 @@ static int  open_include(
     int     has_dir = FALSE;        /* Includer has directory part  */
     int     has_dir_src = FALSE;
     int     has_dir_fname = FALSE;
-
-#if SYS_FAMILY == SYS_WIN
-    bsl2sl( filename);
-#endif
 
     full_path = is_full_path( filename);
 

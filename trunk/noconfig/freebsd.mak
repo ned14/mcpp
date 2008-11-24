@@ -1,5 +1,5 @@
 # makefile to compile MCPP version 2.7.2 for FreeBSD / GCC / UCB make
-#       2008/09 kmatsui
+#       2008/11 kmatsui
 #
 # First, you must edit GCCDIR, BINDIR, INCDIR, gcc_maj_ver and gcc_min_ver.
 # To make compiler-independent-build of MCPP do:
@@ -68,11 +68,9 @@ CPPOPTS = -DCOMPILER=$(COMPILER) -DINC_DIR=\"$(INCDIR)\"
 # BINDIR:   the directory where cpp0 or cc1 resides
 BINDIR ?= /usr/libexec
 #BINDIR ?= /usr/local/gcc-4.1.1/lib/gcc-lib/i386-unknown-freebsd6.3/4.1.1
-target = ''
-#target = i386-unknown-freebsd6.3
 cpu = i386
-#cpu = ppc
 #cpu = x86_64
+#cpu = ppc
 #cpu = ppc64
 .if $(gcc_maj_ver) == 2
 cpp_call = $(BINDIR)/cpp0

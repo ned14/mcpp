@@ -536,6 +536,6 @@ preprocessor comprehensively.  Validation Suite has 265 items and can be
 applied to any preprocessor as well as MCPP.  Refer to 3.1 and 3.2 of
 cpp-test.html.
 
-October, 2008
+November, 2008
 Kiyoshi Matsui <kmatsui@t3.rim.or.jp>
 

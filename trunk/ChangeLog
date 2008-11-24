@@ -1,6 +1,6 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2008/10/07  kmatsui
+2008/11/24  kmatsui
         * V.2.7.2-prerelease
         * Enabled some CPU-specific predefined macros in compiler-
         independent-build as well as compiler-specific-build, because
