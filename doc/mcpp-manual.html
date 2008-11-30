@@ -11,7 +11,7 @@
 <h2>== How to Use MCPP ==</h2>
 </div>
 <div align="right">
-<h4>for V.2.7.2-prerelease (2008/10)<br>
+<h4>for V.2.7.2 (2008/11)<br>
 Kiyoshi Matsui (kmatsui@t3.rim.or.jp)</h4>
 </div>
 <div align="center">
@@ -2090,7 +2090,7 @@ It was the same with FreeBSD 5.3 and 6.2, too.</p>
 <p>*5 This conversion seems not to be done in preprocessing phase, but in compilation phase.
 Output of -E option is still UTF-8.</p>
 <p>*6 GCC V.4.1-4.3 fail to compile due to a bug of GCC, if -save-temps or -no-integrated-cpp option is specified at the same time with -f*-charset option.</p>
-<p>*7 When you pass the output of <b>mcpp</b> to cc1, you should not specify -fexec-charset option as well as -finput-charset option.</p>
+<p>*7 When you pass the output of <b>mcpp</b> to cc1, you should not specify -fexec-charset option nor -finput-charset option.</p>
 
 <h3><a name="3.9.8" href="#toc.3.9.8">3.9.8. Preprocessing Linux/glibc 2.4</a></h3>
 
@@ -2711,7 +2711,7 @@ This time <tt>_GCC_LIMITS_H_</tt> has been defined already, so the block beginni
 <li>C++ include directories do not exist other than <samp>/usr/include/c++/VERSION/*</samp>.  In order to make C++ standard include directories independent on GCC version, <samp>/usr/include/c++</samp> should be used instead of <samp>/usr/include/c++/VERSION</samp> which should be limited to GCC specific headers.
 Though, having said that, this is a difficult task, since the C++ standard library is libstdc++ distributed with GCC on all of FreeBSD, Linux and Mac OS X.<br>
 <li>The behavior of GCC on #include_next differs from its specification and is inconsistent.<br>
-<li>It is meaningless to process the complicated limits.h headers, since GCC practically predefines the Standard required macros.  It is doubly meaningless, since <samp>/usr/lib/gcc-lib/SYSTEM/VERSION/include/limits.h</samp> does #undef all.  As far as Linux and CygWIN are concerned, there seems to be no necessity for splitting limits.h to two.  Since these headers in this directory are auto-generated ones by GCC installation, some redundancies are inevitable.  Yet, these are too dirty to install as system headers.<br>
+<li>It is meaningless to process the complicated limits.h headers, since GCC predefines the Standard required macros by itself in effect.  It is doubly meaningless, since <samp>/usr/lib/gcc-lib/SYSTEM/VERSION/include/limits.h</samp> does #undef all.  As far as Linux and CygWIN are concerned, there seems to be no necessity for splitting limits.h to two.  Since these headers in this directory are auto-generated ones by GCC installation, some redundancies are inevitable.  Yet, these are too dirty to install as system headers.<br>
 </ol>
 <p>Under these problems lies the excessively complicated system header structure.  The extension directive #include_next enhances the complication.  The use of this directive is very limited.  Though GCC and glibc use it in compiling and installing of themselves, it does not exist in the installed system headers except for limits.h.  The rare example in limits.h causes GCC above mentioned confusion.  This presents a question on the reason of its existence.</p>
 <p>Anyway, the compiler-independent-build of <b>mcpp</b> needs the following workarounds for the present.  In order to avoid confusion, the compiler-independent-build does not implement #include_next nor uses GCC specific include directories.</p>

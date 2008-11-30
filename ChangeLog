@@ -1,7 +1,7 @@
 ChangeLog of MCPP and its accompanying Validation Suite
 
-2008/11/24  kmatsui
-        * V.2.7.2-prerelease
+2008/11/30  kmatsui
+        * V.2.7.2
         * Enabled some CPU-specific predefined macros in compiler-
         independent-build as well as compiler-specific-build, because
         there are some occasions which require those macros when we use
@@ -11,6 +11,8 @@ ChangeLog of MCPP and its accompanying Validation Suite
         compiler-independent-build, when the OS is UNIX-like one.  These
         options change some predefined macros.  (system.c)
         * Made -z option to output #include lines themselves.  (system.c)
+        * Fixed a bug of source line numbering in library-build.  (by
+        Dwayne Boone) (main.c)
         * Fixed a few minor bugs.
         * Dropped support for Borland C 4.0.
         * Updated the shell-scripts, makefiles and difference files, and
@@ -92,7 +94,7 @@ ChangeLog of MCPP and its accompanying Validation Suite
         * Changed allocation of buffer for -M* options and incdir[],
         fnamelist[], once_list[] from fixed size to dynamically
         enlarging ones.  (system.c)
-        * Made #line output for GCC-specific-build more closer to GCC.
+        * Made #line output for GCC-specific-build closer to GCC.
         Changed FILEINFO and DEFBUF struct, moved sharp() from main.c to
         system.c, revised many functions.  (system.c, support.c, main.c,
         directive.c)
