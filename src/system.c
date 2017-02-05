@@ -1371,9 +1371,9 @@ static void version( void)
 #endif
 
 #ifdef  VERSION_MSG
-        "MCPP V.2.7.2 (2008/11) "
+        "MCPP V.2.7.2-ned (2017/02) "
 #else
-        "MCPP V.", VERSION, " (", DATE, ") "
+        "MCPP V.", VERSION, "-ned (", DATE, ") "
 #endif
 #if     COMPILER == INDEPENDENT
             , "compiler-independent-build "
@@ -3535,6 +3535,32 @@ void    add_file(
     const char *    too_many_include_nest =
             "More than %.0s%ld nesting of #include";    /* _F_ _W4_ */
 
+    //
+    // When encoding is UTF-8, skip BOM if present.
+    //
+    if(fp != NULL && ftell(fp) == 0)
+    {
+        const unsigned char UTF8_BOM[3] = {0xEF, 0xBB, 0xBF};
+        unsigned char FILE_HEAD[3] = {0, 0, 0};
+        int i;
+        for(i = 0; i < 3; ++i)
+        {
+            FILE_HEAD[i] = getc(fp);
+            if(FILE_HEAD[i] != UTF8_BOM[i])
+            {
+                if(FILE_HEAD[i] == (unsigned char)EOF)
+                {
+                    i--;
+                }
+                for(; i >= 0; --i)
+                {
+                    ungetc(FILE_HEAD[i], fp);
+                }
+                break;
+            }
+        }
+    }
+
     filename = set_fname( filename);    /* Search or append to fnamelist[]  */
     fullname = set_fname( fullname);    /* Search or append to fnamelist[]  */
     file = get_file( filename, src_dir, fullname, (size_t) NBUFF, include_opt);
@@ -3858,6 +3884,9 @@ static int  chk_dirp(
 }
 #endif
 
+FILEINFO*       sh_file;
+int             sh_line;
+
 void    sharp(
     FILEINFO *  sharp_file,
     int         flag        /* Flag to append to the line for GCC   */
@@ -3868,8 +3897,6 @@ void    sharp(
  * else (i.e. 'sharp_file' is NULL) 'infile'.
  */
 {
-    static FILEINFO *   sh_file;
-    static int  sh_line;
     FILEINFO *  file;
     int         line;
 
