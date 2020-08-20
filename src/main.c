@@ -66,7 +66,8 @@
          * are used instead of -a.
          */
         FALSE,          /* lang_asm:    -a (assembler source)       */
-        FALSE           /* no_source_line:  -j (no source line in diag)     */
+        FALSE,          /* no_source_line:  -j (no source line in diag)     */
+        TRUE 			/* allow $ in identifier */
     };
 
     int     mcpp_mode = STD;        /* Mode of preprocessing        */
@@ -225,11 +226,17 @@
 /*
  * Translation limits specified by C90, C99 or C++.
  */
-    struct std_limits_  std_limits = {
-        /* The following three are temporarily set for do_options() */
-        NBUFF,          /* Least maximum of string length           */
-        IDMAX,          /* Least maximum of identifier length       */
-        NMACPARS,       /* Least maximum of number of macro params  */
+    struct std_limits_  std_limits = 
+    {
+        /* The following three are temporarily set for do_options() 		system.H	*/
+        NBUFF					,  		/* Least maximum of string length           	*/
+        IDMAX					,  		/* Least maximum of identifier length       	*/
+        NMACPARS				,       /* Least maximum of number of macro params  	*/
+		EXP_NEST_CPLUS_MIN  	,     	/* Least maximum of expr nest   	0x100 		*/
+		BLK_NEST_CPLUS_MIN  	,   	/* Least maximum of block nest  	0x100		*/
+		INCLUDE_NEST_CPLUS_MIN 	,    	/* Least maximum of include nest 	0x100		*/
+		NMACRO_CPLUS_MIN  		,   	/* Least maximum of num of macro	0x10000 	*/
+		LINE99LIMIT           	,		/* Maximum source line number   	0x7FFFFFFF	*/        
     };
 
 /*
@@ -245,9 +252,9 @@
  *      3. processing _Pragma() operator (do_pragma_op()).
  *      4. miscellaneous (init_gcc_macro(), curfile()). 
  */
-    char        work_buf[ NWORK + IDMAX];       /* Work buffer      */
-    char *      workp;              /* Pointer into work_buf[]      */
-    char * const     work_end = & work_buf[ NWORK];
+    char        	work_buf[ NWORK + IDMAX];       /* Work buffer      */
+    char *      	workp;              /* Pointer into work_buf[]      */
+    char * const	work_end = & work_buf[ NWORK];
                                     /* End of buffer of work_buf[]  */
 
 /*

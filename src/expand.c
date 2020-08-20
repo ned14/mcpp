@@ -33,6 +33,14 @@
  *
  * The macro expansion routines are placed here.
  */
+ 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+
+/**/
+
+
 
 #if PREPROCESSED
 #include    "mcpp.H"
@@ -100,18 +108,21 @@ static const char * const   narg_error
 static const char * const   only_name
         = "Macro \"%s\" needs arguments";                   /* _W8_ */
 
-void     expand_init(
-    int     compat,     /* "Compatible" to GNUC expansion of recursive macro*/
-    int     strict_ansi         /* __STRICT_ANSI__ flag for GNUC    */
-)
-/* Set expand_macro() function  */
-{
-    expand_macro = standard ? expand_std : expand_prestd;
-    compat_mode = compat;
-#if COMPILER == GNUC
-    ansi = strict_ansi;
-#endif
-}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+	void     expand_init(
+		int     compat,     /* "Compatible" to GNUC expansion of recursive macro*/
+		int     strict_ansi         /* __STRICT_ANSI__ flag for GNUC    */
+	)
+	/* Set expand_macro() function  */
+	{
+		expand_macro = standard ? expand_std : expand_prestd;
+		compat_mode = compat;
+	#if COMPILER == GNUC
+		ansi = strict_ansi;
+	#endif
+	}
+#pragma GCC diagnostic pop
 
 DEFBUF *    is_macro(
     char **     cp
@@ -710,7 +721,9 @@ static char *   replace(
         } else {
             m_inf->locs.start_col = m_inf->locs.start_line = 0L;
         }
-        m_inf->args = m_inf->loc_args = NULL;       /* Default args */
+        m_inf->loc_args = NULL;       /* Default args */
+        m_inf->args = (char*)m_inf->loc_args ;
+              
         for (num = 1, recurs = 0; num < m_num; num++)
             if (mac_inf[ num].defp == defp)
                 recurs++;           /* Recursively nested macro     */
@@ -1287,8 +1300,10 @@ static const char *     remove_magics(
     /* Search all the magics in argument, as well as first and last token   */
     /* Read stacked arg_p and write it to arg_p as a dummy buffer   */
     while ((*ap++ = c = get_ch()) != RT_END && file == infile) {
-        if (c == MAC_INF) {
-            if (mac_n >= max_magics || arg_n >= max_magics * 2) {
+        if (c == MAC_INF) 
+        {
+            if ((long)mac_n >= (long)max_magics || (long)arg_n >= (long)max_magics * 2) 
+            {
                 max_magics *= 2;
                 mac_id = (char (*)[ MAC_S_LEN]) xrealloc( (void *) mac_id
                         , MAC_S_LEN * max_magics);
@@ -1747,8 +1762,8 @@ static char *   substitute(
  * the formal parameters in the replacement list.
  */
 {
-    char *  out_start = out;
-    const char *    arg;
+    //char *  			out_start = out	; // unused variabile
+    //const char *    	arg				; // unused variabile
     int     c;
     int     gvar_arg;   /* gvar_arg'th argument is GCC variable argument    */
 
@@ -1972,7 +1987,7 @@ static char *   rescan(
                         seq_len = mgc_seq.magic_end - mgc_seq.magic_start;
                         if (seq_len) {
                             insert_to_bptr( mgc_seq.magic_start, seq_len);
-                            mgc_cleared = remove_magics(
+                            mgc_cleared = (char*)remove_magics(
                                     (const char *) infile->bptr, FALSE);
                                         /* Remove pair of magics    */
                             strcpy( infile->bptr, mgc_cleared);
@@ -2140,9 +2155,10 @@ static char *   expand_prestd(
     DEFBUF *    defp,                       /* Macro definition     */
     char *  out,                            /* Output buffer        */
     char *  out_end,                        /* End of output buffer */
-    LINE_COL    line_col,       /* Location of macro (not used in prestd)   */
-    int *   pragma_op           /* Flag of _Pragma (not used in prestd)     */
+    LINE_COL    line_col,       			/* Location of macro (not used in prestd)   */
+    int *   pragma_op           			/* Flag of _Pragma (not used in prestd)     */
 )
+
 /*
  * Expand a macro call completely, write the results to the specified buffer
  * and return the advanced pointer.
@@ -2977,4 +2993,11 @@ static void dump_args(
         dump_string( NULL, arglist[ i]);
     }
 }
+
+#pragma GCC diagnostic pop
+
+
+
+/**/
+
 

@@ -34,6 +34,15 @@
  * Character handling and multi-byte character handling routines are
  * placed here.
  */
+ 
+#include <assert.h>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+
+/**/
+
 
 #if PREPROCESSED
 #include    "mcpp.H"
@@ -703,9 +712,20 @@ static size_t   mb_read_iso2022_jp(
         }
         if (error)
             break;
+            
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchar-subscripts"
 
-        while (char_type[ c1 = *out_p++ = (*in_p++ & UCHARMAX)] & IJP) {
-            if (! (char_type[ *out_p++ = (*in_p++ & UCHARMAX)] & IJP)) {
+		assert(c1>=0);
+		assert(*out_p>=0);
+		assert(*in_p>=0);				
+        while (char_type[ c1 = *out_p++ = (*in_p++ & UCHARMAX)] & IJP) 
+        {
+			assert(c1>=0);
+			assert(*out_p>=0);
+			assert(*in_p>=0);	
+            if (! (char_type[ *out_p++ = (*in_p++ & UCHARMAX)] & IJP)) 
+            {
                 error = TRUE;
                 break;
             }
@@ -715,6 +735,8 @@ static size_t   mb_read_iso2022_jp(
             break;
 
     } while (char_type[ c1] & IS1);     /* 0x1b:    start of shift-sequence */
+    
+#pragma GCC diagnostic pop
 
     *in_pp = --in_p;
     *(--out_p) = EOS;
@@ -738,17 +760,30 @@ static size_t   mb_read_utf8(
 
     if (! (char_type[ c1 & UCHARMAX] & mbstart))
         return  MB_ERROR;
+        
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchar-subscripts"
 
     do {
         unsigned int    codepoint;
         int             i, bytes;
 
+		assert(c1>=0);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsometimes-uninitialized"	
+		
         if ((char_type[ c1 & UCHARMAX] & U4_1) == U4_1)
             bytes = 4;                          /* 4-byte character */
         else if ((char_type[ c1 & UCHARMAX] & U3_1) == U3_1)
             bytes = 3;                          /* 3-byte character */
         else if ((char_type[ c1 & UCHARMAX] & U2_1) == U2_1)
             bytes = 2;                          /* 2-byte character */
+
+		if (
+			bytes!=4 && 
+			bytes!=3 &&
+			bytes!=2
+		) { printf("\n[internal error]::[mbchar.c](bytes!=4,3,2).\n");exit(-1); } ;
 
         /* Must ensure that the sequence is not reserved as a surrogate */
         codepoint = ((2 << (6-bytes)) - 1) & c1;    /* mask off top bits    */
@@ -778,6 +813,10 @@ static size_t   mb_read_utf8(
         len++;
     } while (char_type[ (*out_p++ = c1 = *in_p++) & UCHARMAX] & mbstart);
                         /* Start of the next multi-byte character   */
+                        
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+                        
     *in_pp = --in_p;
     *(--out_p) = EOS;
     *out_pp = out_p;
@@ -866,4 +905,12 @@ int  last_is_mbchar(
     else
         return  2;
 }
+
+
+#pragma GCC diagnostic pop
+
+
+
+/**/
+
 

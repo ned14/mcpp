@@ -34,6 +34,13 @@
  * The routines to evaluate #if expression are placed here.
  * Some routines are used also to evaluate the value of numerical tokens.
  */
+ 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+
+/**/
+
 
 #if PREPROCESSED
 #include    "mcpp.H"
@@ -41,6 +48,8 @@
 #include    "system.H"
 #include    "internal.H"
 #endif
+
+#include <assert.h>
 
 typedef struct optab {
     char    op;                     /* Operator                     */
@@ -354,11 +363,14 @@ expr_t  eval_if( void)
         }
         binop = (prec & 2) >> 1;            /* Binop should follow? */
 
-        while (1) {
+        while (1) 
+        {
+			assert( op>=0 );
+			assert( opp->op>=0 );
             if (mcpp_debug & EXPRESSION)
                 mcpp_fprintf( DBG
                         , "op %s, prec %d, stacked op %s, prec %d, skip %d\n"
-                , opname[ op], prec, opname[ opp->op], opp->prec, opp->skip);
+                , opname[ (unsigned char) op], prec, opname[ (unsigned char) opp->op], opp->prec, opp->skip);
 
             /* Stack coming sub-expression of higher precedence.    */
             if (opp->prec < prec) {
@@ -445,10 +457,13 @@ expr_t  eval_if( void)
                 break;
             case OP_COL:                    /* : on stack           */
                 opp--;                      /* Unstack :            */
-                if (opp->op != OP_QUE) {    /* Matches ? on stack?  */
+                if (opp->op != OP_QUE) 
+                { 
+					assert(opp->op>=0);   
+					/* Matches ? on stack?  */
                     cerror(
                     "Misplaced \":\", previous operator is \"%s\""  /* _E_  */
-                            , opname[opp->op], 0L, NULL);
+                            , opname[(unsigned char)opp->op], 0L, NULL);
                     return  0L;
                 }
                 /* Evaluate op1.            Fall through            */
@@ -1323,13 +1338,18 @@ static VAL_SIGN *   eval_eval(
         }
         valp->sign = sign1 = sign2 = UNSIGNED;
     }
-    if ((op == OP_SL || op == OP_SR)
-            && ((! skip && (warn_level & 1)) || (skip && (warn_level & 8)))) {
-        if (v2 < 0L || v2 >= sizeof (expr_t) * CHARBIT)
+    if (	(op == OP_SL || op == OP_SR)
+            && ((! skip && (warn_level & 1)) || (skip && (warn_level & 8)))
+    ) 
+    {
+		// sytem.H
+		//typedef intmax_t    expr_t;
+		//typedef uintmax_t   uexpr_t;
+        if (v2 < 0L || ((uintmax_t)v2 >= (uintmax_t)sizeof (expr_t) * CHARBIT))
             cwarn( "Illegal shift count %.0s\"%ld\"%s"      /* _W1_ _W8_    */
                 , NULL, (long) v2, skip ? non_eval : NULL);
 #if HAVE_LONG_LONG
-        else if (! stdc3 && v2 >= sizeof (long) * CHARBIT
+        else if (! stdc3 && ((uintmax_t)v2 >= (uintmax_t)sizeof (long) * CHARBIT)
                 && ((! skip && (warn_level & w_level))
                     || (skip && (warn_level & 8))))
             cwarn(
@@ -1337,6 +1357,7 @@ static VAL_SIGN *   eval_eval(
                 , NULL, (long) v2, skip ? non_eval : NULL);
 #endif
     }
+    
     if ((op == OP_DIV || op == OP_MOD) && v2 == 0L) {
         if (! skip) {
             cerror( zero_div, NULL, 0L, NULL);
@@ -1658,9 +1679,11 @@ static void dump_stack(
         mcpp_fprintf( DBG, "Index op prec skip name -- op stack at %s"
                 , infile->bptr);
 
-    while (opstack < opp) {
+    while (opstack < opp) 
+    {
+		assert(opp->op>=0);
         mcpp_fprintf( DBG, " [%2d] %2d %04o    %d %s\n", (int)(opp - opstack)
-                , opp->op, opp->prec, opp->skip, opname[ opp->op]);
+                , opp->op, opp->prec, opp->skip, opname[ (unsigned char) opp->op]);
         opp--;
     }
 
@@ -1670,4 +1693,12 @@ static void dump_stack(
         mcpp_fputc( '\n', DBG);
     }
 }
+
+
+#pragma GCC diagnostic pop
+
+
+
+/**/
+
 

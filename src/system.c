@@ -36,6 +36,17 @@
  *      1. specify the constants in "configed.H" or "noconfig.H",
  *      2. append the system-dependent routines in this file.
  */
+ 
+#include <unistd.h>
+ 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
+/**/
+
+ 
 #if PREPROCESSED
 #include    "mcpp.H"
 #else
@@ -2965,7 +2976,8 @@ void    put_depend(
             || out_p + fnamlen + 1 >= output + MKDEP_MAXLEN)
         cfatal( "Too long dependency line: %s", output, 0L, NULL);
     /* Need to enlarge the buffer   */
-    if (pos_num >= pos_max) {
+    if ((long)pos_num >= (long)pos_max) 
+    {
         pos = (size_t *) xrealloc( (char *) pos
                 , (pos_max *= 2) * sizeof (size_t *));
     }
@@ -3425,7 +3437,7 @@ static int  open_file(
     } else {
         fname = filename;
     }
-search:
+//search: // unused label
     fullname = norm_path( *dirp, fname, TRUE, FALSE);
                                     /* Convert to absolute path     */
     if (! fullname)                 /* Non-existent or directory    */
@@ -4268,7 +4280,7 @@ static void do_once(
         once_end = &once_list[ max_once];
         max_once *= 2;
     }
-    once_end->name = fullname;
+    once_end->name = (char*)fullname;
     once_end->len = strlen( fullname);
     once_end++;
 }
@@ -4937,4 +4949,12 @@ void    clear_filelist( void)
         free( (void *) once_list);
 }
 #endif
+
+
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+
+
+/**/
+
 
