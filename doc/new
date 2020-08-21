@@ -1,0 +1,38 @@
+
+MCPP
+
+la compilazione avviene come descritto con i consueti comandi
+
+	./configure
+	make
+	make install
+
+se vogliamo compilare con maggiori opzioni vanno indicate
+
+	./configure CFLAGS='-Wall -pedantic -Wextra -O2'
+	make
+	make install
+
+per compilare mccp come una lireria occore impartire
+
+	./configure --enable-mcpplib
+	make 
+	make install
+
+i binary saranno presenti nella cartella 'src'
+
+	mcpp
+	libmcpp.la
+	libmcpp.a
+	
+le librerie saranno installate qui :
+	
+	/usr/local/lib/libmcpp.a
+	/usr/local/lib/libmcpp.la
+	'/usr/local/include/mcpp_lib.h'
+
+qui e' presente un file con indicazioni su come usare
+mccp come una libreria e di seguito la linera di compilazione
+
+	gcc testmain.c /usr/local/lib/libmcpp.a -o prova
+	./prova ../test.new/prova.c

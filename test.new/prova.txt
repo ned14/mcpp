@@ -1,0 +1,12 @@
+#line 1 "/Users/claudio/Documents/x/mcpp/test.new/prova.c"
+#line 12 "/Users/claudio/Documents/x/mcpp/test.new/prova.c"
+#line 1 "prova2.c"
+
+int a=0 ;
+#line 13 "/Users/claudio/Documents/x/mcpp/test.new/prova.c"
+
+int main ( void)
+{
+	printf ("@@%s%x\n", "传/傳" , "ciao"  );
+	return 0 ;
+}

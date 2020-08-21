@@ -9,3 +9,4 @@ tests/Makefile
 /src/*.o
 /src/mcpp
 /autom4te.cache
+.DS_Store
