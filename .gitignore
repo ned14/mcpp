@@ -1,12 +1,52 @@
-/Makefile
-/config.log
-/config.status
-/libtool
-/src/Makefile
-/src/config.h
-/src/stamp-h1
-tests/Makefile
-/src/*.o
-/src/mcpp
-/autom4te.cache
+# Minimalistic .gitignore
+#
+# Project contributors: clean with ./clean.sh, do not rely on .gitignore
+
+# Object files
+*.o
+*.os
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.a
+*.la
+*.lo
+*.lib
+*.lai
+*.def
+*.exp
+*.slo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Logs
+*.log
+
+# Executables
+a.out
+
+# Other
 .DS_Store
+*.dSYM
+.*.swp
+.*.swa
+
+# Autotools
+.deps
+.dirstamp
+autom4te.cache
+Makefile
+config.h
+config.status
+config.log
+stamp-h1
