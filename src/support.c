@@ -73,6 +73,14 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough="
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 /**/
 
@@ -1163,13 +1171,14 @@ static char *   scan_ucn(
     value = 0L;
     for (i = 0; i < cnt; i++) {
         c = get_ch();
-        if (! isxdigit( c)) {
-            if (infile->fp)
-                cerror( "Illegal UCN sequence"              /* _E_  */
-                        , NULL, 0L, NULL);
-                *out = EOS;
-                unget_ch();
-                return  NULL;
+        if (! isxdigit( c)) 
+        { 
+			/* _E_  */
+            if (infile->fp) cerror( "Illegal UCN sequence"  , NULL, 0L, NULL);
+                        
+			*out = EOS;
+			unget_ch();
+			return  NULL;
         }
         c = tolower( c);
         *out++ = c;
@@ -2819,8 +2828,9 @@ static void dump_token(
 
 
 #pragma GCC diagnostic pop
-
-
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 
 /**/
 

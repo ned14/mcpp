@@ -40,6 +40,8 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 /**/
 
@@ -769,9 +771,10 @@ static size_t   mb_read_utf8(
         int             i, bytes;
 
 		assert(c1>=0);
+#ifdef _APPLE__		
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsometimes-uninitialized"	
-		
+#endif		
         if ((char_type[ c1 & UCHARMAX] & U4_1) == U4_1)
             bytes = 4;                          /* 4-byte character */
         else if ((char_type[ c1 & UCHARMAX] & U3_1) == U3_1)
@@ -813,8 +816,9 @@ static size_t   mb_read_utf8(
         len++;
     } while (char_type[ (*out_p++ = c1 = *in_p++) & UCHARMAX] & mbstart);
                         /* Start of the next multi-byte character   */
-                        
+#ifdef _APPLE__		                        
 #pragma GCC diagnostic pop
+#endif
 #pragma GCC diagnostic pop
                         
     *in_pp = --in_p;
@@ -908,7 +912,7 @@ int  last_is_mbchar(
 
 
 #pragma GCC diagnostic pop
-
+#pragma GCC diagnostic pop
 
 
 /**/

@@ -41,8 +41,18 @@
  
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough="
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-const-variable="
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 /**/
 
@@ -460,7 +470,12 @@ void    do_options(
     set_cplus_dir = TRUE;
 
     /* Get current directory for -I option and #pragma once */
+    
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"    
     getcwd( cur_work_dir, PATHMAX);
+#pragma GCC diagnostic pop
+    
 #if SYS_FAMILY == SYS_WIN
     bsl2sl( cur_work_dir);
 #endif
@@ -4953,6 +4968,10 @@ void    clear_filelist( void)
 
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+
 
 
 /**/
