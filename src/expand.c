@@ -37,6 +37,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
@@ -45,6 +46,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough="
+#endif
 
 /**/
 
@@ -3003,9 +3005,11 @@ static void dump_args(
 }
 
 #pragma GCC diagnostic pop
+#ifndef __clang__
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
+#endif
 
 /**/
 

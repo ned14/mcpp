@@ -34,9 +34,11 @@
  * The routines to handle directives other than #include and #pragma
  * are placed here.
  */
- 
+
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 
 #if PREPROCESSED
 #include    "mcpp.H"
@@ -1700,4 +1702,6 @@ void    clear_symtable( void)
 }
 #endif
 
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif

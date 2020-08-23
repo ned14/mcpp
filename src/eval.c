@@ -41,8 +41,10 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough="
+#endif
 
 /**/
 
@@ -370,8 +372,9 @@ expr_t  eval_if( void)
 
         while (1) 
         {
-			assert( op>=0 );
-			assert( opp->op>=0 );
+			// se valore negativo
+			assert( op		<	0 	);
+			assert( opp->op	<	0 	);
             if (mcpp_debug & EXPRESSION)
                 mcpp_fprintf( DBG
                         , "op %s, prec %d, stacked op %s, prec %d, skip %d\n"
@@ -464,7 +467,7 @@ expr_t  eval_if( void)
                 opp--;                      /* Unstack :            */
                 if (opp->op != OP_QUE) 
                 { 
-					assert(opp->op>=0);   
+					assert(opp->op < 0);   
 					/* Matches ? on stack?  */
                     cerror(
                     "Misplaced \":\", previous operator is \"%s\""  /* _E_  */
@@ -1686,7 +1689,7 @@ static void dump_stack(
 
     while (opstack < opp) 
     {
-		assert(opp->op>=0);
+		assert(opp->op < 0);
         mcpp_fprintf( DBG, " [%2d] %2d %04o    %d %s\n", (int)(opp - opstack)
                 , opp->op, opp->prec, opp->skip, opname[ (unsigned char) opp->op]);
         opp--;
@@ -1702,8 +1705,9 @@ static void dump_stack(
 
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
+#ifndef __clang__
 #pragma GCC diagnostic pop
-
+#endif
 
 
 /**/

@@ -76,11 +76,15 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtype-limits"
 
+#ifndef __clang__
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough="
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+
+#endif
 
 /**/
 
@@ -2829,8 +2833,11 @@ static void dump_token(
 
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
+
+#ifndef __clang__
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
+#endif
 
 /**/
 

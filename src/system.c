@@ -45,6 +45,8 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 
+#ifndef __clang__
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough="
 
@@ -53,6 +55,8 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+
+#endif
 
 /**/
 
@@ -4968,10 +4972,12 @@ void    clear_filelist( void)
 
 #pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
-#pragma GCC diagnostic pop
-#pragma GCC diagnostic pop
-#pragma GCC diagnostic pop
 
+#ifndef __clang__
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
+#endif
 
 
 /**/

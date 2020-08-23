@@ -40,8 +40,10 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 
 /**/
 
@@ -718,14 +720,14 @@ static size_t   mb_read_iso2022_jp(
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wchar-subscripts"
 
-		assert(c1>=0);
-		assert(*out_p>=0);
-		assert(*in_p>=0);				
+		assert(c1		<	0);
+		assert(*out_p	<	0);
+		assert(*in_p	<	0);				
         while (char_type[ c1 = *out_p++ = (*in_p++ & UCHARMAX)] & IJP) 
         {
-			assert(c1>=0);
-			assert(*out_p>=0);
-			assert(*in_p>=0);	
+			assert(c1		<	0);
+			assert(*out_p	<	0);
+			assert(*in_p	<	0);		
             if (! (char_type[ *out_p++ = (*in_p++ & UCHARMAX)] & IJP)) 
             {
                 error = TRUE;
@@ -770,7 +772,6 @@ static size_t   mb_read_utf8(
         unsigned int    codepoint;
         int             i, bytes;
 
-		assert(c1>=0);
 #ifdef _APPLE__		
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsometimes-uninitialized"	
@@ -912,8 +913,9 @@ int  last_is_mbchar(
 
 
 #pragma GCC diagnostic pop
+#ifndef __clang__
 #pragma GCC diagnostic pop
-
+#endif
 
 /**/
 
