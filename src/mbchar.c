@@ -719,15 +719,9 @@ static size_t   mb_read_iso2022_jp(
             
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wchar-subscripts"
-
-		assert(c1		<	0);
-		assert(*out_p	<	0);
-		assert(*in_p	<	0);				
+				
         while (char_type[ c1 = *out_p++ = (*in_p++ & UCHARMAX)] & IJP) 
-        {
-			assert(c1		<	0);
-			assert(*out_p	<	0);
-			assert(*in_p	<	0);		
+        {	
             if (! (char_type[ *out_p++ = (*in_p++ & UCHARMAX)] & IJP)) 
             {
                 error = TRUE;

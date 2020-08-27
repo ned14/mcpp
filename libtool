@@ -85,7 +85,7 @@ AR_FLAGS="cru"
 LTCC="gcc"
 
 # LTCC compiler flags.
-LTCFLAGS="-Wall -pedantic -Wextra -O2"
+LTCFLAGS="-g -O2"
 
 # A language-specific compiler.
 CC="gcc"
@@ -7256,7 +7256,7 @@ AR_FLAGS="cru"
 LTCC="gcc"
 
 # LTCC compiler flags.
-LTCFLAGS="-Wall -pedantic -Wextra -O2"
+LTCFLAGS="-g -O2"
 
 # A language-specific compiler.
 CC="g++"
